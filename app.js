@@ -18,58 +18,211 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ==========================================
-// BANCO DE QUESTÕES DA AVALIAÇÃO
+// BANCO DE QUESTÕES (20 QUESTÕES: FRONT-END & IA)
 // ==========================================
 const questoes = [
+  // --- MÓDULO: FRONT-END (HTML, CSS, JS) ---
   {
-    pergunta: "1. Qual é a principal função do HTML em uma página Web?",
+    pergunta: "1. Qual é a principal função do HTML em uma aplicação Web?",
     opcoes: [
-      "A) Estilizar e dar cores aos elementos",
-      "B) Estruturar o conteúdo e os elementos da página",
-      "C) Executar lógica de banco de dados no servidor",
-      "D) Criar animações complexas 3D"
+      "A) Estilizar elementos visuais e aplicar cores",
+      "B) Estruturar o conteúdo e a semântica da página",
+      "C) Processar regras de negócios e conexões com banco de dados",
+      "D) Gerenciar animações complexas em 3D"
     ],
     correta: 1
   },
   {
-    pergunta: "2. Qual tag HTML é utilizada para importar um arquivo de script JavaScript?",
+    pergunta: "2. Qual tag HTML semântica é recomendada para o menu principal de navegação?",
     opcoes: [
-      "A) <js>",
-      "B) <javascript>",
-      "C) <script>",
-      "D) <link>"
+      "A) <menu-main>",
+      "B) <header>",
+      "C) <nav>",
+      "D) <section>"
     ],
     correta: 2
   },
   {
-    pergunta: "3. No Git, qual comando é utilizado para salvar as alterações localmente com uma mensagem?",
+    pergunta: "3. No CSS Flexbox, qual propriedade alinha os itens no eixo principal (horizontal por padrão)?",
     opcoes: [
-      "A) git push",
-      "B) git commit -m \"mensagem\"",
-      "C) git add .",
-      "D) git checkout"
+      "A) align-items",
+      "B) justify-content",
+      "C) flex-direction",
+      "D) align-content"
     ],
     correta: 1
   },
   {
-    pergunta: "4. Qual linguagem de programação é utilizada para adicionar interatividade às páginas Web?",
+    pergunta: "4. Qual propriedade CSS é utilizada para tornar um layout responsivo adaptável à largura da tela do usuário?",
     opcoes: [
-      "A) HTML",
-      "B) CSS",
-      "C) JavaScript",
-      "D) SQL"
+      "A) @media queries",
+      "B) display: inline",
+      "C) position: absolute",
+      "D) float: left"
+    ],
+    correta: 0
+  },
+  {
+    pergunta: "5. Em JavaScript, qual declaração de variável possui escopo de bloco e não permite reatribuição?",
+    opcoes: [
+      "A) var",
+      "B) let",
+      "C) const",
+      "D) static"
     ],
     correta: 2
   },
   {
-    pergunta: "5. Qual propriedade CSS altera a cor do texto de um elemento?",
+    pergunta: "6. Qual método JavaScript é utilizado para selecionar um elemento do DOM através do seu ID?",
     opcoes: [
-      "A) background-color",
-      "B) font-size",
-      "C) text-align",
-      "D) color"
+      "A) document.getElementByName()",
+      "B) document.querySelector('.id')",
+      "C) document.getElementById()",
+      "D) document.findId()"
     ],
-    correta: 3
+    correta: 2
+  },
+  {
+    pergunta: "7. O que é o DOM (Document Object Model) no desenvolvimento Front-End?",
+    opcoes: [
+      "A) Uma linguagem de programação para servidores",
+      "B) Uma representação em árvore dos elementos HTML da página acessível via script",
+      "C) Um banco de dados relacional para navegadores",
+      "D) Um framework de estilização CSS"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "8. Em JavaScript, qual método de Array cria um novo array com os resultados de uma função aplicada a cada elemento?",
+    opcoes: [
+      "A) .forEach()",
+      "B) .filter()",
+      "C) .map()",
+      "D) .push()"
+    ],
+    correta: 2
+  },
+  {
+    pergunta: "9. O que significa a sigla API no contexto do desenvolvimento Web?",
+    opcoes: [
+      "A) Application Programming Interface",
+      "B) Automated Program Integration",
+      "C) Advanced Protocol Internet",
+      "D) Asynchronous Page Interface"
+    ],
+    correta: 0
+  },
+  {
+    pergunta: "10. Qual funcionalidade do JavaScript assíncrono é usada para aguardar a resolução de uma Promise de forma legível?",
+    opcoes: [
+      "A) try / catch",
+      "B) async / await",
+      "C) import / export",
+      "D) setTimeout / setInterval"
+    ],
+    correta: 1
+  },
+
+  // --- MÓDULO: INTELIGÊNCIA ARTIFICIAL ---
+  {
+    pergunta: "11. O que caracteriza o Aprendizado de Máquina Supervisionado (Supervised Learning)?",
+    opcoes: [
+      "A) O algoritmo aprende sem nenhum dado de entrada",
+      "B) Os dados de treinamento possuem rótulos (respostas corretas) pré-definidos",
+      "C) O modelo aprende apenas por tentativa e erro acumulando recompensas",
+      "D) O sistema utiliza apenas dados não estruturados e sem categorias"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "12. Qual é a principal função de uma Rede Neural Artificial (RNA)?",
+    opcoes: [
+      "A) Executar comandos diretamente no hardware do computador",
+      "B) Simular o funcionamento do cérebro humano para reconhecer padrões complexos",
+      "C) Substituir completamente o uso de bancos de dados relacionais",
+      "D) Compilar códigos de programação em linguagem de máquina"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "13. O que são os LLMs (Large Language Models) como o ChatGPT e o Gemini?",
+    opcoes: [
+      "A) Softwares de edição gráfica baseados em vetores",
+      "B) Modelos de IA treinados com grandes volumes de texto para entender e gerar linguagem natural",
+      "C) Sistemas operacionais para servidores de alto desempenho",
+      "D) Algoritmos exclusivos para cálculo de planilhas financeiras"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "14. No contexto de IAs Generativas, o que significa o termo 'Prompt'?",
+    opcoes: [
+      "A) O tempo de resposta que o servidor leva para processar a IA",
+      "B) A instrução, pergunta ou comando de texto fornecido pelo usuário à IA",
+      "C) O erro gerado quando a IA fica sem memória",
+      "D) A linguagem de código nativa dos robôs"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "15. O que é uma 'Alucinação' no contexto dos modelos de linguagem de Inteligência Artificial?",
+    opcoes: [
+      "A) Um vírus que infecta os servidores da IA",
+      "B) Quando o modelo gera informações falsas ou incorretas com tom de certeza",
+      "C) O momento em que a IA desliga automaticamente por superaquecimento",
+      "D) A capacidade da IA de sentir emoções humanas"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "16. Qual técnica de aprendizado de máquina é baseada na interação com o ambiente através de recompensas e punições?",
+    opcoes: [
+      "A) Aprendizado Não Supervisionado",
+      "B) Aprendizado por Reforço (Reinforcement Learning)",
+      "C) Regressão Linear Simples",
+      "D) Agrupamento K-Means"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "17. O que é o Teste de Turing?",
+    opcoes: [
+      "A) Um teste de estresse para placas de vídeo e processadores",
+      "B) Uma avaliação para medir se uma máquina consegue exibir comportamento inteligente indistinguível de um humano",
+      "C) Um método para checar a velocidade da conexão de internet",
+      "D) Um teste para identificar erros de sintaxe no código Python"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "18. Qual das alternativas representa uma aplicação prática da Visão Computacional?",
+    opcoes: [
+      "A) Reconhecimento facial e leitura de placas de trânsito em câmeras",
+      "B) Envio automático de e-mails de marketing",
+      "C) Ordenação de arquivos em pastas locais",
+      "D) Compressão de arquivos de áudio MP3"
+    ],
+    correta: 0
+  },
+  {
+    pergunta: "19. Qual é o objetivo do Overfitting (Sobreajuste) que deve ser evitado durante o treinamento de um modelo de IA?",
+    opcoes: [
+      "A) O modelo fica rápido demais e consome pouca memória",
+      "B) O modelo decora os dados de treino mas falha ao tentar generalizar para novos dados",
+      "C) O modelo não consegue aprender nenhum padrão nos dados",
+      "D) O modelo apaga os dados antigos para economizar espaço"
+    ],
+    correta: 1
+  },
+  {
+    pergunta: "20. Qual linguagem de programação é atualmente a mais utilizada no desenvolvimento de modelos de Aprendizado de Máquina e IA?",
+    opcoes: [
+      "A) PHP",
+      "B) Python",
+      "C) C++",
+      "D) Assembly"
+    ],
+    correta: 1
   }
 ];
 
