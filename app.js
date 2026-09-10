@@ -3,12 +3,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } 
   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 🔴 COPIE E COLE AQUI A SUA CONFIGURAÇÃO DO FIREBASE CONSOLE:
+// Configuração oficial do seu Firebase Console
 const firebaseConfig = {
   apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
   authDomain: "quiz-interativo-8a98c.firebaseapp.com",
   projectId: "quiz-interativo-8a98c",
-  storageBucket: "quiz-interativo-8a98c.firebasestorage.app",
+  storageBucket: "quiz-interativo-8a98c.appspot.com",
   messagingSenderId: "948601017774",
   appId: "1:948601017774:web:bd0e038611ff6d2148643f"
 };
@@ -17,10 +17,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ==========================================
-// BANCO DE QUESTÕES DA AVALIAÇÃO
-// (Altere com suas perguntas e respostas)
-// ==========================================
 // ==========================================
 // BANCO DE QUESTÕES DA AVALIAÇÃO
 // ==========================================
@@ -33,7 +29,7 @@ const questoes = [
       "C) Executar lógica de banco de dados no servidor",
       "D) Criar animações complexas 3D"
     ],
-    correta: 1 // Resposta B (lembrando que a contagem começa em 0: A=0, B=1, C=2, D=3)
+    correta: 1
   },
   {
     pergunta: "2. Qual tag HTML é utilizada para importar um arquivo de script JavaScript?",
@@ -43,7 +39,7 @@ const questoes = [
       "C) <script>",
       "D) <link>"
     ],
-    correta: 2 // Resposta C
+    correta: 2
   },
   {
     pergunta: "3. No Git, qual comando é utilizado para salvar as alterações localmente com uma mensagem?",
@@ -53,9 +49,8 @@ const questoes = [
       "C) git add .",
       "D) git checkout"
     ],
-    correta: 1 // Resposta B
+    correta: 1
   },
-  // 🔽 ADICIONE AS NOVAS QUESTÕES A PARTIR DAQUI 🔽
   {
     pergunta: "4. Qual linguagem de programação é utilizada para adicionar interatividade às páginas Web?",
     opcoes: [
@@ -64,7 +59,7 @@ const questoes = [
       "C) JavaScript",
       "D) SQL"
     ],
-    correta: 2 // Resposta C (índice 2)
+    correta: 2
   },
   {
     pergunta: "5. Qual propriedade CSS altera a cor do texto de um elemento?",
@@ -74,7 +69,7 @@ const questoes = [
       "C) text-align",
       "D) color"
     ],
-    correta: 3 // Resposta D (índice 3)
+    correta: 3
   }
 ];
 
@@ -150,7 +145,6 @@ function selecionarResposta(indiceSelecionado, elementoClicado) {
   const q = questoes[indiceQuestaoAtual];
   const todosBotoes = opcoesContainer.querySelectorAll(".opcao-btn");
   
-  // Desabilita botões após escolher
   todosBotoes.forEach(b => b.style.pointerEvents = "none");
 
   const acertou = (indiceSelecionado === q.correta);
@@ -161,11 +155,9 @@ function selecionarResposta(indiceSelecionado, elementoClicado) {
     pontosAtuaisTxt.innerText = pontuacao;
   } else {
     elementoClicado.classList.add("incorreta");
-    // Destaca a correta
     todosBotoes[q.correta].classList.add("correta");
   }
 
-  // Registra a resposta dada pelo aluno
   respostasAluno.push({
     questao: indiceQuestaoAtual + 1,
     respostaDada: indiceSelecionado,
@@ -201,7 +193,6 @@ async function finalizarQuiz() {
   notaFinalTxt.innerText = `${pontuacao} / ${questoes.length}`;
 
   try {
-    // Salva no Firestore na coleção "avaliacoes"
     await addDoc(collection(db, "avaliacoes"), {
       nome: dadosAluno.nome,
       turma: dadosAluno.turma,
@@ -243,13 +234,11 @@ async function carregarResultadosProfessor() {
       const data = doc.data();
       const tr = document.createElement("tr");
 
-      // Formatação da Data
       let dataFormatada = "Recente";
       if (data.dataEnvio) {
         dataFormatada = data.dataEnvio.toDate().toLocaleString("pt-BR");
       }
 
-      // Detalhes das respostas (ex: Q1: ✅ | Q2: ❌)
       let resumoRespostas = data.respostas ? data.respostas.map(r => 
         `Q${r.questao}: ${r.acertou ? '✅' : '❌'}`
       ).join(" | ") : "N/A";
@@ -271,7 +260,6 @@ async function carregarResultadosProfessor() {
   }
 }
 
-// Inicia busca se estiver na página do painel
 if (corpoTabela) {
   carregarResultadosProfessor();
   if (btnAtualizar) {
