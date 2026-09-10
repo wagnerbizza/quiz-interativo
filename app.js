@@ -21,6 +21,9 @@ const db = getFirestore(app);
 // BANCO DE QUESTÕES DA AVALIAÇÃO
 // (Altere com suas perguntas e respostas)
 // ==========================================
+// ==========================================
+// BANCO DE QUESTÕES DA AVALIAÇÃO
+// ==========================================
 const questoes = [
   {
     pergunta: "1. Qual é a principal função do HTML em uma página Web?",
@@ -30,7 +33,7 @@ const questoes = [
       "C) Executar lógica de banco de dados no servidor",
       "D) Criar animações complexas 3D"
     ],
-    correta: 1 // Índice da resposta correta (0 = A, 1 = B, 2 = C, 3 = D)
+    correta: 1 // Resposta B (lembrando que a contagem começa em 0: A=0, B=1, C=2, D=3)
   },
   {
     pergunta: "2. Qual tag HTML é utilizada para importar um arquivo de script JavaScript?",
@@ -40,7 +43,7 @@ const questoes = [
       "C) <script>",
       "D) <link>"
     ],
-    correta: 2
+    correta: 2 // Resposta C
   },
   {
     pergunta: "3. No Git, qual comando é utilizado para salvar as alterações localmente com uma mensagem?",
@@ -50,7 +53,28 @@ const questoes = [
       "C) git add .",
       "D) git checkout"
     ],
-    correta: 1
+    correta: 1 // Resposta B
+  },
+  // 🔽 ADICIONE AS NOVAS QUESTÕES A PARTIR DAQUI 🔽
+  {
+    pergunta: "4. Qual linguagem de programação é utilizada para adicionar interatividade às páginas Web?",
+    opcoes: [
+      "A) HTML",
+      "B) CSS",
+      "C) JavaScript",
+      "D) SQL"
+    ],
+    correta: 2 // Resposta C (índice 2)
+  },
+  {
+    pergunta: "5. Qual propriedade CSS altera a cor do texto de um elemento?",
+    opcoes: [
+      "A) background-color",
+      "B) font-size",
+      "C) text-align",
+      "D) color"
+    ],
+    correta: 3 // Resposta D (índice 3)
   }
 ];
 
