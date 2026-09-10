@@ -48,7 +48,7 @@ const bancoInicialExpansivo = [
   { pergunta: "O que significa a prática de Integração Contínua (CI) na engenharia de software?", opcoes: ["Desenvolver todo o software antes de testar com os clientes", "Automatizar a compilação e os testes do código sempre que uma alteração é enviada", "Trabalhar em turnos ininterruptos de 24 horas", "Utilizar apenas linguagens de programação orientadas a objetos"], respostaCorreta: "Automatizar a compilação e os testes do código sempre que uma alteração é enviada", categoria: "Metodologias Ageis" }
 ];
 
-// Algoritmo Fisher-Yates
+// Algoritmo Fisher-Yates para embaralhar
 function embaralharArray(array) {
   const copia = [...array];
   for (let i = copia.length - 1; i > 0; i--) {
@@ -120,7 +120,7 @@ if (telaLogin) {
       }
 
       if (listaBanco.length === 0) {
-        alert("Nenhuma questão disponível no banco para a matéria selecionada. Peça ao professor para carregar o banco de questões no Painel.");
+        alert("Nenhuma questão disponível no banco para a matéria selecionada. Peça ao professor para carregar o banco no Painel.");
         btnIniciar.innerText = "Iniciar Avaliação 🚀";
         btnIniciar.disabled = false;
         return;
@@ -223,15 +223,25 @@ if (telaLogin) {
     telaQuiz.classList.add("hidden");
     telaResultado.classList.remove("hidden");
 
-    notaFinalTxt.innerText = `${pontuacao} / ${questoesProva.length}`;
+    // OPCIONAL 1 & 2: Cálculo automático da nota em escala 0 a 10.0
+    const notaCalculada = parseFloat(((pontuacao / questoesProva.length) * 10).toFixed(1));
+    const percentualCalculado = Math.round((pontuacao / questoesProva.length) * 100);
+
+    // Exibe para o aluno a quantidade de acertos e a NOTA FINAL (0 a 10)
+    notaFinalTxt.innerHTML = `
+      Acertos: <strong>${pontuacao} de ${questoesProva.length}</strong><br>
+      Sua Nota: <span style="font-size: 2rem; color: #38bdf8;">${notaCalculada.toFixed(1)} / 10.0</span> (${percentualCalculado}%)
+    `;
 
     try {
+      // Salva no banco de dados Firestore
       await addDoc(collection(db, "avaliacoes"), {
         nome: dadosAluno.nome,
         turma: dadosAluno.turma,
         pontuacao: pontuacao,
         totalQuestoes: questoesProva.length,
-        percentual: Math.round((pontuacao / questoesProva.length) * 100),
+        notaDez: notaCalculada,
+        percentual: percentualCalculado,
         respostas: respostasAluno,
         dataEnvio: serverTimestamp()
       });
@@ -263,8 +273,27 @@ if (corpoTabela) {
   const formNovaQuestao = document.getElementById("form-nova-questao");
   const msgCadastro = document.getElementById("msg-cadastro");
   const btnAtualizar = document.getElementById("btn-atualizar");
+  const mediaTurmaTxt = document.getElementById("media-turma-txt");
 
-  // Botão manual para cadastrar as 20 questões no Firebase
+  // 3. MINI CALCULADORA RÁPIDA MANUAL
+  const calcAcertos = document.getElementById("calc-acertos");
+  const calcTotal = document.getElementById("calc-total");
+  const calcResultadoTxt = document.getElementById("calc-resultado-txt");
+
+  function calcularMediaManual() {
+    const acertos = parseFloat(calcAcertos.value) || 0;
+    const total = parseFloat(calcTotal.value) || 1;
+    if (total <= 0) return;
+    const nota = ((acertos / total) * 10).toFixed(1);
+    calcResultadoTxt.innerText = `${nota} / 10.0`;
+  }
+
+  if (calcAcertos && calcTotal) {
+    calcAcertos.addEventListener("input", calcularMediaManual);
+    calcTotal.addEventListener("input", calcularMediaManual);
+  }
+
+  // Carregar 20 questões no Firebase
   if (btnCarregarBanco) {
     btnCarregarBanco.addEventListener("click", async () => {
       btnCarregarBanco.disabled = true;
@@ -362,7 +391,7 @@ if (corpoTabela) {
   });
 
   async function carregarResultadosProfessor() {
-    corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align:center;">Carregando dados...</td></tr>`;
+    corpoTabela.innerHTML = `<tr><td colspan="7" style="text-align:center;">Carregando dados...</td></tr>`;
 
     try {
       const q = query(collection(db, "avaliacoes"), orderBy("dataEnvio", "desc"));
@@ -371,9 +400,13 @@ if (corpoTabela) {
       corpoTabela.innerHTML = "";
 
       if (querySnapshot.empty) {
-        corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align:center;">Nenhuma avaliação realizada ainda.</td></tr>`;
+        corpoTabela.innerHTML = `<tr><td colspan="7" style="text-align:center;">Nenhuma avaliação realizada ainda.</td></tr>`;
+        mediaTurmaTxt.innerText = "Média da Turma: --";
         return;
       }
+
+      let somaNotas = 0;
+      let totalAlunos = 0;
 
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -384,6 +417,16 @@ if (corpoTabela) {
           dataFormatada = data.dataEnvio.toDate().toLocaleString("pt-BR");
         }
 
+        // Obtém ou calcula a Nota de 0 a 10
+        const notaNum = data.notaDez !== undefined 
+          ? data.notaDez 
+          : parseFloat(((data.pontuacao / data.totalQuestoes) * 10).toFixed(1));
+
+        somaNotas += notaNum;
+        totalAlunos++;
+
+        const classeNota = notaNum >= 6.0 ? "alta" : "baixa";
+
         let resumoRespostas = data.respostas ? data.respostas.map((r, i) => 
           `Q${i + 1}: ${r.acertou ? '✅' : '❌'}`
         ).join(" | ") : "N/A";
@@ -393,15 +436,21 @@ if (corpoTabela) {
           <td><strong>${data.nome}</strong></td>
           <td>${data.turma}</td>
           <td>${data.pontuacao} / ${data.totalQuestoes}</td>
+          <td><span class="badge-nota ${classeNota}">${notaNum.toFixed(1)}</span></td>
           <td><strong>${data.percentual}%</strong></td>
           <td><small>${resumoRespostas}</small></td>
         `;
 
         corpoTabela.appendChild(tr);
       });
+
+      // Exibe a média geral da turma
+      const mediaGeral = (somaNotas / totalAlunos).toFixed(1);
+      mediaTurmaTxt.innerText = `Média da Turma: ${mediaGeral} / 10.0`;
+
     } catch (error) {
       console.error("Erro ao buscar relatórios:", error);
-      corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ef4444;">Erro ao carregar dados.</td></tr>`;
+      corpoTabela.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#ef4444;">Erro ao carregar dados.</td></tr>`;
     }
   }
 

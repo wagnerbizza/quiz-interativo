@@ -32,7 +32,7 @@
 
     .grid-form {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 15px;
       margin-bottom: 15px;
     }
@@ -60,13 +60,8 @@
     }
     button:hover { background-color: var(--accent-hover); color: #fff; }
 
-    .btn-danger {
-      background-color: var(--danger);
-      color: #fff;
-    }
-    .btn-danger:hover {
-      background-color: #dc2626;
-    }
+    .btn-danger { background-color: var(--danger); color: #fff; }
+    .btn-danger:hover { background-color: #dc2626; }
 
     .switch-container {
       display: flex;
@@ -84,6 +79,41 @@
     th, td { padding: 12px; border-bottom: 1px solid var(--border); }
     th { background-color: #0f172a; color: var(--accent); }
     tr:hover { background-color: #334155; }
+
+    .badge-nota {
+      background-color: #0f172a;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    .badge-nota.alta { border-color: var(--success); color: var(--success); }
+    .badge-nota.baixa { border-color: var(--danger); color: var(--danger); }
+
+    .calc-box {
+      background-color: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .calc-resultado {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    .media-turma-box {
+      background-color: #0f172a;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
   </style>
 </head>
 <body>
@@ -91,17 +121,38 @@
   <div class="container">
     <h1>Painel do Professor 🛠️</h1>
 
-    <!-- GERENCIAMENTO DO BANCO DE QUESTÕES -->
-    <div class="card" style="border: 1px solid var(--accent);">
+    <!-- 1. MINI CALCULADORA RÁPIDA DE NOTAS (0 a 10) -->
+    <div class="card" style="border-left: 5px solid var(--accent);">
+      <h2>🧮 Mini Calculadora de Notas (Escala 0.0 a 10.0)</h2>
+      <p style="margin-bottom: 15px; color: #94a3b8;">Simule a nota convertida em tempo real para qualquer quantidade de questões acertas:</p>
+      
+      <div class="calc-box">
+        <div>
+          <label for="calc-acertos">Acertos do Aluno:</label>
+          <input type="number" id="calc-acertos" min="0" value="7" style="width: 120px;">
+        </div>
+        <div>
+          <label for="calc-total">Total de Questões da Prova:</label>
+          <input type="number" id="calc-total" min="1" value="10" style="width: 140px;">
+        </div>
+        <div style="margin-left: auto; text-align: right;">
+          <span style="font-size: 0.9rem; color: #94a3b8;">Nota Convertida:</span>
+          <div class="calc-resultado" id="calc-resultado-txt">7.0 / 10.0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. GERENCIAMENTO DO BANCO DE QUESTÕES -->
+    <div class="card">
       <h2>📦 Inicializar / Restaurar Banco de Questões (4 Matérias)</h2>
       <p style="margin-bottom: 15px; color: #94a3b8;">
-        Clique no botão abaixo para cadastrar automaticamente as <strong>20 questões padrão</strong> divididas nas 4 matérias (Front-End, IA, Redes/Nuvem e Metodologias Ágeis).
+        Clique no botão abaixo para carregar as <strong>20 questões padrão</strong> divididas nas 4 matérias.
       </p>
       <button id="btn-carregar-banco" class="btn-danger">Carregar 20 Questões no Banco 🚀</button>
       <span id="msg-banco" style="margin-left: 15px; font-weight: bold;"></span>
     </div>
 
-    <!-- PAINEL DE CONTROLE DA PROVA ATIVA -->
+    <!-- 3. CONFIGURAÇÕES DA PROVA ATIVA -->
     <div class="card">
       <h2>⚙️ Configurações da Avaliação Ativa</h2>
       <p style="margin-bottom: 15px; color: #94a3b8;">Ajuste a matéria da prova, a quantidade de questões e a opção de embaralhar.</p>
@@ -133,7 +184,7 @@
       <span id="msg-config" style="margin-left: 15px; font-weight: bold;"></span>
     </div>
 
-    <!-- CADASTRAR NOVA QUESTÃO NO BANCO -->
+    <!-- 4. CADASTRAR NOVA QUESTÃO MANUALMENTE -->
     <div class="card">
       <h2>➕ Cadastrar Nova Questão Manualmente</h2>
       <form id="form-nova-questao">
@@ -182,11 +233,14 @@
       </form>
     </div>
 
-    <!-- TABELA DE RESULTADOS DOS ALUNOS -->
+    <!-- 5. TABELA DE RESULTADOS COM NOTA DE 0 A 10 E MÉDIA DA TURMA -->
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
         <h2>📊 Respostas dos Alunos em Tempo Real</h2>
-        <button id="btn-atualizar">Atualizar Tabela 🔄</button>
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <div class="media-turma-box" id="media-turma-txt">Média da Turma: --</div>
+          <button id="btn-atualizar">Atualizar Tabela 🔄</button>
+        </div>
       </div>
 
       <table>
@@ -195,19 +249,20 @@
             <th>Data/Hora</th>
             <th>Nome do Aluno</th>
             <th>Turma</th>
-            <th>Nota</th>
-            <th>%</th>
+            <th>Acertos</th>
+            <th>Nota (0.0 a 10.0)</th>
+            <th>% Acerto</th>
             <th>Detalhamento</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela">
-          <tr><td colspan="6" style="text-align:center;">Carregando dados...</td></tr>
+          <tr><td colspan="7" style="text-align:center;">Carregando dados...</td></tr>
         </tbody>
       </table>
     </div>
 
   </div>
 
-  <script type="module" src="app.js?v=7"></script>
+  <script type="module" src="app.js?v=9"></script>
 </body>
 </html>
