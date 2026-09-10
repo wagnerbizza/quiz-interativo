@@ -12,6 +12,7 @@
       --accent: #38bdf8;
       --accent-hover: #0284c7;
       --success: #22c55e;
+      --danger: #ef4444;
       --border: #334155;
     }
 
@@ -59,6 +60,14 @@
     }
     button:hover { background-color: var(--accent-hover); color: #fff; }
 
+    .btn-danger {
+      background-color: var(--danger);
+      color: #fff;
+    }
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+
     .switch-container {
       display: flex;
       align-items: center;
@@ -81,6 +90,16 @@
 
   <div class="container">
     <h1>Painel do Professor 🛠️</h1>
+
+    <!-- GERENCIAMENTO DO BANCO DE QUESTÕES -->
+    <div class="card" style="border: 1px solid var(--accent);">
+      <h2>📦 Inicializar / Restaurar Banco de Questões (4 Matérias)</h2>
+      <p style="margin-bottom: 15px; color: #94a3b8;">
+        Clique no botão abaixo para cadastrar automaticamente as <strong>20 questões padrão</strong> divididas nas 4 matérias (Front-End, IA, Redes/Nuvem e Metodologias Ágeis).
+      </p>
+      <button id="btn-carregar-banco" class="btn-danger">Carregar 20 Questões no Banco 🚀</button>
+      <span id="msg-banco" style="margin-left: 15px; font-weight: bold;"></span>
+    </div>
 
     <!-- PAINEL DE CONTROLE DA PROVA ATIVA -->
     <div class="card">
@@ -116,7 +135,7 @@
 
     <!-- CADASTRAR NOVA QUESTÃO NO BANCO -->
     <div class="card">
-      <h2>➕ Cadastrar Nova Questão no Banco</h2>
+      <h2>➕ Cadastrar Nova Questão Manualmente</h2>
       <form id="form-nova-questao">
         <div class="grid-form">
           <div style="grid-column: 1 / -1;">
@@ -189,6 +208,6 @@
 
   </div>
 
-  <script type="module" src="app.js?v=6"></script>
+  <script type="module" src="app.js?v=7"></script>
 </body>
 </html>

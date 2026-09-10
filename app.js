@@ -17,7 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Banco de Questões Expandido (4 Matérias)
+// Banco de Questões Expandido (4 Matérias - Total 20 Questões)
 const bancoInicialExpansivo = [
   // --- MATÉRIA 1: FRONT-END ---
   { pergunta: "Qual é a principal função do HTML em uma página Web?", opcoes: ["Estilizar e dar cores aos elementos", "Estruturar o conteúdo e os elementos da página", "Executar lógica de banco de dados no servidor", "Criar animações complexas 3D"], respostaCorreta: "Estruturar o conteúdo e os elementos da página", categoria: "Front-End" },
@@ -42,7 +42,7 @@ const bancoInicialExpansivo = [
 
   // --- MATÉRIA 4: PROCESSOS DE DESENVOLVIMENTO & METODOLOGIAS ÁGEIS ---
   { pergunta: "No framework Scrum, quem é o responsável por priorizar o Backlog do Produto?", opcoes: ["Scrum Master", "Product Owner (PO)", "Development Team", "Stakeholders"], respostaCorreta: "Product Owner (PO)", categoria: "Metodologias Ageis" },
-  { pergunta: "O que é uma 'Sprint' no desenvolvimento ágil Scrum?", opcoes: ["Um teste de velocidade do servidor", "Um ciclo de trabalho com tempo delimitado (timebox) para entregar um incremento pronto", "Uma reunião diária de 15 minutos", "Uma etapa de testes de segurança no final do projeto"], respostaCorreta: "Um ciclo de trabalho com tempo delimitado (timebox) para entregar um incremento pronto", categoria: "Metodologias Ageis" },
+  { pergunta: "O que é uma 'Sprint' no desenvolvimento ágil Scrum?", opcoes: ["Um teste de velocidade do servidor", "Um ciclo de trabalho com tempo delimitado (timebox) para entregar um incremento pronto", "Uma reunião diária de 15 minutos", "Uma etapa de testes de segurança no final do projeto"], respostaCorreta: "Uma reunião diária de 15 minutos", categoria: "Metodologias Ageis" },
   { pergunta: "Qual é o foco principal da ferramenta visual Kanban?", opcoes: ["Limitar o trabalho em andamento (WIP) e otimizar o fluxo contínuo de tarefas", "Documentar detalhadamente todas as fases do sistema em PDF", "Substituir reuniões de alinhamento com a equipe", "Gerenciar os salários da equipe de desenvolvimento"], respostaCorreta: "Limitar o trabalho em andamento (WIP) e otimizar o fluxo contínuo de tarefas", categoria: "Metodologias Ageis" },
   { pergunta: "No Manifesto Ágil, qual valor se sobrepõe a 'processos e ferramentas'?", opcoes: ["Documentação abrangente", "Indivíduos e interações", "Negociação de contratos", "Seguir um plano rígido"], respostaCorreta: "Indivíduos e interações", categoria: "Metodologias Ageis" },
   { pergunta: "O que significa a prática de Integração Contínua (CI) na engenharia de software?", opcoes: ["Desenvolver todo o software antes de testar com os clientes", "Automatizar a compilação e os testes do código sempre que uma alteração é enviada", "Trabalhar em turnos ininterruptos de 24 horas", "Utilizar apenas linguagens de programação orientadas a objetos"], respostaCorreta: "Automatizar a compilação e os testes do código sempre que uma alteração é enviada", categoria: "Metodologias Ageis" }
@@ -57,23 +57,6 @@ function embaralharArray(array) {
   }
   return copia;
 }
-
-// Cadastra as questões no Firebase se o banco estiver limpo
-async function verificarEPopularBanco() {
-  try {
-    const querySnapshot = await getDocs(collection(db, "questoes"));
-    if (querySnapshot.empty) {
-      console.log("Populado Firebase com questões de todas as 4 matérias...");
-      for (const q of bancoInicialExpansivo) {
-        await addDoc(collection(db, "questoes"), q);
-      }
-      console.log("Banco de questões criado com sucesso!");
-    }
-  } catch (error) {
-    console.error("Erro ao verificar banco:", error);
-  }
-}
-verificarEPopularBanco();
 
 // ==========================================
 // LÓGICA DO ALUNO (index.html)
@@ -137,7 +120,7 @@ if (telaLogin) {
       }
 
       if (listaBanco.length === 0) {
-        alert("Nenhuma questão disponível no banco para a matéria selecionada.");
+        alert("Nenhuma questão disponível no banco para a matéria selecionada. Peça ao professor para carregar o banco de questões no Painel.");
         btnIniciar.innerText = "Iniciar Avaliação 🚀";
         btnIniciar.disabled = false;
         return;
@@ -268,6 +251,9 @@ if (telaLogin) {
 const corpoTabela = document.getElementById("corpo-tabela");
 
 if (corpoTabela) {
+  const btnCarregarBanco = document.getElementById("btn-carregar-banco");
+  const msgBanco = document.getElementById("msg-banco");
+
   const btnSalvarConfig = document.getElementById("btn-salvar-config");
   const qtdInput = document.getElementById("qtd-questoes-config");
   const materiaSelect = document.getElementById("materia-filter");
@@ -277,6 +263,29 @@ if (corpoTabela) {
   const formNovaQuestao = document.getElementById("form-nova-questao");
   const msgCadastro = document.getElementById("msg-cadastro");
   const btnAtualizar = document.getElementById("btn-atualizar");
+
+  // Botão manual para cadastrar as 20 questões no Firebase
+  if (btnCarregarBanco) {
+    btnCarregarBanco.addEventListener("click", async () => {
+      btnCarregarBanco.disabled = true;
+      msgBanco.innerText = "Enviando 20 questões para o Firebase...";
+      msgBanco.style.color = "#38bdf8";
+
+      try {
+        for (const q of bancoInicialExpansivo) {
+          await addDoc(collection(db, "questoes"), q);
+        }
+        msgBanco.innerText = "✅ 20 Questões carregadas com sucesso no banco!";
+        msgBanco.style.color = "#22c55e";
+      } catch (err) {
+        console.error("Erro ao carregar banco:", err);
+        msgBanco.innerText = "❌ Erro ao enviar. Verifique o console.";
+        msgBanco.style.color = "#ef4444";
+      } finally {
+        btnCarregarBanco.disabled = false;
+      }
+    });
+  }
 
   async function carregarConfigAtuais() {
     try {
