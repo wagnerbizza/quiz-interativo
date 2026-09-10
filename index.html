@@ -3,61 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avaliação Interativa - Quiz</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Quiz Interativo - Avaliação de Conhecimentos</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    
+    .container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    h1, h2 { color: var(--accent); margin-bottom: 20px; text-align: center; }
+    
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background-color: #0f172a;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      background-color: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    button:hover { background-color: var(--accent-hover); color: #fff; }
+
+    .opcao-btn {
+      background-color: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      text-align: left;
+      margin-bottom: 10px;
+      padding: 12px 15px;
+      border-radius: 8px;
+    }
+    .opcao-btn:hover { background-color: #334155; }
+    .opcao-btn.correta { background-color: var(--success) !important; color: #fff; }
+    .opcao-btn.incorreta { background-color: var(--danger) !important; color: #fff; }
+
+    .hidden { display: none !important; }
+    .quiz-header { display: flex; justify-content: space-between; margin-bottom: 15px; color: #94a3b8; font-size: 0.9rem; }
+    .resultado-box { text-align: center; padding: 20px 0; }
+  </style>
 </head>
 <body>
 
   <div class="container">
-    <!-- TELA 1: IDENTIFICAÇÃO DO ALUNO -->
-    <div id="tela-login" class="card">
-      <h1>🎮 Avaliação Interativa</h1>
-      <p>Preencha seus dados para iniciar o desafio!</p>
+    
+    <!-- 1. TELA DE LOGIN DO ALUNO -->
+    <div id="tela-login">
+      <h1>Quiz Interativo 🚀</h1>
+      <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Digite seus dados para iniciar a avaliação</p>
       
       <div class="form-group">
         <label for="nome-aluno">Nome Completo:</label>
-        <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required>
+        <input type="text" id="nome-aluno" placeholder="Ex: Ana Silva" required>
       </div>
 
       <div class="form-group">
-        <label for="turma-aluno">Turma / Módulo:</label>
-        <input type="text" id="turma-aluno" placeholder="Ex: 1º Ano MREC / Téc. Informática" required>
+        <label for="turma-aluno">Turma / Período:</label>
+        <input type="text" id="turma-aluno" placeholder="Ex: 3º Ano A" required>
       </div>
 
-      <button id="btn-iniciar" class="btn">Começar Quiz 🚀</button>
+      <button id="btn-iniciar">Iniciar Avaliação 🚀</button>
     </div>
 
-    <!-- TELA 2: PERGUNTAS DO QUIZ -->
-    <div id="tela-quiz" class="card hidden">
+    <!-- 2. TELA DAS QUESTÕES DA PROVA -->
+    <div id="tela-quiz" class="hidden">
       <div class="quiz-header">
-        <span id="progresso-txt">Questão 1 de 3</span>
-        <div class="badge-pontos">Pontuação: <span id="pontos-atuais">0</span></div>
+        <span id="progresso-txt">Questão 1 de 10</span>
+        <span>Acertos: <strong id="pontos-atuais">0</strong></span>
       </div>
 
-      <h2 id="pergunta-titulo">Texto da Pergunta aqui...</h2>
-
-      <div id="opcoes-container" class="opcoes-list">
-        <!-- As opções serão inseridas via JavaScript -->
+      <h2 id="pergunta-titulo" style="text-align: left; font-size: 1.1rem; color: #fff;">Carregando pergunta...</h2>
+      
+      <div id="opcoes-container" style="margin-top: 20px;">
+        <!-- Botões de opções inseridos dinamicamente pelo JS -->
       </div>
 
-      <button id="btn-proxima" class="btn hidden">Próxima Questão ➔</button>
+      <button id="btn-proxima" class="hidden" style="margin-top: 15px;">Próxima Questão ➡️</button>
     </div>
 
-    <!-- TELA 3: RESULTADO FINAL -->
-    <div id="tela-resultado" class="card hidden">
-      <h1>🏆 Avaliação Concluída!</h1>
-      <p id="mensagem-final">Sua resposta foi enviada com sucesso ao professor.</p>
-
-      <div class="placar-final">
-        <p>Sua Nota Final:</p>
-        <span id="nota-final">0 / 0</span>
+    <!-- 3. TELA DE RESULTADO DO ALUNO -->
+    <div id="tela-resultado" class="hidden">
+      <div class="resultado-box">
+        <h2>Avaliação Concluída! 🎉</h2>
+        <p id="nota-final" style="margin: 20px 0; font-size: 1.2rem;"></p>
+        <p id="status-envio" style="color: var(--success); font-weight: bold;"></p>
       </div>
-
-      <p class="status-envio" id="status-envio">💾 Salvando no banco de dados...</p>
     </div>
+
   </div>
 
-  <!-- Firebase & App Script (JS Modular) -->
-  <script type="module" src="app.js?v=9"></script>
+  <script type="module" src="app.js?v=11"></script>
 </body>
 </html>

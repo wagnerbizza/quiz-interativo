@@ -38,7 +38,7 @@
     }
 
     label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
-    input, select, textarea {
+    input, select {
       width: 100%;
       padding: 10px;
       border-radius: 6px;
@@ -60,22 +60,15 @@
     }
     button:hover { background-color: var(--accent-hover); color: #fff; }
 
+    .btn-secondary { background-color: #475569; color: #fff; }
+    .btn-secondary:hover { background-color: #64748b; }
+
     .btn-danger { background-color: var(--danger); color: #fff; }
     .btn-danger:hover { background-color: #dc2626; }
 
-    .switch-container {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-    }
+    .switch-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      text-align: left;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; }
     th, td { padding: 12px; border-bottom: 1px solid var(--border); }
     th { background-color: #0f172a; color: var(--accent); }
     tr:hover { background-color: #334155; }
@@ -101,11 +94,8 @@
       gap: 20px;
       flex-wrap: wrap;
     }
-    .calc-resultado {
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: var(--accent);
-    }
+    .calc-resultado { font-size: 1.8rem; font-weight: bold; color: var(--accent); }
+    
     .media-turma-box {
       background-color: #0f172a;
       padding: 10px 15px;
@@ -114,17 +104,30 @@
       color: var(--accent);
       border: 1px solid var(--border);
     }
+
+    /* FORMATO DE IMPRESSÃO (PDF/PAPEL) */
+    @media print {
+      body { background-color: #fff !important; color: #000 !important; padding: 0; }
+      .no-print, button, form, .calc-box, .switch-container { display: none !important; }
+      .card { border: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important; }
+      h1 { color: #000 !important; font-size: 1.6rem; text-align: center; }
+      h2 { color: #000 !important; border-bottom: 2px solid #000; padding-bottom: 5px; }
+      table { width: 100% !important; border: 1px solid #000; }
+      th { background-color: #e2e8f0 !important; color: #000 !important; border: 1px solid #000; }
+      td { border: 1px solid #000 !important; color: #000 !important; }
+      .badge-nota { border: 1px solid #000 !important; color: #000 !important; background: transparent !important; }
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Painel do Professor 🛠️</h1>
+    <h1 class="no-print">Painel do Professor 🛠️</h1>
 
-    <!-- 1. MINI CALCULADORA RÁPIDA DE NOTAS (0 a 10) -->
-    <div class="card" style="border-left: 5px solid var(--accent);">
+    <!-- 1. MINI CALCULADORA DE NOTAS -->
+    <div class="card no-print" style="border-left: 5px solid var(--accent);">
       <h2>🧮 Mini Calculadora de Notas (Escala 0.0 a 10.0)</h2>
-      <p style="margin-bottom: 15px; color: #94a3b8;">Simule a nota convertida em tempo real para qualquer quantidade de questões acertas:</p>
+      <p style="margin-bottom: 15px; color: #94a3b8;">Simule a nota convertida para qualquer quantidade de acertos:</p>
       
       <div class="calc-box">
         <div>
@@ -132,7 +135,7 @@
           <input type="number" id="calc-acertos" min="0" value="7" style="width: 120px;">
         </div>
         <div>
-          <label for="calc-total">Total de Questões da Prova:</label>
+          <label for="calc-total">Total de Questões:</label>
           <input type="number" id="calc-total" min="1" value="10" style="width: 140px;">
         </div>
         <div style="margin-left: auto; text-align: right;">
@@ -142,28 +145,24 @@
       </div>
     </div>
 
-    <!-- 2. GERENCIAMENTO DO BANCO DE QUESTÕES -->
-    <div class="card">
-      <h2>📦 Inicializar / Restaurar Banco de Questões (4 Matérias)</h2>
-      <p style="margin-bottom: 15px; color: #94a3b8;">
-        Clique no botão abaixo para carregar as <strong>20 questões padrão</strong> divididas nas 4 matérias.
-      </p>
+    <!-- 2. INICIALIZAR BANCO DE QUESTÕES -->
+    <div class="card no-print">
+      <h2>📦 Inicializar Banco de Questões (4 Matérias)</h2>
+      <p style="margin-bottom: 15px; color: #94a3b8;">Clique para enviar as 20 questões padrão ao banco de dados.</p>
       <button id="btn-carregar-banco" class="btn-danger">Carregar 20 Questões no Banco 🚀</button>
       <span id="msg-banco" style="margin-left: 15px; font-weight: bold;"></span>
     </div>
 
-    <!-- 3. CONFIGURAÇÕES DA PROVA ATIVA -->
-    <div class="card">
+    <!-- 3. CONFIGURAR PROVA ATIVA -->
+    <div class="card no-print">
       <h2>⚙️ Configurações da Avaliação Ativa</h2>
-      <p style="margin-bottom: 15px; color: #94a3b8;">Ajuste a matéria da prova, a quantidade de questões e a opção de embaralhar.</p>
-      
       <div class="grid-form">
         <div>
           <label for="qtd-questoes-config">Qtd. de Questões por Aluno:</label>
           <input type="number" id="qtd-questoes-config" min="1" max="50" value="10">
         </div>
         <div>
-          <label for="materia-filter">Filtrar por Matéria/Tópico:</label>
+          <label for="materia-filter">Filtrar por Matéria:</label>
           <select id="materia-filter">
             <option value="TODAS">Todas as Matérias (Misto)</option>
             <option value="Front-End">Front-End (HTML/CSS/JS)</option>
@@ -176,22 +175,22 @@
 
       <div class="switch-container">
         <input type="checkbox" id="embaralhar-check" checked style="width: auto;">
-        <label for="embaralhar-check" style="margin: 0;">Embaralhar Questões e Opções estilo Kahoot (Evita cola)</label>
+        <label for="embaralhar-check" style="margin: 0;">Embaralhar Questões e Opções (Evita cola)</label>
       </div>
 
       <br>
-      <button id="btn-salvar-config">Salvar e Aplicar Configuração da Prova 🚀</button>
+      <button id="btn-salvar-config">Salvar Configuração da Prova 🚀</button>
       <span id="msg-config" style="margin-left: 15px; font-weight: bold;"></span>
     </div>
 
-    <!-- 4. CADASTRAR NOVA QUESTÃO MANUALMENTE -->
-    <div class="card">
+    <!-- 4. CADASTRAR NOVA QUESTÃO -->
+    <div class="card no-print">
       <h2>➕ Cadastrar Nova Questão Manualmente</h2>
       <form id="form-nova-questao">
         <div class="grid-form">
           <div style="grid-column: 1 / -1;">
             <label for="nova-pergunta">Pergunta / Enunciado:</label>
-            <input type="text" id="nova-pergunta" placeholder="Ex: O que é o modelo de serviço SaaS em computação em nuvem?" required>
+            <input type="text" id="nova-pergunta" placeholder="Ex: O que é SaaS?" required>
           </div>
           <div>
             <label for="op-a">Opção A:</label>
@@ -233,13 +232,21 @@
       </form>
     </div>
 
-    <!-- 5. TABELA DE RESULTADOS COM NOTA DE 0 A 10 E MÉDIA DA TURMA -->
+    <!-- 5. TABELA DE RESULTADOS + FILTRO DE TURMA E EXPORTAÇÃO -->
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
         <h2>📊 Respostas dos Alunos em Tempo Real</h2>
-        <div style="display: flex; gap: 15px; align-items: center;">
-          <div class="media-turma-box" id="media-turma-txt">Média da Turma: --</div>
-          <button id="btn-atualizar">Atualizar Tabela 🔄</button>
+        
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" class="no-print">
+          <!-- FILTRO POR TURMA -->
+          <select id="filtro-turma-tabela" multiple size="4">
+  <option value="TODAS">Todas as Turmas</option>
+</select>
+
+          <div class="media-turma-box" id="media-turma-txt">Média: --</div>
+          <button id="btn-imprimir" class="btn-secondary">🖨️ Imprimir PDF</button>
+          <button id="btn-exportar" class="btn-secondary">📥 Exportar Turma (CSV)</button>
+          <button id="btn-atualizar">Atualizar 🔄</button>
         </div>
       </div>
 
@@ -252,7 +259,7 @@
             <th>Acertos</th>
             <th>Nota (0.0 a 10.0)</th>
             <th>% Acerto</th>
-            <th>Detalhamento</th>
+            <th class="no-print">Detalhamento</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela">
@@ -263,6 +270,6 @@
 
   </div>
 
-  <script type="module" src="app.js?v=9"></script>
+  <script type="module" src="app.js?v=11"></script>
 </body>
 </html>
