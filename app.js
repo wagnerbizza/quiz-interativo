@@ -18,215 +18,226 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ==========================================
-// BANCO DE QUESTÕES (20 QUESTÕES COM ALTERNATIVAS EMBARALHADAS)
+// BANCO DE QUESTÕES (20 QUESTÕES: FRONT-END E IA)
 // ==========================================
-const questoes = [
+const bancoQuestoesOriginal = [
   // --- FRONT-END ---
   {
-    pergunta: "1. Qual é a principal função do HTML em uma página Web?",
+    pergunta: "Qual é a principal função do HTML em uma página Web?",
     opcoes: [
-      "A) Estilizar e dar cores aos elementos",
-      "B) Estruturar o conteúdo e os elementos da página",
-      "C) Executar lógica de banco de dados no servidor",
-      "D) Criar animações complexas 3D"
+      "Estilizar e dar cores aos elementos",
+      "Estruturar o conteúdo e os elementos da página",
+      "Executar lógica de banco de dados no servidor",
+      "Criar animações complexas 3D"
     ],
-    correta: 1 // B
+    respostaCorreta: "Estruturar o conteúdo e os elementos da página"
   },
   {
-    pergunta: "2. Qual tag HTML semântica é recomendada para o menu principal de navegação?",
+    pergunta: "Qual tag HTML semântica é recomendada para o menu principal de navegação?",
     opcoes: [
-      "A) <header>",
-      "B) <section>",
-      "C) <nav>",
-      "D) <menu-main>"
+      "<header>",
+      "<section>",
+      "<nav>",
+      "<menu-main>"
     ],
-    correta: 2 // C
+    respostaCorreta: "<nav>"
   },
   {
-    pergunta: "3. No CSS Flexbox, qual propriedade alinha os itens no eixo principal (horizontal por padrão)?",
+    pergunta: "No CSS Flexbox, qual propriedade alinha os itens no eixo principal (horizontal por padrão)?",
     opcoes: [
-      "A) justify-content",
-      "B) align-items",
-      "C) flex-direction",
-      "D) align-content"
+      "justify-content",
+      "align-items",
+      "flex-direction",
+      "align-content"
     ],
-    correta: 0 // A
+    respostaCorreta: "justify-content"
   },
   {
-    pergunta: "4. Qual recurso CSS é utilizado para criar layouts responsivos que se adaptam ao tamanho da tela?",
+    pergunta: "Qual recurso CSS é utilizado para criar layouts responsivos que se adaptam ao tamanho da tela?",
     opcoes: [
-      "A) display: inline",
-      "B) position: absolute",
-      "C) float: left",
-      "D) @media queries"
+      "display: inline",
+      "position: absolute",
+      "float: left",
+      "@media queries"
     ],
-    correta: 3 // D
+    respostaCorreta: "@media queries"
   },
   {
-    pergunta: "5. Em JavaScript, qual palavra-chave declara uma variável com escopo de bloco e valor imutável?",
+    pergunta: "Em JavaScript, qual palavra-chave declara uma variável com escopo de bloco e valor imutável?",
     opcoes: [
-      "A) var",
-      "B) const",
-      "C) let",
-      "D) static"
+      "var",
+      "const",
+      "let",
+      "static"
     ],
-    correta: 1 // B
+    respostaCorreta: "const"
   },
   {
-    pergunta: "6. Qual método JavaScript é utilizado para selecionar um elemento HTML diretamente pelo seu ID?",
+    pergunta: "Qual método JavaScript é utilizado para selecionar um elemento HTML diretamente pelo seu ID?",
     opcoes: [
-      "A) document.querySelector('.id')",
-      "B) document.getElementByName()",
-      "C) document.getElementById()",
-      "D) document.findId()"
+      "document.querySelector('.id')",
+      "document.getElementByName()",
+      "document.getElementById()",
+      "document.findId()"
     ],
-    correta: 2 // C
+    respostaCorreta: "document.getElementById()"
   },
   {
-    pergunta: "7. O que é o DOM (Document Object Model) no desenvolvimento Web?",
+    pergunta: "O que é o DOM (Document Object Model) no desenvolvimento Web?",
     opcoes: [
-      "A) Uma representação em árvore dos elementos HTML acessível via JavaScript",
-      "B) Uma linguagem de programação para servidores web",
-      "C) Um banco de dados relacional acoplado ao navegador",
-      "D) Um framework de estilização CSS para páginas dinâmicas"
+      "Uma representação em árvore dos elementos HTML acessível via JavaScript",
+      "Uma linguagem de programação para servidores web",
+      "Um banco de dados relacional acoplado ao navegador",
+      "Um framework de estilização CSS para páginas dinâmicas"
     ],
-    correta: 0 // A
+    respostaCorreta: "Uma representação em árvore dos elementos HTML acessível via JavaScript"
   },
   {
-    pergunta: "8. Em JavaScript, qual método de Array cria um novo array transformando cada um dos elementos?",
+    pergunta: "Em JavaScript, qual método de Array cria um novo array transformando cada um dos elementos?",
     opcoes: [
-      "A) .forEach()",
-      "B) .filter()",
-      "C) .push()",
-      "D) .map()"
+      ".forEach()",
+      ".filter()",
+      ".push()",
+      ".map()"
     ],
-    correta: 3 // D
+    respostaCorreta: ".map()"
   },
   {
-    pergunta: "9. O que significa a sigla API no contexto de desenvolvimento de software?",
+    pergunta: "O que significa a sigla API no contexto de desenvolvimento de software?",
     opcoes: [
-      "A) Application Programming Interface",
-      "B) Automated Program Integration",
-      "C) Advanced Protocol Internet",
-      "D) Asynchronous Page Interface"
+      "Application Programming Interface",
+      "Automated Program Integration",
+      "Advanced Protocol Internet",
+      "Asynchronous Page Interface"
     ],
-    correta: 0 // A
+    respostaCorreta: "Application Programming Interface"
   },
   {
-    pergunta: "10. Qual estrutura do JavaScript assíncrono permite aguardar a resposta de uma Promise com código limpo?",
+    pergunta: "Qual estrutura do JavaScript assíncrono permite aguardar a resposta de uma Promise com código limpo?",
     opcoes: [
-      "A) try / catch",
-      "B) async / await",
-      "C) import / export",
-      "D) setTimeout / setInterval"
+      "try / catch",
+      "async / await",
+      "import / export",
+      "setTimeout / setInterval"
     ],
-    correta: 1 // B
+    respostaCorreta: "async / await"
   },
 
   // --- INTELIGÊNCIA ARTIFICIAL ---
   {
-    pergunta: "11. O que caracteriza o Aprendizado de Máquina Supervisionado (Supervised Learning)?",
+    pergunta: "O que caracteriza o Aprendizado de Máquina Supervisionado (Supervised Learning)?",
     opcoes: [
-      "A) O algoritmo aprende sem nenhum dado de entrada",
-      "B) O modelo é treinado apenas por tentativa e erro",
-      "C) Os dados de treinamento possuem rótulos (respostas corretas)",
-      "D) O sistema utiliza apenas dados sem categorias prévias"
+      "O algoritmo aprende sem nenhum dado de entrada",
+      "O modelo é treinado apenas por tentativa e erro",
+      "Os dados de treinamento possuem rótulos (respostas corretas)",
+      "O sistema utiliza apenas dados sem categorias prévias"
     ],
-    correta: 2 // C
+    respostaCorreta: "Os dados de treinamento possuem rótulos (respostas corretas)"
   },
   {
-    pergunta: "12. Qual é a principal função de uma Rede Neural Artificial (RNA)?",
+    pergunta: "Qual é a principal função de uma Rede Neural Artificial (RNA)?",
     opcoes: [
-      "A) Executar comandos diretamente na placa-mãe",
-      "B) Simular o processamento cerebral humano para identificar padrões",
-      "C) Substituir a necessidade de utilizar banco de dados",
-      "D) Compilar arquivos HTML e CSS em código de máquina"
+      "Executar comandos diretamente na placa-mãe",
+      "Simular o processamento cerebral humano para identificar padrões",
+      "Substituir a necessidade de utilizar banco de dados",
+      "Compilar arquivos HTML e CSS em código de máquina"
     ],
-    correta: 1 // B
+    respostaCorreta: "Simular o processamento cerebral humano para identificar padrões"
   },
   {
-    pergunta: "13. O que são os LLMs (Large Language Models) como o ChatGPT e o Gemini?",
+    pergunta: "O que são os LLMs (Large Language Models) como o ChatGPT e o Gemini?",
     opcoes: [
-      "A) Programas de edição gráfica baseados em vetores",
-      "B) Sistemas operacionais para servidores em nuvem",
-      "C) Algoritmos voltados para cálculo estatístico de planilhas",
-      "D) Modelos treinados com vastos textos para processar e gerar linguagem natural"
+      "Programas de edição gráfica baseados em vetores",
+      "Sistemas operacionais para servidores em nuvem",
+      "Algoritmos voltados para cálculo estatístico de planilhas",
+      "Modelos treinados com vastos textos para processar e gerar linguagem natural"
     ],
-    correta: 3 // D
+    respostaCorreta: "Modelos treinados com vastos textos para processar e gerar linguagem natural"
   },
   {
-    pergunta: "14. No contexto de IAs Generativas, o que representa o termo 'Prompt'?",
+    pergunta: "No contexto de IAs Generativas, o que representa o termo 'Prompt'?",
     opcoes: [
-      "A) A instrução, pergunta ou texto enviado pelo usuário para a IA",
-      "B) O tempo de resposta do servidor em milissegundos",
-      "C) O erro de falta de memória da placa gráfica",
-      "D) A linguagem secreta utilizada entre robôs"
+      "A instrução, pergunta ou texto enviado pelo usuário para a IA",
+      "O tempo de resposta do servidor em milissegundos",
+      "O erro de falta de memória da placa gráfica",
+      "A linguagem secreta utilizada entre robôs"
     ],
-    correta: 0 // A
+    respostaCorreta: "A instrução, pergunta ou texto enviado pelo usuário para a IA"
   },
   {
-    pergunta: "15. O que significa uma 'Alucinação' em um modelo de Inteligência Artificial?",
+    pergunta: "O que significa uma 'Alucinação' em um modelo de Inteligência Artificial?",
     opcoes: [
-      "A) Um vírus detectado no código da aplicação",
-      "B) Quando a IA gera uma informação falsa com tom de convicção",
-      "C) O desligamento automático por superaquecimento do processador",
-      "D) A capacidade do sistema de simular sentimentos reais"
+      "Um vírus detectado no código da aplicação",
+      "Quando a IA gera uma informação falsa com tom de convicção",
+      "O desligamento automático por superaquecimento do processador",
+      "A capacidade do sistema de simular sentimentos reais"
     ],
-    correta: 1 // B
+    respostaCorreta: "Quando a IA gera uma informação falsa com tom de convicção"
   },
   {
-    pergunta: "16. Qual tipo de aprendizado utiliza um sistema de recompensas e punições para treinar o agente?",
+    pergunta: "Qual tipo de aprendizado utiliza um sistema de recompensas e punições para treinar o agente?",
     opcoes: [
-      "A) Aprendizado Não Supervisionado",
-      "B) Regressão Linear",
-      "C) Aprendizado por Reforço (Reinforcement Learning)",
-      "D) Agrupamento K-Means"
+      "Aprendizado Não Supervisionado",
+      "Regressão Linear",
+      "Aprendizado por Reforço (Reinforcement Learning)",
+      "Agrupamento K-Means"
     ],
-    correta: 2 // C
+    respostaCorreta: "Aprendizado por Reforço (Reinforcement Learning)"
   },
   {
-    pergunta: "17. O que avalia o clássico Teste de Turing?",
+    pergunta: "O que avalia o clássico Teste de Turing?",
     opcoes: [
-      "A) Se uma máquina consegue exibir comportamento inteligente indistinguível de um humano",
-      "B) A velocidade máxima de processamento de um chip",
-      "C) A estabilidade de uma rede local sem fio",
-      "D) A taxa de erros em códigos Python"
+      "Se uma máquina consegue exibir comportamento inteligente indistinguível de um humano",
+      "A velocidade máxima de processamento de um chip",
+      "A estabilidade de uma rede local sem fio",
+      "A taxa de erros em códigos Python"
     ],
-    correta: 0 // A
+    respostaCorreta: "Se uma máquina consegue exibir comportamento inteligente indistinguível de um humano"
   },
   {
-    pergunta: "18. Qual das opções representa uma aplicação prática de Visão Computacional?",
+    pergunta: "Qual das opções representa uma aplicação prática de Visão Computacional?",
     opcoes: [
-      "A) Disparo automático de e-mails em lote",
-      "B) Ordenação alfabética de arquivos de texto",
-      "C) Reconhecimento facial e leitura de placas de trânsito por câmeras",
-      "D) Compactação de áudio no formato MP3"
+      "Disparo automático de e-mails em lote",
+      "Ordenação alfabética de arquivos de texto",
+      "Reconhecimento facial e leitura de placas de trânsito por câmeras",
+      "Compactação de áudio no formato MP3"
     ],
-    correta: 2 // C
+    respostaCorreta: "Reconhecimento facial e leitura de placas de trânsito por câmeras"
   },
   {
-    pergunta: "19. O que é o Overfitting (Sobreajuste) em um modelo de Aprendizado de Máquina?",
+    pergunta: "O que é o Overfitting (Sobreajuste) em um modelo de Aprendizado de Máquina?",
     opcoes: [
-      "A) Quando o modelo aprende tão rápido que economiza memória",
-      "B) Quando o modelo decora os dados de treino mas erra em dados novos",
-      "C) Quando a IA não consegue identificar nenhum padrão nos dados",
-      "D) Quando o banco de dados apaga registros antigos"
+      "Quando o modelo aprende tão rápido que economiza memória",
+      "Quando o modelo decora os dados de treino mas erra em dados novos",
+      "Quando a IA não consegue identificar nenhum padrão nos dados",
+      "Quando o banco de dados apaga registros antigos"
     ],
-    correta: 1 // B
+    respostaCorreta: "Quando o modelo decora os dados de treino mas erra em dados novos"
   },
   {
-    pergunta: "20. Qual linguagem de programação é a mais popular no desenvolvimento de modelos de Aprendizado de Máquina?",
+    pergunta: "Qual linguagem de programação é a mais popular no desenvolvimento de modelos de Aprendizado de Máquina?",
     opcoes: [
-      "A) PHP",
-      "B) C++",
-      "C) Assembly",
-      "D) Python"
+      "PHP",
+      "C++",
+      "Assembly",
+      "Python"
     ],
-    correta: 3 // D
+    respostaCorreta: "Python"
   }
 ];
 
+// Funções para Embaralhar (Algoritmo Fisher-Yates)
+function embaralharArray(array) {
+  const copia = [...array];
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+  return copia;
+}
+
 // Estado da Aplicação
+let questoesEmbaralhadas = [];
 let indiceQuestaoAtual = 0;
 let pontuacao = 0;
 let respostasAluno = [];
@@ -268,6 +279,16 @@ if (btnIniciar) {
     dadosAluno.nome = nome;
     dadosAluno.turma = turma;
 
+    // 🎲 EMBARALHA AS QUESTÕES E AS OPÇÕES AO INICIAR
+    questoesEmbaralhadas = embaralharArray(bancoQuestoesOriginal).map((q, index) => {
+      return {
+        idOriginal: index + 1,
+        pergunta: q.pergunta,
+        opcoes: embaralharArray(q.opcoes),
+        respostaCorreta: q.respostaCorreta
+      };
+    });
+
     telaLogin.classList.add("hidden");
     telaQuiz.classList.remove("hidden");
 
@@ -280,27 +301,29 @@ function carregarQuestao() {
   btnProxima.classList.add("hidden");
   opcoesContainer.innerHTML = "";
 
-  const q = questoes[indiceQuestaoAtual];
-  progressoTxt.innerText = `Questão ${indiceQuestaoAtual + 1} de ${questoes.length}`;
-  perguntaTitulo.innerText = q.pergunta;
+  const q = questoesEmbaralhadas[indiceQuestaoAtual];
+  progressoTxt.innerText = `Questão ${indiceQuestaoAtual + 1} de ${questoesEmbaralhadas.length}`;
+  perguntaTitulo.innerText = `${indiceQuestaoAtual + 1}. ${q.pergunta}`;
 
-  q.opcoes.forEach((opcao, index) => {
+  const letras = ["A", "B", "C", "D"];
+
+  q.opcoes.forEach((opcaoTexto, index) => {
     const btnOpcao = document.createElement("button");
     btnOpcao.classList.add("opcao-btn");
-    btnOpcao.innerText = opcao;
-    btnOpcao.addEventListener("click", () => selecionarResposta(index, btnOpcao));
+    btnOpcao.innerText = `${letras[index]}) ${opcaoTexto}`;
+    btnOpcao.addEventListener("click", () => selecionarResposta(opcaoTexto, btnOpcao));
     opcoesContainer.appendChild(btnOpcao);
   });
 }
 
 // Lógica de Seleção de Resposta
-function selecionarResposta(indiceSelecionado, elementoClicado) {
-  const q = questoes[indiceQuestaoAtual];
+function selecionarResposta(textoSelecionado, elementoClicado) {
+  const q = questoesEmbaralhadas[indiceQuestaoAtual];
   const todosBotoes = opcoesContainer.querySelectorAll(".opcao-btn");
   
   todosBotoes.forEach(b => b.style.pointerEvents = "none");
 
-  const acertou = (indiceSelecionado === q.correta);
+  const acertou = (textoSelecionado === q.respostaCorreta);
   
   if (acertou) {
     elementoClicado.classList.add("correta");
@@ -308,17 +331,24 @@ function selecionarResposta(indiceSelecionado, elementoClicado) {
     pontosAtuaisTxt.innerText = pontuacao;
   } else {
     elementoClicado.classList.add("incorreta");
-    todosBotoes[q.correta].classList.add("correta");
+    
+    // Destaca o botão que contém a resposta correta
+    todosBotoes.forEach(b => {
+      if (b.innerText.includes(q.respostaCorreta)) {
+        b.classList.add("correta");
+      }
+    });
   }
 
   respostasAluno.push({
-    questao: indiceQuestaoAtual + 1,
-    respostaDada: indiceSelecionado,
-    correta: q.correta,
+    questaoNum: indiceQuestaoAtual + 1,
+    pergunta: q.pergunta,
+    respostaDada: textoSelecionado,
+    respostaCerta: q.respostaCorreta,
     acertou: acertou
   });
 
-  if (indiceQuestaoAtual + 1 < questoes.length) {
+  if (indiceQuestaoAtual + 1 < questoesEmbaralhadas.length) {
     btnProxima.classList.remove("hidden");
   } else {
     btnProxima.innerText = "Finalizar e Enviar Avaliação 🏆";
@@ -330,7 +360,7 @@ function selecionarResposta(indiceSelecionado, elementoClicado) {
 if (btnProxima) {
   btnProxima.addEventListener("click", () => {
     indiceQuestaoAtual++;
-    if (indiceQuestaoAtual < questoes.length) {
+    if (indiceQuestaoAtual < questoesEmbaralhadas.length) {
       carregarQuestao();
     } else {
       finalizarQuiz();
@@ -343,15 +373,15 @@ async function finalizarQuiz() {
   telaQuiz.classList.add("hidden");
   telaResultado.classList.remove("hidden");
 
-  notaFinalTxt.innerText = `${pontuacao} / ${questoes.length}`;
+  notaFinalTxt.innerText = `${pontuacao} / ${questoesEmbaralhadas.length}`;
 
   try {
     await addDoc(collection(db, "avaliacoes"), {
       nome: dadosAluno.nome,
       turma: dadosAluno.turma,
       pontuacao: pontuacao,
-      totalQuestoes: questoes.length,
-      percentual: Math.round((pontuacao / questoes.length) * 100),
+      totalQuestoes: questoesEmbaralhadas.length,
+      percentual: Math.round((pontuacao / questoesEmbaralhadas.length) * 100),
       respostas: respostasAluno,
       dataEnvio: serverTimestamp()
     });
@@ -392,8 +422,8 @@ async function carregarResultadosProfessor() {
         dataFormatada = data.dataEnvio.toDate().toLocaleString("pt-BR");
       }
 
-      let resumoRespostas = data.respostas ? data.respostas.map(r => 
-        `Q${r.questao}: ${r.acertou ? '✅' : '❌'}`
+      let resumoRespostas = data.respostas ? data.respostas.map((r, i) => 
+        `Q${i + 1}: ${r.acertou ? '✅' : '❌'}`
       ).join(" | ") : "N/A";
 
       tr.innerHTML = `
