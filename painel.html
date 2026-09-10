@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Professor - Desempenho dos Alunos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container container-largo">
+    <div class="card">
+      <h1>📊 Painel de Avaliação do Professor</h1>
+      <p>Acompanhamento em tempo real dos resultados enviados pelos alunos.</p>
+
+      <button id="btn-atualizar" class="btn btn-secundario">🔄 Atualizar Lista</button>
+
+      <div class="tabela-responsive">
+        <table id="tabela-resultados">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Aluno</th>
+              <th>Turma</th>
+              <th>Pontuação</th>
+              <th>Percentual</th>
+              <th>Detalhes das Respostas</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela">
+            <tr>
+              <td colspan="6" style="text-align:center;">Carregando dados...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

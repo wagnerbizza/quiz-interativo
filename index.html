@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avaliação Interativa - Quiz</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+    <!-- TELA 1: IDENTIFICAÇÃO DO ALUNO -->
+    <div id="tela-login" class="card">
+      <h1>🎮 Avaliação Interativa</h1>
+      <p>Preencha seus dados para iniciar o desafio!</p>
+      
+      <div class="form-group">
+        <label for="nome-aluno">Nome Completo:</label>
+        <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required>
+      </div>
+
+      <div class="form-group">
+        <label for="turma-aluno">Turma / Módulo:</label>
+        <input type="text" id="turma-aluno" placeholder="Ex: 1º Ano MREC / Téc. Informática" required>
+      </div>
+
+      <button id="btn-iniciar" class="btn">Começar Quiz 🚀</button>
+    </div>
+
+    <!-- TELA 2: PERGUNTAS DO QUIZ -->
+    <div id="tela-quiz" class="card hidden">
+      <div class="quiz-header">
+        <span id="progresso-txt">Questão 1 de 3</span>
+        <div class="badge-pontos">Pontuação: <span id="pontos-atuais">0</span></div>
+      </div>
+
+      <h2 id="pergunta-titulo">Texto da Pergunta aqui...</h2>
+
+      <div id="opcoes-container" class="opcoes-list">
+        <!-- As opções serão inseridas via JavaScript -->
+      </div>
+
+      <button id="btn-proxima" class="btn hidden">Próxima Questão ➔</button>
+    </div>
+
+    <!-- TELA 3: RESULTADO FINAL -->
+    <div id="tela-resultado" class="card hidden">
+      <h1>🏆 Avaliação Concluída!</h1>
+      <p id="mensagem-final">Sua resposta foi enviada com sucesso ao professor.</p>
+
+      <div class="placar-final">
+        <p>Sua Nota Final:</p>
+        <span id="nota-final">0 / 0</span>
+      </div>
+
+      <p class="status-envio" id="status-envio">💾 Salvando no banco de dados...</p>
+    </div>
+  </div>
+
+  <!-- Firebase & App Script (JS Modular) -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
