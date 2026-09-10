@@ -3,40 +3,197 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel do Professor - Desempenho dos Alunos</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Painel do Professor - Quiz Interativo</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --success: #22c55e;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1, h2 { color: var(--accent); margin-bottom: 15px; }
+    
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .grid-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background-color: #0f172a;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    button {
+      background-color: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background-color: var(--accent-hover); color: #fff; }
+
+    .switch-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      text-align: left;
+    }
+    th, td { padding: 12px; border-bottom: 1px solid var(--border); }
+    th { background-color: #0f172a; color: var(--accent); }
+    tr:hover { background-color: #334155; }
+    
+    .status-badge {
+      background-color: var(--success);
+      color: #000;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-  <div class="container container-largo">
+  <div class="container">
+    <h1>Painel do Professor 🛠️</h1>
+
+    <!-- PAINEL DE CONTROLE DA PROVA ATIVA -->
     <div class="card">
-      <h1>📊 Painel de Avaliação do Professor</h1>
-      <p>Acompanhamento em tempo real dos resultados enviados pelos alunos.</p>
-
-      <button id="btn-atualizar" class="btn btn-secundario">🔄 Atualizar Lista</button>
-
-      <div class="tabela-responsive">
-        <table id="tabela-resultados">
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Aluno</th>
-              <th>Turma</th>
-              <th>Pontuação</th>
-              <th>Percentual</th>
-              <th>Detalhes das Respostas</th>
-            </tr>
-          </thead>
-          <tbody id="corpo-tabela">
-            <tr>
-              <td colspan="6" style="text-align:center;">Carregando dados...</td>
-            </tr>
-          </tbody>
-        </table>
+      <h2>⚙️ Configurações da Avaliação Ativa</h2>
+      <p style="margin-bottom: 15px; color: #94a3b8;">Ajuste quantas questões os alunos vão responder e se o teste será embaralhado.</p>
+      
+      <div class="grid-form">
+        <div>
+          <label for="qtd-questoes-config">Qtd. de Questões por Aluno:</label>
+          <input type="number" id="qtd-questoes-config" min="1" max="50" value="10">
+        </div>
+        <div>
+          <label for="materia-filter">Filtrar por Matéria/Tópico:</label>
+          <select id="materia-filter">
+            <option value="TODAS">Todas as Matérias</option>
+            <option value="Front-End">Apenas Front-End</option>
+            <option value="IA">Apenas Inteligência Artificial</option>
+          </select>
+        </div>
       </div>
+
+      <div class="switch-container">
+        <input type="checkbox" id="embaralhar-check" checked style="width: auto;">
+        <label for="embaralhar-check" style="margin: 0;">Embaralhar Questões e Opções estilo Kahoot (Evita cola)</label>
+      </div>
+
+      <br>
+      <button id="btn-salvar-config">Salvar e Aplicar Configuração da Prova 🚀</button>
+      <span id="msg-config" style="margin-left: 15px; font-weight: bold;"></span>
     </div>
+
+    <!-- CADASTRAR NOVA QUESTÃO NO BANCO -->
+    <div class="card">
+      <h2>➕ Cadastrar Nova Questão no Banco</h2>
+      <form id="form-nova-questao">
+        <div class="grid-form">
+          <div style="grid-column: 1 / -1;">
+            <label for="nova-pergunta">Pergunta / Enunciado:</label>
+            <input type="text" id="nova-pergunta" placeholder="Ex: O que é a tag <nav> no HTML?" required>
+          </div>
+          <div>
+            <label for="op-a">Opção A:</label>
+            <input type="text" id="op-a" required>
+          </div>
+          <div>
+            <label for="op-b">Opção B:</label>
+            <input type="text" id="op-b" required>
+          </div>
+          <div>
+            <label for="op-c">Opção C:</label>
+            <input type="text" id="op-c" required>
+          </div>
+          <div>
+            <label for="op-d">Opção D:</label>
+            <input type="text" id="op-d" required>
+          </div>
+          <div>
+            <label for="resp-correta">Opção Correta:</label>
+            <select id="resp-correta" required>
+              <option value="A">Opção A</option>
+              <option value="B">Opção B</option>
+              <option value="C">Opção C</option>
+              <option value="D">Opção D</option>
+            </select>
+          </div>
+          <div>
+            <label for="categoria-questao">Categoria / Matéria:</label>
+            <select id="categoria-questao">
+              <option value="Front-End">Front-End</option>
+              <option value="IA">Inteligência Artificial</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit">Adicionar Questão ao Banco 📥</button>
+        <span id="msg-cadastro" style="margin-left: 15px; font-weight: bold;"></span>
+      </form>
+    </div>
+
+    <!-- TABELA DE RESULTADOS DOS ALUNOS -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>📊 Respostas dos Alunos em Tempo Real</h2>
+        <button id="btn-atualizar">Atualizar Tabela 🔄</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Nome do Aluno</th>
+            <th>Turma</th>
+            <th>Nota</th>
+            <th>%</th>
+            <th>Detalhamento</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela">
+          <tr><td colspan="6" style="text-align:center;">Carregando dados...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>
