@@ -17,31 +17,38 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 20 Questões Base para popular o Firebase na primeira execução
-const bancoInicial20 = [
+// Banco de Questões Expandido (4 Matérias)
+const bancoInicialExpansivo = [
+  // --- MATÉRIA 1: FRONT-END ---
   { pergunta: "Qual é a principal função do HTML em uma página Web?", opcoes: ["Estilizar e dar cores aos elementos", "Estruturar o conteúdo e os elementos da página", "Executar lógica de banco de dados no servidor", "Criar animações complexas 3D"], respostaCorreta: "Estruturar o conteúdo e os elementos da página", categoria: "Front-End" },
   { pergunta: "Qual tag HTML semântica é recomendada para o menu principal de navegação?", opcoes: ["<header>", "<section>", "<nav>", "<menu-main>"], respostaCorreta: "<nav>", categoria: "Front-End" },
-  { pergunta: "No CSS Flexbox, qual propriedade alinha os itens no eixo principal (horizontal por padrão)?", opcoes: ["justify-content", "align-items", "flex-direction", "align-content"], respostaCorreta: "justify-content", categoria: "Front-End" },
-  { pergunta: "Qual recurso CSS é utilizado para criar layouts responsivos que se adaptam ao tamanho da tela?", opcoes: ["display: inline", "position: absolute", "float: left", "@media queries"], respostaCorreta: "@media queries", categoria: "Front-End" },
-  { pergunta: "Em JavaScript, qual palavra-chave declara uma variável com escopo de bloco e valor imutável?", opcoes: ["var", "const", "let", "static"], respostaCorreta: "const", categoria: "Front-End" },
-  { pergunta: "Qual método JavaScript é utilizado para selecionar um elemento HTML diretamente pelo seu ID?", opcoes: ["document.querySelector('.id')", "document.getElementByName()", "document.getElementById()", "document.findId()"], respostaCorreta: "document.getElementById()", categoria: "Front-End" },
-  { pergunta: "O que é o DOM (Document Object Model) no desenvolvimento Web?", opcoes: ["Uma representação em árvore dos elementos HTML acessível via JavaScript", "Uma linguagem de programação para servidores web", "Um banco de dados relacional acoplado ao navegador", "Um framework de estilização CSS para páginas dinâmicas"], respostaCorreta: "Uma representação em árvore dos elementos HTML acessível via JavaScript", categoria: "Front-End" },
-  { pergunta: "Em JavaScript, qual método de Array cria um novo array transformando cada um dos elementos?", opcoes: [".forEach()", ".filter()", ".push()", ".map()"], respostaCorreta: ".map()", categoria: "Front-End" },
-  { pergunta: "O que significa a sigla API no contexto de desenvolvimento de software?", opcoes: ["Application Programming Interface", "Automated Program Integration", "Advanced Protocol Internet", "Asynchronous Page Interface"], respostaCorreta: "Application Programming Interface", categoria: "Front-End" },
-  { pergunta: "Qual estrutura do JavaScript assíncrono permite aguardar a resposta de uma Promise com código limpo?", opcoes: ["try / catch", "async / await", "import / export", "setTimeout / setInterval"], respostaCorreta: "async / await", categoria: "Front-End" },
-  { pergunta: "O que caracteriza o Aprendizado de Máquina Supervisionado (Supervised Learning)?", opcoes: ["O algoritmo aprende sem nenhum dado de entrada", "O modelo é treinado apenas por tentativa e erro", "Os dados de treinamento possuem rótulos (respostas corretas)", "O sistema utiliza apenas dados sem categorias prévias"], respostaCorreta: "Os dados de treinamento possuem rótulos (respostas corretas)", categoria: "IA" },
-  { pergunta: "Qual é a principal função de uma Rede Neural Artificial (RNA)?", opcoes: ["Executar comandos diretamente na placa-mãe", "Simular o processamento cerebral humano para identificar padrões", "Substituir a necessidade de utilizar banco de dados", "Compilar arquivos HTML e CSS em código de máquina"], respostaCorreta: "Simular o processamento cerebral humano para identificar padrões", categoria: "IA" },
-  { pergunta: "O que são os LLMs (Large Language Models) como o ChatGPT e o Gemini?", opcoes: ["Programas de edição gráfica baseados em vetores", "Sistemas operacionais para servidores em nuvem", "Algoritmos voltados para cálculo estatístico de planilhas", "Modelos treinados com vastos textos para processar e gerar linguagem natural"], respostaCorreta: "Modelos treinados com vastos textos para processar e gerar linguagem natural", categoria: "IA" },
-  { pergunta: "No contexto de IAs Generativas, o que representa o termo 'Prompt'?", opcoes: ["A instrução, pergunta ou texto enviado pelo usuário para a IA", "O tempo de resposta do servidor em milissegundos", "O erro de falta de memória da placa gráfica", "A linguagem secreta utilizada entre robôs"], respostaCorreta: "A instrução, pergunta ou texto enviado pelo usuário para a IA", categoria: "IA" },
-  { pergunta: "O que significa uma 'Alucinação' em um modelo de Inteligência Artificial?", opcoes: ["Um vírus detectado no código da aplicação", "Quando a IA gera uma informação falsa com tom de convicção", "O desligamento automático por superaquecimento do processador", "A capacidade do sistema de simular sentimentos reais"], respostaCorreta: "Quando a IA gera uma informação falsa com tom de convicção", categoria: "IA" },
-  { pergunta: "Qual tipo de aprendizado utiliza um sistema de recompensas e punições para treinar o agente?", opcoes: ["Aprendizado Não Supervisionado", "Regressão Linear", "Aprendizado por Reforço (Reinforcement Learning)", "Agrupamento K-Means"], respostaCorreta: "Aprendizado por Reforço (Reinforcement Learning)", categoria: "IA" },
-  { pergunta: "O que avalia o clássico Teste de Turing?", opcoes: ["Se uma máquina consegue exibir comportamento inteligente indistinguível de um humano", "A velocidade máxima de processamento de um chip", "A estabilidade de uma rede local sem fio", "A taxa de erros em códigos Python"], respostaCorreta: "Se uma máquina consegue exibir comportamento inteligente indistinguível de um humano", categoria: "IA" },
-  { pergunta: "Qual das opções representa uma aplicação prática de Visão Computacional?", opcoes: ["Disparo automático de e-mails em lote", "Ordenação alfabética de arquivos de texto", "Reconhecimento facial e leitura de placas de trânsito por câmeras", "Compactação de áudio no formato MP3"], respostaCorreta: "Reconhecimento facial e leitura de placas de trânsito por câmeras", categoria: "IA" },
-  { pergunta: "O que é o Overfitting (Sobreajuste) em um modelo de Aprendizado de Máquina?", opcoes: ["Quando o modelo aprende tão rápido que economiza memória", "Quando o modelo decora os dados de treino mas erra em dados novos", "Quando a IA não consegue identificar nenhum padrão nos dados", "Quando o banco de dados apaga registros antigos"], respostaCorreta: "Quando o modelo decora os dados de treino mas erra em dados novos", categoria: "IA" },
-  { pergunta: "Qual linguagem de programação é a mais popular no desenvolvimento de modelos de Aprendizado de Máquina?", opcoes: ["PHP", "C++", "Assembly", "Python"], respostaCorreta: "Python", categoria: "IA" }
+  { pergunta: "No CSS Flexbox, qual propriedade alinha os itens no eixo principal?", opcoes: ["justify-content", "align-items", "flex-direction", "align-content"], respostaCorreta: "justify-content", categoria: "Front-End" },
+  { pergunta: "Qual recurso CSS é utilizado para criar layouts responsivos adaptáveis à tela?", opcoes: ["display: inline", "position: absolute", "float: left", "@media queries"], respostaCorreta: "@media queries", categoria: "Front-End" },
+  { pergunta: "Em JavaScript, qual palavra-chave declara uma variável imutável com escopo de bloco?", opcoes: ["var", "const", "let", "static"], respostaCorreta: "const", categoria: "Front-End" },
+
+  // --- MATÉRIA 2: INTELIGÊNCIA ARTIFICIAL ---
+  { pergunta: "O que caracteriza o Aprendizado de Máquina Supervisionado?", opcoes: ["O algoritmo aprende sem dados", "O modelo aprende por tentativa e erro", "Os dados de treinamento possuem rótulos (respostas corretas)", "O sistema usa dados sem categorias"], respostaCorreta: "Os dados de treinamento possuem rótulos (respostas corretas)", categoria: "IA" },
+  { pergunta: "Qual é a principal função de uma Rede Neural Artificial?", opcoes: ["Executar comandos no hardware", "Simular o processamento cerebral humano para identificar padrões", "Substituir bancos de dados", "Compilar código HTML"], respostaCorreta: "Simular o processamento cerebral humano para identificar padrões", categoria: "IA" },
+  { pergunta: "No contexto de IAs Generativas, o que representa o termo 'Prompt'?", opcoes: ["A instrução, pergunta ou texto enviado pelo usuário para a IA", "O tempo de resposta do servidor", "O erro de falta de memória da GPU", "A linguagem interna dos robôs"], respostaCorreta: "A instrução, pergunta ou texto enviado pelo usuário para a IA", categoria: "IA" },
+  { pergunta: "O que significa uma 'Alucinação' em modelos de linguagem de IA?", opcoes: ["Um vírus no sistema", "Quando a IA gera informação falsa com tom de convicção", "O desligamento por superaquecimento", "A capacidade da IA de sentir emoções"], respostaCorreta: "Quando a IA gera informação falsa com tom de convicção", categoria: "IA" },
+  { pergunta: "Qual linguagem é a mais popular para o desenvolvimento de Machine Learning?", opcoes: ["PHP", "C++", "Assembly", "Python"], respostaCorreta: "Python", categoria: "IA" },
+
+  // --- MATÉRIA 3: REDES E SEGURANÇA DA INFORMAÇÃO NA NUVEM ---
+  { pergunta: "Qual protocolo da camada de aplicação garante comunicação criptografada na Web?", opcoes: ["HTTP", "FTP", "HTTPS", "DNS"], respostaCorreta: "HTTPS", categoria: "Redes e Nuvem" },
+  { pergunta: "Qual modelo de serviço em nuvem fornece uma aplicação pronta para o usuário final via navegador?", opcoes: ["IaaS (Infrastructure as a Service)", "PaaS (Platform as a Service)", "SaaS (Software as a Service)", "FaaS (Function as a Service)"], respostaCorreta: "SaaS (Software as a Service)", categoria: "Redes e Nuvem" },
+  { pergunta: "Qual é o principal objetivo de um Firewall em uma infraestrutura de rede?", opcoes: ["Aumentar a velocidade da conexão de internet", "Filtrar e monitorar o tráfego de dados autorizados e bloquear tráfego suspeito", "Armazenar arquivos e bancos de dados dos usuários", "Distribuir endereços IP automaticamente"], respostaCorreta: "Filtrar e monitorar o tráfego de dados autorizados e bloquear tráfego suspeito", categoria: "Redes e Nuvem" },
+  { pergunta: "O que caracteriza o ataque cibernético do tipo Phishing?", opcoes: ["Inundar um servidor com acessos falsos até derrubá-lo", "Enganar usuários usando mensagens ou e-mails falsos para roubar credenciais", "Infectar o computador com um vírus que sequestra arquivos", "Descobrir senhas por força bruta"], respostaCorreta: "Enganar usuários usando mensagens ou e-mails falsos para roubar credenciais", categoria: "Redes e Nuvem" },
+  { pergunta: "O que é o conceito de Autenticação Multifator (MFA)?", opcoes: ["Utilizar a mesma senha para vários sistemas diferentes", "Exigir dois ou mais fatores de verificação para conceder acesso ao usuário", "Trocar a senha do usuário a cada 24 horas", "Permitir acesso apenas por rede cabeada"], respostaCorreta: "Exigir dois ou mais fatores de verificação para conceder acesso ao usuário", categoria: "Redes e Nuvem" },
+
+  // --- MATÉRIA 4: PROCESSOS DE DESENVOLVIMENTO & METODOLOGIAS ÁGEIS ---
+  { pergunta: "No framework Scrum, quem é o responsável por priorizar o Backlog do Produto?", opcoes: ["Scrum Master", "Product Owner (PO)", "Development Team", "Stakeholders"], respostaCorreta: "Product Owner (PO)", categoria: "Metodologias Ageis" },
+  { pergunta: "O que é uma 'Sprint' no desenvolvimento ágil Scrum?", opcoes: ["Um teste de velocidade do servidor", "Um ciclo de trabalho com tempo delimitado (timebox) para entregar um incremento pronto", "Uma reunião diária de 15 minutos", "Uma etapa de testes de segurança no final do projeto"], respostaCorreta: "Um ciclo de trabalho com tempo delimitado (timebox) para entregar um incremento pronto", categoria: "Metodologias Ageis" },
+  { pergunta: "Qual é o foco principal da ferramenta visual Kanban?", opcoes: ["Limitar o trabalho em andamento (WIP) e otimizar o fluxo contínuo de tarefas", "Documentar detalhadamente todas as fases do sistema em PDF", "Substituir reuniões de alinhamento com a equipe", "Gerenciar os salários da equipe de desenvolvimento"], respostaCorreta: "Limitar o trabalho em andamento (WIP) e otimizar o fluxo contínuo de tarefas", categoria: "Metodologias Ageis" },
+  { pergunta: "No Manifesto Ágil, qual valor se sobrepõe a 'processos e ferramentas'?", opcoes: ["Documentação abrangente", "Indivíduos e interações", "Negociação de contratos", "Seguir um plano rígido"], respostaCorreta: "Indivíduos e interações", categoria: "Metodologias Ageis" },
+  { pergunta: "O que significa a prática de Integração Contínua (CI) na engenharia de software?", opcoes: ["Desenvolver todo o software antes de testar com os clientes", "Automatizar a compilação e os testes do código sempre que uma alteração é enviada", "Trabalhar em turnos ininterruptos de 24 horas", "Utilizar apenas linguagens de programação orientadas a objetos"], respostaCorreta: "Automatizar a compilação e os testes do código sempre que uma alteração é enviada", categoria: "Metodologias Ageis" }
 ];
 
-// Algoritmo Fisher-Yates para embaralhar
+// Algoritmo Fisher-Yates
 function embaralharArray(array) {
   const copia = [...array];
   for (let i = copia.length - 1; i > 0; i--) {
@@ -51,19 +58,19 @@ function embaralharArray(array) {
   return copia;
 }
 
-// Inicializa Banco de Dados no Firebase caso esteja vazio
+// Cadastra as questões no Firebase se o banco estiver limpo
 async function verificarEPopularBanco() {
   try {
     const querySnapshot = await getDocs(collection(db, "questoes"));
     if (querySnapshot.empty) {
-      console.log("Banco de questões vazio. Cadastrando as 20 questões padrão no Firebase...");
-      for (const q of bancoInicial20) {
+      console.log("Populado Firebase com questões de todas as 4 matérias...");
+      for (const q of bancoInicialExpansivo) {
         await addDoc(collection(db, "questoes"), q);
       }
-      console.log("20 Questões cadastradas no Firebase com sucesso!");
+      console.log("Banco de questões criado com sucesso!");
     }
   } catch (error) {
-    console.error("Erro ao popular banco:", error);
+    console.error("Erro ao verificar banco:", error);
   }
 }
 verificarEPopularBanco();
@@ -110,7 +117,6 @@ if (telaLogin) {
     dadosAluno.nome = nome;
     dadosAluno.turma = turma;
 
-    // 1. Busca configurações da prova definidas pelo professor
     let config = { qtdQuestoes: 10, embaralhar: true, materia: "TODAS" };
     try {
       const configDoc = await getDoc(doc(db, "configuracoes", "provaAtiva"));
@@ -121,34 +127,29 @@ if (telaLogin) {
       console.warn("Usando configuração padrão de prova:", err);
     }
 
-    // 2. Busca todas as questões do Firebase
     try {
       const snapshot = await getDocs(collection(db, "questoes"));
       let listaBanco = [];
       snapshot.forEach(docSnap => listaBanco.push(docSnap.data()));
 
-      // Filtrar por matéria se configurado
       if (config.materia !== "TODAS") {
         listaBanco = listaBanco.filter(q => q.categoria === config.materia);
       }
 
       if (listaBanco.length === 0) {
-        alert("Nenhuma questão encontrada para a configuração atual da prova.");
+        alert("Nenhuma questão disponível no banco para a matéria selecionada.");
         btnIniciar.innerText = "Iniciar Avaliação 🚀";
         btnIniciar.disabled = false;
         return;
       }
 
-      // Embaralhar banco se ativado
       if (config.embaralhar) {
         listaBanco = embaralharArray(listaBanco);
       }
 
-      // Limitar pela quantidade escolhida pelo professor
       const qtdDesejada = Math.min(config.qtdQuestoes, listaBanco.length);
       const selecionadas = listaBanco.slice(0, qtdDesejada);
 
-      // Tratar opções de cada questão
       questoesProva = selecionadas.map((q) => {
         return {
           pergunta: q.pergunta,
@@ -164,7 +165,7 @@ if (telaLogin) {
 
     } catch (error) {
       console.error("Erro ao carregar prova:", error);
-      alert("Erro ao carregar questões do banco de dados.");
+      alert("Erro ao carregar questões.");
       btnIniciar.innerText = "Iniciar Avaliação 🚀";
       btnIniciar.disabled = false;
     }
@@ -277,7 +278,6 @@ if (corpoTabela) {
   const msgCadastro = document.getElementById("msg-cadastro");
   const btnAtualizar = document.getElementById("btn-atualizar");
 
-  // Carregar Configurações Atuais no Painel
   async function carregarConfigAtuais() {
     try {
       const configDoc = await getDoc(doc(db, "configuracoes", "provaAtiva"));
@@ -293,7 +293,6 @@ if (corpoTabela) {
   }
   carregarConfigAtuais();
 
-  // Salvar Novas Configurações da Prova
   btnSalvarConfig.addEventListener("click", async () => {
     btnSalvarConfig.disabled = true;
     msgConfig.innerText = "Salvando...";
@@ -306,7 +305,7 @@ if (corpoTabela) {
         atualizadoEm: serverTimestamp()
       });
 
-      msgConfig.innerText = "✅ Configuração salva! Prova atualizada para os alunos.";
+      msgConfig.innerText = "✅ Configuração salva! Prova configurada com sucesso.";
       msgConfig.style.color = "#22c55e";
     } catch (err) {
       console.error("Erro ao salvar config:", err);
@@ -317,7 +316,6 @@ if (corpoTabela) {
     }
   });
 
-  // Cadastrar Nova Questão no Firestore
   formNovaQuestao.addEventListener("submit", async (e) => {
     e.preventDefault();
     msgCadastro.innerText = "Cadastrando...";
@@ -354,7 +352,6 @@ if (corpoTabela) {
     }
   });
 
-  // Carregar Resultados dos Alunos
   async function carregarResultadosProfessor() {
     corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align:center;">Carregando dados...</td></tr>`;
 

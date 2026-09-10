@@ -31,7 +31,7 @@
 
     .grid-form {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 15px;
       margin-bottom: 15px;
     }
@@ -75,15 +75,6 @@
     th, td { padding: 12px; border-bottom: 1px solid var(--border); }
     th { background-color: #0f172a; color: var(--accent); }
     tr:hover { background-color: #334155; }
-    
-    .status-badge {
-      background-color: var(--success);
-      color: #000;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
@@ -94,7 +85,7 @@
     <!-- PAINEL DE CONTROLE DA PROVA ATIVA -->
     <div class="card">
       <h2>⚙️ Configurações da Avaliação Ativa</h2>
-      <p style="margin-bottom: 15px; color: #94a3b8;">Ajuste quantas questões os alunos vão responder e se o teste será embaralhado.</p>
+      <p style="margin-bottom: 15px; color: #94a3b8;">Ajuste a matéria da prova, a quantidade de questões e a opção de embaralhar.</p>
       
       <div class="grid-form">
         <div>
@@ -104,9 +95,11 @@
         <div>
           <label for="materia-filter">Filtrar por Matéria/Tópico:</label>
           <select id="materia-filter">
-            <option value="TODAS">Todas as Matérias</option>
-            <option value="Front-End">Apenas Front-End</option>
-            <option value="IA">Apenas Inteligência Artificial</option>
+            <option value="TODAS">Todas as Matérias (Misto)</option>
+            <option value="Front-End">Front-End (HTML/CSS/JS)</option>
+            <option value="IA">Inteligência Artificial</option>
+            <option value="Redes e Nuvem">Redes e Segurança na Nuvem</option>
+            <option value="Metodologias Ageis">Processos de Sw & Metodologias Ágeis</option>
           </select>
         </div>
       </div>
@@ -128,7 +121,7 @@
         <div class="grid-form">
           <div style="grid-column: 1 / -1;">
             <label for="nova-pergunta">Pergunta / Enunciado:</label>
-            <input type="text" id="nova-pergunta" placeholder="Ex: O que é a tag <nav> no HTML?" required>
+            <input type="text" id="nova-pergunta" placeholder="Ex: O que é o modelo de serviço SaaS em computação em nuvem?" required>
           </div>
           <div>
             <label for="op-a">Opção A:</label>
@@ -160,6 +153,8 @@
             <select id="categoria-questao">
               <option value="Front-End">Front-End</option>
               <option value="IA">Inteligência Artificial</option>
+              <option value="Redes e Nuvem">Redes e Segurança na Nuvem</option>
+              <option value="Metodologias Ageis">Processos de Sw & Metodologias Ágeis</option>
             </select>
           </div>
         </div>
@@ -194,6 +189,6 @@
 
   </div>
 
-  <script type="module" src="app.js?v=5"></script>
+  <script type="module" src="app.js?v=6"></script>
 </body>
 </html>
