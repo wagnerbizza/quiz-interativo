@@ -3,273 +3,285 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel do Professor - Quiz Interativo</title>
+  <title>Painel do Professor - Gerenciador do Quiz</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --accent: #38bdf8;
-      --accent-hover: #0284c7;
-      --success: #22c55e;
-      --danger: #ef4444;
-      --border: #334155;
+    .mensagem-sucesso {
+      background-color: rgba(34, 197, 94, 0.2);
+      border: 1px solid #22c55e;
+      color: #4ade80;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+      display: none;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 20px; }
-    .container { max-width: 1100px; margin: 0 auto; }
-    h1, h2 { color: var(--accent); margin-bottom: 15px; }
-    
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    .mensagem-erro {
+      background-color: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      color: #f87171;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+      display: none;
     }
-
-    .grid-form {
+    .grid-duplo {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-
-    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background-color: #0f172a;
-      color: #fff;
-      font-size: 0.95rem;
-    }
-
-    button {
-      background-color: var(--accent);
-      color: #0f172a;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover { background-color: var(--accent-hover); color: #fff; }
-
-    .btn-secondary { background-color: #475569; color: #fff; }
-    .btn-secondary:hover { background-color: #64748b; }
-
-    .btn-danger { background-color: var(--danger); color: #fff; }
-    .btn-danger:hover { background-color: #dc2626; }
-
-    .switch-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; }
-    th, td { padding: 12px; border-bottom: 1px solid var(--border); }
-    th { background-color: #0f172a; color: var(--accent); }
-    tr:hover { background-color: #334155; }
-
-    .badge-nota {
-      background-color: #0f172a;
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-weight: bold;
-      display: inline-block;
-    }
-    .badge-nota.alta { border-color: var(--success); color: var(--success); }
-    .badge-nota.baixa { border-color: var(--danger); color: var(--danger); }
-
-    .calc-box {
-      background-color: #0f172a;
-      padding: 15px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
+      grid-template-columns: 1fr 1fr;
       gap: 20px;
-      flex-wrap: wrap;
     }
-    .calc-resultado { font-size: 1.8rem; font-weight: bold; color: var(--accent); }
-    
-    .media-turma-box {
-      background-color: #0f172a;
-      padding: 10px 15px;
+    .item-questao {
+      background: #1f2937;
+      border: 1px solid #374151;
       border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+    .item-questao-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .tag-materia {
+      background: #2563eb;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
       font-weight: bold;
-      color: var(--accent);
-      border: 1px solid var(--border);
+    }
+    .btn-deletar-q {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    @media (max-width: 768px) {
+      .grid-duplo {
+        grid-template-columns: 1fr;
+      }
     }
 
-    /* FORMATO DE IMPRESSÃO (PDF/PAPEL) */
+    /* ESTILOS EXCLUSIVOS PARA IMPRESSÃO DA TABELA DE RESULTADOS DOS ALUNOS */
     @media print {
-      body { background-color: #fff !important; color: #000 !important; padding: 0; }
-      .no-print, button, form, .calc-box, .switch-container { display: none !important; }
-      .card { border: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important; }
-      h1 { color: #000 !important; font-size: 1.6rem; text-align: center; }
-      h2 { color: #000 !important; border-bottom: 2px solid #000; padding-bottom: 5px; }
-      table { width: 100% !important; border: 1px solid #000; }
-      th { background-color: #e2e8f0 !important; color: #000 !important; border: 1px solid #000; }
-      td { border: 1px solid #000 !important; color: #000 !important; }
-      .badge-nota { border: 1px solid #000 !important; color: #000 !important; background: transparent !important; }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Esconde o título principal, os formulários e a lista de questões no banco */
+      h1, .grid-duplo, .no-print, #filtro-turma-tabela {
+        display: none !important;
+      }
+
+      /* Garante que apenas o card da tabela seja visível */
+      .card-resultados {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+
+      /* Estilização limpa para papel */
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        color: #000000 !important;
+      }
+
+      th, td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 8px !important;
+        color: #000000 !important;
+      }
+
+      th {
+        background-color: #f1f5f9 !important;
+      }
+
+      .badge-nota {
+        color: #000000 !important;
+        font-weight: bold;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1 class="no-print">Painel do Professor 🛠️</h1>
+  <div class="container" style="max-width: 1100px;">
+    <h1>Painel Administrativo do Professor 👨‍🏫</h1>
 
-    <!-- 1. MINI CALCULADORA DE NOTAS -->
-    <div class="card no-print" style="border-left: 5px solid var(--accent);">
-      <h2>🧮 Mini Calculadora de Notas (Escala 0.0 a 10.0)</h2>
-      <p style="margin-bottom: 15px; color: #94a3b8;">Simule a nota convertida para qualquer quantidade de acertos:</p>
-      
-      <div class="calc-box">
-        <div>
-          <label for="calc-acertos">Acertos do Aluno:</label>
-          <input type="number" id="calc-acertos" min="0" value="7" style="width: 120px;">
-        </div>
-        <div>
-          <label for="calc-total">Total de Questões:</label>
-          <input type="number" id="calc-total" min="1" value="10" style="width: 140px;">
-        </div>
-        <div style="margin-left: auto; text-align: right;">
-          <span style="font-size: 0.9rem; color: #94a3b8;">Nota Convertida:</span>
-          <div class="calc-resultado" id="calc-resultado-txt">7.0 / 10.0</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. INICIALIZAR BANCO DE QUESTÕES -->
-    <div class="card no-print">
-      <h2>📦 Inicializar Banco de Questões (4 Matérias)</h2>
-      <p style="margin-bottom: 15px; color: #94a3b8;">Clique para enviar as 20 questões padrão ao banco de dados.</p>
-      <button id="btn-carregar-banco" class="btn-danger">Carregar 20 Questões no Banco 🚀</button>
-      <span id="msg-banco" style="margin-left: 15px; font-weight: bold;"></span>
-    </div>
-
-    <!-- 3. CONFIGURAR PROVA ATIVA -->
-    <div class="card no-print">
-      <h2>⚙️ Configurações da Avaliação Ativa</h2>
-      <div class="grid-form">
-        <div>
-          <label for="qtd-questoes-config">Qtd. de Questões por Aluno:</label>
-          <input type="number" id="qtd-questoes-config" min="1" max="50" value="10">
-        </div>
-        <div>
-          <label for="materia-filter">Filtrar por Matéria:</label>
-          <select id="materia-filter">
-            <option value="TODAS">Todas as Matérias (Misto)</option>
-            <option value="Front-End">Front-End (HTML/CSS/JS)</option>
-            <option value="IA">Inteligência Artificial</option>
-            <option value="Redes e Nuvem">Redes e Segurança na Nuvem</option>
-            <option value="Metodologias Ageis">Processos de Sw & Metodologias Ágeis</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="switch-container">
-        <input type="checkbox" id="embaralhar-check" checked style="width: auto;">
-        <label for="embaralhar-check" style="margin: 0;">Embaralhar Questões e Opções (Evita cola)</label>
-      </div>
-
-      <br>
-      <button id="btn-salvar-config">Salvar Configuração da Prova 🚀</button>
-      <span id="msg-config" style="margin-left: 15px; font-weight: bold;"></span>
-    </div>
-
-    <!-- 4. CADASTRAR NOVA QUESTÃO -->
-    <div class="card no-print">
-      <h2>➕ Cadastrar Nova Questão Manualmente</h2>
-      <form id="form-nova-questao">
-        <div class="grid-form">
-          <div style="grid-column: 1 / -1;">
-            <label for="nova-pergunta">Pergunta / Enunciado:</label>
-            <input type="text" id="nova-pergunta" placeholder="Ex: O que é SaaS?" required>
-          </div>
-          <div>
-            <label for="op-a">Opção A:</label>
-            <input type="text" id="op-a" required>
-          </div>
-          <div>
-            <label for="op-b">Opção B:</label>
-            <input type="text" id="op-b" required>
-          </div>
-          <div>
-            <label for="op-c">Opção C:</label>
-            <input type="text" id="op-c" required>
-          </div>
-          <div>
-            <label for="op-d">Opção D:</label>
-            <input type="text" id="op-d" required>
-          </div>
-          <div>
-            <label for="resp-correta">Opção Correta:</label>
-            <select id="resp-correta" required>
-              <option value="A">Opção A</option>
-              <option value="B">Opção B</option>
-              <option value="C">Opção C</option>
-              <option value="D">Opção D</option>
+    <div class="grid-duplo">
+      <!-- FORMULÁRIO DE CADASTRO DE QUESTÕES -->
+      <div class="card">
+        <h2>Cadastrar / Editar Questão ➕</h2>
+        <form id="form-cadastrar-questao">
+          <div class="form-group">
+            <label for="cad-materia">Matéria / Categoria:</label>
+            <select id="cad-materia" required>
+              <option value="" disabled selected>Selecione a matéria...</option>
+              <option value="Lingua Portuguesa">Língua Portuguesa</option>
+              <option value="Matematica">Matemática</option>
+              <option value="Historia">História</option>
+              <option value="Geografia">Geografia</option>
+              <option value="Biologia">Biologia</option>
+              <option value="Fisica">Física</option>
+              <option value="Quimica">Química</option>
+              <option value="Ingles">Inglês</option>
+              <option value="Desenvolvimento Front-End">Desenvolvimento Front-End</option>
+              <option value="Inteligencia Artificial">Inteligência Artificial</option>
+              <option value="Redes de computadores e Seguranca da informação na Nuvem">Redes de Computadores</option>
+              <option value="Processos de desenvolvimento de Software e Metodologias Ageis">Processos de Software</option>
             </select>
           </div>
-          <div>
-            <label for="categoria-questao">Categoria / Matéria:</label>
-            <select id="categoria-questao">
-              <option value="Front-End">Front-End</option>
-              <option value="IA">Inteligência Artificial</option>
-              <option value="Redes e Nuvem">Redes e Segurança na Nuvem</option>
-              <option value="Metodologias Ageis">Processos de Sw & Metodologias Ágeis</option>
+
+          <div class="form-group">
+            <label for="cad-pergunta">Pergunta / Enunciado:</label>
+            <textarea id="cad-pergunta" rows="3" placeholder="Digite o enunciado da questão..." required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #3b82f6; background: #1f2937; color: #fff;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="cad-op-a">Opção A:</label>
+            <input type="text" id="cad-op-a" placeholder="Texto da alternativa A" required>
+          </div>
+
+          <div class="form-group">
+            <label for="cad-op-b">Opção B:</label>
+            <input type="text" id="cad-op-b" placeholder="Texto da alternativa B" required>
+          </div>
+
+          <div class="form-group">
+            <label for="cad-op-c">Opção C:</label>
+            <input type="text" id="cad-op-c" placeholder="Texto da alternativa C" required>
+          </div>
+
+          <div class="form-group">
+            <label for="cad-op-d">Opção D:</label>
+            <input type="text" id="cad-op-d" placeholder="Texto da alternativa D" required>
+          </div>
+
+          <div class="form-group">
+            <label for="cad-correta">Alternativa Correta:</label>
+            <select id="cad-correta" required>
+              <option value="A">Alternativa A</option>
+              <option value="B">Alternativa B</option>
+              <option value="C">Alternativa C</option>
+              <option value="D">Alternativa D</option>
             </select>
           </div>
+
+          <button type="submit" class="btn" id="btn-salvar-questao">Salvar Questão no Banco 💾</button>
+        </form>
+
+        <div id="msg-sucesso-questao" class="mensagem-sucesso">✅ Questão salva com sucesso no Banco de Dados!</div>
+        <div id="msg-erro-questao" class="mensagem-erro">❌ Erro ao salvar questão. Verifique a conexão.</div>
+      </div>
+
+      <!-- CONFIGURAÇÕES E GERENCIADOR DE QUESTÕES EXISTENTES -->
+      <div>
+        <div class="card" style="margin-bottom: 20px;">
+          <h2>Configurações da Prova ⚙️</h2>
+          <form id="form-config-prova">
+            <div class="form-group">
+              <label for="cfg-materia-ativa">Matéria(s) da Prova:</label>
+              <select id="cfg-materia-ativa" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #3b82f6; background: #1f2937; color: #fff;">
+                <option value="TODAS">Todas as Matérias (Misto)</option>
+                <option value="Lingua Portuguesa">Língua Portuguesa</option>
+                <option value="Matematica">Matemática</option>
+                <option value="Historia">História</option>
+                <option value="Geografia">Geografia</option>
+                <option value="Biologia">Biologia</option>
+                <option value="Fisica">Física</option>
+                <option value="Quimica">Química</option>
+                <option value="Ingles">Inglês</option>
+                <option value="Desenvolvimento Front-End">Desenvolvimento Front-End</option>
+                <option value="Inteligencia Artificial">Inteligência Artificial</option>
+                <option value="Redes de computadores e Seguranca da informação na Nuvem">Redes de Computadores</option>
+                <option value="Processos de desenvolvimento de Software e Metodologias Ageis">Processos de Software</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="cfg-qtd-questoes">Quantidade de Questões por Prova:</label>
+              <input type="number" id="cfg-qtd-questoes" min="1" max="100" value="10" required>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="cfg-embaralhar" checked> Embaralhar ordem das questões
+              </label>
+            </div>
+
+            <button type="submit" class="btn" id="btn-salvar-config">Salvar Configurações ⚙️</button>
+          </form>
+
+          <div id="msg-sucesso-config" class="mensagem-sucesso">✅ Configurações atualizadas com sucesso!</div>
         </div>
-        <button type="submit">Adicionar Questão ao Banco 📥</button>
-        <span id="msg-cadastro" style="margin-left: 15px; font-weight: bold;"></span>
-      </form>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+            <h2>Questões no Banco (<span id="total-questoes-count">0</span>) 📚</h2>
+            <button id="btn-recarregar-banco-q" class="btn btn-secundario" style="padding: 4px 8px; font-size: 12px;">🔄 Recarregar</button>
+          </div>
+          
+          <div id="lista-questoes-banco" style="max-height: 380px; overflow-y: auto;">
+            <p style="text-align:center;">Carregando questões do banco...</p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 5. TABELA DE RESULTADOS + FILTRO DE TURMA E EXPORTAÇÃO -->
-    <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-        <h2>📊 Respostas dos Alunos em Tempo Real</h2>
-        
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" class="no-print">
-          <!-- FILTRO POR TURMA -->
-          <select id="filtro-turma-tabela" multiple size="4">
-  <option value="TODAS">Todas as Turmas</option>
-</select>
-
-          <div class="media-turma-box" id="media-turma-txt">Média: --</div>
-          <button id="btn-imprimir" class="btn-secondary">🖨️ Imprimir PDF</button>
-          <button id="btn-exportar" class="btn-secondary">📥 Exportar Turma (CSV)</button>
-          <button id="btn-atualizar">Atualizar 🔄</button>
+    <!-- TABELA DE RESULTADOS DAS AVALIAÇÕES (ÚNICA PARTE IMPRESSA) -->
+    <div class="card card-resultados" style="margin-top: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+        <h2>Resultados dos Alunos 📊</h2>
+        <div class="no-print">
+          <button id="btn-atualizar" class="btn" style="padding: 8px 12px; font-size: 14px;">🔄 Atualizar</button>
+          <button id="btn-exportar" class="btn btn-secundario" style="padding: 8px 12px; font-size: 14px;">📥 Exportar CSV</button>
+          <button id="btn-imprimir" class="btn btn-secundario" style="padding: 8px 12px; font-size: 14px;">🖨️ Imprimir</button>
         </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Data/Hora</th>
-            <th>Nome do Aluno</th>
-            <th>Turma</th>
-            <th>Acertos</th>
-            <th>Nota (0.0 a 10.0)</th>
-            <th>% Acerto</th>
-            <th class="no-print">Detalhamento</th>
-          </tr>
-        </thead>
-        <tbody id="corpo-tabela">
-          <tr><td colspan="7" style="text-align:center;">Carregando dados...</td></tr>
-        </tbody>
-      </table>
-    </div>
+      <div style="margin-bottom: 15px;">
+        <select id="filtro-turma-tabela" class="no-print" style="padding: 8px; border-radius: 6px;">
+          <option value="TODAS">Todas as Turmas</option>
+        </select>
+        <span id="media-turma-txt" style="margin-left: 15px; font-weight: bold; color: #4ade80;">Média: --</span>
+      </div>
 
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid #374151;">
+              <th style="padding: 8px;">Data/Hora</th>
+              <th style="padding: 8px;">Aluno</th>
+              <th style="padding: 8px;">Turma</th>
+              <th style="padding: 8px;">Acertos</th>
+              <th style="padding: 8px;">Nota</th>
+              <th style="padding: 8px;">%</th>
+              <th style="padding: 8px;">Matéria</th>
+              <th style="padding: 8px;" class="no-print">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela">
+            <tr><td colspan="8" style="text-align:center;">Carregando resultados...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <script type="module" src="app.js?v=11"></script>
+  <script type="module" src="app.js?v=18"></script>
 </body>
 </html>

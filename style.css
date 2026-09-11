@@ -41,6 +41,7 @@ body {
   padding: 30px;
   border-radius: var(--border-radius);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  margin-bottom: 20px;
 }
 
 .hidden {
@@ -53,11 +54,18 @@ h1 {
   color: #38bdf8;
 }
 
+h2 {
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+  color: #38bdf8;
+}
+
 p {
   color: var(--text-muted);
   margin-bottom: 20px;
 }
 
+/* Formulários, Inputs e Selects */
 .form-group {
   margin-bottom: 20px;
   text-align: left;
@@ -69,7 +77,9 @@ p {
   font-weight: 600;
 }
 
-.form-group input {
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select {
   width: 100%;
   padding: 12px;
   border-radius: 8px;
@@ -77,8 +87,44 @@ p {
   background-color: #0f172a;
   color: #fff;
   font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group select:focus {
+  border-color: var(--primary-color);
+}
+
+/* Estilização para Seleção Múltipla */
+.form-group select[multiple] {
+  height: auto;
+  min-height: 110px;
+  padding: 6px;
+}
+
+.form-group select[multiple] option {
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+
+.form-group select[multiple] option:checked {
+  background-color: var(--primary-color) linear-gradient(0deg, var(--primary-color) 0%, var(--primary-color) 100%);
+  color: #ffffff;
+}
+
+/* Dica/Instrução nos Formulários */
+.form-help {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Botões */
 .btn {
   width: 100%;
   padding: 14px;
@@ -96,11 +142,26 @@ p {
   background-color: var(--primary-hover);
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-secundario {
   width: auto;
   padding: 10px 20px;
   margin-bottom: 20px;
   background-color: #334155;
+}
+
+.btn-secundario:hover {
+  background-color: #475569;
+}
+
+.btn-grupo {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* Quiz Styles */
@@ -174,6 +235,23 @@ th {
   color: #38bdf8;
 }
 
+/* Badges de Notas na Tabela */
+.badge-nota {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.badge-nota.alta {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.badge-nota.baixa {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
 .placar-final {
   font-size: 2rem;
   font-weight: bold;
@@ -184,4 +262,31 @@ th {
 .status-envio {
   font-size: 0.9rem;
   color: var(--correct-color);
+}
+
+/* Regras de Impressão */
+@media print {
+  body {
+    background-color: #ffffff;
+    color: #000000;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    background-color: #ffffff;
+  }
+
+  .no-print, .btn, .btn-secundario {
+    display: none !important;
+  }
+
+  table, th, td {
+    border-color: #000;
+    color: #000;
+  }
+
+  th {
+    background-color: #f1f5f9;
+  }
 }
