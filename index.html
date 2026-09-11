@@ -78,6 +78,12 @@
         Carregando informações da prova...
       </div>
 
+      <div class="caixa-avisos" style="..."> <!-- Ou a classe/id que você já usa na sua caixa -->
+      <h3>📢 Avaliação Liberada:</h3>
+      <p style="margin: 5px 0; font-weight: bold; color: #60a5fa;">🏫 Escola: <span id="txt-escola-aviso">Carregando...</span></p>
+      <!-- o restante dos seus avisos que já existem -->
+      </div>
+
       <!-- Formulário do Aluno -->
       <form id="form-login">
         <label>Nome Completo do Aluno:</label>
@@ -106,6 +112,12 @@
     <div id="tela-quiz" class="hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <span id="progresso-txt" style="color: #93c5fd; font-size: 14px;">Questão 1 de 10</span>
+      </div>
+      
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <label style="margin: 0;">Turma (Ano e Letra):</label>
+        <span id="badge-escola-ativa" style="background-color: #f59e0b; color: #0f172a; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">Carregando escola...</span>
       </div>
 
       <h3 id="pergunta-txt" style="margin-bottom: 20px; font-size: 18px; line-height: 1.4;">Carregando pergunta...</h3>

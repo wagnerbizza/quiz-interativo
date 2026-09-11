@@ -425,50 +425,60 @@ if (window.location.pathname.includes("painel.html")) {
   }
 
   btnSalvarAtivacao?.addEventListener("click", async () => {
-    const qtdQ = parseInt(document.getElementById("qtd-questoes-ativa").value) || 10;
-    const materiasSelecionadas = Array.from(document.querySelectorAll(".chk-materia:checked")).map(cb => cb.value);
-    const modalidadesSelecionadas = Array.from(document.querySelectorAll(".chk-modalidade:checked")).map(cb => cb.value);
+  const selectEscola = document.getElementById("select-escola-ativa");
+  const inputNovaEscola = document.getElementById("input-nova-escola");
+  
+  // Pega a escola digitada ou a selecionada no select
+  const escolaAtual = (inputNovaEscola?.value.trim() || selectEscola?.value || "Geral").trim();
 
-    const anosSelecionados = Array.from(document.querySelectorAll(".chk-ano:checked")).map(cb => cb.value);
-    const letrasSelecionadas = Array.from(document.querySelectorAll(".chk-letra:checked")).map(cb => cb.value);
+  const qtdQ = parseInt(document.getElementById("qtd-questoes-ativa").value) || 10;
+  const materiasSelecionadas = Array.from(document.querySelectorAll(".chk-materia:checked")).map(cb => cb.value);
+  const modalidadesSelecionadas = Array.from(document.querySelectorAll(".chk-modalidade:checked")).map(cb => cb.value);
 
-    const turmasCompletas = [];
-    anosSelecionados.forEach(ano => {
-      letrasSelecionadas.forEach(letra => {
-        turmasCompletas.push(`${ano} - TURMA ${letra}`);
-      });
+  const anosSelecionados = Array.from(document.querySelectorAll(".chk-ano:checked")).map(cb => cb.value);
+  const letrasSelecionadas = Array.from(document.querySelectorAll(".chk-letra:checked")).map(cb => cb.value);
+
+  const turmasCompletas = [];
+  anosSelecionados.forEach(ano => {
+    letrasSelecionadas.forEach(letra => {
+      turmasCompletas.push(`${ano} - TURMA ${letra}`);
     });
-
-    if (modalidadesSelecionadas.length === 0) {
-      mostrarNotificacao("⚠️ Selecione pelo menos uma modalidade!", "erro");
-      return;
-    }
-
-    if (materiasSelecionadas.length === 0) {
-      mostrarNotificacao("⚠️ Selecione pelo menos uma matéria!", "erro");
-      return;
-    }
-
-    if (turmasCompletas.length === 0) {
-      mostrarNotificacao("⚠️ Selecione pelo menos um Ano e uma Letra de Turma!", "erro");
-      return;
-    }
-
-    try {
-      await setDoc(doc(db, "configuracoes", "prova_ativa"), {
-        quantidadeQuestoes: qtdQ,
-        materiasAtivas: materiasSelecionadas,
-        modalidadesAtivas: modalidadesSelecionadas,
-        turmasAtivas: turmasCompletas,
-        atualizadoEm: serverTimestamp()
-      }, { merge: true });
-
-      mostrarNotificacao("✅ Configurações salvas e sincronizadas com sucesso!", "sucesso");
-    } catch (e) {
-      mostrarNotificacao("Erro ao salvar: " + e.message, "erro");
-    }
   });
 
+  if (modalidadesSelecionadas.length === 0) {
+    mostrarNotificacao("⚠️ Selecione pelo menos uma modalidade!", "erro");
+    return;
+  }
+
+  if (materiasSelecionadas.length === 0) {
+    mostrarNotificacao("⚠️ Selecione pelo menos uma matéria!", "erro");
+    return;
+  }
+
+  if (turmasCompletas.length === 0) {
+    mostrarNotificacao("⚠️ Selecione pelo menos um Ano e uma Letra de Turma!", "erro");
+    return;
+  }
+
+  try {
+    const dadosConfig = {
+      escolaAtiva: escolaAtual,
+      quantidadeQuestoes: qtdQ,
+      materiasAtivas: materiasSelecionadas,
+      modalidadesAtivas: modalidadesSelecionadas,
+      turmasAtivas: turmasCompletas,
+      atualizadoEm: serverTimestamp()
+    };
+
+    // Salva globalmente e cria um registro próprio para a escola escolhida
+    await setDoc(doc(db, "configuracoes", "prova_ativa"), dadosConfig, { merge: true });
+    await setDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaAtual)), dadosConfig, { merge: true });
+
+    mostrarNotificacao(`✅ Configurações salvas para "${escolaAtual}" com sucesso!`, "sucesso");
+  } catch (e) {
+    mostrarNotificacao("Erro ao salvar: " + e.message, "erro");
+  }
+});
   formCadQuestao?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const modalidade = document.getElementById("cad-modalidade").value;
@@ -829,6 +839,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       `;
     });
 
+    
+
     const total = listaQuestoes.length;
     const nota = ((acertos / total) * 10).toFixed(1);
 
@@ -873,3 +885,53 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
   escutarAtivacoesProfessor();
 }
+
+// --- LÓGICA EXCLUSIVA PARA A TELA DO ALUNO ---
+async function carregarDadosIniciaisAluno() {
+  const selectTurmaAluno = document.getElementById("turma-aluno");
+  const spanEscolaAviso = document.getElementById("txt-escola-aviso");
+  const badgeEscolaQuiz = document.getElementById("badge-escola-ativa");
+  
+  try {
+    // 1. Busca qual é a escola ativa global definida no painel do professor
+    const docGlobal = await getDoc(doc(db, "configuracoes", "prova_ativa"));
+    if (!docGlobal.exists()) return;
+
+    const escolaAtiva = docGlobal.data().escolaAtiva || "EE José Lins do Rego";
+    
+    // 2. Preenche o nome da escola na tela de login (nos avisos)
+    if (spanEscolaAviso) {
+      spanEscolaAviso.textContent = escolaAtiva;
+    }
+
+    // 3. Preenche o crachá da escola na tela do quiz/prova
+    if (badgeEscolaQuiz) {
+      badgeEscolaQuiz.textContent = `🏫 ${escolaAtiva}`;
+    }
+
+    // 4. Busca as turmas e configurações específicas salvas para essa escola
+    const docEscola = await getDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaAtiva)));
+    const dadosConfig = docEscola.exists() ? docEscola.data() : docGlobal.data();
+
+    // 5. Preenche o select de turmas do aluno APENAS com as turmas daquela escola
+    if (selectTurmaAluno) {
+      selectTurmaAluno.innerHTML = `<option value="" disabled selected>Selecione sua Turma...</option>`;
+      
+      if (dadosConfig.turmasAtivas && Array.isArray(dadosConfig.turmasAtivas)) {
+        dadosConfig.turmasAtivas.forEach(turma => {
+          const opt = document.createElement("option");
+          opt.value = turma;
+          opt.textContent = turma;
+          selectTurmaAluno.appendChild(opt);
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao carregar dados da escola para o aluno:", e);
+    if (spanEscolaAviso) spanEscolaAviso.textContent = "Erro ao carregar escola";
+    if (badgeEscolaQuiz) badgeEscolaQuiz.textContent = "Erro na escola";
+  }
+}
+
+// Executa automaticamente ao carregar a página
+window.addEventListener("DOMContentLoaded", carregarDadosIniciaisAluno);
