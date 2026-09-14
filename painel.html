@@ -104,7 +104,8 @@
       <button class="btn-aba" data-aba="aba-escolas">🏫 Cadastro de Escolas</button>
       <button class="btn-aba" data-aba="aba-ativacao">🚀 Ativação de Provas</button>
       <button class="btn-aba" data-aba="aba-questoes">📚 Banco de Questões</button>
-      <button class="btn-aba" data-aba="aba-resultados">📊 Resultados e Impressão</button>
+      <button class="btn-aba" data-aba="aba-monitoramento">🟢 Monitoramento</button>
+      <button class="btn-aba" data-aba="aba-resultados">📊 Resultados e Relatórios</button>
     </div>
 
     <!-- ABA 0: CONFIGURAÇÕES GERAIS -->
@@ -232,12 +233,14 @@
       </form>
     </div>
 
-    <!-- ABA 4: RESULTADOS E TEMPO REAL -->
-    <div id="aba-resultados" class="aba-conteudo hidden">
+    <!-- ABA 4: MONITORAMENTO EM TEMPO REAL -->
+    <div id="aba-monitoramento" class="aba-conteudo hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
         <h2 style="margin: 0; border: none; padding: 0;">🟢 Alunos Acessando em Tempo Real (Em Andamento)</h2>
+        <button type="button" class="btn-acao" style="margin: 0; background-color: #ef4444; padding: 10px 16px; font-size: 13px;" onclick="limparEEnviarMonitoramentoParaRelatorio()">🧹 Limpar e Enviar para Relatórios</button>
       </div>
-      <table style="margin-bottom: 30px;">
+      <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Acompanhe abaixo os alunos que estão resolvendo a prova. Clique em "Limpar e Enviar" para concluir a prova dos alunos ativos e movê-los para os relatórios.</p>
+      <table>
         <thead>
           <tr>
             <th>Status</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria</th><th>Questão Atual</th><th>Tempo Decorrido</th>
@@ -247,9 +250,12 @@
           <tr><td colspan="7" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
         </tbody>
       </table>
+    </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; margin-top: 40px;">
-        <h2 style="margin: 0; border: none; padding: 0;">📊 Histórico de Resultados Concluídos</h2>
+    <!-- ABA 5: RESULTADOS E RELATÓRIOS -->
+    <div id="aba-resultados" class="aba-conteudo hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+        <h2 style="margin: 0; border: none; padding: 0;">📊 Histórico de Resultados e Relatórios</h2>
         <div style="display: flex; gap: 10px;" class="no-print">
           <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px; font-size: 13px;" onclick="window.print()">🖨️ Imprimir / PDF</button>
           <button type="button" class="btn-acao" style="margin: 0; background-color: #22c55e; padding: 10px 16px; font-size: 13px;" onclick="exportarResultadosCSV()">📥 Exportar CSV</button>
@@ -258,11 +264,11 @@
       <table>
         <thead>
           <tr>
-            <th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo Gasto</th><th>Acertos / Erros</th><th>Nota</th>
+            <th>Status</th><th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo Gasto</th><th>Acertos / Erros</th><th>Nota</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela">
-          <tr><td colspan="9" style="text-align:center;">Carregando resultados...</td></tr>
+          <tr><td colspan="10" style="text-align:center;">Carregando resultados...</td></tr>
         </tbody>
       </table>
     </div>

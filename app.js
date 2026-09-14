@@ -17,6 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let resultadosGlobaisCache = [];
+let alunosOnlineCache = []; // Cache para gerenciar limpeza do tempo real
 
 document.addEventListener("DOMContentLoaded", () => {
   document.body.classList.add("fade-in");
@@ -334,7 +335,7 @@ if (window.location.pathname.includes("painel.html")) {
   window.excluirItemGlobal = function(bIdx, iIdx) {
     let removido = estruturaGlobalBoxes[bIdx].itens[iIdx];
     if (confirm(`Excluir "${removido}"?`)) {
-      estruturaGlobalBoxes[bIdx].itens.splice(iIdx, 1);
+      estruturaGlobalBoxes[bIdx].itens.splice(bIdx, 1);
       renderizarBoxesGlobais();
       mostrarNotificacao("🗑️ Item excluído!");
     }
@@ -606,7 +607,7 @@ if (window.location.pathname.includes("painel.html")) {
       resultadosGlobaisCache.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       if (resultadosGlobaisCache.length === 0) {
-        corpoTabelaResultados.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #94a3b8;">Nenhum resultado registrado até o momento.</td></tr>`;
+        corpoTabelaResultados.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8;">Nenhum resultado registrado até o momento.</td></tr>`;
         return;
       }
 
@@ -620,6 +621,7 @@ if (window.location.pathname.includes("painel.html")) {
         
         htmlResultados += `
           <tr>
+            <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">✅ Finalizado</span></td>
             <td>${dataFormatada}</td>
             <td><strong>${res.escola || 'N/D'}</strong></td>
             <td>${res.periodo || 'N/D'}</td>
@@ -641,22 +643,24 @@ if (window.location.pathname.includes("painel.html")) {
     if (!corpoTabelaTempoReal) return;
     onSnapshot(collection(db, "alunos_online"), (snapshot) => {
       let htmlOnline = "";
-      let listaOnline = [];
-      snapshot.forEach(docSnap => { listaOnline.push(docSnap.data()); });
+      alunosOnlineCache = [];
+      snapshot.forEach(docSnap => { 
+        alunosOnlineCache.push({ idDoc: docSnap.id, ...docSnap.data() }); 
+      });
 
-      if (listaOnline.length === 0) {
+      if (alunosOnlineCache.length === 0) {
         corpoTabelaTempoReal.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>`;
         return;
       }
 
-      listaOnline.forEach(aluno => {
+      alunosOnlineCache.forEach(aluno => {
         let min = Math.floor((aluno.segundosPassados || 0) / 60);
         let seg = (aluno.segundosPassados || 0) % 60;
         let tempoStr = `${min}m ${seg}s`;
 
         htmlOnline += `
           <tr>
-            <td><span style="rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">🟢 Em andamento</span></td>
+            <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">🟢 Em andamento</span></td>
             <td><strong>${aluno.escola || 'N/D'}</strong></td>
             <td>${aluno.nome || 'Aluno'}</td>
             <td>${aluno.turma || 'N/D'}</td>
@@ -670,19 +674,66 @@ if (window.location.pathname.includes("painel.html")) {
     });
   }
 
+  // Função para limpar a lista de monitoramento e enviar os registros para o relatório no Firebase
+  window.limparEEnviarMonitoramentoParaRelatorio = async function() {
+    if (!alunosOnlineCache || alunosOnlineCache.length === 0) {
+      alert("⚠️ Não há alunos ativos no monitoramento no momento.");
+      return;
+    }
+
+    if (!confirm(`Deseja finalizar a prova dos ${alunosOnlineCache.length} aluno(s) ativos, movendo-os para a aba de relatórios?`)) {
+      return;
+    }
+
+    try {
+      for (const aluno of alunosOnlineCache) {
+        const agora = Date.now();
+        let min = Math.floor((aluno.segundosPassados || 0) / 60);
+        let seg = (aluno.segundosPassados || 0) % 60;
+        let tempoGastoFormatado = `${min}m ${seg}s`;
+
+        // 1. Salva nos relatórios (avaliacoes)
+        await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
+          idAluno: aluno.idDoc,
+          nome: aluno.nome,
+          turma: aluno.turma,
+          escola: aluno.escola,
+          periodo: aluno.periodo || "Geral",
+          materia: aluno.materia || "Geral",
+          pontuacao: 0, // Como foi finalizado pelo painel, atribui-se fechamento manual
+          totalQuestoes: aluno.totalQuestoes || 10,
+          tempoGastoSegundos: aluno.segundosPassados || 0,
+          tempoGastoFormatado: tempoGastoFormatado,
+          dataEnvio: serverTimestamp(),
+          timestamp: agora
+        });
+
+        // 2. Bloqueia nova tentativa do aluno
+        await setDoc(doc(db, "permissoes_alunos", aluno.idDoc), { podeFazer: false });
+
+        // 3. Remove da lista de monitoramento em tempo real
+        await deleteDoc(doc(db, "alunos_online", aluno.idDoc));
+      }
+
+      mostrarNotificacao("✅ Alunos removidos do monitoramento e enviados com sucesso para os relatórios!");
+    } catch (err) {
+      mostrarNotificacao("Erro ao processar: " + err.message);
+    }
+  };
+
   window.exportarResultadosCSV = function() {
     if (!resultadosGlobaisCache || resultadosGlobaisCache.length === 0) {
       alert("⚠️ Não há resultados para exportar.");
       return;
     }
-    let csvContent = "\uFEFFData/Hora;Escola;Período;Aluno;Turma;Matéria;Tempo Gasto;Acertos;Erros;Nota\n";
+    let csvContent = "\uFEFFStatus;Data/Hora;Escola;Período;Aluno;Turma;Matéria;Tempo Gasto;Acertos;Erros;Nota\n";
     resultadosGlobaisCache.forEach(res => {
       let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
       let totalQ = res.totalQuestoes || 0;
       let acertos = res.pontuacao || 0;
       let erros = totalQ - acertos;
       let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
-      let linha = `"${dataFormatada}";"${res.escola || ''}";"${res.periodo || ''}";"${res.nome || ''}";"${res.turma || ''}";"${res.materia || ''}";"${res.tempoGastoFormatado || ''}";"${acertos}";"${erros}";"${nota}"\n`;
+      let linha = `"Finalizado";"${dataFormatada}";"${res.escola || ''}";"${res.periodo || ''}";"${res.nome || ''}";"${res.turma || ''}";"${res.materia || ''}";"${res.tempoGastoFormatado || ''}";"${acertos}";"${erros}";"${nota}"\n`;
       csvContent += linha;
     });
     let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
