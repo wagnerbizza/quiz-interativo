@@ -63,11 +63,33 @@ function normalizarTexto(txt) {
 }
 
 function normalizarDocumentoQuestao(d, idDoc = null) {
+  let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
+  let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
+
+  let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
+  let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
+  
+  let textoCorretoOriginal = opcoesBrutas[0];
+  if (letraCorreta === 'B') textoCorretoOriginal = opcoesBrutas[1];
+  if (letraCorreta === 'C') textoCorretoOriginal = opcoesBrutas[2];
+  if (letraCorreta === 'D') textoCorretoOriginal = opcoesBrutas[3];
+
+  let opcoesLimpas = opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim());
+  let textoCorretoLimpo = (textoCorretoOriginal || "").replace(/^[A-D]\)\s*/, "").trim();
+
+  let indices = [0, 1, 2, 3];
+  indices.sort(() => Math.random() - 0.5);
+
+  let opcoesEmbaralhadas = indices.map(i => opcoesLimpas[i]);
+  let novoIndexCorreto = indices.findIndex(i => opcoesLimpas[i] === textoCorretoLimpo);
+  if (novoIndexCorreto === -1) novoIndexCorreto = 0;
+  let novaLetraCorreta = ["A", "B", "C", "D"][novoIndexCorreto];
+
   return {
     idDoc: idDoc,
-    pergunta: d.pergunta || d.questao || d.titulo || "Pergunta Sem Título",
-    opcoes: d.opcoes || d.alternativas || d.respostas || [],
-    correta: (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase(),
+    pergunta: perguntaLimpa,
+    opcoes: opcoesEmbaralhadas,
+    correta: novaLetraCorreta,
     categoria: d.categoria || d.materia || d.disciplina || "Geral"
   };
 }
@@ -124,216 +146,21 @@ async function salvarEstruturaGlobalFirebase() {
 async function garantirBancoMinimoQuestoes() {
   try {
     await carregarEstruturaGlobalFirebase();
-    
-    // Matrizes completas com 50+ questões técnicas detalhadas
     const bancoQuestoesTecnicasExtendido = {
       "Inteligencia Artificial": [
         { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com as respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
         { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" },
-        { p: "O que significa o conceito de Deep Learning?", ops: ["Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas", "Processamento de planilhas eletrônicas gigantescas", "Criptografia de ponta a ponta em redes locais", "Compactação avançada de arquivos de vídeo"], c: "A" },
-        { p: "Qual a finalidade do Processamento de Linguagem Natural (PLN)?", ops: ["Traduzir scripts de banco de dados SQL", "Permitir que computadores compreendan, interpretem e gerem linguagem humana", "Validar sintaxe de arquivos HTML", "Desenhar interfaces gráficas de usuário"], c: "B" },
-        { p: "O que avalia o Teste de Turing?", ops: ["A capacidade de uma máquina exibir comportamento inteligente equivalente ou indistinguível do humano", "A velocidade máxima de clock de um processador quântico", "A largura de banda de uma conexão de fibra óptica", "A segurança de sistemas contra ataques de negação de serviço"], c: "A" },
-        { p: "Em Machine Learning, o que é o Overfitting?", ops: ["Quando o modelo se ajusta excessivamente aos dados de treino e generaliza mal para novos dados", "Quando o algoritmo roda muito devagar por falta de memória RAM", "Quando a base de dados é muito pequena para análise", "Quando ocorre erro de sintaxe na compilação"], c: "A" },
-        { p: "O que é Visão Computacional?", ops: ["Campo focado em permitir que computadores extraiam informações compreensíveis de imagens e vídeos", "Placas de vídeo dedicadas a jogos em 4K", "Monitores com taxa de atualização de 240Hz", "Sistemas operacionais voltados para design gráfico"], c: "A" },
-        { p: "O que caracteriza o Aprendizado por Reforço?", ops: ["O agente aprende tomando ações e recebendo recompensas ou punições no ambiente", "O sistema lê livros didáticos automaticamente", "O usuário corrige manualmente cada linha de código gerada", "Ocorre apenas em bancos de dados relacionais"], c: "A" },
-        { p: "O que são Algoritmos Genéticos?", ops: ["Técnicas de otimização inspiradas na seleção natural e na evolução biológica", "Vírus de computador que modificam o DNA digital", "Ferramentas de controle de versão de código fonte", "Protocolos de roteamento de pacotes TCP/IP"], c: "A" },
-        { p: "O que é aprendizado não supervisionado?", ops: ["Treinamento sem intervenção humana e sem dados rotulados, descobrindo agrupamentos ocultos", "Uso de gabaritos oficiais para correção de provas", "Sistemas supervisionados por um gerente de TI", "Execução de testes unitários automatizados"], c: "A" },
-        { p: "Qual a função de uma função de ativação em redes neurais?", ops: ["Introduzir não-linearidade no modelo permitindo aprender padrões complexos", "Ligar ou desligar o computador remotamente", "Aumentar a velocidade do processador central", "Compactar os pesos sinápticos"], c: "A" },
-        { p: "O que é o algoritmo KNN (K-Nearest Neighbors)?", ops: ["Um classificador baseado na proximidade dos vizinhos mais próximos no espaço de features", "Um protocolo de criptografia simétrica", "Um framework de desenvolvimento web", "Uma ferramenta de design de banco de dados"], c: "A" },
-        { p: "O que é uma Árvore de Decisão em IA?", ops: ["Um modelo preditivo estruturado em nós que representam testes em atributos", "Um organograma corporativo de funcionários", "Uma estrutura de diretórios em servidores Linux", "Um fluxograma de rede de computadores"], c: "A" },
-        { p: "O que significa a sigla NLP?", ops: ["Natural Language Processing", "Network Layer Protocol", "New Logic Programming", "Node Link Processor"], c: "A" },
-        { p: "O que é o algoritmo K-Means?", ops: ["Um algoritmo de agrupamento (clustering) não supervisionado", "Uma ferramenta de segurança em nuvem", "Um compilador de inteligência artificial", "Um framework mobile"], c: "A" },
-        { p: "Qual o papel do conjunto de dados de teste (Test Dataset)?", ops: ["Avaliar o desempenho final e a generalização do modelo treinado de forma imparcial", "Treinar os parâmetros iniciais da rede", "Servir de backup para o banco de produção", "Acelerar o carregamento da aplicação web"], c: "A" },
-        { p: "O que é inteligência artificial generativa?", ops: ["Sistemas capazes de criar novos conteúdos como textos, imagens e códigos a partir de prompts", "IAs focadas unicamente em cálculos aritméticos simples", "Robôs industriais de linha de montagem", "Sistemas de controle de tráfego urbano"], c: "A" },
-        { p: "O que é uma rede GAN (Generative Adversarial Network)?", ops: ["Duas redes neurais (geradora e discriminadora) que competem entre si para gerar dados realistas", "Um protocolo de segurança corporativa", "Uma arquitetura de banco de dados distribuído", "Um sistema de arquivos em nuvem"], c: "A" },
-        { p: "O que é o Gradient Descent (Gradiente Descendente)?", ops: ["Um algoritmo de otimização iterativo usado para minimizar a função de custo do modelo", "Um método para medir a velocidade de download", "Um protocolo de roteamento dinâmico", "Uma ferramenta de limpeza de cache"], c: "A" },
-        { p: "O que caracteriza os modelos baseados em Transformers em IA?", ops: ["Uso de mecanismos de atenção para processar sequências de dados em paralelo", "Conversão de energia elétrica em torque mecânico", "Transmissão de dados via rádio frequência", "Estrutura estática baseada em regras fixas"], c: "A" },
-        { p: "O que é um Chatbot inteligente?", ops: ["Um programa de computador projetado para simular conversas humanas via texto ou voz", "Um cabo adaptador de rede", "Um roteador Wi-Fi inteligente", "Um antivírus automatizado"], c: "A" },
-        { p: "O que significa Bias (Viés) em modelos de Machine Learning?", ops: ["Erros sistemáticos devido a hipóteses incorretas no algoritmo ou preconceitos nos dados", "A velocidade de processamento da CPU", "O consumo de memória da aplicação", "A quantidade de camadas ocultas"], c: "A" },
-        { p: "O que é mineração de dados (Data Mining)?", ops: ["Processo de extração de padrões úteis e conhecimento a partir de grandes bases de dados", "Extração física de minérios para fabricação de chips", "Exclusão de arquivos corrompidos", "Formatação de discos rígidos"], c: "A" },
-        { p: "O que é reconhecimento de padrões?", ops: ["Capacidade do sistema de identificar regularidades e tendências nos dados", "Conferência de senhas digitadas", "Impressão de etiquetas padronizadas", "Verificação de cabos de rede"], c: "A" },
-        { p: "O que é o aprendizado federado?", ops: ["Treinamento de modelos de IA de forma descentralizada preservando a privacidade dos dados locais", "Federação de servidores de internet", "Sistemas de votação eletrônica", "Redes de computadores governamentais"], c: "A" },
-        { p: "O que é um modelo preditivo?", ops: ["Um modelo matemático treinado para prever resultados futuros com base em dados históricos", "Um relatório financeiro anual", "Um cronograma de aulas", "Uma ferramenta de previsão do tempo analógica"], c: "A" },
-        { p: "O que é visão computacional em tempo real?", ops: ["Processamento de imagens de vídeo instantaneamente para tomada de decisão imediata", "Impressão fotográfica rápida", "Salvamento automático de fotos na nuvem", "Transmissão de TV via satélite"], c: "A" },
-        { p: "O que é o aprendizado semi-supervisionado?", ops: ["Abordagem que utiliza uma pequena quantidade de dados rotulados e muitos não rotulados", "Treinamento realizado apenas pela metade do dia", "Sistemas que funcionam sem energia elétrica", "Redes neurais com metade dos neurônios"], c: "A" },
-        { p: "O que é Inteligência Artificial Forte (AGI)?", ops: ["Hipotética IA com capacidade cognitiva geral equivalente ou superior à humana em qualquer tarefa", "Um robô de metal altamente resistente", "Um supercomputador militar de grande porte", "Um sistema operacional blindado"], c: "A" },
-        { p: "O que são pesos sinápticos em uma rede neural?", ops: ["Parâmetros numéricos ajustados durante o treinamento que determinam a força da conexão entre neurônios", "O peso físico dos servidores em gramas", "A carga da bateria do dispositivo", "O tamanho do arquivo de código"], c: "A" },
-        { p: "O que é a função de perda (Loss Function)?", ops: ["Métrica que quantifica o erro entre a previsão do modelo e o valor real esperado", "Controle de arquivos deletados por engano", "Medidor de perda de pacotes de rede", "Relatório de evasão escolar"], c: "A" },
-        { p: "O que é o aprendizado por transferência (Transfer Learning)?", ops: ["Reaproveitamento de um modelo pré-treinado em nova tarefa relacionada para acelerar o aprendizado", "Migração de arquivos entre servidores", "Cópia de dados via pendrive", "Transferência bancária automatizada"], c: "A" },
-        { p: "O que é um hiperparâmetro em machine learning?", ops: ["Parâmetro externo cuja configuração é definida antes do início do processo de treinamento", "Um parâmetro que muda sozinho na nuvem", "A velocidade máxima do sistema operacional", "Um comando de terminal Linux"], c: "A" },
-        { p: "O que caracteriza os sistemas especialistas?", ops: ["Sistemas que emulam o conhecimento e raciocínio humano de um especialista em domínio específico", "Profissionais de TI experientes", "Computadores velhos que funcionam bem", "Manuais de instrução impressos"], c: "A" },
-        { p: "O que é robótica inteligente?", ops: ["Integração de IA com sistemas robóticos para percepção, raciocínio e ação autônoma", "Brinquedos de controle remoto", "Linhas de montagem manuais", "Sistemas de automação residencial básica"], c: "A" },
-        { p: "O que é a ética em Inteligência Artificial?", ops: ["Estudo e diretrizes para garantir que sistemas de IA sejam justos, seguros, transparentes e sem viés discriminatório", "Regras de vestimenta para programadores", "Direitos autorais de códigos abertos", "Licenciamento de softwares comerciais"], c: "A" },
-        { p: "O que é o reconhecimento de voz?", ops: ["Tecnologia que converte a fala humana em texto compreensível por sistemas computucionais", "Gravador de áudio digital", "Caixa de som inteligente", "Microfone sem fio"], c: "A" },
-        { p: "O que é clusterização hierárquica?", ops: ["Método de análise de agrupamento que constrói uma hierarquia de clusters", "Organização de pastas em árvore no Windows", "Hierarquia de servidores web", "Organograma de cargos escolares"], c: "A" },
-        { p: "O que é o aprendizado ativo?", ops: ["Estratégia onde o algoritmo pode consultar interativamente um usuário para rotular novos dados informativos", "Alunos estudando ativamente na sala de aula", "Sistemas operacionais em execução contínua", "Rotinas de backup executadas ao vivo"], c: "A" },
-        { p: "O que é uma rede neural convolucional (CNN)?", ops: ["Rede neural especializada no processamento de dados com grade espacial, como imagens", "Rede de computadores cabeada", "Protocolo de rede seguro", "Sistema de transmissão de energia"], c: "A" },
-        { p: "O que é uma rede neural recorrente (RNN)?", ops: ["Rede projetada para processar dados sequenciais, mantendo memória de estados anteriores", "Rede que reinicia sozinha após falhas", "Backup executado recorrentemente", "Sistema de energia ininterrupta"], c: "A" },
-        { p: "O que é o ajuste fino (Fine-tuning)?", ops: ["Processo de refinar um modelo pré-treinado em um conjunto de dados específico", "Ajustar o monitor do computador", "Configurar a resolução da tela", "Calibrar o teclado mecânico"], c: "A" },
-        { p: "O que é a matriz de confusão em Machine Learning?", ops: ["Tabela usada para avaliar o desempenho de um modelo de classificação (acertos e erros)", "Uma planilha desorganizada de notas", "Relatório de erros de rede", "Logs corrompidos de sistema"], c: "A" },
-        { p: "O que significa a métrica Acurácia?", ops: ["Proporção de previsões corretas feitas pelo modelo em relação ao total de casos", "Velocidade de processamento da IA", "Tamanho do arquivo do modelo", "Consumo de energia da GPU"], c: "A" },
-        { p: "O que é Inteligência Artificial Fraca (Narrow AI)?", ops: ["Sistemas de IA especializados em realizar tarefas específicas com alto desempenho", "IAs que funcionam com bateria fraca", "Algoritmos lentos e mal otimizados", "Computadores antigos sem placa de vídeo"], c: "A" },
-        { p: "O que é o data augmentation (aumento de dados)?", ops: ["Técnica para artificialmente expandir o tamanho do conjunto de dados de treino criando variações", "Aumento da capacidade do HD", "Instalação de mais memória RAM", "Upgrade de servidores em nuvem"], c: "A" },
-        { p: "O que é a normalização de dados?", ops: ["Processo de dimensionar os valores numéricos para uma faixa padrão antes do treino", "Deixar o texto em formato normal", "Padronizar nomes de arquivos", "Organizar pastas de projeto"], c: "A" },
-        { p: "O que é uma base de conhecimento em IA?", ops: ["Repositório estruturado contendo fatos, regras e informações sobre um domínio", "Uma biblioteca pública de livros", "Um site de pesquisas na web", "Um arquivo de texto simples"], c: "A" },
-        { p: "O que é inferência em Inteligência Artificial?", ops: ["Processo de usar um modelo treinado para fazer previsões em novos dados", "Conclusão precipitada de um problema", "Erro de execução de código", "Interrupção forçada de processo"], c: "A" },
-        { p: "O que é aprendizado online em IA?", ops: ["Modelo que é atualizado continuamente à medida que novos dados chegam sequencialmente", "Estudar IA através de cursos na internet", "Acessar tutoriais via navegador web", "Conexão de rede ativa"], c: "A" }
+        { p: "O que significa o conceito de Deep Learning?", ops: ["Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas", "Processamento de planilhas eletrônicas gigantescas", "Criptografia de ponta a ponta em redes locais", "Compactação avançada de arquivos de vídeo"], c: "A" }
       ],
       "Front-end": [
         { p: "Qual a principal responsabilidade do CSS em páginas web?", ops: ["Estruturar os textos semânticos", "Controlar a aparência visual, layout, cores e responsividade", "Processar regras de negócio no servidor", "Armazenar dados em banco NoSQL"], c: "B" },
-        { p: "O que significa criar um layout responsivo?", ops: ["Carregar páginas instantaneamente", "Adaptar a interface de forma fluida a diferentes tamanhos de tela e dispositivos", "Usar apenas imagens em formato SVG", "Bloquear o uso de mouses e teclados"], c: "B" },
-        { p: "Qual tag HTML é utilizada para importar folhas de estilo CSS externas?", ops: ["<script>", "<link>", "<style>", "<meta>"], c: "B" },
-        { p: "O que é o DOM (Document Object Model)?", ops: ["Um banco de dados embarcado", "Uma representação hierárquica em árvore do documento HTML manipulável por scripts", "Um framework JavaScript", "Um protocolo de rede"], c: "B" },
-        { p: "Qual propriedade CSS define o espaçamento interno de um elemento?", ops: ["margin", "padding", "border", "spacing"], c: "B" },
-        { p: "O que é o Flexbox no CSS?", ops: ["Um modelo de layout unidimensional para alinhar e distribuir itens com facilidade", "Uma biblioteca de animações 3D", "Um compilador de código fonte", "Um gerenciador de pacotes"], c: "A" },
-        { p: "Qual é a função primordial do JavaScript no navegador?", ops: ["Adicionar interatividade, dinamismo e lógica de programação do lado do cliente", "Apenas estruturar títulos e parágrafos", "Substituir servidores de banco de dados", "Compilar binários nativos"], c: "A" },
-        { p: "O que é o React?", ops: ["Uma biblioteca JavaScript para criação de interfaces de usuário baseadas em componentes", "Um servidor web Apache", "Um sistema operacional mobile", "Um framework backend em PHP"], c: "A" },
-        { p: "O que significa CSS Grid Layout?", ops: ["Um sistema de layout bidimensional para linhas e colunas", "Uma ferramenta de testes de unidade", "Um protocolo de transferência web", "Uma tag HTML obsoleta"], c: "A" },
-        { p: "O que é AJAX?", ops: ["Técnica para realizar requisições assíncronas ao servidor sem recarregar a página", "Um framework CSS moderno", "Um editor de texto para web", "Uma ferramenta de versionamento"], c: "A" },
-        { p: "Qual tag HTML é usada para criar um hiperlink?", ops: ["<a>", "<link>", "<href>", "<url>"], c: "A" },
-        { p: "O que significa HTML?", ops: ["HyperText Markup Language", "High Tech Modern Language", "Hyperlink Transfer Media Language", "Home Tool Multi Language"], c: "A" },
-        { p: "Qual propriedade CSS altera a cor do texto?", ops: ["color", "background-color", "text-style", "font-color"], c: "A" },
-        { p: "O que é o seletor de ID no CSS?", ops: ["Identificado pelo símbolo '#' para estilizar um elemento único específico", "Identificado por '.' para classes globais", "Identificado por '*' para todos os elementos", "Identificado por tags HTML diretas"], c: "A" },
-        { p: "O que é o seletor de Classe no CSS?", ops: ["Identificado pelo símbolo '.' para estilizar múltiplos elementos compartilhados", "Identificado por '#' para IDs únicos", "Identificado por '@' para variáveis", "Identificado por '$' para funções"], c: "A" },
-        { p: "O que é Semantic HTML (HTML Semântico)?", ops: ["Uso de tags que dão significado estrutural ao conteúdo (ex: <header>, <article>, <footer>)", "Uso apenas de tags <div> para tudo", "Criação de códigos em linguagem de máquina", "Uso de criptografia em formulários"], c: "A" },
-        { p: "O que é o LocalStorage no navegador?", ops: ["Um mecanismo de armazenamento web que guarda dados sem data de expiração", "Uma pasta oculta no disco rígido do servidor", "Um banco de dados SQL remoto", "Um cache de imagens temporárias"], c: "A" },
-        { p: "O que é o SessionStorage?", ops: ["Armazenamento web que persiste dados apenas durante a sessão da aba aberta", "Armazenamento permanente em nuvem", "Um protocolo de sessão HTTP", "Um framework JavaScript"], c: "A" },
-        { p: "O que faz a propriedade CSS 'display: none'?", ops: ["Oculta completamente o elemento da página sem ocupar espaço no layout", "Apenas deixa o elemento transparente", "Move o elemento para o fundo da tela", "Desativa cliques no elemento"], c: "A" },
-        { p: "O que é Bootstrap?", ops: ["Um popular framework CSS focado em componentes pré-estilizados e responsividade", "Uma linguagem de programação backend", "Um banco de dados NoSQL", "Um editor de código fonte"], c: "A" },
-        { p: "O que é SASS / SCSS?", ops: ["Um pré-processador CSS que adiciona recursos avançados como variáveis e mixins", "Um framework JavaScript", "Um protocolo de rede seguro", "Uma biblioteca de gráficos estatísticos"], c: "A" },
-        { p: "O que é o evento 'onclick' em JavaScript?", ops: ["Um manipulador de eventos disparado quando o usuário clica em um elemento", "Um comando para desligar a tela", "Uma função de animação CSS", "Um tipo de dado numérico"], c: "A" },
-        { p: "O que é JSON (JavaScript Object Notation)?", ops: ["Um formato leve de intercâmbio de dados baseado em sintaxe de objetos JavaScript", "Uma linguagem de estilização", "Um compilador de código fonte", "Um protocolo de criptografia"], c: "A" },
-        { p: "O que é o npm (Node Package Manager)?", ops: ["O gerenciador de pacotes padrão para o ecossistema Node.js e JavaScript", "Um banco de dados relacional", "Um servidor web de alta performance", "Um framework de testes front-end"], c: "A" },
-        { p: "O que é uma Single Page Application (SPA)?", ops: ["Uma aplicação web que carrega uma única página HTML e atualiza o conteúdo dinamicamente", "Um site estático de uma única página sem interatividade", "Um documento PDF interativo", "Um aplicativo mobile nativo"], c: "A" },
-        { p: "O que faz a propriedade CSS 'position: absolute'?", ops: ["Posiciona o elemento em relação ao seu ancestral mais próximo posicionado", "Mantém o elemento fixo na tela durante a rolagem", "Posiciona o elemento no fluxo normal do documento", "Centraliza automaticamente o elemento"], c: "A" },
-        { p: "O que é o Git no desenvolvimento Front-end?", ops: ["Um sistema de controle de versão distribuído para rastrear alterações em códigos", "Um servidor web local", "Uma biblioteca de componentes visuais", "Um editor de texto"], c: "A" },
-        { p: "O que são Media Queries no CSS?", ops: ["Técnica de design responsivo que aplica estilos baseados nas características do dispositivo (ex: largura da tela)", "Consultas SQL feitas no navegador", "Funções JavaScript para manipulação de áudio", "Tags HTML para incorporar vídeos"], c: "A" },
-        { p: "O que é o método 'addEventListener' em JavaScript?", ops: ["Método para registrar um ouvinte de eventos em um elemento alvo", "Função para somar números", "Comando para criar novas tags HTML", "Método para estilizar elementos CSS"], c: "A" },
-        { p: "O que é o framework Vue.js?", ops: ["Um framework JavaScript progressivo para construção de interfaces de usuário", "Um banco de dados em nuvem", "Uma ferramenta de testes unitários", "Um compilador CSS"], c: "A" },
-        { p: "O que é TypeScript?", ops: ["Um superconjunto tipado de JavaScript que é compilado para JavaScript puro", "Uma nova linguagem sem relação com JS", "Um banco de dados relacional", "Um framework backend"], c: "A" },
-        { p: "O que é o conceito de Componentização?", ops: ["Divisão da interface de usuário em partes independentes, reutilizáveis e isoladas", "Divisão de arquivos em pastas compactadas", "Separação de servidores web", "Isolamento de redes locais"], c: "A" },
-        { p: "O que é o Webpack?", ops: ["Um empacotador de módulos JavaScript para aplicações web modernas", "Um servidor de banco de dados", "Um navegador web para desenvolvedores", "Uma ferramenta de design gráfico"], c: "A" },
-        { p: "O que é o método 'fetch' em JavaScript?", ops: ["API nativa para realizar requisições HTTP assíncronas via rede", "Método para buscar arquivos no computador local", "Função para atualizar a página", "Comando para apagar dados do navegador"], c: "A" },
-        { p: "O que é o arquivo 'package.json'?", ops: ["Arquivo de manifesto que armazena metadados e dependências de um projeto Node.js", "Um documento de texto sem formatação", "Um arquivo de estilos CSS", "Um banco de dados JSON"], c: "A" },
-        { p: "O que é o conceito de CSS Reset / Normalize?", ops: ["Técnica para padronizar a aparência padrão de elementos entre diferentes navegadores", "Apagar todo o código CSS escrito", "Reiniciar o servidor web", "Limpar o cache do navegador"], c: "A" },
-        { p: "O que faz a propriedade CSS 'z-index'?", ops: ["Controla a ordem de empilhamento (sobreposição) dos elementos no eixo Z", "Define o zoom da página", "Controla o tamanho da fonte", "Alinha o texto verticalmente"], c: "A" },
-        { p: "O que é o estado (State) em componentes front-end?", ops: ["Objeto que armazena dados dinâmicos e reativos que determinam o comportamento do componente", "O estado de conexão com a internet", "A localização geográfica do usuário", "O status do servidor backend"], c: "A" },
-        { p: "O que é o roteamento no Front-end (Client-side Routing)?", ops: ["Gerenciamento de navegação entre diferentes vistas/páginas no navegador sem recarregar a aplicação", "Roteamento de pacotes de rede TCP/IP", "Configuração de roteadores Wi-Fi", "Direcionamento de e-mails"], c: "A" },
-        { p: "O que é um Progressive Web App (PWA)?", ops: ["Aplicação web que utiliza recursos modernos para oferecer experiência semelhante a um app nativo", "Um site antigo em HTML puro", "Um aplicativo exclusivo para Windows", "Um vírus de navegador"], c: "A" },
-        { p: "O que é o método 'document.querySelector'?", ops: ["Método JavaScript que retorna o primeiro elemento que corresponde a um seletor CSS especificado", "Uma tag HTML para buscas", "Um comando CSS", "Uma função de banco de dados"], c: "A" },
-        { p: "O que é Tailwind CSS?", ops: ["Um framework CSS utilitário focado na composição rápida de designs customizados", "Uma biblioteca de gráficos 3D", "Um compilador JavaScript", "Um servidor web leve"], c: "A" },
-        { p: "O que é minificação de código?", ops: ["Processo de remover caracteres desnecessários (espaços, comentários) para reduzir o tamanho dos arquivos", "Encolher o tamanho da fonte na tela", "Reduzir o número de linhas HTML", "Comprimir imagens em JPEG"], c: "A" },
-        { p: "O que é o conceito de Acessibilidade (a11y) na web?", ops: ["Práticas para garantir que sites sejam utilizáveis por pessoas com deficiências", "Acesso livre sem senha à internet", "Velocidade de carregamento rápida", "Compatibilidade com celulares antigos"], c: "A" },
-        { p: "O que faz a propriedade CSS 'box-sizing: border-box'?", ops: ["Inclui largura de borda e padding nas dimensões totais calculadas do elemento", "Cria uma caixa 3D ao redor do texto", "Esconde as bordas do elemento", "Alinha caixas em formato de grade"], c: "A" },
-        { p: "O que é o ciclo de vida de um componente?", ops: ["As fases que um componente atravessa desde sua criação até sua remoção da tela", "O tempo de vida útil do computador", "A validade de um certificado SSL", "O tempo de carregamento da página"], c: "A" },
-        { p: "O que é o operador spread (...) em JavaScript?", ops: ["Operador que permite expandir elementos de iteráveis (como arrays) em locais esperados", "Um comando para multiplicar números", "Uma função de estilização CSS", "Um protocolo de rede"], c: "A" },
-        { p: "O que são Promises em JavaScript?", ops: ["Objetos que representam a conclusão ou falha de uma operação assíncrona", "Promessas de entrega de software", "Contratos de trabalho digital", "Funções síncronas bloqueantes"], c: "A" },
-        { p: "O que é o conceito de Mobile First?", ops: ["Estratégia de design e desenvolvimento priorizando telas de dispositivos móveis antes dos desktops", "Aplicativos móveis feitos em primeiro lugar", "Uso exclusivo de celulares na escola", "Redes móveis 5G"], c: "A" },
-        { p: "O que é o Linting de código (ex: ESLint)?", ops: ["Análise estática de código para encontrar e corrigir problemas de estilo e erros", "Limpeza de arquivos temporários", "Compactação de códigos JavaScript", "Atualização de bibliotecas"], c: "A" }
+        { p: "O que significa criar um layout responsivo?", ops: ["Carregar páginas instantaneamente", "Adaptar a interface de forma fluida a diferentes tamanhos de tela e dispositivos", "Usar apenas imagens em formato SVG", "Bloquear o uso de mouses e teclados"], c: "B" }
       ],
       "Redes de computadores e seguranca da informação na nuvem": [
-        { p: "O que caracteriza o modelo IaaS na computação em nuvem?", ops: ["Locação de infraestrutura básica como servidores virtuais, armazenamento e redes", "Entrega de softwares prontos via navegador", "Ambiente exclusivo para programar sem gerenciar servidores", "Armazenamento local em HDs físicos"], c: "A" },
-        { p: "O que representa a Criptografia de Dados na nuvem?", ops: ["Conversão de dados legíveis em formato codificado ilegível sem a chave correta", "Compactação de arquivos grandes para economia de banda", "Exclusão permanente de logs de acesso", "Isolamento físico de cabos de rede"], c: "A" },
-        { p: "O que é um Firewall?", ops: ["Dispositivo ou software de segurança que monitora e filtra o tráfego de rede baseado em regras", "Um sistema de arquivos criptografados", "Um cabo de rede blindado de alta velocidade", "Um protocolo de e-mail seguro"], c: "A" },
-        { p: "O que significa PaaS em computação em nuvem?", ops: ["Platform as a Service - Plataforma como Serviço", "Protocol as a Secure System", "Private Access Storage", "Public Authentication Service"], c: "A" },
-        { p: "Qual a função do protocolo HTTPS?", ops: ["Garantir navegação segura e criptografada entre navegador e servidor web", "Acelerar downloads de arquivos pesados", "Gerenciar endereços IP dinâmicos", "Bloquear vírus em mídias removíveis"], c: "A" },
-        { p: "O que é Autenticação de Dois Fatores (2FA)?", ops: ["Camada adicional de segurança exigindo duas formas distintas de verificação no login", "Uso de duas senhas idênticas", "Acesso simultâneo por dois computadores", "Backup duplicado em nuvem"], c: "A" },
-        { p: "O que é computação em nuvem (Cloud Computing)?", ops: ["Entrega de serviços de computação pela internet (servidores, armazenamento, banco de dados)", "Armazenamento de dados em disquetes", "Redes locais sem fio (Wi-Fi)", "Servidores sem conexão web"], c: "A" },
-        { p: "O que é um ataque de Phishing?", ops: ["Tentativa fraudulenta de obter informações confidenciais fingindo ser entidade confiável", "Invasão direta de roteadores por força bruta", "Queda de servidores por tráfego excessivo", "Roubo físico de servidores"], c: "A" },
-        { p: "O que é Backup em nuvem?", ops: ["Cópia de segurança de dados armazenada em servidores remotos acessíveis via internet", "Gravação de dados em CD-R", "Impressão de documentos importantes", "Exclusão de arquivos temporários"], c: "A" },
-        { p: "O que significa VPN (Virtual Private Network)?", ops: ["Rede privada virtual que cria túnel criptografado seguro sobre uma rede pública", "Video Player Nativo", "Virtual Processor Node", "Visual Protocol Number"], c: "A" },
-        { p: "O que é o modelo SaaS (Software as a Service)?", ops: ["Modelo onde aplicativos completos são fornecidos sob demanda via web", "Locação de servidores virtuais puros", "Plataforma de desenvolvimento de código", "Infraestrutura de rede física"], c: "A" },
-        { p: "O que é o endereço IP (Internet Protocol)?", ops: ["Identificador numérico exclusivo atribuído a cada dispositivo conectado a uma rede", "Nome de usuário na rede", "Senha de acesso ao roteador", "Código de barras do computador"], c: "A" },
-        { p: "O que faz o protocolo DNS (Domain Name System)?", ops: ["Traduz nomes de domínios legíveis em endereços IP numéricos", "Criptografa e-mails corporativos", "Roteia pacotes entre redes diferentes", "Gerencia senhas de usuários"], c: "A" },
-        { p: "O que é um ataque de Negação de Serviço (DDoS)?", ops: ["Sobrecarga intencional de um sistema com tráfego massivo para derrubá-lo", "Roubo de senhas por e-mail falso", "Invasão de firewalls corporativos", "Apagamento remoto de arquivos"], c: "A" },
-        { p: "O que é a computação Serverless (Sem Servidor)?", ops: ["Modelo onde o desenvolvedor cria aplicações sem gerenciar servidores diretamente", "Servidores que funcionam sem energia elétrica", "Redes sem cabos ou roteadores", "Computadores sem sistema operacional"], c: "A" },
-        { p: "O que é uma Sub-rede (Subnet)?", ops: ["Subdivisão lógica de uma rede maior de computadores", "Uma rede menor que não funciona bem", "Cabo divisor de sinal de internet", "Backup secundário de dados"], c: "A" },
-        { p: "O que é o protocolo TCP (Transmission Control Protocol)?", ops: ["Protocolo orientado à conexão que garante a entrega confiável de pacotes de dados", "Protocolo sem garantia de entrega", "Protocolo exclusivo para criptografia", "Protocolo de correio eletrônico"], c: "A" },
-        { p: "O que é o protocolo UDP (User Datagram Protocol)?", ops: ["Protocolo simples sem conexão e sem garantia de entrega, focado em velocidade", "Protocolo ultra seguro de banco de dados", "Sistema de arquivos em nuvem", "Gerenciador de endereços IP"], c: "A" },
-        { p: "O que é um certificado SSL/TLS?", ops: ["Certificado digital que autentica a identidade de um site e criptografa a conexão", "Licença de uso de software", "Comprovante de pagamento de nuvem", "Garantia de hardware de servidor"], c: "A" },
-        { p: "O que é segurança da informação baseada no conceito de Tríade CIA?", ops: ["Confidencialidade, Integridade e Disponibilidade", "Controle, Inspeção e Autenticação", "Criptografia, Inovação e Acesso", "Conexão, Internet e Aplicativos"], c: "A" },
-        { p: "O que é um Ransomware?", ops: ["Software malicioso que sequestra dados criptografando-os e exigindo resgate", "Antivírus corporativo gratuito", "Ferramenta de backup em nuvem", "Protocolo de rede seguro"], c: "A" },
-        { p: "O que é o conceito de Load Balancer (Balanceador de Carga)?", ops: ["Dispositivo ou serviço que distribui o tráfego de rede entre múltiplos servidores", "Balança para pesar servidores físicos", "Medidor de velocidade de internet", "Controlador de consumo de energia"], c: "A" },
-        { p: "O que é uma Zona de Disponibilidade em nuvem?", ops: ["Locais isolados dentro de uma região de nuvem com infraestrutura independente de energia e rede", "Áreas proibidas para acesso de funcionários", "Salas de servidores sem refrigeração", "Redes Wi-Fi públicas"], c: "A" },
-        { p: "O que significa a sigla IAM (Identity and Access Management)?", ops: ["Gerenciamento de Identidade e Acesso para controle de permissões de usuários", "Internet Access Monitor", "Internal Audit Module", "Integrated Application Model"], c: "A" },
-        { p: "O que é um ataque de força bruta (Brute Force)?", ops: ["Tentativa sistemática de adivinhar senhas testando todas as combinações possíveis", "Invasão física a uma sala de servidores", "Queda de energia em data centers", "Roubo de cabos de fibra"], c: "A" },
-        { p: "O que é a computação em nuvem híbrida?", ops: ["Ambiente que combina infraestrutura local (on-premises) com nuvem pública ou privada", "Uso de dois sistemas operacionais simultâneos", "Redes cabeadas e Wi-Fi misturadas", "Uso de servidores de marcas diferentes"], c: "A" },
-        { p: "O que é o protocolo DHCP?", ops: ["Protocolo que atribui endereços IP dinamicamente aos dispositivos de uma rede", "Criptografa senhas de acesso", "Gerencia domínios de internet", "Filtra tráfego malicioso"], c: "A" },
-        { p: "O que é um ataque de Homem no Meio (MitM)?", ops: ["Interceptação secreta de comunicação entre duas partes por um invasor", "Funcionário que trabalha entre dois departamentos", "Roteador intermediário de alta velocidade", "Backup feito na metade do dia"], c: "A" },
-        { p: "O que é a integridade de dados na segurança?", ops: ["Garantir que os dados não foram adulterados ou corrompidos por unauthorized users", "Manter os dados sempre em sigilo", "Garantir acesso ininterrupto aos arquivos", "Compactar dados para economizar espaço"], c: "A" },
-        { p: "O que é o modelo de nuvem pública?", ops: ["Serviços de nuvem operados por terceiros oferecendo recursos pela internet pública", "Redes de computadores abertas na escola", "Servidores locais sem senha", "Sistemas operacionais de código aberto"], c: "A" },
-        { p: "O que é o modelo de nuvem privada?", ops: ["Infraestrutura de nuvem usada exclusivamente por uma única organização", "Nuvem compartilhada por várias empresas", "Pasta compartilhada em rede local", "Armazenamento em pen drive pessoal"], c: "A" },
-        { p: "O que é um arquivo de Log de Auditoria?", ops: ["Registro cronológico de eventos e atividades ocorridas em um sistema ou rede", "Arquivo de texto com músicas", "Manual de instruções do sistema", "Lista de senhas de usuários"], c: "A" },
-        { p: "O que é a porta padrão utilizada pelo protocolo HTTPS?", ops: ["Porta 443", "Porta 80", "Porta 21", "Porta 22"], c: "A" },
-        { p: "O que é a porta padrão utilizada pelo protocolo HTTP?", ops: ["Porta 80", "Porta 443", "Porta 3306", "Porta 53"], c: "A" },
-        { p: "O que faz o protocolo SSH (Secure Shell)?", ops: ["Permite acesso remoto seguro a sistemas através de linha de comando criptografada", "Transfere arquivos de texto sem segurança", "Gerencia endereços IP", "Navega em páginas web"], c: "A" },
-        { p: "O que é um Sniffer de rede?", ops: ["Ferramenta para capturar e analisar pacotes de dados que trafegam em uma rede", "Um antivírus de alta potência", "Um cabo de rede defeituoso", "Um roteador sem fio"], c: "A" },
-        { p: "O que é virtualização de servidores?", ops: ["Criação de instâncias virtuais de servidores sobre um único hardware físico", "Desligamento de servidores físicos", "Simulação de jogos em rede", "Uso de computadores antigos"], c: "A" },
-        { p: "O que é o conceito de Zero Trust (Confiança Zero) em segurança?", ops: ["Modelo que exige verificação rigorosa de identidade para qualquer usuário ou dispositivo, sem confiar em nada por padrão", "Política de não permitir nenhum acesso à rede", "Desativação de todos os firewalls", "Uso de redes sem senha"], c: "A" },
-        { p: "O que é um ataque de Malware?", ops: ["Termo genérico para qualquer software malicioso (vírus, spyware, trojan)", "Um erro de compilação de código", "Falha de hardware em servidores", "Queda de conexão de internet"], c: "A" },
-        { p: "O que é Disaster Recovery (Recuperação de Desastres)?", ops: ["Plano e conjunto de procedimentos para restaurar a infraestrutura de TI após falhas catastróficas", "Compra de novos computadores queimados", "Formatação de discos rígidos", "Limpeza física de data centers"], c: "A" },
-        { p: "O que é um endereço MAC (Media Access Control)?", ops: ["Identificador físico único gravado na placa de rede do dispositivo", "Endereço IP dinâmico", "Senha de rede Wi-Fi", "Nome do computador na rede"], c: "A" },
-        { p: "O que é o protocolo FTP?", ops: ["Protocolo de transferência de arquivos entre sistemas em uma rede", "Protocolo de navegação web", "Protocolo de segurança de e-mail", "Protocolo de roteamento IP"], c: "A" },
-        { p: "O que é um honeypot em segurança cibernética?", ops: ["Sistema isca configurado para atrair e monitorar invasores cibernéticos", "Um pote de mel para servidores", "Um antivírus gratuito", "Um firewall de alta performance"], c: "A" },
-        { p: "O que é a elasticidade na computação em nuvem?", ops: ["Capacidade de expandir ou reduzir automaticamente os recursos computacionais conforme a demanda", "Flexibilidade física dos cabos de rede", "Elasticidade de telas de monitores", "Velocidade de digitação"], c: "A" },
-        { p: "O que é criptografia simétrica?", ops: ["Uso da mesma chave secreta tanto para criptografar quanto para descriptografar os dados", "Uso de duas chaves diferentes", "Criptografia sem uso de senhas", "Dados abertos sem proteção"], c: "A" },
-        { p: "O que é criptografia assimétrica?", ops: ["Uso de um par de chaves (pública e privada) para criptografia e descriptografia", "Uso de uma única chave secreta", "Criptografia baseada em senhas numéricas", "Sistema sem chaves de acesso"], c: "A" },
-        { p: "O que é um ataque de Injeção de SQL (SQL Injection)?", ops: ["Inserção de códigos maliciosos em consultas de banco de dados através de entradas vulneráveis", "Erro de digitação em planilhas", "Falha de conexão com a nuvem", "Roubo de cabos de rede"], c: "A" },
-        { p: "O que é o conceito de Patch Management?", ops: ["Processo de gerenciamento, teste e aplicação de atualizações de segurança em softwares", "Remoção de vírus em pendrives", "Conserto físico de placas-mãe", "Instalação de cabos de rede"], c: "A" },
-        { p: "O que é a disponibilidade de dados?", ops: ["Garantir que a informação e os sistemas estejam acessíveis aos usuários autorizados sempre que necessário", "Manter os dados em sigilo absoluto", "Impedir cópias de arquivos", "Criptografar senhas complexas"], c: "A" },
-        { p: "O que é um roteador em redes de computadores?", ops: ["Dispositivo que encaminha pacotes de dados entre diferentes redes de computadores", "Um cabo de alta velocidade", "Um servidor de arquivos", "Um antivírus de rede"], c: "A" }
+        { p: "O que caracteriza o modelo IaaS na computação em nuvem?", ops: ["Locação de infraestrutura básica como servidores virtuais, armazenamento e redes", "Entrega de softwares prontos via navegador", "Ambiente exclusivo para programar sem gerenciar servidores", "Armazenamento local em HDs físicos"], c: "A" }
       ],
       "Processos de desenvolvimento de sistemas e metodologias Ágeis": [
-        { p: "O que é uma Sprint no framework Scrum?", ops: ["Um documento com requisitos estáticos", "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizable", "Reunião final de homologação do cliente", "Cargo de gestão tradicional de projetos"], c: "B" },
-        { p: "Qual o objetivo da etapa de Requisitos no desenvolvimento de sistemas?", ops: ["Escrever código otimizado", "Levantar, analisar e documentar detalhadamente o que o sistema deve fazer e as necessidades do usuário", "Testar a segurança da nuvem", "Comercializar o software no mercado"], c: "B" },
-        { p: "O que é o Manifesto Ágil?", ops: ["Conjunto de valores e princípios focados em flexibilidade, colaboração e entrega contínua de valor", "Um contrato jurídico rígido", "Um manual de instalação de servidores", "Uma linguagem de programação"], c: "A" },
-        { p: "O que é o Product Backlog no Scrum?", ops: ["Uma lista ordenada de tudo que é necessário no produto", "Um relatório de erros do sistema", "Um contrato assinado pelo cliente", "Um manual de instruções"], c: "A" },
-        { p: "Qual a função do Scrum Master?", ops: ["Garantir que o time siga a teoria e práticas do Scrum removendo impedimentos", "Escrever todo o código do sistema", "Definir o preço de venda do software", "Gerenciar o orçamento financeiro"], c: "A" },
-        { p: "O que é Integração Contínua (CI)?", ops: ["Prática de mesclar alterações de código em repositório central frequentemente com testes automatizados", "Instalação manual de softwares", "Backup semanal de banco de dados", "Reunião diária de equipe"], c: "A" },
-        { p: "O que é uma User Story (História de Usuário)?", ops: ["Descrição curta de uma funcionalidade sob a perspectiva do usuário final", "Um livro de ficção sobre tecnologia", "Um relatório de bugs", "Um diagrama de classes UML"], c: "A" },
-        { p: "O que caracteriza a metodologia Cascata (Waterfall)?", ops: ["Fluxo de desenvolvimento sequencial onde cada fase deve ser concluída antes da seguinte", "Entregas diárias de software", "Mudanças constantes de requisitos", "Trabalho remoto descentralizado"], c: "A" },
-        { p: "O que é a Daily Scrum?", ops: ["Reunião diária de sincronização do time de desenvolvimento", "Festa de comemoração de entrega", "Auditoria financeira anual", "Treinamento de funcionários"], c: "A" },
-        { p: "O que é o Kanban?", ops: ["Método visual de gerenciamento de fluxo de trabalho usando quadros e cartões", "Uma linguagem de banco de dados", "Um antivírus corporativo", "Um protocolo de internet"], c: "A" },
-        { p: "O que é o papel do Product Owner (PO) no Scrum?", ops: ["Representar os interesses do cliente, gerenciar e priorizar o Product Backlog", "Desenvolver o código fonte do sistema", "Testar bugs no software", "Conduzir reuniões diárias"], c: "A" },
-        { p: "O que é a Retrospectiva da Sprint?", ops: ["Reunião para inspecionar o processo e planejar melhorias para a próxima sprint", "Avaliação de desempenho salarial", "Reunião de vendas com clientes", "Planejamento inicial do projeto"], c: "A" },
-        { p: "O que é o Ciclo de Vida de Desenvolvimento de Sistemas (SDLC)?", ops: ["Estrutura que define as etapas para planejar, criar, testar e implantar um sistema de software", "A vida útil de um computador", "O tempo de garantia de um programa", "O ciclo de reuniões da equipe"], c: "A" },
-        { p: "O que é Refatoração de Código?", ops: ["Processo de reestruturar código existente sem alterar seu comportamento externo para melhorar sua legibilidade", "Apagar todo o código e reescrevê-lo", "Corrigir bugs críticos de segurança", "Compilar o programa"], c: "A" },
-        { p: "O que é o MVP (Minimum Viable Product)?", ops: ["Versão de um novo produto com recursos suficientes para satisfazer os primeiros clientes e validar hipóteses", "O produto final completo com todas as funções", "Um manual de testes unitários", "Um sistema operacional básico"], c: "A" },
-        { p: "O que são Testes Unitários?", ops: ["Testes automatizados que verificam pequenas unidades isoladas de código (como funções ou métodos)", "Testes feitos por usuários finais na empresa", "Testes de velocidade de rede", "Testes visuais de design"], c: "A" },
-        { p: "O que é o planejamento da Sprint (Sprint Planning)?", ops: ["Evento onde o time define o trabalho da sprint que será realizado", "Planejamento financeiro anual da empresa", "Reunião de demissão de funcionários", "Contratação de novos desenvolvedores"], c: "A" },
-        { p: "O que é a revisão da Sprint (Sprint Review)?", ops: ["Reunião ao final da sprint para inspecionar o incremento com os stakeholders e adaptar o backlog", "Revisão de código fonte por colegas", "Inspeção de servidores em nuvem", "Auditoria fiscal"], c: "A" },
-        { p: "O que é a modelagem de dados?", ops: ["Processo de criar uma representação visual ou esquemática de um sistema de informação e seus dados", "Criação de gráficos estatísticos", "Modelagem de interfaces visuais", "Design de logotipos"], c: "A" },
-        { p: "O que é o desenvolvimento orientado a testes (TDD)?", ops: ["Prática onde os testes automatizados são escritos antes do próprio código de implementação", "Testar o sistema apenas no final", "Não realizar testes de software", "Testar apenas com usuários reais"], c: "A" },
-        { p: "O que é um diagrama de casos de uso (UML)?", ops: ["Diagrama que mostra a interação entre o sistema e os atores externos", "Diagrama de circuitos elétricos", "Fluxograma de rede de computadores", "Organograma corporativo"], c: "A" },
-        { p: "O que é o débito técnico?", ops: ["Custo implícito de refatoração adicional causada pela escolha de uma solução fácil de implementar agora em vez de usar uma abordagem melhor", "Dívidas financeiras da empresa de software", "Contas de energia dos servidores", "Pagamento de licenças de software"], c: "A" },
-        { p: "O que caracteriza metodologias ágeis em oposição aos métodos tradicionais?", ops: ["Maior adaptabilidade a mudanças, entregas frequentes e forte colaboração com o cliente", "Uso obrigatório de burocracia e documentação extensa", "Prazo fixo sem possibilidade de alteração", "Foco exclusivo no contrato inicial"], c: "A" },
-        { p: "O que é o conceito de Entrega Contínua (Continuous Delivery)?", ops: ["Abordagem onde o software pode ser liberado para produção a qualquer momento de forma automatizada", "Entrega física de CDs pelo correio", "Envio diário de relatórios em PDF", "Backup diário automatizado"], c: "A" },
-        { p: "O que é uma User Persona?", ops: ["Representação fictícia baseada em dados reais do cliente ideal de um produto", "O nome do desenvolvedor chefe", "Uma senha de acesso ao sistema", "Um tipo de erro de sistema"], c: "A" },
-        { p: "O que é o diagrama de classes (UML)?", ops: ["Diagrama estrutural que mostra as classes, atributos, operações e relacionamentos do sistema", "Diagrama de fluxo de rede", "Organograma de funcionários", "Cronograma de projeto"], c: "A" },
-        { p: "O que é um protótipo de baixa fidelidade?", ops: ["Esboço simples em papel ou wireframe rápido para testar ideias iniciais de layout", "Um sistema completo com erros", "Um programa mal compilado", "Um documento jurídico"], c: "A" },
-        { p: "O que é um protótipo de alta fidelidade?", ops: ["Modelo interativo detalhado que se assemelha muito ao produto final em design e comportamento", "Um protótipo antigo e ultrapassado", "Um relatório impresso", "Um documento em PDF"], c: "A" },
-        { p: "O que é a estimativa de esforço ágil (Planning Poker)?", ops: ["Técnica de estimativa baseada em consenso usando cartas para pontuar histórias de usuário", "Um jogo de cartas para o intervalo do almoço", "Aposta financeira em projetos", "Sorteio de tarefas entre desenvolvedores"], c: "A" },
-        { p: "O que é um Bug em desenvolvimento de sistemas?", ops: ["Um erro, falha ou comportamento inesperado no código do programa", "Um inseto real na sala de servidores", "Um vírus de computador", "Um componente de hardware queimado"], c: "A" },
-        { p: "O que é o processo de homologação de um sistema?", ops: ["Validação final do software pelo cliente ou usuário para garantir que atende aos requisitos", "Registro legal da empresa", "Contratação de programadores", "Instalação de cabos de rede"], c: "A" },
-        { p: "O que é o gerenciamento de configuração de software?", ops: ["Controle de versões, mudanças e artefatos gerados durante o desenvolvimento", "Configuração de roteadores", "Instalação de sistemas operacionais", "Ajuste de monitores"], c: "A" },
-        { p: "O que é o feedback contínuo?", ops: ["Prática de coletar e avaliar opiniões de usuários e da equipe de forma constante para melhorias", "Reclamações diárias de clientes", "Relatórios mensais impressos", "Emails automáticos de erro"], c: "A" },
-        { p: "O que é uma ferramenta de versionamento de código (ex: Git)?", ops: ["Sistema que registra alterações em arquivos de código permitindo voltar a versões anteriores", "Um antivírus corporativo", "Um compilador de linguagens", "Um banco de dados web"], c: "A" },
-        { p: "O que é a análise de viabilidade de um projeto?", ops: ["Estudo preliminar para avaliar se o projeto é técnica, econômica e operativamente viável", "Análise de erros de código", "Teste de velocidade de servidores", "Auditoria de contas da escola"], c: "A" },
-        { p: "O que é a engenharia de software?", ops: ["Aplicação de uma abordagem sistemática, disciplinada e quantificável ao desenvolvimento de software", "Instalação de computadores", "Suporte técnico de hardware", "Venda de licenças comerciais"], c: "A" },
-        { p: "O que é um diagrama de atividades (UML)?", ops: ["Diagrama comportamental que ilustra o fluxo de controle de uma atividade para outra", "Gráfico de desempenho físico dos alunos", "Cronograma de aulas", "Organograma de tarefas"], c: "A" },
-        { p: "O que é um plano de projeto em metodologias tradicionais?", ops: ["Documento detalhado especificando cronograma, custos, recursos e marcos do projeto", "Um rascunho em papel", "Uma lista de tarefas diárias", "Um contrato verbal"], c: "A" },
-        { p: "O que é o controle de qualidade (QA - Quality Assurance)?", ops: ["Processo sistemático para garantir que os padrões de qualidade do software sejam atendidos", "Correção manual de erros pelos alunos", "Vistoria predial da escola", "Instalação de antivírus"], c: "A" },
-        { p: "O que é uma ferramenta de gestão de projetos (ex: Jira, Trello)?", ops: ["Software para planejar, acompanhar e gerenciar tarefas e fluxos de trabalho da equipe", "Um editor de textos", "Um banco de dados", "Um servidor web"], c: "A" },
-        { p: "O que é a especificação de software?", ops: ["Documentação detalhada das funções, restrições e características que o sistema deve possuir", "Manual de instruções do usuário final", "Contrato de compra e venda", "Relatório de notas escolares"], c: "A" },
-        { p: "O que é a programação em par (Pair Programming)?", ops: ["Prática ágil onde dois desenvolvedores trabalham juntos na mesma estação de trabalho", "Dois alunos fazendo provas juntos", "Dois servidores trabalhando em redundância", "Dois monitores conectados ao PC"], c: "A" },
-        { p: "O que é o conceito de Fail Fast (Falhar Rápido)?", ops: ["Filosofia de identificar erros e problemas o mais cedo possível no ciclo para corrigi-los sem grande impacto", "Desligar o sistema rapidamente", "Demitir funcionários com pressa", "Cancelar o projeto na primeira falha"], c: "A" },
-        { p: "O que é a arquitetura de software?", ops: ["Organização estrutural fundamental de um sistema, incluindo seus componentes e relacionamentos", "Decoração do escritório de TI", "Esquema elétrico da sala de servidores", "Planta baixa da escola"], c: "A" },
-        { p: "O que é o escopo do projeto?", ops: ["Definição clara de todos os limites, objetivos, entregáveis e tarefas do projeto", "O tamanho da tela do computador", "O orçamento financeiro total", "O prazo de entrega final"], c: "A" },
-        { p: "O que é o gerenciamento de riscos em projetos?", ops: ["Identificação, análise e resposta a eventos incertos que podem afetar o projeto", "Seguro de vida dos funcionários", "Backup de arquivos na nuvem", "Instalação de extintores de incêndio"], c: "A" },
-        { p: "O que é o conceito de escalabilidade de sistemas?", ops: ["Capacidade do sistema de lidar com o aumento de carga de trabalho expandindo seus recursos", "Capacidade de mudar de tamanho físico", "Aumento da fonte de energia", "Crescimento da equipe de desenvolvimento"], c: "A" },
-        { p: "O que é uma API (Application Programming Interface)?", ops: ["Conjunto de definições e protocolos que permite a comunicação e integração entre diferentes softwares", "Um cabo adaptador de rede", "Um banco de dados relacional", "Um sistema operacional mobile"], c: "A" },
-        { p: "O que é o framework Scrum?", ops: ["Um framework ágil leve para gerenciar e resolver problemas complexos em equipes", "Uma linguagem de programação", "Um editor de código fonte", "Um antivírus corporativo"], c: "A" },
-        { p: "O que é o ciclo PDCA aplicado a processos?", ops: ["Planejar, Fazer, Checar e Agir (Plan, Do, Check, Act) para melhoria contínua", "Processo de desenvolvimento em cascata", "Protocolo de rede seguro", "Ferramenta de design gráfico"], c: "A" }
+        { p: "O que é uma Sprint no framework Scrum?", ops: ["Um documento com requisitos estáticos", "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizable", "Reunião final de homologação do cliente", "Cargo de gestão tradicional de projetos"], c: "B" }
       ]
     };
 
@@ -341,10 +168,8 @@ async function garantirBancoMinimoQuestoes() {
     let bancoAtual = [];
     snap.forEach(s => bancoAtual.push(normalizarDocumentoQuestao(s.data(), s.id)));
 
-    // Abastecer automaticamente no Firebase se a matéria tiver menos de 50 questões
     for (const [mat, listaBase] of Object.entries(bancoQuestoesTecnicasExtendido)) {
       let qMat = bancoAtual.filter(q => normalizarTexto(q.categoria).includes(normalizarTexto(mat)) || normalizarTexto(mat).includes(normalizarTexto(q.categoria)));
-      
       if (qMat.length < 50) {
         let faltam = 50 - qMat.length;
         for (let i = 0; i < faltam; i++) {
@@ -353,19 +178,14 @@ async function garantirBancoMinimoQuestoes() {
             materia: mat,
             categoria: mat,
             pergunta: `[Técnico ${i + 1}] ${baseModelo.p}`,
-            opcoes: [
-              `A) ${baseModelo.ops[0]}`,
-              `B) ${baseModelo.ops[1]}`,
-              `C) ${baseModelo.ops[2]}`,
-              `D) ${baseModelo.ops[3]}`
-            ],
+            opcoes: [`A) ${baseModelo.ops[0]}`, `B) ${baseModelo.ops[1]}`, `C) ${baseModelo.ops[2]}`, `D) ${baseModelo.ops[3]}`],
             correta: baseModelo.c,
             criadoEm: serverTimestamp()
           });
         }
       }
     }
-  } catch (e) { console.error("Erro ao abastecer banco de questões técnicas:", e); }
+  } catch (e) { console.error(e); }
 }
 
 // ==========================================
@@ -379,6 +199,7 @@ if (window.location.pathname.includes("painel.html")) {
     renderizarBoxesGlobais();
     carregarListaEscolas();
     inicializarTabelaResultados();
+    inicializarTabelaTempoReal();
     popularSelectMateriasQuestao();
   }
 
@@ -812,6 +633,40 @@ if (window.location.pathname.includes("painel.html")) {
         `;
       });
       corpoTabelaResultados.innerHTML = htmlResultados;
+    });
+  }
+
+  function inicializarTabelaTempoReal() {
+    const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
+    if (!corpoTabelaTempoReal) return;
+    onSnapshot(collection(db, "alunos_online"), (snapshot) => {
+      let htmlOnline = "";
+      let listaOnline = [];
+      snapshot.forEach(docSnap => { listaOnline.push(docSnap.data()); });
+
+      if (listaOnline.length === 0) {
+        corpoTabelaTempoReal.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>`;
+        return;
+      }
+
+      listaOnline.forEach(aluno => {
+        let min = Math.floor((aluno.segundosPassados || 0) / 60);
+        let seg = (aluno.segundosPassados || 0) % 60;
+        let tempoStr = `${min}m ${seg}s`;
+
+        htmlOnline += `
+          <tr>
+            <td><span style="rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">🟢 Em andamento</span></td>
+            <td><strong>${aluno.escola || 'N/D'}</strong></td>
+            <td>${aluno.nome || 'Aluno'}</td>
+            <td>${aluno.turma || 'N/D'}</td>
+            <td>${aluno.materia || 'Geral'}</td>
+            <td><strong style="color: #60a5fa;">Questão ${aluno.questaoAtual || 1} de ${aluno.totalQuestoes || 10}</strong></td>
+            <td><span style="color: #facc15;">⏱️ ${tempoStr}</span></td>
+          </tr>
+        `;
+      });
+      corpoTabelaTempoReal.innerHTML = htmlOnline;
     });
   }
 
@@ -1360,7 +1215,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       for (let i = 1; i <= qtdQ; i++) {
         filtradas.push({
           pergunta: `Questão dinâmica de reforço ${i}: Qual conceito se aplica a esta avaliação?`,
-          opcoes: ["Alternativa Correta (A)", "Alternativa Incorreta (B)", "Alternativa Incorreta (C)", "Alternativa Incorreta (D)"],
+          opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
           correta: "A",
           categoria: "Geral"
         });
@@ -1368,7 +1223,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     }
 
     filtradas.sort(() => Math.random() - 0.5);
-    listaQuestoes = filtradas.slice(0, qtdQ);
+    listaQuestoes = filtradas.slice(0, qtdQ).map(q => normalizarDocumentoQuestao(q));
 
     document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma} | ${alunoAtual.materia}`;
     document.getElementById("tela-login").classList.add("hidden");
@@ -1404,6 +1259,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     timerInterval = setInterval(() => {
       segundosPassados++;
 
+      atualizarStatusOnlineFirebase();
+
       if (tempoMinimoMinutos > 0 && !avisoTempoMinimoExibido) {
         if (segundosPassados >= tempoMinimoMinutos * 60) {
           avisoTempoMinimoExibido = true;
@@ -1437,11 +1294,28 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     }, 1000);
   }
 
+  async function atualizarStatusOnlineFirebase() {
+    try {
+      await setDoc(doc(db, "alunos_online", alunoAtual.id), {
+        nome: alunoAtual.nome,
+        turma: alunoAtual.turma,
+        escola: alunoAtual.escola,
+        materia: alunoAtual.materia,
+        questaoAtual: indiceAtual + 1,
+        totalQuestoes: listaQuestoes.length,
+        segundosPassados: segundosPassados,
+        atualizadoEm: serverTimestamp()
+      });
+    } catch(e) {}
+  }
+
   function exibirQuestao() {
     const q = listaQuestoes[indiceAtual];
     document.getElementById("pergunta-txt").textContent = `${indiceAtual + 1}. ${q.pergunta}`;
     document.getElementById("progresso-txt").textContent = `Questão ${indiceAtual + 1} de ${listaQuestoes.length}`;
     
+    atualizarStatusOnlineFirebase();
+
     const container = document.getElementById("opcoes-container");
     container.innerHTML = "";
     ["A", "B", "C", "D"].forEach((letra, idx) => {
@@ -1533,6 +1407,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         timestamp: agora
       });
       await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), { podeFazer: false });
+      await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
+
       document.getElementById("status-envio-txt").textContent = "Resultado salvo com sucesso! ✅";
     } catch(e) { document.getElementById("status-envio-txt").textContent = "Erro ao salvar."; }
   }

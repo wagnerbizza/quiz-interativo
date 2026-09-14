@@ -232,10 +232,24 @@
       </form>
     </div>
 
-    <!-- ABA 4: RESULTADOS -->
+    <!-- ABA 4: RESULTADOS E TEMPO REAL -->
     <div id="aba-resultados" class="aba-conteudo hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-        <h2 style="margin: 0; border: none; padding: 0;">📊 Resultados Detalhados</h2>
+        <h2 style="margin: 0; border: none; padding: 0;">🟢 Alunos Acessando em Tempo Real (Em Andamento)</h2>
+      </div>
+      <table style="margin-bottom: 30px;">
+        <thead>
+          <tr>
+            <th>Status</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria</th><th>Questão Atual</th><th>Tempo Decorrido</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela-tempo-real">
+          <tr><td colspan="7" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
+        </tbody>
+      </table>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; margin-top: 40px;">
+        <h2 style="margin: 0; border: none; padding: 0;">📊 Histórico de Resultados Concluídos</h2>
         <div style="display: flex; gap: 10px;" class="no-print">
           <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px; font-size: 13px;" onclick="window.print()">🖨️ Imprimir / PDF</button>
           <button type="button" class="btn-acao" style="margin: 0; background-color: #22c55e; padding: 10px 16px; font-size: 13px;" onclick="exportarResultadosCSV()">📥 Exportar CSV</button>
