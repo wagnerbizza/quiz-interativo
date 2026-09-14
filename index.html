@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Avaliação Online</title>
+  <title>Avaliação Interativa - Aluno</title>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -15,60 +15,64 @@
       --border: #334155;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: opacity 0.3s ease-in-out; }
+    body { background-color: var(--bg-dark); color: var(--text); padding: 20px; min-height: 100vh; display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease-in-out; }
     body.fade-in { opacity: 1; }
-    .quiz-card { background-color: var(--card-bg); width: 100%; max-width: 680px; padding: 30px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    h2 { color: #60a5fa; margin-bottom: 20px; text-align: center; }
-    label { display: block; margin-top: 15px; color: #cbd5e1; font-size: 14px; font-weight: bold; }
-    input, select { width: 100%; padding: 12px; margin-top: 6px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 15px; }
-    .card-info-ativa { background: #0f172a; border: 2px solid #3b82f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: #93c5fd; }
-    button { width: 100%; background-color: var(--primary); color: white; border: none; padding: 14px; margin-top: 20px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
-    button:hover { opacity: 0.9; }
-    .item-revisao { background-color: #0f172a; border-radius: 8px; padding: 14px; margin-bottom: 12px; border-left: 5px solid #334155; }
-    .item-revisao.correta { border-left-color: var(--success); }
-    .item-revisao.incorreta { border-left-color: var(--danger); }
+    .card-quiz { background-color: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
     .hidden { display: none !important; }
+    h2, h3 { color: #93c5fd; margin-bottom: 15px; }
+    label { display: block; margin-top: 12px; color: #cbd5e1; font-size: 14px; font-weight: bold; }
+    input, select { width: 100%; padding: 10px; margin-top: 6px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 14px; }
+    button.btn-acao { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; font-size: 16px; }
+    button.btn-acao:hover { opacity: 0.9; }
+    .badge-escola { background: #0f172a; border: 1px solid #22c55e; padding: 10px; border-radius: 6px; font-size: 13px; color: #4ade80; margin-bottom: 15px; text-align: center; font-weight: bold; }
+    .info-questao { font-size: 13px; color: #94a3b8; margin-bottom: 10px; }
+    .item-revisao { background: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #2563eb; font-size: 14px; }
+    .item-revisao.correta { border-left-color: #22c55e; }
+    .item-revisao.incorreta { border-left-color: #ef4444; }
   </style>
 </head>
 <body>
 
-  <div class="quiz-card">
+  <div class="card-quiz">
+    <!-- TELA DE LOGIN / IDENTIFICAÇÃO DO ALUNO -->
     <div id="tela-login">
-      <h2>📝 Avaliação Escolar Ativa</h2>
-      
-      <div id="detalhes-prova-ativa" class="card-info-ativa">
-        Carregando dados da avaliação ativa...
+      <h2>🎓 Identificação do Aluno</h2>
+      <div id="detalhes-prova-ativa" style="background: #0f172a; padding: 12px; border-radius: 6px; font-size: 13px; color: #94a3b8; margin-bottom: 15px; border: 1px dashed var(--border);">
+        Carregando informações da prova ativa...
       </div>
-
       <form id="form-login">
-        <label>Nome Completo do Aluno (Obrigatório):</label>
-        <input type="text" id="nome-aluno" placeholder="Digite seu nome completo" required>
-
-        <label>Selecione sua Turma:</label>
+        <label>Nome Completo:</label>
+        <input type="text" id="nome-aluno" placeholder="Digite seu nome..." required>
+        <label>Turma:</label>
         <select id="turma-aluno" required>
-          <option value="" disabled selected>Selecione sua turma...</option>
+          <option value="" disabled selected>Aguardando turmas da prova...</option>
         </select>
-
-        <button type="submit">🚀 Confirmar e Iniciar Prova</button>
+        <button type="submit" class="btn-acao">🚀 Iniciar Avaliação</button>
       </form>
     </div>
 
+    <!-- TELA DE RESOLUÇÃO DA PROVA -->
     <div id="tela-quiz" class="hidden">
-      <div id="badge-escola-ativa" style="background: #0f172a; border: 2px solid #22c55e; color: #4ade80; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; font-weight: bold;">Escola</div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <span id="progresso-txt" style="color: #93c5fd; font-size: 14px;">Questão 1 de 10</span>
-      </div>
-      <h3 id="pergunta-txt" style="margin-bottom: 20px; font-size: 18px; line-height: 1.4;">Carregando pergunta...</h3>
+      <!-- Elemento fixo para exibir o cronômetro do aluno -->
+      <div id="relogio-cronometro" style="display: none;"></div>
+
+      <div id="badge-escola-ativa" class="badge-escola">Carregando dados...</div>
+      <div class="info-questao" id="progresso-txt">Questão 1 de 10</div>
+      <h3 id="pergunta-txt">Carregando pergunta...</h3>
       <div id="opcoes-container"></div>
     </div>
 
-    <div id="tela-resultado" class="hidden" style="text-align: center;">
-      <h2>🎉 Avaliação Concluída!</h2>
-      <h1 id="nota-final-txt" style="font-size: 38px; color: #22c55e; margin: 15px 0;">Nota: --</h1>
-      <p id="detalhes-acertos-txt" style="color: #cbd5e1; font-size: 16px;">Você respondeu todas as questões.</p>
-      <p id="status-envio-txt" style="margin-top: 15px; font-weight: bold; color: #60a5fa;">Salvando no sistema...</p>
-      <div id="container-revisao-resultado" style="margin-top: 25px; max-height: 380px; overflow-y: auto;"></div>
-      <button id="btn-reiniciar" style="background-color: #4b5563; margin-top: 20px;">Voltar ao Início</button>
+    <!-- TELA DE RESULTADO -->
+    <div id="tela-resultado" class="hidden">
+      <h2>📊 Resultado da Avaliação</h2>
+      <h3 id="nota-final-txt" style="color: #4ade80; font-size: 22px; margin-top: 10px;">Nota: 0.0 / 10.0</h3>
+      <p id="detalhes-acertos-txt" style="color: #cbd5e1; margin-bottom: 15px; font-size: 14px;"></p>
+      
+      <h3 style="font-size: 16px; margin-top: 20px; color: #60a5fa;">📋 Revisão das Questões:</h3>
+      <div id="container-revisao-resultado" style="max-height: 250px; overflow-y: auto; margin-top: 10px; padding-right: 5px;"></div>
+      
+      <p id="status-envio-txt" style="font-size: 13px; color: #facc15; margin-top: 15px; text-align: center; font-weight: bold;"></p>
+      <button id="btn-reiniciar" class="btn-acao" style="background-color: #4b5563; margin-top: 15px;">🔄 Concluir e Sair</button>
     </div>
   </div>
 

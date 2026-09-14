@@ -54,8 +54,8 @@
     .btn-mini:hover { background: #475569; }
 
     .grid-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
-    .checkbox-item-global { background: #1e293b; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; }
-    .checkbox-item-global span { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+    .checkbox-item-global, .checkbox-item { background: #1e293b; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; }
+    .checkbox-item-global span, .checkbox-item span { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
     .acoes-item-global { display: flex; gap: 4px; }
     .btn-editar-item, .btn-excluir-item { background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 4px; }
     .btn-editar-item:hover { background: #334155; }
@@ -72,6 +72,15 @@
     th { background-color: #0f172a; color: #60a5fa; }
 
     #toast-notification { position: fixed; top: 20px; right: 20px; background-color: #1e293b; color: #fff; padding: 16px 24px; border-radius: 8px; border-left: 6px solid #2563eb; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 9999; display: none; font-weight: bold; }
+
+    @media print {
+      body { background-color: #fff !important; color: #000 !important; }
+      .no-print, .nav-abas, .barra-acoes-topo, header { display: none !important; }
+      .aba-conteudo { background: #fff !important; border: none !important; padding: 0 !important; }
+      table { width: 100% !important; border: 1px solid #000 !important; }
+      th, td { border: 1px solid #000 !important; color: #000 !important; }
+      th { background-color: #f3f4f6 !important; }
+    }
   </style>
 </head>
 <body>
@@ -156,6 +165,12 @@
       <select id="select-escola-ativacao" style="max-width: 450px; font-weight: bold; font-size: 16px;">
         <option value="" disabled selected>Selecione uma escola...</option>
       </select>
+
+      <div id="painel-resumo-escola-ativacao" class="hidden" style="background: #0f172a; border: 1px solid #3b82f6; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <h3 style="color: #60a5fa; font-size: 15px; margin-bottom: 8px;">📋 Resumo das Configurações Ativas desta Unidade:</h3>
+        <div id="conteudo-resumo-ativacao" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;"></div>
+      </div>
+
       <div id="container-calculadora-ativacao" class="hidden">
         
         <div class="bloco-calculadora">
@@ -170,10 +185,20 @@
         </div>
 
         <div class="bloco-calculadora">
-          <h3>⚙️ 4. Parâmetro de Questões</h3>
-          <div>
-            <label>Quantidade Total de Questões da Prova:</label>
-            <input type="number" id="qtd-questoes-ativacao" value="10" min="1" max="50" style="max-width: 200px;">
+          <h3>⚙️ 4. Parâmetros de Tempo e Questões</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div>
+              <label>Qtd. de Questões:</label>
+              <input type="number" id="qtd-questoes-ativacao" value="10" min="1" max="50">
+            </div>
+            <div>
+              <label>Tempo Mínimo (minutos):</label>
+              <input type="number" id="tempo-minimo-ativacao" placeholder="Ex: 5 (Bloqueia entrega)" min="0" value="0">
+            </div>
+            <div>
+              <label>Tempo Limite (minutos):</label>
+              <input type="number" id="tempo-prova-ativacao" placeholder="Ex: 30 (0 = sem limite)" min="0" value="0">
+            </div>
           </div>
         </div>
 
@@ -209,15 +234,21 @@
 
     <!-- ABA 4: RESULTADOS -->
     <div id="aba-resultados" class="aba-conteudo hidden">
-      <h2>📊 Resultados Detalhados</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+        <h2 style="margin: 0; border: none; padding: 0;">📊 Resultados Detalhados</h2>
+        <div style="display: flex; gap: 10px;" class="no-print">
+          <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px; font-size: 13px;" onclick="window.print()">🖨️ Imprimir / PDF</button>
+          <button type="button" class="btn-acao" style="margin: 0; background-color: #22c55e; padding: 10px 16px; font-size: 13px;" onclick="exportarResultadosCSV()">📥 Exportar CSV</button>
+        </div>
+      </div>
       <table>
         <thead>
           <tr>
-            <th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Acertos / Erros</th><th>Nota Proporcional</th>
+            <th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo Gasto</th><th>Acertos / Erros</th><th>Nota</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela">
-          <tr><td colspan="8" style="text-align:center;">Carregando resultados...</td></tr>
+          <tr><td colspan="9" style="text-align:center;">Carregando resultados...</td></tr>
         </tbody>
       </table>
     </div>

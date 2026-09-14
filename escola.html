@@ -18,56 +18,48 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: var(--bg-dark); color: var(--text); padding: 20px; min-height: 100vh; opacity: 0; transition: opacity 0.3s ease-in-out; }
     body.fade-in { opacity: 1; }
-    .container { max-width: 1150px; margin: 0 auto; }
-    header { margin-bottom: 25px; text-align: center; }
-    a.voltar { color: #60a5fa; text-decoration: none; font-weight: bold; font-size: 14px; float: left; }
-    
-    .card-box { background-color: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-    .box-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-    h2 { color: #93c5fd; font-size: 20px; }
-    
-    .grid-dois-lados { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-    @media(max-width: 768px) { .grid-dois-lados { grid-template-columns: 1fr; } }
+    .container { max-width: 1000px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 25px; }
+    header h1 { color: #60a5fa; font-size: 26px; }
 
-    .sub-secao { background: #0f172a; padding: 18px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; }
-    .sub-titulo-linha { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
-    .sub-titulo-linha h3 { color: #60a5fa; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+    .banner-topo { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #3b82f6; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(37,99,235,0.15); }
+    .banner-topo h2 { color: #60a5fa; font-size: 20px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .resumo-topo-detalhes { background: #0f172a; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; color: #cbd5e1; margin-top: 12px; line-height: 1.6; }
 
-    .acoes-box { display: flex; gap: 6px; }
-    .btn-mini { background: #334155; color: white; border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px; }
-    .btn-mini:hover { background: #475569; }
+    .card-box { background-color: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 25px; }
+    .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .box-header h2 { color: #93c5fd; font-size: 18px; display: flex; align-items: center; gap: 8px; }
 
-    .grid-rolagem { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-top: 10px; max-height: 180px; overflow-y: auto; padding-right: 5px; }
-    .grid-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-top: 10px; max-height: 220px; overflow-y: auto; padding-right: 5px; }
-    
-    .checkbox-item { background: #1e293b; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; }
+    .aviso-geral { background: #0f172a; border-left: 4px solid var(--warning); padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #cbd5e1; margin-bottom: 15px; }
+
+    .grid-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; max-height: 180px; overflow-y: auto; padding-right: 5px; }
+    .checkbox-item { background: #0f172a; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
     .checkbox-item span { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
-    .acoes-item-global { display: flex; gap: 4px; margin-left: 5px; }
-    .btn-editar-item, .btn-excluir-item { background: none; border: none; cursor: pointer; font-size: 11px; padding: 2px 4px; border-radius: 4px; }
+    
+    .acoes-item-global { display: flex; gap: 4px; }
+    .btn-editar-item, .btn-excluir-item { background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 4px; }
     .btn-editar-item:hover { background: #334155; }
     .btn-excluir-item:hover { background: #ef4444; }
 
     .input-grupo-add { display: flex; gap: 10px; margin-top: 12px; }
-    .input-grupo-add input { flex: 1; padding: 8px 12px; background: #1e293b; border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 13px; }
-    .input-grupo-add button { background: var(--success); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    .input-grupo-add input { flex: 1; padding: 8px 12px; background: #0f172a; border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 13px; }
+    .input-grupo-add button { background: var(--success); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-    .aviso-geral { background: #1e3a8a; border-left: 4px solid #3b82f6; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #93c5fd; margin-bottom: 12px; }
+    .resultado-parcial { background: #0f172a; padding: 10px; border-radius: 6px; border: 1px dashed var(--border); margin-top: 10px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: #94a3b8; }
+    .tag-selecao { background: #1e293b; border: 1px solid #3b82f6; color: #60a5fa; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
 
-    .resultado-parcial { background: #1e293b; border: 1px dashed var(--border); padding: 12px; border-radius: 6px; margin-top: 10px; font-size: 13px; color: #cbd5e1; max-height: 120px; overflow-y: auto; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; text-align: center; }
-    .tag-selecao { background: #2563eb; color: white; padding: 4px 10px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; font-weight: bold; }
+    .tabela-conferencia { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    .tabela-conferencia th, .tabela-conferencia td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    .tabela-conferencia th { color: #60a5fa; background: #0f172a; }
+    .btn-acao-tabela { background: none; border: none; cursor: pointer; font-size: 13px; padding: 2px 6px; border-radius: 4px; }
+    .btn-editar { color: #eab308; } .btn-editar:hover { background: #334155; }
+    .btn-excluir { color: #ef4444; } .btn-excluir:hover { background: #334155; }
 
-    .tabela-conferencia { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; background: #0f172a; border-radius: 8px; overflow: hidden; }
-    .tabela-conferencia th, .tabela-conferencia td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
-    .tabela-conferencia th { background-color: #1e293b; color: #60a5fa; font-size: 13px; }
+    .btn-mini { background: #334155; color: white; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-mini:hover { background: #475569; }
 
-    .btn-acao-tabela { padding: 4px 8px; border-radius: 4px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; color: white; margin-right: 4px; }
-    .btn-editar { background-color: var(--warning); }
-    .btn-excluir { background-color: var(--danger); }
-
-    .resumo-container { background: #0f172a; border: 2px dashed var(--primary); padding: 20px; border-radius: 10px; margin-top: 30px; }
-    .resumo-container h3 { color: #60a5fa; margin-bottom: 10px; font-size: 16px; }
-
-    .btn-acao { background-color: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; font-size: 16px; }
+    .barra-botoes-fixa { display: flex; gap: 15px; margin-top: 30px; margin-bottom: 40px; }
+    .btn-acao { background-color: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; text-align: center; text-decoration: none; font-size: 15px; }
     .btn-acao:hover { opacity: 0.9; }
     .btn-sucesso-animado { background-color: var(--success) !important; }
 
@@ -76,68 +68,71 @@
 </head>
 <body>
 
-  <div id="toast-notification">Salvo com sucesso!</div>
+  <div id="toast-notification">Notificação</div>
 
   <div class="container">
     <header>
-      <a href="painel.html" class="voltar">⬅ Voltar ao Painel</a>
-      <h1 style="color: #60a5fa; font-size: 26px;">🏫 Configuração de Unidade Escolar</h1>
-      <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;" id="banner-escola-ativa-isolada">Configurando Unidade: Carregando...</p>
+      <h1>⚙️ Configuração Individual da Unidade Escolar</h1>
     </header>
 
-    <!-- BOX DE TURMAS (LADO A LADO) -->
+    <div class="banner-topo">
+      <h2 id="banner-escola-ativa-isolada">🏫 Configurando Unidade: Carregando...</h2>
+      <p style="font-size: 13px; color: #94a3b8;">Abaixo estão consolidadas todas as configurações ativas e herdadas para esta escola:</p>
+      <div id="texto-resumo-escolhas" class="resumo-topo-detalhes">
+        Carregando resumo das escolhas...
+      </div>
+    </div>
+
     <div class="card-box">
       <div class="box-header">
-        <h2>👥 Montagem de Turmas</h2>
+        <h2>🏫 Gestão e Configuração de Turmas</h2>
+        <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirSecaoTurmas()">🗑️ Limpar Turmas</button>
       </div>
-      <div class="aviso-geral">💡 Informação padrão herdada das Configurações Gerais. Você pode adicionar, editar ou remover livremente para esta escola sem afetar as demais.</div>
-
-      <div class="grid-dois-lados">
-        <!-- Lado Esquerdo: Números -->
-        <div class="sub-secao" style="margin: 0;">
-          <div class="sub-titulo-linha">
-            <h3>🔢 Números / Séries</h3>
-            <div class="acoes-box">
-              <button type="button" class="btn-mini" onclick="marcarLimpar('chk-numero')">☑ Marcar/Limpar</button>
-              <button type="button" class="btn-mini" onclick="ordenarBoxLocal('grid-numeros', 'asc')">⬆ A-Z</button>
-              <button type="button" class="btn-mini" onclick="ordenarBoxLocal('grid-numeros', 'desc')">⬇ Z-A</button>
+      <div class="aviso-geral">💡 Selecione números e letras para gerar as combinações de turmas desta escola (Ex: 1A, 2B), ou gerencie os itens individualmente.</div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="sub-secao">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 5px;">
+            <h3 style="color:#60a5fa; font-size:14px;">Números</h3>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-mini" onclick="marcarLimparTurma('chk-numero')">☑ Marcar/Limpar</button>
+              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('numeros', 'asc')">⬆ A-Z</button>
+              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('numeros', 'desc')">⬇ Z-A</button>
             </div>
           </div>
-          <div class="grid-rolagem" id="grid-numeros"></div>
+          <div class="grid-checkboxes" id="grid-numeros"></div>
           <div class="input-grupo-add">
-            <input type="text" id="novo-numero-txt" placeholder="Adicionar número...">
-            <button type="button" onclick="adicionarItemTurma('numeros', 'novo-numero-txt')">➕</button>
+            <input type="text" id="input-add-num" placeholder="Novo número...">
+            <button type="button" onclick="adicionarItemTurma('numeros', 'input-add-num')">➕</button>
           </div>
         </div>
-
-        <!-- Lado Direito: Letras -->
-        <div class="sub-secao" style="margin: 0;">
-          <div class="sub-titulo-linha">
-            <h3>🔤 Letras da Turma</h3>
-            <div class="acoes-box">
-              <button type="button" class="btn-mini" onclick="marcarLimpar('chk-letra')">☑ Marcar/Limpar</button>
-              <button type="button" class="btn-mini" onclick="ordenarBoxLocal('grid-letras', 'asc')">⬆ A-Z</button>
-              <button type="button" class="btn-mini" onclick="ordenarBoxLocal('grid-letras', 'desc')">⬇ Z-A</button>
+        <div class="sub-secao">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 5px;">
+            <h3 style="color:#60a5fa; font-size:14px;">Letras</h3>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-mini" onclick="marcarLimparTurma('chk-letra')">☑ Marcar/Limpar</button>
+              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('letras', 'asc')">⬆ A-Z</button>
+              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('letras', 'desc')">⬇ Z-A</button>
             </div>
           </div>
-          <div class="grid-rolagem" id="grid-letras"></div>
+          <div class="grid-checkboxes" id="grid-letras"></div>
           <div class="input-grupo-add">
-            <input type="text" id="nova-letra-txt" placeholder="Adicionar letra...">
-            <button type="button" onclick="adicionarItemTurma('letras', 'nova-letra-txt')">➕</button>
+            <input type="text" id="input-add-let" placeholder="Nova letra...">
+            <button type="button" onclick="adicionarItemTurma('letras', 'input-add-let')">➕</button>
           </div>
         </div>
       </div>
 
-      <div class="sub-secao">
+      <div style="margin-top: 15px;">
         <div class="sub-titulo-linha">
-          <h3>👁️ Pré-visualização de Turmas Combinadas</h3>
+          <h3 style="color: #60a5fa; font-size: 14px;">👁️ Pré-visualização de Combinações Geradas</h3>
+          <button type="button" class="btn-mini" onclick="marcarLimpar('chk-parcial-turma')">☑ Marcar/Limpar</button>
         </div>
-        <div id="resultado-parcial-turmas" class="resultado-parcial">Nenhuma combinação gerada. Selecione números e letras acima.</div>
+        <div id="resultado-parcial-turmas" class="resultado-parcial">Nenhuma combinação gerada.</div>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <button type="button" class="btn-mini" style="background:#2563eb; padding:10px 16px; font-size:14px;" onclick="confirmarTurmasSelecionadas()">✅ Confirmar Selecionadas</button>
-        <button type="button" class="btn-mini" style="background:#ef4444; padding:10px 16px; font-size:14px;" onclick="excluirSecaoTurmas()">🗑️ Limpar Seleção</button>
+        <button type="button" class="btn-mini" style="background:#2563eb; padding:10px 16px; font-size:14px;" onclick="confirmarTurmasSelecionadas()">✅ Confirmar Turmas Selecionadas</button>
       </div>
 
       <div style="margin-top: 20px;">
@@ -148,27 +143,18 @@
       </div>
     </div>
 
-    <!-- CONTAINER DINÂMICO DE OUTRAS BOXES DA ESCOLA -->
     <div id="container-boxes-escola"></div>
 
-    <!-- ADICIONAR NOVA BOX NESTA ESCOLA -->
-    <div class="card-box" style="background: #0f172a; border: 1px dashed var(--border);">
-      <h3 style="color: #60a5fa; margin-bottom: 10px;">➕ Adicionar Nova Box nesta Escola</h3>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <input type="text" id="input-nova-box-escola" placeholder="Nome da nova box (Ex: Laboratórios, Projetos)..." style="flex: 1; margin: 0;">
-        <button type="button" class="btn-acao" style="margin: 0;" onclick="criarNovaBoxEscola()">➕ Criar Box</button>
-      </div>
+    <div style="background: #0f172a; padding: 18px; border-radius: 8px; border: 1px dashed var(--border); margin-top: 25px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <input type="text" id="input-nova-box-escola" placeholder="Nome da Nova Box Específica (Ex: Laboratórios)..." style="flex: 1; margin: 0; padding: 10px; background: #1e293b; border: 1px solid var(--border); color: white; border-radius: 6px;">
+      <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px;" onclick="criarNovaBoxEscola()">➕ Adicionar Box Específica</button>
     </div>
 
-    <!-- RESUMO FINAL CONSOLIDADO -->
-    <div class="resumo-container">
-      <h3>📋 Resumo Final Consolidado da Escola</h3>
-      <div id="texto-resumo-escolhas" style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">
-        Confirme os itens nas tabelas acima para consolidar a configuração da escola.
-      </div>
+    <div class="barra-botoes-fixa">
+      <button type="button" id="btn-salvar-isolada" class="btn-acao" style="background-color: #22c55e;">💾 Salvar Configurações desta Escola</button>
+      <a href="painel.html" class="btn-acao" style="background-color: #4b5563; text-align: center;">🔙 Voltar ao Painel</a>
     </div>
 
-    <button id="btn-salvar-isolada" class="btn-acao">💾 Salvar e Sincronizar Configurações Definitivas</button>
   </div>
 
   <script type="module" src="app.js"></script>
