@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Avaliação Online - Quiz Interativo</title>
+  <title>Sistema de Avaliação Online</title>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -14,133 +14,62 @@
       --text: #f8fafc;
       --border: #334155;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-
+    body { background-color: var(--bg-dark); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: opacity 0.3s ease-in-out; }
+    body.fade-in { opacity: 1; }
     .quiz-card { background-color: var(--card-bg); width: 100%; max-width: 680px; padding: 30px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    
     h2 { color: #60a5fa; margin-bottom: 20px; text-align: center; }
-
-    label { display: block; margin-top: 15px; color: #cbd5e1; font-size: 14px; }
+    label { display: block; margin-top: 15px; color: #cbd5e1; font-size: 14px; font-weight: bold; }
     input, select { width: 100%; padding: 12px; margin-top: 6px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 15px; }
-
-    /* Caixas Fixas Apenas para Visualização */
-    .caixa-informativa-ativa {
-      width: 100%;
-      padding: 12px 16px;
-      margin-top: 6px;
-      background-color: #0f172a;
-      border: 1px solid #f59e0b;
-      color: #f59e0b;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: bold;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-
+    .card-info-ativa { background: #0f172a; border: 2px solid #3b82f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: #93c5fd; }
     button { width: 100%; background-color: var(--primary); color: white; border: none; padding: 14px; margin-top: 20px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
     button:hover { opacity: 0.9; }
-
-    .aviso-banner { background: #0f172a; border: 1px solid #f59e0b; color: #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
-
-    /* Estilização dos Itens da Revisão de Erros e Acertos */
-    .item-revisao {
-      text-align: left;
-      background-color: #0f172a;
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
-      border-left: 5px solid #334155;
-    }
+    .item-revisao { background-color: #0f172a; border-radius: 8px; padding: 14px; margin-bottom: 12px; border-left: 5px solid #334155; }
     .item-revisao.correta { border-left-color: var(--success); }
     .item-revisao.incorreta { border-left-color: var(--danger); }
-
-    .item-revisao p { font-size: 14px; margin-bottom: 6px; color: #f8fafc; }
-    .detalhe-resposta { font-size: 13px; margin-top: 4px; }
-    .detalhe-resposta.ok { color: #4ade80; }
-    .detalhe-resposta.erro { color: #f87171; }
-
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <div class="quiz-card">
-    
-    <!-- TELA DE LOGIN DO ALUNO -->
     <div id="tela-login">
-      <h2>📝 Avaliação Escolar</h2>
-
-      <!-- Banner Superior com Informações do Professor -->
-      <div id="aviso-avaliacoes-ativas" class="aviso-banner" style="display: none;">
-        Carregando informações da prova...
+      <h2>📝 Avaliação Escolar Ativa</h2>
+      
+      <div id="detalhes-prova-ativa" class="card-info-ativa">
+        Carregando dados da avaliação ativa...
       </div>
 
-      <div class="caixa-avisos" style="..."> <!-- Ou a classe/id que você já usa na sua caixa -->
-      <h3>📢 Avaliação Liberada:</h3>
-      <p style="margin: 5px 0; font-weight: bold; color: #60a5fa;">🏫 Escola: <span id="txt-escola-aviso">Carregando...</span></p>
-      <!-- o restante dos seus avisos que já existem -->
-      </div>
-
-      <!-- Formulário do Aluno -->
       <form id="form-login">
-        <label>Nome Completo do Aluno:</label>
+        <label>Nome Completo do Aluno (Obrigatório):</label>
         <input type="text" id="nome-aluno" placeholder="Digite seu nome completo" required>
 
-        <label>Tipo de Ensino Liberado:</label>
-        <div id="display-ensino-ativo" class="caixa-informativa-ativa">
-          Aguardando liberação do professor...
-        </div>
-
-        <label>Turma (Ano e Letra):</label>
+        <label>Selecione sua Turma:</label>
         <select id="turma-aluno" required>
-          <option value="" disabled selected>Aguardando turmas ativas...</option>
+          <option value="" disabled selected>Selecione sua turma...</option>
         </select>
 
-        <label>Matéria da Avaliação Liberada:</label>
-        <div id="display-materia-ativa" class="caixa-informativa-ativa">
-          Aguardando liberação do professor...
-        </div>
-
-        <button type="submit">🚀 Iniciar Avaliação</button>
+        <button type="submit">🚀 Confirmar e Iniciar Prova</button>
       </form>
     </div>
 
-    <!-- TELA DAS QUESTÕES DA PROVA -->
     <div id="tela-quiz" class="hidden">
+      <div id="badge-escola-ativa" style="background: #0f172a; border: 2px solid #22c55e; color: #4ade80; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; font-weight: bold;">Escola</div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <span id="progresso-txt" style="color: #93c5fd; font-size: 14px;">Questão 1 de 10</span>
       </div>
-      
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-      <label style="margin: 0;">Turma (Ano e Letra):</label>
-        <span id="badge-escola-ativa" style="background-color: #f59e0b; color: #0f172a; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">Carregando escola...</span>
-      </div>
-
       <h3 id="pergunta-txt" style="margin-bottom: 20px; font-size: 18px; line-height: 1.4;">Carregando pergunta...</h3>
-
       <div id="opcoes-container"></div>
     </div>
 
-    <!-- TELA DE RESULTADO FINAL COM REVISÃO DE QUESTÕES -->
     <div id="tela-resultado" class="hidden" style="text-align: center;">
       <h2>🎉 Avaliação Concluída!</h2>
       <h1 id="nota-final-txt" style="font-size: 38px; color: #22c55e; margin: 15px 0;">Nota: --</h1>
       <p id="detalhes-acertos-txt" style="color: #cbd5e1; font-size: 16px;">Você respondeu todas as questões.</p>
-      
-      <p id="status-envio-txt" style="margin-top: 15px; font-weight: bold; color: #60a5fa;">Enviando resultados ao professor...</p>
-
-      <!-- Container do Gabarito Detalhado -->
-      <div id="container-revisao-resultado" style="margin-top: 25px; max-height: 380px; overflow-y: auto; padding-right: 5px;">
-        <!-- Injetado via Javascript -->
-      </div>
-
+      <p id="status-envio-txt" style="margin-top: 15px; font-weight: bold; color: #60a5fa;">Salvando no sistema...</p>
+      <div id="container-revisao-resultado" style="margin-top: 25px; max-height: 380px; overflow-y: auto;"></div>
       <button id="btn-reiniciar" style="background-color: #4b5563; margin-top: 20px;">Voltar ao Início</button>
     </div>
-
   </div>
 
   <script type="module" src="app.js"></script>
