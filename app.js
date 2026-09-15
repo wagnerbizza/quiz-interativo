@@ -208,7 +208,7 @@ async function garantirBancoMinimoQuestoes() {
     await carregarEstruturaGlobalFirebase();
     const bancoQuestoesTecnicasExtendido = {
       "Inteligencia Artificial": [
-        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com as respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
+        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com las respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
         { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" },
         { p: "O que significa o conceito de Deep Learning?", ops: ["Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas", "Processamento de planilhas eletrônicas gigantescas", "Criptografia de ponta a ponta em redes locais", "Compactação avançada de arquivos de vídeo"], c: "A" }
       ],
@@ -669,7 +669,7 @@ if (window.location.pathname.includes("painel.html")) {
   });
 
   // ==========================================
-  // RELATÓRIOS E RESULTADOS (COM CLASSIFICAÇÃO WINDOWS)
+  // RELATÓRIOS E RESULTADOS (COM CLASSIFICAÇÃO WINDOWS E BOTÃO DE REFAZER)
   // ==========================================
   function inicializarTabelaResultados() {
     const corpoTabelaResultados = document.getElementById("corpo-tabela");
@@ -753,7 +753,7 @@ if (window.location.pathname.includes("painel.html")) {
     }
 
     if (dadosFiltrados.length === 0) {
-      corpoTabelaResultados.innerHTML = `<tr><td colspan="11" style="text-align:center; color: #94a3b8;">Nenhum resultado registrado encontrado.</td></tr>`;
+      corpoTabelaResultados.innerHTML = `<tr><td colspan="12" style="text-align:center; color: #94a3b8;">Nenhum resultado registrado encontrado.</td></tr>`;
       return;
     }
 
@@ -765,6 +765,7 @@ if (window.location.pathname.includes("painel.html")) {
       let erros = totalQ - acertos;
       let notaCalculada = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
       let tempoGastoStr = res.tempoGastoFormatado || "N/D";
+      let idAlunoAlvo = res.idAluno || obterIdAluno(res.nome, res.turma);
       
       htmlResultados += `
         <tr>
@@ -781,10 +782,24 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="color: #facc15;">⏱️ ${tempoGastoStr}</span></td>
           <td><span style="color: #4ade80;">✅ ${acertos} Acertos</span> / <span style="color: #ef4444;">❌ ${erros} Erros</span></td>
           <td><strong style="color: #60a5fa; font-size: 15px;">${notaCalculada} / 10</strong></td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-acao" style="background-color: #eab308; padding: 6px 10px; font-size: 12px; margin: 0;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome}')" title="Permitir que o aluno refaça a prova">🔄 Refazer</button>
+          </td>
         </tr>
       `;
     });
     corpoTabelaResultados.innerHTML = htmlResultados;
+  };
+
+  window.autorizarAlunoRefazer = async function(idAluno, nomeAluno) {
+    if (confirm(`Deseja autorizar o aluno(a) "${nomeAluno}" a refazer a prova?`)) {
+      try {
+        await setDoc(doc(db, "permissoes_alunos", idAluno), { podeFazer: true }, { merge: true });
+        mostrarNotificacao(`✅ Aluno(a) ${nomeAluno} autorizado(a) a refazer a prova!`);
+      } catch (err) {
+        mostrarNotificacao("Erro ao autorizar: " + err.message);
+      }
+    }
   };
 
   window.selecionarTodosResultados = function(marcar) {
