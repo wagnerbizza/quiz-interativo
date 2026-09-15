@@ -14,11 +14,12 @@
       --warning: #eab308;
       --text: #f8fafc;
       --border: #334155;
+      --hover-bg: #334155;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: var(--bg-dark); color: var(--text); padding: 20px; min-height: 100vh; opacity: 0; transition: opacity 0.3s ease-in-out; }
     body.fade-in { opacity: 1; }
-    .container { max-width: 1150px; margin: 0 auto; }
+    .container { max-width: 1300px; margin: 0 auto; }
     header { text-align: center; margin-bottom: 20px; }
     header h1 { color: #60a5fa; font-size: 28px; }
 
@@ -27,7 +28,8 @@
     .ponto-ativo { width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e; }
 
     .nav-abas { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; }
-    .btn-aba { background-color: #334155; color: white; border: none; padding: 12px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 15px; }
+    .btn-aba { background-color: #334155; color: white; border: none; padding: 12px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 15px; transition: background 0.2s; }
+    .btn-aba:hover { background-color: #475569; }
     .btn-aba.active { background-color: var(--primary); }
 
     .aba-conteudo { background-color: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 25px; }
@@ -38,9 +40,31 @@
     label { display: block; margin-top: 15px; color: #cbd5e1; font-size: 14px; font-weight: bold; }
     input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 10px; margin-top: 6px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 14px; }
 
-    button.btn-acao { background-color: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-    button.btn-acao:hover { opacity: 0.9; }
+    button.btn-acao { background-color: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; transition: all 0.2s; }
+    button.btn-acao:hover { opacity: 0.9; transform: translateY(-1px); }
     button.btn-sucesso-animado { background-color: var(--success) !important; }
+    button.btn-danger { background-color: var(--danger) !important; }
+    button.btn-secondary { background-color: #475569 !important; }
+
+    /* DROPDOWN DINÂMICO E RESPONSIVO ESTILO WINDOWS 11 */
+    .dropdown-win { position: relative; display: inline-block; }
+    .btn-dropdown-win { background-color: #334155; color: white; border: 1px solid var(--border); padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s; }
+    .btn-dropdown-win:hover { background-color: #475569; border-color: #64748b; }
+    
+    .dropdown-menu-win { display: none; position: fixed; background-color: #1e293b; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); border: 1px solid var(--border); border-radius: 10px; z-index: 99999; padding: 6px; animation: fadeInWin 0.15s ease-in-out; }
+    .dropdown-menu-win.show { display: block; }
+    
+    .dropdown-item-win { color: #f8fafc; padding: 10px 14px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 13px; border-radius: 6px; cursor: pointer; transition: background 0.1s; }
+    .dropdown-item-win:hover { background-color: #2563eb; color: white; }
+    .dropdown-divider { height: 1px; background-color: var(--border); margin: 6px 0; }
+
+    @keyframes fadeInWin {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .painel-controle-topo { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+    .grupo-controles-esquerda, .grupo-controles-direita { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
     .card-escola-lista { background: #0f172a; border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .acoes-escola-card { display: flex; gap: 8px; align-items: center; }
@@ -49,12 +73,13 @@
     .sub-titulo-linha { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
     .sub-titulo-linha h3 { color: #60a5fa; font-size: 16px; display: flex; align-items: center; gap: 8px; }
     
-    .acoes-box { display: flex; gap: 6px; align-items: center; }
-    .btn-mini { background: #334155; color: white; border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+    .acoes-box { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .btn-mini { background: #334155; color: white; border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px; transition: background 0.2s; }
     .btn-mini:hover { background: #475569; }
 
     .grid-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
-    .checkbox-item-global, .checkbox-item { background: #1e293b; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; }
+    .checkbox-item-global, .checkbox-item { background: #1e293b; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; transition: border-color 0.2s; }
+    .checkbox-item-global:hover, .checkbox-item:hover { border-color: #475569; }
     .checkbox-item-global span, .checkbox-item span { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
     .acoes-item-global { display: flex; gap: 4px; }
     .btn-editar-item, .btn-excluir-item { background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 4px; }
@@ -75,11 +100,12 @@
 
     @media print {
       body { background-color: #fff !important; color: #000 !important; }
-      .no-print, .nav-abas, .barra-acoes-topo, header { display: none !important; }
+      .no-print, .nav-abas, .barra-acoes-topo, header, .painel-controle-topo { display: none !important; }
       .aba-conteudo { background: #fff !important; border: none !important; padding: 0 !important; }
       table { width: 100% !important; border: 1px solid #000 !important; }
       th, td { border: 1px solid #000 !important; color: #000 !important; }
       th { background-color: #f3f4f6 !important; }
+      .chk-col { display: none !important; }
     }
   </style>
 </head>
@@ -96,7 +122,7 @@
       <div class="status-tempo-real">
         <span class="ponto-ativo"></span> Sincronizado com Firebase em Tempo Real
       </div>
-      <button id="btn-recarregar-painel" class="btn-acao" style="margin: 0; background-color: #4b5563;" onclick="location.reload()">🔄 Recarregar</button>
+      <button id="btn-recarregar-painel" class="btn-acao btn-secondary" onclick="location.reload()">🔄 Recarregar</button>
     </div>
 
     <div class="nav-abas no-print">
@@ -119,7 +145,7 @@
         </div>
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
           <select id="select-escola-geral-topo" style="padding: 10px; background: #1e293b; border: 1px solid var(--border); color: white; border-radius: 6px; font-weight: bold; min-width: 220px;"></select>
-          <button type="button" id="btn-ir-config-escola" class="btn-acao" style="margin: 0; padding: 10px 16px; font-size: 13px; background-color: #2563eb;">⚙️ Abrir Tela Completa</button>
+          <button type="button" id="btn-ir-config-escola" class="btn-acao" style="margin: 0; background-color: #2563eb;">⚙️ Abrir Tela Completa</button>
         </div>
       </div>
 
@@ -130,7 +156,7 @@
         <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb;" onclick="criarNovaBoxGlobal()">➕ Adicionar Nova Box Global</button>
       </div>
 
-      <button type="button" id="btn-salvar-global-definitivo" class="btn-acao" style="background-color: #22c55e; width: 100%; margin-top: 30px; font-size: 16px; padding: 16px;">💾 Salvar e Atualizar Padrão Global</button>
+      <button type="button" id="btn-salvar-global-definitivo" class="btn-acao" style="background-color: #22c55e; width: 100%; margin-top: 30px; font-size: 16px; padding: 16px; justify-content: center;">💾 Salvar e Atualizar Padrão Global</button>
     </div>
 
     <!-- ABA 1: CADASTRO DE ESCOLAS -->
@@ -151,8 +177,8 @@
           </div>
         </div>
         <div style="display: flex; gap: 10px;">
-          <button id="btn-salvar-nova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 20px; flex: 1;">➕ Cadastrar Escola</button>
-          <button id="btn-cancelar-edicao" class="btn-acao hidden" style="background-color: #64748b; margin-top: 20px;">✖ Cancelar</button>
+          <button id="btn-salvar-nova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 20px; flex: 1; justify-content: center;">➕ Cadastrar Escola</button>
+          <button id="btn-cancelar-edicao" class="btn-acao btn-secondary hidden" style="margin-top: 20px;">✖ Cancelar</button>
         </div>
       </div>
       <h3 style="color: #60a5fa; font-size: 16px; margin-bottom: 15px;">📋 Escolas Cadastradas</h3>
@@ -208,7 +234,7 @@
           <div id="grid-turmas-ativacao" class="grid-checkboxes" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"></div>
         </div>
 
-        <button id="btn-publicar-prova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 25px; width: 100%; font-size: 16px; padding: 15px;">📢 Publicar e Liberar Avaliação para os Alunos</button>
+        <button id="btn-publicar-prova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 25px; width: 100%; font-size: 16px; padding: 15px; justify-content: center;">📢 Publicar e Liberar Avaliação para os Alunos</button>
       </div>
     </div>
 
@@ -229,46 +255,133 @@
         <select id="cad-correta" required>
           <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
         </select>
-        <button type="submit" class="btn-acao">➕ Salvar Questão no Banco</button>
+        <button type="submit" class="btn-acao" style="margin-top:20px;">➕ Salvar Questão no Banco</button>
       </form>
     </div>
 
     <!-- ABA 4: MONITORAMENTO EM TEMPO REAL -->
     <div id="aba-monitoramento" class="aba-conteudo hidden">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-        <h2 style="margin: 0; border: none; padding: 0;">🟢 Alunos Acessando em Tempo Real (Em Andamento)</h2>
-        <button type="button" class="btn-acao" style="margin: 0; background-color: #ef4444; padding: 10px 16px; font-size: 13px;" onclick="limparEEnviarMonitoramentoParaRelatorio()">🧹 Limpar e Enviar para Relatórios</button>
+      <h2>🟢 Alunos Acessando em Tempo Real (Em Andamento)</h2>
+      
+      <div class="painel-controle-topo no-print">
+        <div class="grupo-controles-esquerda">
+          <button type="button" class="btn-acao" onclick="selecionarTodosOnline(true)">☑️ Marcar</button>
+          <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosOnline(false)">🔲 Limpar</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirOnlineSelecionados()">🗑️ Excluir Selecionados</button>
+        </div>
+        <div class="grupo-controles-direita">
+          <input type="text" id="input-busca-monitoramento" placeholder="🔍 Pesquisar nome, escola..." style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; width: 170px;" oninput="renderizarTabelaTempoReal()">
+          
+          <!-- MENU DROPDOWN RESPONSIVO -->
+          <div class="dropdown-win" data-menu-id="dropdown-menu-monitoramento" data-btn-id="btn-dropdown-monitoramento">
+            <button type="button" id="btn-dropdown-monitoramento" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-monitoramento', 'btn-dropdown-monitoramento')">
+              🔄 Classificar <span style="font-size: 11px;">▼</span>
+            </button>
+            <div id="dropdown-menu-monitoramento" class="dropdown-menu-win">
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoMonitoramento('nenhum')">⚙️ Nenhum (Padrão)</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoMonitoramento('inicio-desc')">📅 Início (Mais Recente)</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoMonitoramento('inicio-asc')">📅 Início (Mais Antigo)</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoMonitoramento('nome-asc')">⬆️ Nome (A a Z)</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoMonitoramento('nome-desc')">⬇️ Nome (Z a A)</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoMonitoramento('escola-asc')">🏫 Escola (A a Z)</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoMonitoramento('tempo-desc')">⏱️ Maior Tempo Gasto</div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-acao btn-danger" onclick="limparEEnviarMonitoramentoParaRelatorio()">🧹 Finalizar Todos</button>
+        </div>
       </div>
-      <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Acompanhe abaixo os alunos que estão resolvendo a prova. Clique em "Limpar e Enviar" para concluir a prova dos alunos ativos e movê-los para os relatórios.</p>
+
       <table>
         <thead>
           <tr>
-            <th>Status</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria</th><th>Questão Atual</th><th>Tempo Decorrido</th>
+            <th class="chk-col" style="width: 40px; text-align: center;">
+              <input type="checkbox" id="chk-marcar-todos-online" onclick="selecionarTodosOnline(this.checked)">
+            </th>
+            <th>Status</th>
+            <th>Data/Hora de Início</th>
+            <th>Escola</th>
+            <th>Aluno</th>
+            <th>Turma</th>
+            <th>Matéria</th>
+            <th>Questão Atual</th>
+            <th>Tempo Decorrido</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela-tempo-real">
-          <tr><td colspan="7" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
+          <tr><td colspan="9" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
         </tbody>
       </table>
     </div>
 
     <!-- ABA 5: RESULTADOS E RELATÓRIOS -->
     <div id="aba-resultados" class="aba-conteudo hidden">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-        <h2 style="margin: 0; border: none; padding: 0;">📊 Histórico de Resultados e Relatórios</h2>
-        <div style="display: flex; gap: 10px;" class="no-print">
-          <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px; font-size: 13px;" onclick="window.print()">🖨️ Imprimir / PDF</button>
-          <button type="button" class="btn-acao" style="margin: 0; background-color: #22c55e; padding: 10px 16px; font-size: 13px;" onclick="exportarResultadosCSV()">📥 Exportar CSV</button>
+      <h2>📊 Histórico de Resultados e Relatórios</h2>
+      
+      <div class="painel-controle-topo no-print">
+        <div class="grupo-controles-esquerda">
+          <button type="button" class="btn-acao" onclick="selecionarTodosResultados(true)">☑️ Marcar</button>
+          <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosResultados(false)">🔲 Limpar</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()">🗑️ Excluir Selecionados</button>
+        </div>
+        <div class="grupo-controles-direita">
+          <input type="text" id="input-busca-resultados" placeholder="🔍 Pesquisar nome, escola..." style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; width: 150px;" oninput="renderizarTabelaResultadosFiltrada()">
+          
+          <select id="select-filtro-escola-relatorio" style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:140px;" onchange="filtrarResultadosPorEscolaSelecionada()">
+            <option value="TODAS">🏫 Todas Escolas</option>
+          </select>
+
+          <!-- MENU DROPDOWN RESPONSIVO -->
+          <div class="dropdown-win" data-menu-id="dropdown-menu-resultados" data-btn-id="btn-dropdown-resultados">
+            <button type="button" id="btn-dropdown-resultados" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-resultados', 'btn-dropdown-resultados')">
+              🔄 Classificar <span style="font-size: 11px;">▼</span>
+            </button>
+            <div id="dropdown-menu-resultados" class="dropdown-menu-win">
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('nenhum')">⚙️ Nenhum (Padrão)</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('data-desc')">📅 Data/Hora (Mais Recente)</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('data-asc')">📅 Data/Hora (Mais Antigo)</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('nome-asc')">⬆️ Nome (A a Z)</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('nome-desc')">⬇️ Nome (Z a A)</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('sobrenome-asc')">👤 Sobrenome (A a Z)</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('escola-asc')">🏫 Escola (A a Z)</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('escola-desc')">🏫 Escola (Z a A)</div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('nota-desc')">⭐ Maior Nota</div>
+              <div class="dropdown-item-win" onclick="aplicarOrdenacaoResultados('nota-asc')">⭐ Menor Nota</div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="window.print()">🖨️ PDF</button>
+          <button type="button" class="btn-acao" style="background-color: #22c55e;" onclick="exportarResultadosCSV()">📥 CSV</button>
         </div>
       </div>
+
       <table>
         <thead>
           <tr>
-            <th>Status</th><th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo Gasto</th><th>Acertos / Erros</th><th>Nota</th>
+            <th class="chk-col" style="width: 40px; text-align: center;">
+              <input type="checkbox" id="chk-marcar-todos-resultados" onclick="selecionarTodosResultados(this.checked)">
+            </th>
+            <th>Status</th>
+            <th>Data/Hora</th>
+            <th>Escola</th>
+            <th>Período</th>
+            <th>Aluno</th>
+            <th>Turma</th>
+            <th>Matéria(s)</th>
+            <th>Tempo Gasto</th>
+            <th>Acertos / Erros</th>
+            <th>Nota</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela">
-          <tr><td colspan="10" style="text-align:center;">Carregando resultados...</td></tr>
+          <tr><td colspan="11" style="text-align:center;">Carregando resultados...</td></tr>
         </tbody>
       </table>
     </div>

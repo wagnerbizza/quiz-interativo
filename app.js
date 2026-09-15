@@ -17,12 +17,71 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let resultadosGlobaisCache = [];
-let alunosOnlineCache = []; // Cache para gerenciar limpeza do tempo real
+let alunosOnlineCache = [];
+let ordemAtualMonitoramento = "nenhum";
+let ordemAtualResultados = "nenhum";
 
 document.addEventListener("DOMContentLoaded", () => {
   document.body.classList.add("fade-in");
   garantirBancoMinimoQuestoes();
 });
+
+// Controla o fechamento ao clicar fora do menu
+window.addEventListener("click", (e) => {
+  if (!e.target.closest('.dropdown-win')) {
+    document.querySelectorAll('.dropdown-menu-win').forEach(menu => menu.classList.remove('show'));
+  }
+});
+
+// Reposiciona inteligentemente os menus abertos quando o usuário faz scroll ou redimensiona
+window.addEventListener("scroll", () => {
+  atualizarPosicoesDropdownsAbertos();
+}, { passive: true });
+
+window.addEventListener("resize", () => {
+  atualizarPosicoesDropdownsAbertos();
+});
+
+function atualizarPosicoesDropdownsAbertos() {
+  document.querySelectorAll('.dropdown-menu-win.show').forEach(menu => {
+    const parent = menu.closest('.dropdown-win');
+    if (parent) {
+      const btn = parent.querySelector('.btn-dropdown-win');
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top = `${rect.bottom + 6}px`;
+        let leftPos = rect.right - menu.offsetWidth;
+        if (leftPos < 10) leftPos = 10;
+        if (leftPos + menu.offsetWidth > window.innerWidth - 10) {
+          leftPos = window.innerWidth - menu.offsetWidth - 10;
+        }
+        menu.style.left = `${leftPos}px`;
+      }
+    }
+  });
+}
+
+window.toggleDropdown = function(event, idMenu, idBtn) {
+  event.stopPropagation();
+  const menu = document.getElementById(idMenu);
+  const btn = document.getElementById(idBtn);
+  const estaMostrando = menu.classList.contains('show');
+  
+  document.querySelectorAll('.dropdown-menu-win').forEach(m => m.classList.remove('show'));
+  
+  if (!estaMostrando && btn) {
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = `${rect.bottom + 6}px`;
+    
+    let leftPos = rect.right - menu.offsetWidth;
+    if (leftPos < 10) leftPos = 10;
+    if (leftPos + menu.offsetWidth > window.innerWidth - 10) {
+      leftPos = window.innerWidth - menu.offsetWidth - 10;
+    }
+    menu.style.left = `${leftPos}px`;
+    menu.classList.add('show');
+  }
+};
 
 document.addEventListener("click", (e) => {
   const link = e.target.closest("a");
@@ -197,6 +256,7 @@ if (window.location.pathname.includes("painel.html")) {
     await carregarEscolasCache();
     await carregarEstruturaGlobalFirebase();
     renderizarSeletorEscolasTopo();
+    popularFiltroEscolaRelatorio();
     renderizarBoxesGlobais();
     carregarListaEscolas();
     inicializarTabelaResultados();
@@ -227,6 +287,17 @@ if (window.location.pathname.includes("painel.html")) {
     }
   }
 
+  function popularFiltroEscolaRelatorio() {
+    const selectFiltro = document.getElementById("select-filtro-escola-relatorio");
+    if (!selectFiltro) return;
+
+    let html = `<option value="TODAS">🏫 Todas Escolas</option>`;
+    listaEscolasCache.forEach(esc => {
+      html += `<option value="${esc.nome}">${esc.nome}</option>`;
+    });
+    selectFiltro.innerHTML = html;
+  }
+
   window.renderizarBoxesGlobais = function() {
     const container = document.getElementById("container-boxes-globais");
     if (!container) return;
@@ -243,7 +314,7 @@ if (window.location.pathname.includes("painel.html")) {
               <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-global-${bIdx}')">☑ Marcar/Limpar</button>
               <button type="button" class="btn-mini" onclick="ordenarBoxGlobal(${bIdx}, 'asc')">⬆ A-Z</button>
               <button type="button" class="btn-mini" onclick="ordenarBoxGlobal(${bIdx}, 'desc')">⬇ Z-A</button>
-              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirBoxGlobal(${bIdx})" title="Excluir Box">🗑️ Excluir Box</button>
+              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirBoxGlobal(${bIdx})" title="Excluir Box">🗑️ Excluir</button>
             </div>
           </div>
           <div class="grid-checkboxes" id="grid-global-${bIdx}">
@@ -335,7 +406,7 @@ if (window.location.pathname.includes("painel.html")) {
   window.excluirItemGlobal = function(bIdx, iIdx) {
     let removido = estruturaGlobalBoxes[bIdx].itens[iIdx];
     if (confirm(`Excluir "${removido}"?`)) {
-      estruturaGlobalBoxes[bIdx].itens.splice(bIdx, 1);
+      estruturaGlobalBoxes[bIdx].itens.splice(iIdx, 1);
       renderizarBoxesGlobais();
       mostrarNotificacao("🗑️ Item excluído!");
     }
@@ -381,6 +452,7 @@ if (window.location.pathname.includes("painel.html")) {
       snap.forEach(docSnap => { escolas.push({ idDoc: docSnap.id, ...docSnap.data() }); });
       listaEscolasCache = escolas;
       renderizarSeletorEscolasTopo();
+      popularFiltroEscolaRelatorio();
 
       if (listaEscolasContainer) {
         let htmlCadastradas = "";
@@ -596,92 +668,273 @@ if (window.location.pathname.includes("painel.html")) {
     } catch (err) { mostrarNotificacao("Erro ao cadastrar: " + err.message); }
   });
 
+  // ==========================================
+  // RELATÓRIOS E RESULTADOS (COM CLASSIFICAÇÃO WINDOWS)
+  // ==========================================
   function inicializarTabelaResultados() {
     const corpoTabelaResultados = document.getElementById("corpo-tabela");
     if (!corpoTabelaResultados) return;
+
     onSnapshot(collection(db, "avaliacoes"), (snapshot) => {
-      let htmlResultados = "";
       resultadosGlobaisCache = [];
-      snapshot.forEach(docSnap => { resultadosGlobaisCache.push(docSnap.data()); });
-
-      resultadosGlobaisCache.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-      if (resultadosGlobaisCache.length === 0) {
-        corpoTabelaResultados.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8;">Nenhum resultado registrado até o momento.</td></tr>`;
-        return;
-      }
-
-      resultadosGlobaisCache.forEach(res => {
-        let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
-        let totalQ = res.totalQuestoes || 0;
-        let acertos = res.pontuacao || 0;
-        let erros = totalQ - acertos;
-        let notaCalculada = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
-        let tempoGastoStr = res.tempoGastoFormatado || "N/D";
-        
-        htmlResultados += `
-          <tr>
-            <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">✅ Finalizado</span></td>
-            <td>${dataFormatada}</td>
-            <td><strong>${res.escola || 'N/D'}</strong></td>
-            <td>${res.periodo || 'N/D'}</td>
-            <td>${res.nome || 'Aluno'}</td>
-            <td>${res.turma || 'N/D'}</td>
-            <td>${res.materia || 'Geral'}</td>
-            <td><span style="color: #facc15;">⏱️ ${tempoGastoStr}</span></td>
-            <td><span style="color: #4ade80;">✅ ${acertos} Acertos</span> / <span style="color: #ef4444;">❌ ${erros} Erros</span></td>
-            <td><strong style="color: #60a5fa; font-size: 15px;">${notaCalculada} / 10</strong></td>
-          </tr>
-        `;
+      snapshot.forEach(docSnap => {
+        resultadosGlobaisCache.push({ idDoc: docSnap.id, ...docSnap.data() });
       });
-      corpoTabelaResultados.innerHTML = htmlResultados;
+
+      renderizarTabelaResultadosFiltrada();
     });
   }
 
+  window.filtrarResultadosPorEscolaSelecionada = function() {
+    renderizarTabelaResultadosFiltrada();
+  };
+
+  window.aplicarOrdenacaoResultados = function(criterio) {
+    ordemAtualResultados = criterio;
+    renderizarTabelaResultadosFiltrada();
+    document.getElementById('dropdown-menu-resultados').classList.remove('show');
+  };
+
+  window.renderizarTabelaResultadosFiltrada = function() {
+    const corpoTabelaResultados = document.getElementById("corpo-tabela");
+    const selectFiltro = document.getElementById("select-filtro-escola-relatorio");
+    const inputBusca = document.getElementById("input-busca-resultados");
+    if (!corpoTabelaResultados) return;
+
+    const escolaSelecionada = selectFiltro ? selectFiltro.value : "TODAS";
+    const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
+
+    let dadosFiltrados = [...resultadosGlobaisCache];
+
+    if (escolaSelecionada !== "TODAS") {
+      dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.escola) === normalizarTexto(escolaSelecionada));
+    }
+
+    if (termoBusca) {
+      dadosFiltrados = dadosFiltrados.filter(res => {
+        const textoConcatenado = normalizarTexto(`${res.nome || ''} ${res.escola || ''} ${res.turma || ''} ${res.materia || ''} ${res.periodo || ''}`);
+        return textoConcatenado.includes(termoBusca);
+      });
+    }
+
+    if (ordemAtualResultados !== "nenhum") {
+      dadosFiltrados.sort((a, b) => {
+        let notaA = a.totalQuestoes > 0 ? (a.pontuacao / a.totalQuestoes) * 10 : 0;
+        let notaB = b.totalQuestoes > 0 ? (b.pontuacao / b.totalQuestoes) * 10 : 0;
+        let nomeA = (a.nome || "").trim();
+        let nomeB = (b.nome || "").trim();
+        let partesA = nomeA.split(" ");
+        let partesB = nomeB.split(" ");
+        let sobrenomeA = partesA.length > 1 ? partesA[partesA.length - 1] : nomeA;
+        let sobrenomeB = partesB.length > 1 ? partesB[partesB.length - 1] : nomeB;
+
+        switch (ordemAtualResultados) {
+          case "data-asc":
+            return (a.timestamp || 0) - (b.timestamp || 0);
+          case "nome-asc":
+            return nomeA.localeCompare(nomeB);
+          case "nome-desc":
+            return nomeB.localeCompare(nomeA);
+          case "sobrenome-asc":
+            return sobrenomeA.localeCompare(sobrenomeB);
+          case "escola-asc":
+            return (a.escola || "").localeCompare(b.escola || "");
+          case "escola-desc":
+            return (b.escola || "").localeCompare(a.escola || "");
+          case "nota-desc":
+            return notaB - notaA;
+          case "nota-asc":
+            return notaA - notaB;
+          case "data-desc":
+          default:
+            return (b.timestamp || 0) - (a.timestamp || 0);
+        }
+      });
+    }
+
+    if (dadosFiltrados.length === 0) {
+      corpoTabelaResultados.innerHTML = `<tr><td colspan="11" style="text-align:center; color: #94a3b8;">Nenhum resultado registrado encontrado.</td></tr>`;
+      return;
+    }
+
+    let htmlResultados = "";
+    dadosFiltrados.forEach(res => {
+      let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
+      let totalQ = res.totalQuestoes || 0;
+      let acertos = res.pontuacao || 0;
+      let erros = totalQ - acertos;
+      let notaCalculada = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
+      let tempoGastoStr = res.tempoGastoFormatado || "N/D";
+      
+      htmlResultados += `
+        <tr>
+          <td class="chk-col" style="text-align: center;">
+            <input type="checkbox" class="chk-item-resultado" value="${res.idDoc}">
+          </td>
+          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">✅ Finalizado</span></td>
+          <td>${dataFormatada}</td>
+          <td><strong>${res.escola || 'N/D'}</strong></td>
+          <td>${res.periodo || 'N/D'}</td>
+          <td>${res.nome || 'Aluno'}</td>
+          <td>${res.turma || 'N/D'}</td>
+          <td>${res.materia || 'Geral'}</td>
+          <td><span style="color: #facc15;">⏱️ ${tempoGastoStr}</span></td>
+          <td><span style="color: #4ade80;">✅ ${acertos} Acertos</span> / <span style="color: #ef4444;">❌ ${erros} Erros</span></td>
+          <td><strong style="color: #60a5fa; font-size: 15px;">${notaCalculada} / 10</strong></td>
+        </tr>
+      `;
+    });
+    corpoTabelaResultados.innerHTML = htmlResultados;
+  };
+
+  window.selecionarTodosResultados = function(marcar) {
+    document.querySelectorAll(".chk-item-resultado").forEach(chk => chk.checked = marcar);
+    const mainChk = document.getElementById("chk-marcar-todos-resultados");
+    if (mainChk) mainChk.checked = marcar;
+  };
+
+  window.excluirResultadosSelecionados = async function() {
+    const selecionados = Array.from(document.querySelectorAll(".chk-item-resultado:checked")).map(c => c.value);
+    if (selecionados.length === 0) {
+      alert("⚠️ Selecione ao menos um resultado para excluir.");
+      return;
+    }
+
+    if (confirm(`Deseja excluir permanentemente os ${selecionados.length} resultado(s) selecionado(s)?`)) {
+      try {
+        for (const idDoc of selecionados) {
+          await deleteDoc(doc(db, "avaliacoes", idDoc));
+        }
+        mostrarNotificacao(`🗑️ ${selecionados.length} resultado(s) excluído(s) com sucesso!`);
+      } catch (err) {
+        mostrarNotificacao("Erro ao excluir: " + err.message);
+      }
+    }
+  };
+
+  // ==========================================
+  // MONITORAMENTO EM TEMPO REAL (COM CLASSIFICAÇÃO WINDOWS)
+  // ==========================================
   function inicializarTabelaTempoReal() {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
     if (!corpoTabelaTempoReal) return;
     onSnapshot(collection(db, "alunos_online"), (snapshot) => {
-      let htmlOnline = "";
       alunosOnlineCache = [];
       snapshot.forEach(docSnap => { 
         alunosOnlineCache.push({ idDoc: docSnap.id, ...docSnap.data() }); 
       });
 
-      if (alunosOnlineCache.length === 0) {
-        corpoTabelaTempoReal.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>`;
-        return;
-      }
-
-      alunosOnlineCache.forEach(aluno => {
-        let min = Math.floor((aluno.segundosPassados || 0) / 60);
-        let seg = (aluno.segundosPassados || 0) % 60;
-        let tempoStr = `${min}m ${seg}s`;
-
-        htmlOnline += `
-          <tr>
-            <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">🟢 Em andamento</span></td>
-            <td><strong>${aluno.escola || 'N/D'}</strong></td>
-            <td>${aluno.nome || 'Aluno'}</td>
-            <td>${aluno.turma || 'N/D'}</td>
-            <td>${aluno.materia || 'Geral'}</td>
-            <td><strong style="color: #60a5fa;">Questão ${aluno.questaoAtual || 1} de ${aluno.totalQuestoes || 10}</strong></td>
-            <td><span style="color: #facc15;">⏱️ ${tempoStr}</span></td>
-          </tr>
-        `;
-      });
-      corpoTabelaTempoReal.innerHTML = htmlOnline;
+      renderizarTabelaTempoReal();
     });
   }
 
-  // Função para limpar a lista de monitoramento e enviar os registros para o relatório no Firebase
+  window.aplicarOrdenacaoMonitoramento = function(criterio) {
+    ordemAtualMonitoramento = criterio;
+    renderizarTabelaTempoReal();
+    document.getElementById('dropdown-menu-monitoramento').classList.remove('show');
+  };
+
+  window.renderizarTabelaTempoReal = function() {
+    const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
+    const inputBusca = document.getElementById("input-busca-monitoramento");
+    if (!corpoTabelaTempoReal) return;
+
+    const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
+    let dadosFiltrados = [...alunosOnlineCache];
+
+    if (termoBusca) {
+      dadosFiltrados = dadosFiltrados.filter(aluno => {
+        const textoConcatenado = normalizarTexto(`${aluno.nome || ''} ${aluno.escola || ''} ${aluno.turma || ''} ${aluno.materia || ''}`);
+        return textoConcatenado.includes(termoBusca);
+      });
+    }
+
+    if (ordemAtualMonitoramento !== "nenhum") {
+      dadosFiltrados.sort((a, b) => {
+        let tA = a.dataInicio?.seconds || a.dataInicio || 0;
+        let tB = b.dataInicio?.seconds || b.dataInicio || 0;
+        switch (ordemAtualMonitoramento) {
+          case "inicio-asc":
+            return tA - tB;
+          case "nome-asc":
+            return (a.nome || "").localeCompare(b.nome || "");
+          case "nome-desc":
+            return (b.nome || "").localeCompare(a.nome || "");
+          case "escola-asc":
+            return (a.escola || "").localeCompare(b.escola || "");
+          case "tempo-desc":
+            return (b.segundosPassados || 0) - (a.segundosPassados || 0);
+          case "inicio-desc":
+          default:
+            return tB - tA;
+        }
+      });
+    }
+
+    if (dadosFiltrados.length === 0) {
+      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #94a3b8;">Nenhum aluno correspondente encontrado no monitoramento.</td></tr>`;
+      return;
+    }
+
+    let htmlOnline = "";
+    dadosFiltrados.forEach(aluno => {
+      let min = Math.floor((aluno.segundosPassados || 0) / 60);
+      let seg = (aluno.segundosPassados || 0) % 60;
+      let tempoStr = `${min}m ${seg}s`;
+      let dataInicioStr = aluno.dataInicio?.toDate ? aluno.dataInicio.toDate().toLocaleString('pt-BR') : "Agora";
+
+      htmlOnline += `
+        <tr>
+          <td class="chk-col" style="text-align: center;">
+            <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}">
+          </td>
+          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">🟢 Em andamento</span></td>
+          <td><span style="color: #cbd5e1; font-size: 13px;">📅 ${dataInicioStr}</span></td>
+          <td><strong>${aluno.escola || 'N/D'}</strong></td>
+          <td>${aluno.nome || 'Aluno'}</td>
+          <td>${aluno.turma || 'N/D'}</td>
+          <td>${aluno.materia || 'Geral'}</td>
+          <td><strong style="color: #60a5fa;">Questão ${aluno.questaoAtual || 1} de ${aluno.totalQuestoes || 10}</strong></td>
+          <td><span style="color: #facc15;">⏱️ ${tempoStr}</span></td>
+        </tr>
+      `;
+    });
+    corpoTabelaTempoReal.innerHTML = htmlOnline;
+  };
+
+  window.selecionarTodosOnline = function(marcar) {
+    document.querySelectorAll(".chk-item-online").forEach(chk => chk.checked = marcar);
+    const mainChk = document.getElementById("chk-marcar-todos-online");
+    if (mainChk) mainChk.checked = marcar;
+  };
+
+  window.excluirOnlineSelecionados = async function() {
+    const selecionados = Array.from(document.querySelectorAll(".chk-item-online:checked")).map(c => c.value);
+    if (selecionados.length === 0) {
+      alert("⚠️ Selecione ao menos um aluno online para encerrar.");
+      return;
+    }
+
+    if (confirm(`Deseja encerrar e remover do monitoramento os ${selecionados.length} aluno(s) selecionados?`)) {
+      try {
+        for (const idDoc of selecionados) {
+          await setDoc(doc(db, "permissoes_alunos", idDoc), { podeFazer: false });
+          await deleteDoc(doc(db, "alunos_online", idDoc));
+        }
+        mostrarNotificacao(`🧹 ${selecionados.length} aluno(s) encerrado(s) com sucesso!`);
+      } catch (err) {
+        mostrarNotificacao("Erro ao encerrar: " + err.message);
+      }
+    }
+  };
+
   window.limparEEnviarMonitoramentoParaRelatorio = async function() {
     if (!alunosOnlineCache || alunosOnlineCache.length === 0) {
       alert("⚠️ Não há alunos ativos no monitoramento no momento.");
       return;
     }
 
-    if (!confirm(`Deseja finalizar a prova dos ${alunosOnlineCache.length} aluno(s) ativos, movendo-os para a aba de relatórios?`)) {
+    if (!confirm(`Deseja finalizar a prova dos ${alunosOnlineCache.length} aluno(s) ativos, movendo-os para os relatórios?`)) {
       return;
     }
 
@@ -692,7 +945,6 @@ if (window.location.pathname.includes("painel.html")) {
         let seg = (aluno.segundosPassados || 0) % 60;
         let tempoGastoFormatado = `${min}m ${seg}s`;
 
-        // 1. Salva nos relatórios (avaliacoes)
         await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
           idAluno: aluno.idDoc,
           nome: aluno.nome,
@@ -700,7 +952,7 @@ if (window.location.pathname.includes("painel.html")) {
           escola: aluno.escola,
           periodo: aluno.periodo || "Geral",
           materia: aluno.materia || "Geral",
-          pontuacao: 0, // Como foi finalizado pelo painel, atribui-se fechamento manual
+          pontuacao: 0,
           totalQuestoes: aluno.totalQuestoes || 10,
           tempoGastoSegundos: aluno.segundosPassados || 0,
           tempoGastoFormatado: tempoGastoFormatado,
@@ -708,14 +960,11 @@ if (window.location.pathname.includes("painel.html")) {
           timestamp: agora
         });
 
-        // 2. Bloqueia nova tentativa do aluno
         await setDoc(doc(db, "permissoes_alunos", aluno.idDoc), { podeFazer: false });
-
-        // 3. Remove da lista de monitoramento em tempo real
         await deleteDoc(doc(db, "alunos_online", aluno.idDoc));
       }
 
-      mostrarNotificacao("✅ Alunos removidos do monitoramento e enviados com sucesso para os relatórios!");
+      mostrarNotificacao("✅ Alunos removidos do monitoramento e enviados para os relatórios!");
     } catch (err) {
       mostrarNotificacao("Erro ao processar: " + err.message);
     }
@@ -903,7 +1152,7 @@ if (window.location.pathname.includes("escola.html")) {
               <button type="button" class="btn-editar-item" onclick="editarTituloBoxEscola(${bIdx})" title="Editar Título" style="margin-left: 8px;">✏️</button>
             </h2>
             <div class="acoes-box">
-              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirBoxEscola(${bIdx})">🗑️ Excluir Box</button>
+              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirBoxEscola(${bIdx})">🗑️ Excluir</button>
             </div>
           </div>
           <div class="aviso-geral">💡 Informação herdada das Configurações Gerais. Modifique livremente para esta unidade.</div>
@@ -1185,6 +1434,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
   let alunoAtual = {}, qtdQ = 10, dadosProvaAtiva = {};
   let timerInterval = null, tempoRestanteSegundos = 0, segundosPassados = 0;
   let avisoTempoMinimoExibido = false;
+  let watcherPermissaoInterval = null;
 
   const selectTurma = document.getElementById("turma-aluno");
   const inputNomeAluno = document.getElementById("nome-aluno");
@@ -1246,6 +1496,20 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     alunoAtual.turma = turmaInput;
     alunoAtual.id = idAlunoUnico;
 
+    try {
+      await setDoc(doc(db, "alunos_online", alunoAtual.id), {
+        nome: alunoAtual.nome,
+        turma: alunoAtual.turma,
+        escola: alunoAtual.escola,
+        materia: alunoAtual.materia,
+        questaoAtual: 1,
+        totalQuestoes: qtdQ,
+        segundosPassados: 0,
+        dataInicio: serverTimestamp(),
+        atualizadoEm: serverTimestamp()
+      });
+    } catch(e) {}
+
     let banco = [];
     try {
       const snap = await getDocs(collection(db, "questoes"));
@@ -1281,6 +1545,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     document.getElementById("tela-quiz").classList.remove("hidden");
     
     iniciarCronogerenciamento();
+    iniciarMonitoramentoFechamentoRemoto();
     exibirQuestao();
   });
 
@@ -1345,9 +1610,28 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     }, 1000);
   }
 
+  function iniciarMonitoramentoFechamentoRemoto() {
+    if (watcherPermissaoInterval) clearInterval(watcherPermissaoInterval);
+    watcherPermissaoInterval = setInterval(async () => {
+      if (!alunoAtual.id) return;
+      try {
+        const pDoc = await getDoc(doc(db, "permissoes_alunos", alunoAtual.id));
+        if (pDoc.exists() && pDoc.data().podeFazer === false) {
+          clearInterval(watcherPermissaoInterval);
+          if (timerInterval) clearInterval(timerInterval);
+          alert("🔒 Sua prova foi encerrada pelo professor.");
+          location.reload();
+        }
+      } catch(e) {}
+    }, 3000);
+  }
+
   async function atualizarStatusOnlineFirebase() {
     try {
-      await setDoc(doc(db, "alunos_online", alunoAtual.id), {
+      const docRef = doc(db, "alunos_online", alunoAtual.id);
+      const docSnap = await getDoc(docRef);
+      
+      let dadosAtualizacao = {
         nome: alunoAtual.nome,
         turma: alunoAtual.turma,
         escola: alunoAtual.escola,
@@ -1356,7 +1640,13 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         totalQuestoes: listaQuestoes.length,
         segundosPassados: segundosPassados,
         atualizadoEm: serverTimestamp()
-      });
+      };
+
+      if (!docSnap.exists() || !docSnap.data().dataInicio) {
+        dadosAtualizacao.dataInicio = serverTimestamp();
+      }
+
+      await setDoc(docRef, dadosAtualizacao, { merge: true });
     } catch(e) {}
   }
 
@@ -1418,6 +1708,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
   async function finalizarProva() {
     if (timerInterval) clearInterval(timerInterval);
+    if (watcherPermissaoInterval) clearInterval(watcherPermissaoInterval);
     document.getElementById("tela-quiz").classList.add("hidden");
     document.getElementById("tela-resultado").classList.remove("hidden");
 
@@ -1443,6 +1734,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     try {
       const agora = Date.now();
+      
       await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
         idAluno: alunoAtual.id,
         nome: alunoAtual.nome,
@@ -1457,6 +1749,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         dataEnvio: serverTimestamp(),
         timestamp: agora
       });
+      
       await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), { podeFazer: false });
       await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
