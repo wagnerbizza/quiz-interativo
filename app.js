@@ -945,7 +945,6 @@ if (window.location.pathname.includes("painel.html")) {
         let seg = segundos % 60;
         let tempoGastoFormatado = `${min}m ${seg}s`;
 
-        // Preserva pontuação atual se houver, ou calcula baseada na questão onde parou
         let totalQ = alunoObj?.totalQuestoes || 10;
         let questaoParada = alunoObj?.questaoAtual || 1;
         let pontuacaoAtual = alunoObj?.pontuacao !== undefined ? alunoObj.pontuacao : Math.min(questaoParada - 1, totalQ);
@@ -1819,7 +1818,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     document.getElementById("nota-final-txt").textContent = `Nota Proporcional: ${nota} / 10.0 (Tempo: ${tempoGastoFormatado})`;
     document.getElementById("detalhes-acertos-txt").textContent = `Acertos: ${acertos} | Erros: ${erros} (Total de ${listaQuestoes.length} questões)`;
-    document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
+    document.getElementById("container-revisor-resultado").innerHTML = htmlRev;
 
     try {
       const agora = Date.now();

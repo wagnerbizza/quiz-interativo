@@ -23,11 +23,38 @@
     header { text-align: center; margin-bottom: 20px; }
     header h1 { color: #60a5fa; font-size: 28px; }
 
-    .barra-acoes-topo { display: flex; justify-content: space-between; align-items: center; background-color: var(--card-bg); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; }
+    /* BARRA DE AÇÕES DO TOPO FIXA AO ROLAR */
+    .barra-acoes-topo { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background-color: var(--card-bg); 
+      padding: 12px 20px; 
+      border-radius: 8px; 
+      border: 1px solid var(--border); 
+      margin-bottom: 20px; 
+      position: sticky;
+      top: 10px;
+      z-index: 900;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
     .status-tempo-real { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #4ade80; font-weight: bold; }
     .ponto-ativo { width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e; }
 
-    .nav-abas { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; }
+    /* ABAS DE NAVEGAÇÃO FIXAS AO ROLAR */
+    .nav-abas { 
+      display: flex; 
+      gap: 10px; 
+      margin-bottom: 20px; 
+      border-bottom: 2px solid var(--border); 
+      padding-bottom: 10px; 
+      flex-wrap: wrap; 
+      position: sticky;
+      top: 65px;
+      background-color: var(--bg-dark);
+      z-index: 890;
+      padding-top: 5px;
+    }
     .btn-aba { background-color: #334155; color: white; border: none; padding: 12px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 15px; transition: background 0.2s; }
     .btn-aba:hover { background-color: #475569; }
     .btn-aba.active { background-color: var(--primary); }
@@ -63,7 +90,23 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .painel-controle-topo { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+    /* PAINEL DE CONTROLE / FILTROS FLUTUANTE AO ROLAR */
+    .painel-controle-topo { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background: #0f172a; 
+      padding: 14px 18px; 
+      border-radius: 10px; 
+      border: 1px solid var(--border); 
+      margin-bottom: 18px; 
+      flex-wrap: wrap; 
+      gap: 12px; 
+      position: sticky;
+      top: 135px;
+      z-index: 880;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
     .grupo-controles-esquerda, .grupo-controles-direita { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
     .card-escola-lista { background: #0f172a; border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -94,7 +137,7 @@
 
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { background-color: #0f172a; color: #60a5fa; }
+    th { background-color: #0f172a; color: #60a5fa; position: sticky; top: 200px; z-index: 870; }
 
     #toast-notification { position: fixed; top: 20px; right: 20px; background-color: #1e293b; color: #fff; padding: 16px 24px; border-radius: 8px; border-left: 6px solid #2563eb; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 9999; display: none; font-weight: bold; }
 
@@ -104,7 +147,7 @@
       .aba-conteudo { background: #fff !important; border: none !important; padding: 0 !important; }
       table { width: 100% !important; border: 1px solid #000 !important; }
       th, td { border: 1px solid #000 !important; color: #000 !important; }
-      th { background-color: #f3f4f6 !important; }
+      th { background-color: #f3f4f6 !important; position: static !important; }
       .chk-col { display: none !important; }
     }
   </style>
