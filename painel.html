@@ -46,7 +46,7 @@
     button.btn-danger { background-color: var(--danger) !important; }
     button.btn-secondary { background-color: #475569 !important; }
 
-    /* DROPDOWN DINÂMICO E RESPONSIVO ESTILO WINDOWS 11 */
+    /* DROPDOWN DINÂMICO E RESPONSIVO */
     .dropdown-win { position: relative; display: inline-block; }
     .btn-dropdown-win { background-color: #334155; color: white; border: 1px solid var(--border); padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s; }
     .btn-dropdown-win:hover { background-color: #475569; border-color: #64748b; }
@@ -272,7 +272,6 @@
         <div class="grupo-controles-direita">
           <input type="text" id="input-busca-monitoramento" placeholder="🔍 Pesquisar nome, escola..." style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; width: 170px;" oninput="renderizarTabelaTempoReal()">
           
-          <!-- MENU DROPDOWN RESPONSIVO -->
           <div class="dropdown-win" data-menu-id="dropdown-menu-monitoramento" data-btn-id="btn-dropdown-monitoramento">
             <button type="button" id="btn-dropdown-monitoramento" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-monitoramento', 'btn-dropdown-monitoramento')">
               🔄 Classificar <span style="font-size: 11px;">▼</span>
@@ -309,10 +308,11 @@
             <th>Matéria</th>
             <th>Questão Atual</th>
             <th>Tempo Decorrido</th>
+            <th style="text-align: center;">Ações</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela-tempo-real">
-          <tr><td colspan="9" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
+          <tr><td colspan="10" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
         </tbody>
       </table>
     </div>
@@ -334,7 +334,6 @@
             <option value="TODAS">🏫 Todas Escolas</option>
           </select>
 
-          <!-- MENU DROPDOWN RESPONSIVO -->
           <div class="dropdown-win" data-menu-id="dropdown-menu-resultados" data-btn-id="btn-dropdown-resultados">
             <button type="button" id="btn-dropdown-resultados" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-resultados', 'btn-dropdown-resultados')">
               🔄 Classificar <span style="font-size: 11px;">▼</span>

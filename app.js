@@ -33,7 +33,6 @@ window.addEventListener("click", (e) => {
   }
 });
 
-// Reposiciona inteligentemente os menus abertos quando o usuário faz scroll ou redimensiona
 window.addEventListener("scroll", () => {
   atualizarPosicoesDropdownsAbertos();
 }, { passive: true });
@@ -669,7 +668,7 @@ if (window.location.pathname.includes("painel.html")) {
   });
 
   // ==========================================
-  // RELATÓRIOS E RESULTADOS (COM CLASSIFICAÇÃO WINDOWS E BOTÃO DE REFAZER)
+  // RELATÓRIOS E RESULTADOS
   // ==========================================
   function inicializarTabelaResultados() {
     const corpoTabelaResultados = document.getElementById("corpo-tabela");
@@ -828,7 +827,7 @@ if (window.location.pathname.includes("painel.html")) {
   };
 
   // ==========================================
-  // MONITORAMENTO EM TEMPO REAL (COM CLASSIFICAÇÃO WINDOWS)
+  // MONITORAMENTO EM TEMPO REAL (PRESERVANDO QUESTÃO E PONTUAÇÃO ATUAL)
   // ==========================================
   function inicializarTabelaTempoReal() {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
@@ -853,6 +852,10 @@ if (window.location.pathname.includes("painel.html")) {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
     const inputBusca = document.getElementById("input-busca-monitoramento");
     if (!corpoTabelaTempoReal) return;
+
+    const selecionadosAntes = new Set(
+      Array.from(document.querySelectorAll(".chk-item-online:checked")).map(c => c.value)
+    );
 
     const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
     let dadosFiltrados = [...alunosOnlineCache];
@@ -887,7 +890,7 @@ if (window.location.pathname.includes("painel.html")) {
     }
 
     if (dadosFiltrados.length === 0) {
-      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #94a3b8;">Nenhum aluno correspondente encontrado no monitoramento.</td></tr>`;
+      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8;">Nenhum aluno correspondente encontrado no monitoramento.</td></tr>`;
       return;
     }
 
@@ -897,11 +900,12 @@ if (window.location.pathname.includes("painel.html")) {
       let seg = (aluno.segundosPassados || 0) % 60;
       let tempoStr = `${min}m ${seg}s`;
       let dataInicioStr = aluno.dataInicio?.toDate ? aluno.dataInicio.toDate().toLocaleString('pt-BR') : "Agora";
+      let estaMarcado = selecionadosAntes.has(aluno.idDoc) ? "checked" : "";
 
       htmlOnline += `
         <tr>
           <td class="chk-col" style="text-align: center;">
-            <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}">
+            <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}" ${estaMarcado}>
           </td>
           <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">🟢 Em andamento</span></td>
           <td><span style="color: #cbd5e1; font-size: 13px;">📅 ${dataInicioStr}</span></td>
@@ -911,10 +915,65 @@ if (window.location.pathname.includes("painel.html")) {
           <td>${aluno.materia || 'Geral'}</td>
           <td><strong style="color: #60a5fa;">Questão ${aluno.questaoAtual || 1} de ${aluno.totalQuestoes || 10}</strong></td>
           <td><span style="color: #facc15;">⏱️ ${tempoStr}</span></td>
+          <td style="text-align: center;">
+            <button type="button" class="btn-acao btn-danger" style="padding: 6px 10px; font-size: 12px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)" title="Finalizar prova deste aluno">🏁 Finalizar</button>
+          </td>
         </tr>
       `;
     });
     corpoTabelaTempoReal.innerHTML = htmlOnline;
+  };
+
+  window.finalizarAlunoElemento = function(btn) {
+    const idAluno = btn.getAttribute("data-id");
+    const nomeAluno = btn.getAttribute("data-nome");
+    window.finalizarAlunoIndividual(idAluno, nomeAluno);
+  };
+
+  window.finalizarAlunoIndividual = async function(idAluno, nomeAluno) {
+    if (!idAluno) {
+      mostrarNotificacao("⚠️ ID do aluno inválido.");
+      return;
+    }
+
+    if (confirm(`Deseja finalizar e enviar para o relatório a prova do aluno(a) "${nomeAluno}" salvando o progresso atual?`)) {
+      try {
+        let alunoObj = alunosOnlineCache.find(a => a.idDoc === idAluno);
+        const agora = Date.now();
+        let segundos = alunoObj ? (alunoObj.segundosPassados || 0) : 0;
+        let min = Math.floor(segundos / 60);
+        let seg = segundos % 60;
+        let tempoGastoFormatado = `${min}m ${seg}s`;
+
+        // Preserva pontuação atual se houver, ou calcula baseada na questão onde parou
+        let totalQ = alunoObj?.totalQuestoes || 10;
+        let questaoParada = alunoObj?.questaoAtual || 1;
+        let pontuacaoAtual = alunoObj?.pontuacao !== undefined ? alunoObj.pontuacao : Math.min(questaoParada - 1, totalQ);
+
+        await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
+          idAluno: idAluno,
+          nome: alunoObj?.nome || nomeAluno || "Aluno",
+          turma: alunoObj?.turma || "N/D",
+          escola: alunoObj?.escola || "Escola",
+          periodo: alunoObj?.periodo || "Geral",
+          materia: alunoObj?.materia || "Geral",
+          pontuacao: pontuacaoAtual,
+          totalQuestoes: totalQ,
+          tempoGastoSegundos: segundos,
+          tempoGastoFormatado: tempoGastoFormatado,
+          dataEnvio: serverTimestamp(),
+          timestamp: agora
+        });
+
+        await setDoc(doc(db, "permissoes_alunos", idAluno), { podeFazer: false }, { merge: true });
+        await deleteDoc(doc(db, "alunos_online", idAluno));
+
+        mostrarNotificacao(`✅ Prova de ${nomeAluno} finalizada e salva com o progresso atual!`);
+      } catch (err) {
+        console.error("Erro ao finalizar:", err);
+        mostrarNotificacao("Erro ao finalizar aluno: " + err.message);
+      }
+    }
   };
 
   window.selecionarTodosOnline = function(marcar) {
@@ -933,7 +992,7 @@ if (window.location.pathname.includes("painel.html")) {
     if (confirm(`Deseja encerrar e remover do monitoramento os ${selecionados.length} aluno(s) selecionados?`)) {
       try {
         for (const idDoc of selecionados) {
-          await setDoc(doc(db, "permissoes_alunos", idDoc), { podeFazer: false });
+          await setDoc(doc(db, "permissoes_alunos", idDoc), { podeFazer: false }, { merge: true });
           await deleteDoc(doc(db, "alunos_online", idDoc));
         }
         mostrarNotificacao(`🧹 ${selecionados.length} aluno(s) encerrado(s) com sucesso!`);
@@ -949,7 +1008,7 @@ if (window.location.pathname.includes("painel.html")) {
       return;
     }
 
-    if (!confirm(`Deseja finalizar a prova dos ${alunosOnlineCache.length} aluno(s) ativos, movendo-os para os relatórios?`)) {
+    if (!confirm(`Deseja finalizar a prova dos ${alunosOnlineCache.length} aluno(s) ativos, salvando o progresso atual de cada um nos relatórios?`)) {
       return;
     }
 
@@ -960,26 +1019,30 @@ if (window.location.pathname.includes("painel.html")) {
         let seg = (aluno.segundosPassados || 0) % 60;
         let tempoGastoFormatado = `${min}m ${seg}s`;
 
+        let totalQ = aluno.totalQuestoes || 10;
+        let questaoParada = aluno.questaoAtual || 1;
+        let pontuacaoAtual = aluno.pontuacao !== undefined ? aluno.pontuacao : Math.min(questaoParada - 1, totalQ);
+
         await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
           idAluno: aluno.idDoc,
-          nome: aluno.nome,
-          turma: aluno.turma,
-          escola: aluno.escola,
+          nome: aluno.nome || "Aluno",
+          turma: aluno.turma || "N/D",
+          escola: aluno.escola || "Escola",
           periodo: aluno.periodo || "Geral",
           materia: aluno.materia || "Geral",
-          pontuacao: 0,
-          totalQuestoes: aluno.totalQuestoes || 10,
+          pontuacao: pontuacaoAtual,
+          totalQuestoes: totalQ,
           tempoGastoSegundos: aluno.segundosPassados || 0,
           tempoGastoFormatado: tempoGastoFormatado,
           dataEnvio: serverTimestamp(),
           timestamp: agora
         });
 
-        await setDoc(doc(db, "permissoes_alunos", aluno.idDoc), { podeFazer: false });
+        await setDoc(doc(db, "permissoes_alunos", aluno.idDoc), { podeFazer: false }, { merge: true });
         await deleteDoc(doc(db, "alunos_online", aluno.idDoc));
       }
 
-      mostrarNotificacao("✅ Alunos removidos do monitoramento e enviados para os relatórios!");
+      mostrarNotificacao("✅ Alunos removidos do monitoramento e enviados com sucesso para os relatórios!");
     } catch (err) {
       mostrarNotificacao("Erro ao processar: " + err.message);
     }
@@ -1517,9 +1580,11 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         turma: alunoAtual.turma,
         escola: alunoAtual.escola,
         materia: alunoAtual.materia,
+        periodo: alunoAtual.periodo,
         questaoAtual: 1,
         totalQuestoes: qtdQ,
         segundosPassados: 0,
+        pontuacao: 0,
         dataInicio: serverTimestamp(),
         atualizadoEm: serverTimestamp()
       });
@@ -1646,13 +1711,22 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       const docRef = doc(db, "alunos_online", alunoAtual.id);
       const docSnap = await getDoc(docRef);
       
+      let acertosParciais = 0;
+      listaQuestoes.forEach((q, idx) => {
+        if (respostasUsuario[idx] && respostasUsuario[idx] === q.correta) {
+          acertosParciais++;
+        }
+      });
+
       let dadosAtualizacao = {
         nome: alunoAtual.nome,
         turma: alunoAtual.turma,
         escola: alunoAtual.escola,
         materia: alunoAtual.materia,
+        periodo: alunoAtual.periodo || "Geral",
         questaoAtual: indiceAtual + 1,
         totalQuestoes: listaQuestoes.length,
+        pontuacao: acertosParciais,
         segundosPassados: segundosPassados,
         atualizadoEm: serverTimestamp()
       };
@@ -1752,11 +1826,11 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       
       await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
         idAluno: alunoAtual.id,
-        nome: alunoAtual.nome,
-        turma: alunoAtual.turma,
-        escola: alunoAtual.escola,
-        periodo: alunoAtual.periodo,
-        materia: alunoAtual.materia,
+        nome: alunoAtual.nome || "Aluno",
+        turma: alunoAtual.turma || "N/D",
+        escola: alunoAtual.escola || "Escola",
+        periodo: alunoAtual.periodo || "Geral",
+        materia: alunoAtual.materia || "Geral",
         pontuacao: acertos,
         totalQuestoes: listaQuestoes.length,
         tempoGastoSegundos: segundosPassados,
@@ -1765,7 +1839,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         timestamp: agora
       });
       
-      await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), { podeFazer: false });
+      await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), { podeFazer: false }, { merge: true });
       await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
       document.getElementById("status-envio-txt").textContent = "Resultado salvo com sucesso! ✅";
