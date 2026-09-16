@@ -24,9 +24,28 @@ let ordemAtualResultados = "nenhum";
 document.addEventListener("DOMContentLoaded", () => {
   document.body.classList.add("fade-in");
   garantirBancoMinimoQuestoes();
+  forcarMenuClassificarCompleto();
+  injetarEstiloIconeCalendarioClaro();
 });
 
-// Controla o fechamento ao clicar fora do menu
+function injetarEstiloIconeCalendarioClaro() {
+  if (!document.getElementById("estilo-calendario-claro")) {
+    const st = document.createElement("style");
+    st.id = "estilo-calendario-claro";
+    st.innerHTML = `
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        filter: invert(1) brightness(1.8);
+        cursor: pointer;
+        opacity: 0.9;
+      }
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+      }
+    `;
+    document.head.appendChild(st);
+  }
+}
+
 window.addEventListener("click", (e) => {
   if (!e.target.closest('.dropdown-win')) {
     document.querySelectorAll('.dropdown-menu-win').forEach(menu => menu.classList.remove('show'));
@@ -48,12 +67,19 @@ function atualizarPosicoesDropdownsAbertos() {
       const btn = parent.querySelector('.btn-dropdown-win');
       if (btn) {
         const rect = btn.getBoundingClientRect();
-        menu.style.top = `${rect.bottom + 6}px`;
-        let leftPos = rect.right - menu.offsetWidth;
-        if (leftPos < 10) leftPos = 10;
-        if (leftPos + menu.offsetWidth > window.innerWidth - 10) {
-          leftPos = window.innerWidth - menu.offsetWidth - 10;
+        const espacoAbaixo = window.innerHeight - rect.bottom;
+        if (espacoAbaixo < menu.offsetHeight + 10 && rect.top > menu.offsetHeight) {
+          menu.style.top = `${rect.top - menu.offsetHeight - 6}px`;
+        } else {
+          menu.style.top = `${rect.bottom + 6}px`;
         }
+
+        let leftPos = rect.left;
+        if (leftPos + menu.offsetWidth > window.innerWidth - 15) {
+          leftPos = window.innerWidth - menu.offsetWidth - 15;
+        }
+        if (leftPos < 15) leftPos = 15;
+        
         menu.style.left = `${leftPos}px`;
       }
     }
@@ -69,18 +95,31 @@ window.toggleDropdown = function(event, idMenu, idBtn) {
   document.querySelectorAll('.dropdown-menu-win').forEach(m => m.classList.remove('show'));
   
   if (!estaMostrando && btn) {
-    const rect = btn.getBoundingClientRect();
-    menu.style.top = `${rect.bottom + 6}px`;
-    
-    let leftPos = rect.right - menu.offsetWidth;
-    if (leftPos < 10) leftPos = 10;
-    if (leftPos + menu.offsetWidth > window.innerWidth - 10) {
-      leftPos = window.innerWidth - menu.offsetWidth - 10;
-    }
-    menu.style.left = `${leftPos}px`;
     menu.classList.add('show');
+    atualizarPosicoesDropdownsAbertos();
   }
 };
+
+function forcarMenuClassificarCompleto() {
+  const menuResultados = document.getElementById("dropdown-menu-resultados");
+  if (menuResultados) {
+    menuResultados.style.minWidth = "250px";
+    menuResultados.innerHTML = `
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nenhum')">⚙️ Nenhum (Padrão)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('data-desc')">📅 Data/Hora (Mais Recente)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('data-asc')">📅 Data/Hora (Mais Antiga / Não recente)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nome-asc')">🔤 Nome Aluno (A-Z)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nome-desc')">🔤 Nome Aluno (Z-A)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('sobrenome-asc')">👤 Sobrenome (A-Z)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('turma-asc')">🏫 Turma (Crescente / A-Z)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('turma-desc')">🏫 Turma (Decrescente / Z-A)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('escola-asc')">🏛️ Escola (A-Z)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('escola-desc')">🏛️ Escola (Z-A)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nota-desc')">⭐ Maior Nota</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nota-asc')">⭐ Menor Nota</button>
+    `;
+  }
+}
 
 document.addEventListener("click", (e) => {
   const link = e.target.closest("a");
@@ -161,6 +200,7 @@ let estruturaGlobalBoxes = [
     "Processos de desenvolvimento de sistemas e metodologias Ágeis",
     "Matemática", "Língua Portuguesa", "Ciências", "História", "Geografia", "Física", "Química", "Biologia", "Inglês"
   ]},
+  { id: "tipos_ensino", titulo: "🎓 Tipos de Ensino e Plataformas", itens: ["Ensino Técnico", "Ensino Regular", "Ensino Médio", "Plataforma Alura", "EaD"] },
   { id: "periodos", titulo: "🏫 Períodos e Turnos", itens: ["Manhã", "Tarde", "Noite", "Integral"] },
   { id: "bimestres", titulo: "📅 Bimestres e Semestres", itens: ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre"] }
 ];
@@ -171,7 +211,7 @@ let turmaDadosGlobal = {
 };
 
 let listaEscolasCache = [];
-let dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [] };
+let dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [], tipos_ensino: [] };
 
 async function carregarEscolasCache() {
   try {
@@ -207,7 +247,7 @@ async function garantirBancoMinimoQuestoes() {
     await carregarEstruturaGlobalFirebase();
     const bancoQuestoesTecnicasExtendido = {
       "Inteligencia Artificial": [
-        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com las respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
+        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com as respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
         { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" },
         { p: "O que significa o conceito de Deep Learning?", ops: ["Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas", "Processamento de planilhas eletrônicas gigantescas", "Criptografia de ponta a ponta em redes locais", "Compactação avançada de arquivos de vídeo"], c: "A" }
       ],
@@ -261,6 +301,44 @@ if (window.location.pathname.includes("painel.html")) {
     inicializarTabelaResultados();
     inicializarTabelaTempoReal();
     popularSelectMateriasQuestao();
+    setTimeout(() => {
+      forcarMenuClassificarCompleto();
+      carregarResumoProvaAtivaNoPainel();
+    }, 400);
+  }
+
+  function carregarResumoProvaAtivaNoPainel() {
+    const painelResumo = document.getElementById("painel-resumo-escola-ativacao");
+    const conteudoResumo = document.getElementById("conteudo-resumo-ativacao");
+    if (!painelResumo || !conteudoResumo) return;
+
+    onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
+      if (docSnap.exists()) {
+        const dados = docSnap.data();
+        painelResumo.classList.remove("hidden");
+
+        let dataAgendadaStr = "Não agendado (Imediato)";
+        if (dados.agendamento && dados.agendamento > 0) {
+          dataAgendadaStr = new Date(dados.agendamento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        }
+
+        let htmlResumo = `
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.5;">
+            <div style="display: flex; align-items: center; gap: 8px;">🏫 <span><strong>Escola Ativa:</strong> <span style="color: #60a5fa;">${dados.escolaAtiva || 'N/D'}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">🎓 <span><strong>Tipo de Ensino / Plataforma:</strong> <span style="color: #4ade80; font-weight: bold;">${dados.tipoEnsino || 'Geral'}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">📚 <span><strong>Matérias Selecionadas:</strong> <span style="color: #cbd5e1;">${(dados.materiasAtivas || []).join(', ') || 'Nenhuma'}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">📅 <span><strong>Período / Ciclo:</strong> <span style="color: #cbd5e1;">${dados.periodoAtivo || 'Geral'}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">🔒 <span><strong>Token / Senha de Acesso:</strong> <span style="color: #facc15; font-weight: bold;">${dados.token || 'Nenhum (Livre)'}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">⏰ <span><strong>Início Simultâneo Agendado:</strong> <span style="color: #facc15; font-weight: bold;">${dataAgendadaStr}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">⚙️ <span><strong>Qtd. de Questões:</strong> <span style="color: #cbd5e1;">${dados.quantidadeQuestoes || 10}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">⏱️ <span><strong>Tempo Mínimo:</strong> <span style="color: #cbd5e1;">${dados.tempoMinimoMinutos ? dados.tempoMinimoMinutos + ' min' : 'Nenhum'}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">⏳ <span><strong>Tempo Limite:</strong> <span style="color: #cbd5e1;">${dados.tempoLimiteMinutos ? dados.tempoLimiteMinutos + ' min' : 'Sem limite'}</span></span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">🏫 <span><strong>Turmas Liberadas:</strong> <span style="color: #4ade80; font-weight: bold;">${(dados.turmasAtivas || []).join(' | ') || 'Nenhuma'}</span></span></div>
+          </div>
+        `;
+        conteudoResumo.innerHTML = htmlResumo;
+      }
+    });
   }
 
   function renderizarSeletorEscolasTopo() {
@@ -290,7 +368,7 @@ if (window.location.pathname.includes("painel.html")) {
     const selectFiltro = document.getElementById("select-filtro-escola-relatorio");
     if (!selectFiltro) return;
 
-    let html = `<option value="TODAS">🏫 Todas Escolas</option>`;
+    let html = `<option value="TODAS">🏫 Escolas</option>`;
     listaEscolasCache.forEach(esc => {
       html += `<option value="${esc.nome}">${esc.nome}</option>`;
     });
@@ -313,7 +391,7 @@ if (window.location.pathname.includes("painel.html")) {
               <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-global-${bIdx}')">☑ Marcar/Limpar</button>
               <button type="button" class="btn-mini" onclick="ordenarBoxGlobal(${bIdx}, 'asc')">⬆ A-Z</button>
               <button type="button" class="btn-mini" onclick="ordenarBoxGlobal(${bIdx}, 'desc')">⬇ Z-A</button>
-              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirBoxGlobal(${bIdx})" title="Excluir Box">🗑️ Excluir</button>
+              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:3px 6px; border-radius:4px; font-weight:bold;" onclick="excluirBoxGlobal(${bIdx})" title="Excluir Box">🗑️</button>
             </div>
           </div>
           <div class="grid-checkboxes" id="grid-global-${bIdx}">
@@ -427,6 +505,7 @@ if (window.location.pathname.includes("painel.html")) {
       btn.classList.add("active");
       document.getElementById(btn.getAttribute("data-aba")).classList.remove("hidden");
       if(btn.getAttribute("data-aba") === "aba-questoes") { popularSelectMateriasQuestao(); }
+      if(btn.getAttribute("data-aba") === "aba-relatorios") { forcarMenuClassificarCompleto(); }
     });
   });
 
@@ -442,6 +521,7 @@ if (window.location.pathname.includes("painel.html")) {
   const containerCalculadoraAtivacao = document.getElementById("container-calculadora-ativacao");
   const gridMateriasAtivacao = document.getElementById("grid-materias-ativacao");
   const selectPeriodoAtivacao = document.getElementById("select-periodo-ativacao");
+  const selectTipoEnsinoAtivacao = document.getElementById("select-tipo-ensino-ativacao");
   const gridTurmasAtivacao = document.getElementById("grid-turmas-ativacao");
 
   async function carregarListaEscolas() {
@@ -463,12 +543,12 @@ if (window.location.pathname.includes("painel.html")) {
               <div class="card-escola-lista">
                 <div>
                   <strong>🏫 ${esc.nome}</strong><br>
-                  <span style="font-size: 12px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
+                  <span style="font-size: 11px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
                 </div>
                 <div class="acoes-escola-card">
-                  <a href="escola.html?escola=${encodeURIComponent(esc.nome)}" class="btn-acao" style="background:#2563eb; padding:6px 12px; text-decoration:none; font-size:12px; margin:0;">⚙️ Configurar Escola</a>
-                  <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">✏️ Editar</button>
-                  <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">🗑️ Excluir</button>
+                  <a href="escola.html?escola=${encodeURIComponent(esc.nome)}" class="btn-acao" style="background:#2563eb; padding:5px 10px; text-decoration:none; font-size:11px; margin:0;">⚙️ Configurar</a>
+                  <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">✏️ Editar</button>
+                  <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">🗑️ Excluir</button>
                 </div>
               </div>
             `;
@@ -541,7 +621,6 @@ if (window.location.pathname.includes("painel.html")) {
   selectEscolaAtivacao?.addEventListener("change", async (e) => {
     const escolaEscolhida = e.target.value;
     const painelResumo = document.getElementById("painel-resumo-escola-ativacao");
-    const conteudoResumo = document.getElementById("conteudo-resumo-ativacao");
 
     try {
       const docSnap = await getDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaEscolhida)));
@@ -549,23 +628,7 @@ if (window.location.pathname.includes("painel.html")) {
         const dados = docSnap.data();
         const tab = dados.tabelasConfirmadas || {};
         containerCalculadoraAtivacao.classList.remove("hidden");
-
-        if (painelResumo && conteudoResumo) {
-          painelResumo.classList.remove("hidden");
-          let htmlResumo = `<strong>🏫 Turmas Confirmadas:</strong> ${tab.turmas?.join(' | ') || 'Nenhuma'}<br>`;
-          htmlResumo += `<strong>📚 Matérias Confirmadas:</strong> ${tab.materias?.join(', ') || 'Nenhuma'}<br>`;
-          htmlResumo += `<strong>📅 Períodos Confirmados:</strong> ${tab.periodos?.join(', ') || 'Nenhum'}<br>`;
-          
-          if (dados.customBoxes) {
-            dados.customBoxes.forEach(box => {
-              let tChave = box.id || `box_${box}`;
-              if (tab[tChave] && tab[tChave].length > 0) {
-                htmlResumo += `<strong>${box.titulo}:</strong> ${tab[tChave].join(', ')}<br>`;
-              }
-            });
-          }
-          conteudoResumo.innerHTML = htmlResumo;
-        }
+        if (painelResumo) painelResumo.classList.remove("hidden");
 
         if (gridMateriasAtivacao) {
           let htmlMat = "";
@@ -575,8 +638,23 @@ if (window.location.pathname.includes("painel.html")) {
           gridMateriasAtivacao.innerHTML = htmlMat;
         }
 
-        selectPeriodoAtivacao.innerHTML = "";
-        (tab.periodos || []).forEach(p => { selectPeriodoAtivacao.innerHTML += `<option value="${p}">${p}</option>`; });
+        if (selectPeriodoAtivacao) {
+          selectPeriodoAtivacao.innerHTML = "";
+          (tab.periodos || []).forEach(p => { selectPeriodoAtivacao.innerHTML += `<option value="${p}">${p}</option>`; });
+        }
+
+        if (selectTipoEnsinoAtivacao) {
+          let listaTipos = tab.tipos_ensino || [];
+          if (listaTipos.length === 0) {
+            estruturaGlobalBoxes.forEach(b => {
+              if (b.id === "tipos_ensino" || b.titulo.toLowerCase().includes("ensino") || b.titulo.toLowerCase().includes("plataforma")) {
+                listaTipos = b.itens;
+              }
+            });
+          }
+          selectTipoEnsinoAtivacao.innerHTML = "";
+          listaTipos.forEach(t => { selectTipoEnsinoAtivacao.innerHTML += `<option value="${t}">${t}</option>`; });
+        }
 
         if (gridTurmasAtivacao) {
           let htmlTurmas = "";
@@ -596,32 +674,49 @@ if (window.location.pathname.includes("painel.html")) {
   document.getElementById("btn-publicar-prova-escola")?.addEventListener("click", async (e) => {
     const escolaEscolhida = selectEscolaAtivacao?.value;
     const materiasSelecionadas = Array.from(document.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
-    const periodoEscolhido = selectPeriodoAtivacao?.value;
+    const periodoEscolhido = selectPeriodoAtivacao?.value || "Geral";
+    const tipoEnsinoEscolhido = selectTipoEnsinoAtivacao?.value || "Geral";
     const qtdQ = parseInt(document.getElementById("qtd-questoes-ativacao").value) || 10;
     const tempoMin = parseInt(document.getElementById("tempo-prova-ativacao").value) || 0;
     const tempoMinimoConclusao = parseInt(document.getElementById("tempo-minimo-ativacao").value) || 0;
     const turmasSelecionadas = Array.from(document.querySelectorAll(".chk-turma-ativacao:checked")).map(c => c.value);
+    
+    const tokenProva = document.getElementById("input-token-ativacao")?.value.trim() || "";
+    const agendamentoData = document.getElementById("input-agendamento-ativacao")?.value || "";
 
     if (!escolaEscolhida || materiasSelecionadas.length === 0 || turmasSelecionadas.length === 0) {
       mostrarNotificacao("⚠️ Selecione a escola, ao menos uma matéria e uma turma!");
       return;
     }
 
+    let timestampAgendamento = 0;
+    if (agendamentoData) {
+      timestampAgendamento = new Date(agendamentoData).getTime();
+      const agora = Date.now();
+      if (timestampAgendamento < agora) {
+        alert("⚠️ ATENÇÃO: A data e horário de início agendado que você escolheu já passou!\n\nNão é permitido realizar a ativação com uma data anterior ao momento atual.\nPor favor, mude para uma data/horário futuro.");
+        return;
+      }
+    }
+
     try {
       const dadosPublicacao = {
         escolaAtiva: escolaEscolhida,
         materiasAtivas: materiasSelecionadas,
-        periodoAtivo: periodoEscolhido || "Geral",
+        periodoAtivo: periodoEscolhido,
+        tipoEnsino: tipoEnsinoEscolhido,
         quantidadeQuestoes: qtdQ,
         tempoLimiteMinutos: tempoMin,
         tempoMinimoMinutos: tempoMinimoConclusao,
         turmasAtivas: turmasSelecionadas,
+        token: tokenProva,
+        agendamento: timestampAgendamento,
         publicadoEm: serverTimestamp()
       };
 
       await setDoc(doc(db, "configuracoes", "prova_ativa"), dadosPublicacao);
       animarBotaoSucesso(e.target);
-      mostrarNotificacao(`✅ Prova integrada ativada com sucesso!`);
+      mostrarNotificacao(`✅ Prova integrada ativada e salva com sucesso!`);
     } catch (err) { mostrarNotificacao("Erro ao publicar: " + err.message); }
   });
 
@@ -667,9 +762,109 @@ if (window.location.pathname.includes("painel.html")) {
     } catch (err) { mostrarNotificacao("Erro ao cadastrar: " + err.message); }
   });
 
-  // ==========================================
-  // RELATÓRIOS E RESULTADOS
-  // ==========================================
+  window.processarArquivoImportacao = async function(event) {
+    const arquivo = event.target.files[0];
+    if (!arquivo) return;
+
+    const extensao = arquivo.name.split('.').pop().toLowerCase();
+    const textarea = document.getElementById("input-massa-questoes");
+
+    if (extensao === 'txt') {
+      const leitor = new FileReader();
+      leitor.onload = function(e) {
+        textarea.value = e.target.result;
+        mostrarNotificacao("📄 Arquivo TXT carregado na caixa de texto!");
+      };
+      leitor.readAsText(arquivo);
+    } 
+    else if (extensao === 'docx') {
+      const leitor = new FileReader();
+      leitor.onload = async function(e) {
+        try {
+          const resultado = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+          textarea.value = resultado.value;
+          mostrarNotificacao("📄 Arquivo Word (.docx) convertido e carregado!");
+        } catch (err) {
+          alert("⚠️ Erro ao ler arquivo Word: " + err.message);
+        }
+      };
+      leitor.readAsArrayBuffer(arquivo);
+    } 
+    else if (extensao === 'xlsx' || extensao === 'xls') {
+      const leitor = new FileReader();
+      leitor.onload = function(e) {
+        try {
+          const dadosBinarios = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(dadosBinarios, { type: 'array' });
+          const primeiraAba = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[primeiraAba];
+          const linhasJson = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          let textoFormatado = "";
+          linhasJson.forEach(linha => {
+            if (linha && linha.length >= 6) {
+              textoFormatado += linha.join(" | ") + "\n";
+            }
+          });
+
+          textarea.value = textoFormatado;
+          mostrarNotificacao("📊 Planilha Excel lida e convertida com sucesso!");
+        } catch (err) {
+          alert("⚠️ Erro ao ler planilha Excel: " + err.message);
+        }
+      };
+      leitor.readAsArrayBuffer(arquivo);
+    } else {
+      alert("⚠️ Formato de arquivo não suportado.");
+    }
+  };
+
+  window.importarQuestoesEmMassa = async function() {
+    const texto = document.getElementById("input-massa-questoes").value.trim();
+    const materiaPadrao = document.getElementById("cad-materia").value || "Geral";
+    if (!texto) { alert("⚠️ Cole o texto ou envie um arquivo com as questões para importar."); return; }
+
+    let linhas = texto.split("\n");
+    let importadas = 0;
+
+    for (let linha of linhas) {
+      if (!linha.trim()) continue;
+      let partes = linha.split("|").map(p => p.trim());
+      
+      try {
+        if (partes.length >= 7) {
+          await addDoc(collection(db, "questoes"), {
+            materia: partes[0],
+            categoria: partes[0],
+            pergunta: partes[1],
+            opcoes: [partes[2], partes[3], partes[4], partes[5]],
+            correta: partes[6].toUpperCase(),
+            criadoEm: serverTimestamp()
+          });
+          importadas++;
+        } else if (partes.length >= 6) {
+          await addDoc(collection(db, "questoes"), {
+            materia: materiaPadrao,
+            categoria: materiaPadrao,
+            pergunta: partes[0],
+            opcoes: [partes[1], partes[2], partes[3], partes[4]],
+            correta: partes[5].toUpperCase(),
+            criadoEm: serverTimestamp()
+          });
+          importadas++;
+        }
+      } catch(e) {}
+    }
+
+    if (importadas > 0) {
+      document.getElementById("input-massa-questoes").value = "";
+      document.getElementById("input-arquivo-questoes").value = "";
+      mostrarNotificacao(`✅ ${importadas} questões importadas em massa com sucesso!`);
+    } else {
+      alert("⚠️ Formato inválido. Use: Matéria | Pergunta | OpA | OpB | OpC | OpD | Correta");
+    }
+  };
+
   function inicializarTabelaResultados() {
     const corpoTabelaResultados = document.getElementById("corpo-tabela");
     if (!corpoTabelaResultados) return;
@@ -691,16 +886,19 @@ if (window.location.pathname.includes("painel.html")) {
   window.aplicarOrdenacaoResultados = function(criterio) {
     ordemAtualResultados = criterio;
     renderizarTabelaResultadosFiltrada();
-    document.getElementById('dropdown-menu-resultados').classList.remove('show');
+    const menuRes = document.getElementById('dropdown-menu-resultados');
+    if (menuRes) menuRes.classList.remove('show');
   };
 
   window.renderizarTabelaResultadosFiltrada = function() {
     const corpoTabelaResultados = document.getElementById("corpo-tabela");
     const selectFiltro = document.getElementById("select-filtro-escola-relatorio");
+    const selectFiltroPeriodo = document.getElementById("select-filtro-periodo-relatorio");
     const inputBusca = document.getElementById("input-busca-resultados");
     if (!corpoTabelaResultados) return;
 
     const escolaSelecionada = selectFiltro ? selectFiltro.value : "TODAS";
+    const periodoSelecionado = selectFiltroPeriodo ? selectFiltroPeriodo.value : "TODOS";
     const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
 
     let dadosFiltrados = [...resultadosGlobaisCache];
@@ -709,12 +907,18 @@ if (window.location.pathname.includes("painel.html")) {
       dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.escola) === normalizarTexto(escolaSelecionada));
     }
 
+    if (periodoSelecionado !== "TODOS") {
+      dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.periodo) === normalizarTexto(periodoSelecionado));
+    }
+
     if (termoBusca) {
       dadosFiltrados = dadosFiltrados.filter(res => {
         const textoConcatenado = normalizarTexto(`${res.nome || ''} ${res.escola || ''} ${res.turma || ''} ${res.materia || ''} ${res.periodo || ''}`);
         return textoConcatenado.includes(termoBusca);
       });
     }
+
+    atualizarGraficosDesempenho(dadosFiltrados);
 
     if (ordemAtualResultados !== "nenhum") {
       dadosFiltrados.sort((a, b) => {
@@ -730,12 +934,18 @@ if (window.location.pathname.includes("painel.html")) {
         switch (ordemAtualResultados) {
           case "data-asc":
             return (a.timestamp || 0) - (b.timestamp || 0);
+          case "data-desc":
+            return (b.timestamp || 0) - (a.timestamp || 0);
           case "nome-asc":
             return nomeA.localeCompare(nomeB);
           case "nome-desc":
             return nomeB.localeCompare(nomeA);
           case "sobrenome-asc":
             return sobrenomeA.localeCompare(sobrenomeB);
+          case "turma-asc":
+            return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
+          case "turma-desc":
+            return (b.turma || "").localeCompare(a.turma || "", undefined, {numeric: true});
           case "escola-asc":
             return (a.escola || "").localeCompare(b.escola || "");
           case "escola-desc":
@@ -744,7 +954,6 @@ if (window.location.pathname.includes("painel.html")) {
             return notaB - notaA;
           case "nota-asc":
             return notaA - notaB;
-          case "data-desc":
           default:
             return (b.timestamp || 0) - (a.timestamp || 0);
         }
@@ -771,7 +980,7 @@ if (window.location.pathname.includes("painel.html")) {
           <td class="chk-col" style="text-align: center;">
             <input type="checkbox" class="chk-item-resultado" value="${res.idDoc}">
           </td>
-          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">✅ Finalizado</span></td>
+          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 3px 6px; border-radius: 6px; font-weight: bold; font-size: 11px;">✅ Finalizado</span></td>
           <td>${dataFormatada}</td>
           <td><strong>${res.escola || 'N/D'}</strong></td>
           <td>${res.periodo || 'N/D'}</td>
@@ -779,16 +988,45 @@ if (window.location.pathname.includes("painel.html")) {
           <td>${res.turma || 'N/D'}</td>
           <td>${res.materia || 'Geral'}</td>
           <td><span style="color: #facc15;">⏱️ ${tempoGastoStr}</span></td>
-          <td><span style="color: #4ade80;">✅ ${acertos} Acertos</span> / <span style="color: #ef4444;">❌ ${erros} Erros</span></td>
-          <td><strong style="color: #60a5fa; font-size: 15px;">${notaCalculada} / 10</strong></td>
+          <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
+          <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
           <td style="text-align: center;">
-            <button type="button" class="btn-acao" style="background-color: #eab308; padding: 6px 10px; font-size: 12px; margin: 0;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome}')" title="Permitir que o aluno refaça a prova">🔄 Refazer</button>
+            <button type="button" class="btn-acao" style="background-color: #eab308; padding: 5px 8px; font-size: 11px; margin: 0;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome}')" title="Permitir que o aluno refaça a prova">🔄 Refazer</button>
           </td>
         </tr>
       `;
     });
     corpoTabelaResultados.innerHTML = htmlResultados;
   };
+
+  function atualizarGraficosDesempenho(lista) {
+    const contadorTotal = document.getElementById("contador-total-avaliacoes");
+    const barraAcertos = document.getElementById("grafico-barra-acertos");
+    const textoAcertos = document.getElementById("texto-media-acertos");
+    if (!contadorTotal) return;
+
+    contadorTotal.textContent = lista.length;
+
+    if (lista.length === 0) {
+      barraAcertos.style.width = "0%";
+      textoAcertos.textContent = "Nenhum dado disponível";
+      return;
+    }
+
+    let somaNotas = 0;
+    lista.forEach(res => {
+      let tQ = res.totalQuestoes || 10;
+      let ac = res.pontuacao || 0;
+      let nota = (ac / tQ) * 10;
+      somaNotas += nota;
+    });
+
+    let mediaGeral = somaNotas / lista.length;
+    let porcentagem = (mediaGeral / 10) * 100;
+
+    barraAcertos.style.width = `${porcentagem}%`;
+    textoAcertos.textContent = `Média Geral: ${mediaGeral.toFixed(1)} / 10.0`;
+  }
 
   window.autorizarAlunoRefazer = async function(idAluno, nomeAluno) {
     if (confirm(`Deseja autorizar o aluno(a) "${nomeAluno}" a refazer a prova?`)) {
@@ -826,9 +1064,6 @@ if (window.location.pathname.includes("painel.html")) {
     }
   };
 
-  // ==========================================
-  // MONITORAMENTO EM TEMPO REAL (PRESERVANDO QUESTÃO E PONTUAÇÃO ATUAL)
-  // ==========================================
   function inicializarTabelaTempoReal() {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
     if (!corpoTabelaTempoReal) return;
@@ -845,7 +1080,8 @@ if (window.location.pathname.includes("painel.html")) {
   window.aplicarOrdenacaoMonitoramento = function(criterio) {
     ordemAtualMonitoramento = criterio;
     renderizarTabelaTempoReal();
-    document.getElementById('dropdown-menu-monitoramento').classList.remove('show');
+    const menuMon = document.getElementById('dropdown-menu-monitoramento');
+    if (menuMon) menuMon.classList.remove('show');
   };
 
   window.renderizarTabelaTempoReal = function() {
@@ -907,16 +1143,16 @@ if (window.location.pathname.includes("painel.html")) {
           <td class="chk-col" style="text-align: center;">
             <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}" ${estaMarcado}>
           </td>
-          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 6px; font-weight: bold;">🟢 Em andamento</span></td>
-          <td><span style="color: #cbd5e1; font-size: 13px;">📅 ${dataInicioStr}</span></td>
+          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 3px 6px; border-radius: 6px; font-weight: bold; font-size: 11px;">🟢 Online</span></td>
+          <td><span style="color: #cbd5e1; font-size: 12px;">📅 ${dataInicioStr}</span></td>
           <td><strong>${aluno.escola || 'N/D'}</strong></td>
           <td>${aluno.nome || 'Aluno'}</td>
           <td>${aluno.turma || 'N/D'}</td>
           <td>${aluno.materia || 'Geral'}</td>
-          <td><strong style="color: #60a5fa;">Questão ${aluno.questaoAtual || 1} de ${aluno.totalQuestoes || 10}</strong></td>
+          <td><strong style="color: #60a5fa;">Q.${aluno.questaoAtual || 1}/${aluno.totalQuestoes || 10}</strong></td>
           <td><span style="color: #facc15;">⏱️ ${tempoStr}</span></td>
           <td style="text-align: center;">
-            <button type="button" class="btn-acao btn-danger" style="padding: 6px 10px; font-size: 12px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)" title="Finalizar prova deste aluno">🏁 Finalizar</button>
+            <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)" title="Finalizar prova deste aluno">🏁 Finalizar</button>
           </td>
         </tr>
       `;
@@ -1100,7 +1336,7 @@ if (window.location.pathname.includes("escola.html")) {
         if (d.customBoxes) estruturaGlobalBoxes = d.customBoxes;
         if (d.customTurma) turmaDadosGlobal = d.customTurma;
       } else {
-        dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [] };
+        dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [], tipos_ensino: [] };
         estruturaGlobalBoxes.forEach(box => {
           let tipoChave = box.id || `box_${box}`;
           dadosConfirmadosEscola[tipoChave] = [...box.itens];
@@ -1226,10 +1462,10 @@ if (window.location.pathname.includes("escola.html")) {
           <div class="box-header">
             <h2>
               <span id="escola-box-titulo-${bIdx}">${box.titulo}</span>
-              <button type="button" class="btn-editar-item" onclick="editarTituloBoxEscola(${bIdx})" title="Editar Título" style="margin-left: 8px;">✏️</button>
+              <button type="button" class="btn-editar-item" onclick="editarTituloBoxEscola(${bIdx})" title="Editar Título" style="margin-left: 6px;">✏️</button>
             </h2>
             <div class="acoes-box">
-              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirBoxEscola(${bIdx})">🗑️ Excluir</button>
+              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:3px 6px; border-radius:4px; font-weight:bold;" onclick="excluirBoxEscola(${bIdx})">🗑️</button>
             </div>
           </div>
           <div class="aviso-geral">💡 Informação herdada das Configurações Gerais. Modifique livremente para esta unidade.</div>
@@ -1270,15 +1506,15 @@ if (window.location.pathname.includes("escola.html")) {
             <div id="escola-prev-${tipoChave}" class="resultado-parcial">Nenhum item selecionado.</div>
           </div>
 
-          <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button type="button" class="btn-mini" style="background:#2563eb; padding:10px 16px; font-size:14px;" onclick="escolaConfirmarSelecao('${tipoChave}', ${bIdx})">✅ Confirmar Selecionados</button>
-            <button type="button" class="btn-mini" style="background:#ef4444; padding:10px 16px; font-size:14px;" onclick="escolaLimparSelecao('${tipoChave}')">🗑️ Limpar Seleção</button>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button type="button" class="btn-mini" style="background:#2563eb; padding:8px 14px; font-size:13px;" onclick="escolaConfirmarSelecao('${tipoChave}', ${bIdx})">✅ Confirmar Selecionados</button>
+            <button type="button" class="btn-mini" style="background:#ef4444; padding:8px 14px; font-size:13px;" onclick="escolaLimparSelecao('${tipoChave}')">🗑️ Limpar Seleção</button>
           </div>
 
-          <div style="margin-top: 20px;">
-            <h3 style="color: #60a5fa; font-size: 15px; margin-bottom: 8px;">📋 Tabela de Conferência</h3>
+          <div style="margin-top: 16px;">
+            <h3 style="color: #60a5fa; font-size: 14px; margin-bottom: 6px;">📋 Tabela de Conferência</h3>
             <div id="escola-tabela-${tipoChave}">
-              <p style="color: #94a3b8; font-size: 13px; font-style: italic;">Nenhum item confirmado na tabela final ainda.</p>
+              <p style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum item confirmado na tabela final ainda.</p>
             </div>
           </div>
         </div>
@@ -1416,10 +1652,10 @@ if (window.location.pathname.includes("escola.html")) {
     if (!container) return;
     let lista = dadosConfirmadosEscola[tipoChave] || [];
     if (lista.length === 0) {
-      container.innerHTML = `<p style="color: #94a3b8; font-size: 13px; font-style: italic;">Nenhum item confirmado na tabela final ainda.</p>`;
+      container.innerHTML = `<p style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum item confirmado na tabela final ainda.</p>`;
       return;
     }
-    let html = `<table class="tabela-conferencia"><thead><tr><th>Item Confirmado</th><th style="width: 140px; text-align: right;">Ações</th></tr></thead><tbody>`;
+    let html = `<table class="tabela-conferencia"><thead><tr><th>Item Confirmado</th><th style="width: 120px; text-align: right;">Ações</th></tr></thead><tbody>`;
     lista.forEach((item, idx) => {
       let funcEdit = tipoChave === 'turmas' ? `editarItemTabelaTurma(${idx})` : `editarItemTabelaEscolaGenerica('${tipoChave}', ${idx})`;
       let funcDel = tipoChave === 'turmas' ? `removerItemTabelaTurma(${idx})` : `removerItemTabelaEscolaGenerica('${tipoChave}', ${idx})`;
@@ -1525,11 +1761,24 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       let tempoMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
       let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
 
+      let avisoAgendamentoHtml = "";
+      if (dadosProvaAtiva.agendamento && dadosProvaAtiva.agendamento > 0) {
+        let dataAgendada = new Date(dadosProvaAtiva.agendamento);
+        let dataFormatada = dataAgendada.toLocaleString('pt-BR', { 
+          dateStyle: 'short', 
+          timeStyle: 'short' 
+        });
+        avisoAgendamentoHtml = `📅 <strong>Início Agendado:</strong> <span style="color: #facc15; font-size: 14px;">${dataFormatada}</span><br>`;
+      }
+
       if (detalhesProvaAtiva) {
         detalhesProvaAtiva.innerHTML = `
           🏫 <strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}<br>
+          🎓 <strong>Tipo de Ensino:</strong> ${dadosProvaAtiva.tipoEnsino || 'Geral'}<br>
           📅 <strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}<br>
           📚 <strong>Matéria(s):</strong> ${matsStr || 'Geral'}<br>
+          ${avisoAgendamentoHtml}
+          🔒 <strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}<br>
           ⏱️ <strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}<br>
           ⏳ <strong>Tempo Limite:</strong> ${tempoMin > 0 ? tempoMin + ' minutos' : 'Sem limite'}
         `;
@@ -1555,6 +1804,24 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     const turmaInput = selectTurma.value;
     const idAlunoUnico = obterIdAluno(nomeInput, turmaInput);
 
+    let tempoAgendado = dadosProvaAtiva.agendamento || 0;
+    if (tempoAgendado > Date.now()) {
+      let dataAgendadaObj = new Date(tempoAgendado);
+      let dataFormatadaEspera = dataAgendadaObj.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+      
+      alert(`⏳ A prova ainda não está no horário correto!\n\nData e horário agendados: ${dataFormatadaEspera}\n\nPor favor, aguarde o dia e horário corretos para iniciar.`);
+      document.getElementById("form-login").reset();
+      return;
+    }
+
+    if (dadosProvaAtiva.token && dadosProvaAtiva.token.trim() !== "") {
+      let tokenInformado = prompt("🔒 Esta avaliação é protegida por Token.\nDigite a senha fornecida pelo professor:");
+      if (tokenInformado !== dadosProvaAtiva.token) {
+        alert("❌ Token incorreto! Acesso negado.");
+        return;
+      }
+    }
+
     try {
       const permissaoDoc = await getDoc(doc(db, "permissoes_alunos", idAlunoUnico));
       if (permissaoDoc.exists() && permissaoDoc.data().podeFazer === false) {
@@ -1568,21 +1835,34 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     alunoAtual.nome = nomeInput;
     alunoAtual.escola = dadosProvaAtiva.escolaAtiva || "Escola";
     alunoAtual.periodo = dadosProvaAtiva.periodoAtivo || "Geral";
+    alunoAtual.tipoEnsino = dadosProvaAtiva.tipoEnsino || "Geral";
     let materiasAtivas = dadosProvaAtiva.materiasAtivas || ["Geral"];
     alunoAtual.materia = materiasAtivas.join(" / ");
     alunoAtual.turma = turmaInput;
     alunoAtual.id = idAlunoUnico;
+
+    iniciarCarregamentoProva();
+  });
+
+  async function iniciarCarregamentoProva() {
+    let tempoAgendado = dadosProvaAtiva.agendamento || 0;
+    if (tempoAgendado > 0 && tempoAgendado <= Date.now()) {
+      segundosPassados = Math.floor((Date.now() - tempoAgendado) / 1000);
+    } else {
+      segundosPassados = 0;
+    }
 
     try {
       await setDoc(doc(db, "alunos_online", alunoAtual.id), {
         nome: alunoAtual.nome,
         turma: alunoAtual.turma,
         escola: alunoAtual.escola,
+        tipoEnsino: alunoAtual.tipoEnsino,
         materia: alunoAtual.materia,
         periodo: alunoAtual.periodo,
         questaoAtual: 1,
         totalQuestoes: qtdQ,
-        segundosPassados: 0,
+        segundosPassados: segundosPassados,
         pontuacao: 0,
         dataInicio: serverTimestamp(),
         atualizadoEm: serverTimestamp()
@@ -1595,6 +1875,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       snap.forEach(s => banco.push(normalizarDocumentoQuestao(s.data(), s.id)));
     } catch(e) {}
 
+    let materiasAtivas = dadosProvaAtiva.materiasAtivas || ["Geral"];
     let filtradas = [];
     for (const mat of materiasAtivas) {
       const matNorm = normalizarTexto(mat);
@@ -1619,21 +1900,22 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     filtradas.sort(() => Math.random() - 0.5);
     listaQuestoes = filtradas.slice(0, qtdQ).map(q => normalizarDocumentoQuestao(q));
 
-    document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma} | ${alunoAtual.materia}`;
+    document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | ${alunoAtual.tipoEnsino} | Turma: ${alunoAtual.turma} | ${alunoAtual.materia}`;
     document.getElementById("tela-login").classList.add("hidden");
     document.getElementById("tela-quiz").classList.remove("hidden");
     
     iniciarCronogerenciamento();
     iniciarMonitoramentoFechamentoRemoto();
     exibirQuestao();
-  });
+  }
 
   function iniciarCronogerenciamento() {
-    segundosPassados = 0;
     avisoTempoMinimoExibido = false;
     let tempoLimiteMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
     let tempoMinimoMinutos = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
-    tempoRestanteSegundos = tempoLimiteMin > 0 ? tempoLimiteMin * 60 : 0;
+    
+    let tempoLimiteSegundosTotais = tempoLimiteMin > 0 ? tempoLimiteMin * 60 : 0;
+    tempoRestanteSegundos = tempoLimiteSegundosTotais > 0 ? Math.max(0, tempoLimiteSegundosTotais - segundosPassados) : 0;
 
     let cronometroDiv = document.getElementById("relogio-cronometro");
     if (cronometroDiv) {
@@ -1721,6 +2003,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         nome: alunoAtual.nome,
         turma: alunoAtual.turma,
         escola: alunoAtual.escola,
+        tipoEnsino: alunoAtual.tipoEnsino,
         materia: alunoAtual.materia,
         periodo: alunoAtual.periodo || "Geral",
         questaoAtual: indiceAtual + 1,
@@ -1750,10 +2033,23 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     ["A", "B", "C", "D"].forEach((letra, idx) => {
       const btn = document.createElement("button");
       btn.className = "opcao-btn";
+      
       btn.textContent = `${letra}) ${q.opcoes[idx] || ""}`;
-      btn.style.width = "100%"; btn.style.padding = "12px"; btn.style.marginBottom = "10px";
+      btn.style.width = "100%"; 
+      btn.style.padding = "12px 16px"; 
+      btn.style.marginBottom = "10px";
+      btn.style.textAlign = "left"; 
+      btn.style.display = "flex";
+      btn.style.alignItems = "center";
+      btn.style.justifyContent = "flex-start";
       btn.style.background = respostasUsuario[indiceAtual] === letra ? "#2563eb" : "#0f172a";
-      btn.style.color = "white"; btn.style.border = "1px solid #3b82f6"; btn.style.borderRadius = "8px"; btn.style.cursor = "pointer";
+      btn.style.color = "white"; 
+      btn.style.border = "1px solid #3b82f6"; 
+      btn.style.borderRadius = "8px"; 
+      btn.style.cursor = "pointer";
+      btn.style.fontWeight = "500";
+      btn.style.fontSize = "14px";
+      
       btn.onclick = () => { respostasUsuario[indiceAtual] = letra; exibirQuestao(); };
       container.appendChild(btn);
     });
@@ -1818,7 +2114,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     document.getElementById("nota-final-txt").textContent = `Nota Proporcional: ${nota} / 10.0 (Tempo: ${tempoGastoFormatado})`;
     document.getElementById("detalhes-acertos-txt").textContent = `Acertos: ${acertos} | Erros: ${erros} (Total de ${listaQuestoes.length} questões)`;
-    document.getElementById("container-revisor-resultado").innerHTML = htmlRev;
+    document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
 
     try {
       const agora = Date.now();
@@ -1828,6 +2124,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         nome: alunoAtual.nome || "Aluno",
         turma: alunoAtual.turma || "N/D",
         escola: alunoAtual.escola || "Escola",
+        tipoEnsino: alunoAtual.tipoEnsino || "Geral",
         periodo: alunoAtual.periodo || "Geral",
         materia: alunoAtual.materia || "Geral",
         pontuacao: acertos,
