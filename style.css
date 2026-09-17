@@ -289,4 +289,24 @@ th {
   th {
     background-color: #f1f5f9;
   }
+
+  .card-escola-lista { 
+  background: #0f172a; 
+  border: 1px solid var(--border); 
+  padding: 16px; 
+  border-radius: 8px; 
+  margin-bottom: 14px; /* Aumenta o espaço/respiro entre uma escola e outra */
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  flex-wrap: nowrap; /* Mantém os botões sempre na mesma linha da escola */
+  gap: 15px; 
+}
+
+.acoes-escola-card { 
+  display: flex; 
+  gap: 6px; 
+  align-items: center; 
+  white-space: nowrap; /* Evita que os botões quebrem para a linha de baixo */
+}
 }

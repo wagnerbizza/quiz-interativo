@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avaliação Interativa - Aluno</title>
+  <title>Área do Aluno - Avaliação</title>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -11,68 +11,82 @@
       --primary: #2563eb;
       --success: #22c55e;
       --danger: #ef4444;
+      --warning: #eab308;
       --text: #f8fafc;
       --border: #334155;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text); padding: 20px; min-height: 100vh; display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease-in-out; }
-    body.fade-in { opacity: 1; }
-    .card-quiz { background-color: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+    body { background-color: var(--bg-dark); color: var(--text); padding: 15px; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+    .container { max-width: 700px; width: 100%; background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    h1 { color: #60a5fa; font-size: 22px; text-align: center; margin-bottom: 20px; }
+    
+    .info-box { background: #0f172a; border: 1px solid var(--border); padding: 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; line-height: 1.8; }
+    .info-linha { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .info-icone { font-size: 16px; min-width: 24px; text-align: center; }
+
+    label { display: block; margin-top: 12px; color: #cbd5e1; font-size: 13px; font-weight: bold; }
+    input[type="text"], select { width: 100%; padding: 10px 12px; margin-top: 6px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 14px; }
+
+    .btn-acao { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; font-size: 15px; transition: opacity 0.2s; }
+    .btn-acao:hover { opacity: 0.9; }
+
     .hidden { display: none !important; }
-    h2, h3 { color: #93c5fd; margin-bottom: 15px; }
-    label { display: block; margin-top: 12px; color: #cbd5e1; font-size: 14px; font-weight: bold; }
-    input, select { width: 100%; padding: 10px; margin-top: 6px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 14px; }
-    button.btn-acao { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; font-size: 16px; }
-    button.btn-acao:hover { opacity: 0.9; }
-    .badge-escola { background: #0f172a; border: 1px solid #22c55e; padding: 10px; border-radius: 6px; font-size: 13px; color: #4ade80; margin-bottom: 15px; text-align: center; font-weight: bold; }
-    .info-questao { font-size: 13px; color: #94a3b8; margin-bottom: 10px; }
-    .item-revisao { background: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #2563eb; font-size: 14px; }
-    .item-revisao.correta { border-left-color: #22c55e; }
-    .item-revisao.incorreta { border-left-color: #ef4444; }
+    #badge-escola-ativa { background: #1e3a8a; color: #93c5fd; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 15px; width: 100%; text-align: center; }
+    .pergunta-card { background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; font-size: 15px; font-weight: 500; }
   </style>
 </head>
 <body>
 
-  <div class="card-quiz">
-    <!-- TELA DE LOGIN / IDENTIFICAÇÃO DO ALUNO -->
+  <div class="container">
+    <h1>📝 ÁREA DO ALUNO - AVALIAÇÃO</h1>
+
     <div id="tela-login">
-      <h2>🎓 Identificação do Aluno</h2>
-      <div id="detalhes-prova-ativa" style="background: #0f172a; padding: 12px; border-radius: 6px; font-size: 13px; color: #94a3b8; margin-bottom: 15px; border: 1px dashed var(--border);">
-        Carregando informações da prova ativa...
+      
+      <div class="info-box" id="detalhes-prova-ativa">
+        <div class="info-linha"><span class="info-icone">🏫</span> <span><strong>Escola:</strong> Carregando...</span></div>
+        <div class="info-linha"><span class="info-icone">🎓</span> <span><strong>Tipo de Ensino / Plataforma:</strong> Carregando...</span></div>
+        <div class="info-linha"><span class="info-icone">📅</span> <span><strong>Período:</strong> Carregando...</span></div>
+        <div class="info-linha"><span class="info-icone">📚</span> <span><strong>Matéria(s):</strong> Carregando...</span></div>
+        <div class="info-linha"><span class="info-icone">🔒</span> <span><strong>Exige Token:</strong> Carregando...</span></div>
+        <div class="info-linha"><span class="info-icone">⏱️</span> <span><strong>Tempo Mínimo:</strong> Carregando...</span></div>
+        <div class="info-linha"><span class="info-icone">⏳</span> <span><strong>Tempo Limite:</strong> Carregando...</span></div>
       </div>
+
       <form id="form-login">
         <label>Nome Completo:</label>
-        <input type="text" id="nome-aluno" placeholder="Digite seu nome..." required>
+        <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required autocomplete="off">
+        
         <label>Turma:</label>
         <select id="turma-aluno" required>
-          <option value="" disabled selected>Aguardando turmas da prova...</option>
+          <option value="" disabled selected>Selecione sua turma...</option>
         </select>
-        <button type="submit" class="btn-acao">🚀 Iniciar Avaliação</button>
+
+        <!-- Adicionar logo abaixo do select de turmas -->
+<div id="grupo-token-aluno" class="hidden" style="margin-top: 12px;">
+  <label>Token de Acesso da Prova:</label>
+  <input type="text" id="input-token-aluno" placeholder="Digite a senha fornecida pelo professor..." autocomplete="off">
+</div>
+
+        <button type="submit" class="btn-acao">🚀 Entrar e Iniciar Prova</button>
       </form>
     </div>
 
-    <!-- TELA DE RESOLUÇÃO DA PROVA -->
     <div id="tela-quiz" class="hidden">
-      <!-- Elemento fixo para exibir o cronômetro do aluno -->
-      <div id="relogio-cronometro" style="display: none;"></div>
-
-      <div id="badge-escola-ativa" class="badge-escola">Carregando dados...</div>
-      <div class="info-questao" id="progresso-txt">Questão 1 de 10</div>
-      <h3 id="pergunta-txt">Carregando pergunta...</h3>
+      <div id="relogio-cronometro">⏱️ Tempo Gasto: 00:00</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; color: #94a3b8;">
+        <span id="progresso-txt">Questão 1 de 10</span>
+      </div>
+      <div id="pergunta-txt" class="pergunta-card">Carregando pergunta...</div>
       <div id="opcoes-container"></div>
     </div>
 
-    <!-- TELA DE RESULTADO -->
-    <div id="tela-resultado" class="hidden">
-      <h2>📊 Resultado da Avaliação</h2>
-      <h3 id="nota-final-txt" style="color: #4ade80; font-size: 22px; margin-top: 10px;">Nota: 0.0 / 10.0</h3>
-      <p id="detalhes-acertos-txt" style="color: #cbd5e1; margin-bottom: 15px; font-size: 14px;"></p>
-      
-      <h3 style="font-size: 16px; margin-top: 20px; color: #60a5fa;">📋 Revisão das Questões:</h3>
-      <div id="container-revisao-resultado" style="max-height: 250px; overflow-y: auto; margin-top: 10px; padding-right: 5px;"></div>
-      
-      <p id="status-envio-txt" style="font-size: 13px; color: #facc15; margin-top: 15px; text-align: center; font-weight: bold;"></p>
-      <button id="btn-reiniciar" class="btn-acao" style="background-color: #4b5563; margin-top: 15px;">🔄 Concluir e Sair</button>
+    <div id="tela-resultado" class="hidden" style="text-align: center;">
+      <h2 style="color: #4ade80; margin-bottom: 10px;">🎉 Avaliação Concluída!</h2>
+      <p id="nota-final-txt" style="font-size: 18px; font-weight: bold; color: #60a5fa; margin-bottom: 8px;"></p>
+      <p id="detalhes-acertos-txt" style="font-size: 14px; color: #cbd5e1; margin-bottom: 15px;"></p>
+      <div style="text-align: left; max-height: 250px; overflow-y: auto; margin-bottom: 15px;" id="container-revisao-resultado"></div>
+      <p id="status-envio-txt" style="font-size: 13px; font-weight: bold; color: #4ade80; margin-bottom: 15px;"></p>
+      <button type="button" class="btn-acao" id="btn-reiniciar">🔄 Voltar ao Inicio</button>
     </div>
   </div>
 

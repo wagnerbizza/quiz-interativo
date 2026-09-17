@@ -25,13 +25,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.classList.add("fade-in");
   garantirBancoMinimoQuestoes();
   forcarMenuClassificarCompleto();
-  injetarEstiloIconeCalendarioClaro();
+  injetarEstilosGlobaisAjustados();
 });
 
-function injetarEstiloIconeCalendarioClaro() {
-  if (!document.getElementById("estilo-calendario-claro")) {
+function injetarEstilosGlobaisAjustados() {
+  if (!document.getElementById("estilo-global-ajustado")) {
     const st = document.createElement("style");
-    st.id = "estilo-calendario-claro";
+    st.id = "estilo-global-ajustado";
     st.innerHTML = `
       input[type="datetime-local"]::-webkit-calendar-picker-indicator {
         filter: invert(1) brightness(1.8);
@@ -40,6 +40,53 @@ function injetarEstiloIconeCalendarioClaro() {
       }
       input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
         opacity: 1;
+      }
+      .checkbox-item-global, .checkbox-item {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        padding: 8px 12px !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid #334155 !important;
+        border-radius: 8px !important;
+        margin-bottom: 6px !important;
+      }
+      .checkbox-item-global span, .checkbox-item span {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        text-align: left !important;
+        flex: 1 !important;
+        word-break: break-word !important;
+        color: #f8fafc !important;
+        font-size: 13px !important;
+      }
+      .checkbox-item-global input[type="checkbox"], .checkbox-item input[type="checkbox"] {
+        margin: 0 !important;
+        cursor: pointer !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+      }
+      .dropdown-menu-win {
+        display: none;
+        position: absolute;
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+        z-index: 99999;
+        padding: 6px;
+      }
+      .dropdown-menu-win.show {
+        display: block !important;
+      }
+      .acoes-topo-bloco {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
       }
     `;
     document.head.appendChild(st);
@@ -89,34 +136,51 @@ function atualizarPosicoesDropdownsAbertos() {
 window.toggleDropdown = function(event, idMenu, idBtn) {
   event.stopPropagation();
   const menu = document.getElementById(idMenu);
-  const btn = document.getElementById(idBtn);
+  if (!menu) return;
   const estaMostrando = menu.classList.contains('show');
   
+  // Fecha todos os outros menus abertos
   document.querySelectorAll('.dropdown-menu-win').forEach(m => m.classList.remove('show'));
   
-  if (!estaMostrando && btn) {
+  // Se não estava aberto, abre exatamente abaixo do botão atual
+  if (!estaMostrando) {
     menu.classList.add('show');
-    atualizarPosicoesDropdownsAbertos();
   }
 };
+
+// Fecha o menu ao clicar fora dele
+window.addEventListener("click", (e) => {
+  if (!e.target.closest('.dropdown-win')) {
+    document.querySelectorAll('.dropdown-menu-win').forEach(menu => menu.classList.remove('show'));
+  }
+});
 
 function forcarMenuClassificarCompleto() {
   const menuResultados = document.getElementById("dropdown-menu-resultados");
   if (menuResultados) {
-    menuResultados.style.minWidth = "250px";
+    menuResultados.style.minWidth = "260px";
     menuResultados.innerHTML = `
       <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nenhum')">⚙️ Nenhum (Padrão)</button>
       <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('data-desc')">📅 Data/Hora (Mais Recente)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('data-asc')">📅 Data/Hora (Mais Antiga / Não recente)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('data-asc')">📅 Data/Hora (Mais Antiga)</button>
       <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nome-asc')">🔤 Nome Aluno (A-Z)</button>
       <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nome-desc')">🔤 Nome Aluno (Z-A)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('sobrenome-asc')">👤 Sobrenome (A-Z)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('turma-asc')">🏫 Turma (Crescente / A-Z)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('turma-desc')">🏫 Turma (Decrescente / Z-A)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('turma-asc')">🏫 Turma (Crescente)</button>
       <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('escola-asc')">🏛️ Escola (A-Z)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('escola-desc')">🏛️ Escola (Z-A)</button>
       <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nota-desc')">⭐ Maior Nota</button>
       <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nota-asc')">⭐ Menor Nota</button>
+    `;
+  }
+
+  const menuMonitoramento = document.getElementById("dropdown-menu-monitoramento");
+  if (menuMonitoramento) {
+    menuMonitoramento.style.minWidth = "240px";
+    menuMonitoramento.innerHTML = `
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('nenhum')">⚙️ Nenhum (Padrão)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('inicio-desc')">📅 Início (Mais Recente)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('nome-asc')">🔤 Nome Aluno (A-Z)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('escola-asc')">🏛️ Escola (A-Z)</button>
+      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('tempo-desc')">⏱️ Maior Tempo Gasto</button>
     `;
   }
 }
@@ -195,23 +259,22 @@ function normalizarDocumentoQuestao(d, idDoc = null) {
 let estruturaGlobalBoxes = [
   { id: "materias", titulo: "📚 Disciplinas e Matérias", itens: [
     "Inteligência Artificial", 
-    "Front-end", 
-    "Redes de computadores e seguranca da informação na nuvem", 
-    "Processos de desenvolvimento de sistemas e metodologias Ágeis",
+    "Programação Front-End", 
+    "Redes de Computadores e Segurança da Informação na Nuvem", 
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
     "Matemática", "Língua Portuguesa", "Ciências", "História", "Geografia", "Física", "Química", "Biologia", "Inglês"
   ]},
-  { id: "tipos_ensino", titulo: "🎓 Tipos de Ensino e Plataformas", itens: ["Ensino Técnico", "Ensino Regular", "Ensino Médio", "Plataforma Alura", "EaD"] },
-  { id: "periodos", titulo: "🏫 Períodos e Turnos", itens: ["Manhã", "Tarde", "Noite", "Integral"] },
+  { id: "periodos", titulo: "🏫 Períodos e Turnos", itens: ["Manhã", "Tarde", "Noite", "Integral", "Geral"] },
   { id: "bimestres", titulo: "📅 Bimestres e Semestres", itens: ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre"] }
 ];
 
 let turmaDadosGlobal = {
   numeros: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-  letras: ["A", "B", "C", "D", "E", "F", "G", "H"]
+  letras: ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
 };
 
 let listaEscolasCache = [];
-let dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [], tipos_ensino: [] };
+let dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [] };
 
 async function carregarEscolasCache() {
   try {
@@ -247,19 +310,17 @@ async function garantirBancoMinimoQuestoes() {
     await carregarEstruturaGlobalFirebase();
     const bancoQuestoesTecnicasExtendido = {
       "Inteligencia Artificial": [
-        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com as respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
-        { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" },
-        { p: "O que significa o conceito de Deep Learning?", ops: ["Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas", "Processamento de planilhas eletrônicas gigantescas", "Criptografia de ponta a ponta em redes locais", "Compactação avançada de arquivos de vídeo"], c: "A" }
+        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com las respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
+        { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" }
       ],
-      "Front-end": [
-        { p: "Qual a principal responsabilidade do CSS em páginas web?", ops: ["Estruturar os textos semânticos", "Controlar a aparência visual, layout, cores e responsividade", "Processar regras de negócio no servidor", "Armazenar dados em banco NoSQL"], c: "B" },
-        { p: "O que significa criar um layout responsivo?", ops: ["Carregar páginas instantaneamente", "Adaptar a interface de forma fluida a diferentes tamanhos de tela e dispositivos", "Usar apenas imagens em formato SVG", "Bloquear o uso de mouses e teclados"], c: "B" }
+      "Programação Front-End": [
+        { p: "Qual a principal responsabilidade do CSS em páginas web?", ops: ["Estruturar os textos semânticos", "Controlar a aparência visual, layout, cores e responsividade", "Processar regras de negócio no servidor", "Armazenar dados em banco NoSQL"], c: "B" }
       ],
-      "Redes de computadores e seguranca da informação na nuvem": [
+      "Redes de Computadores e Segurança da Informação na Nuvem": [
         { p: "O que caracteriza o modelo IaaS na computação em nuvem?", ops: ["Locação de infraestrutura básica como servidores virtuais, armazenamento e redes", "Entrega de softwares prontos via navegador", "Ambiente exclusivo para programar sem gerenciar servidores", "Armazenamento local em HDs físicos"], c: "A" }
       ],
-      "Processos de desenvolvimento de sistemas e metodologias Ágeis": [
-        { p: "O que é uma Sprint no framework Scrum?", ops: ["Um documento com requisitos estáticos", "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizable", "Reunião final de homologação do cliente", "Cargo de gestão tradicional de projetos"], c: "B" }
+      "Processos de Desenvolvimentos de Software e metodologias Ágeis": [
+        { p: "O que é uma Sprint no framework Scrum?", ops: ["Um documento com requisitos estáticos", "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável", "Reunião final de homologação do cliente", "Cargo de gestão tradicional de projetos"], c: "B" }
       ]
     };
 
@@ -269,8 +330,8 @@ async function garantirBancoMinimoQuestoes() {
 
     for (const [mat, listaBase] of Object.entries(bancoQuestoesTecnicasExtendido)) {
       let qMat = bancoAtual.filter(q => normalizarTexto(q.categoria).includes(normalizarTexto(mat)) || normalizarTexto(mat).includes(normalizarTexto(q.categoria)));
-      if (qMat.length < 50) {
-        let faltam = 50 - qMat.length;
+      if (qMat.length < 20) {
+        let faltam = 20 - qMat.length;
         for (let i = 0; i < faltam; i++) {
           let baseModelo = listaBase[i % listaBase.length];
           await addDoc(collection(db, "questoes"), {
@@ -307,36 +368,70 @@ if (window.location.pathname.includes("painel.html")) {
     }, 400);
   }
 
+  window.irParaMonitoramentoTab = function() {
+    const btnMonitoramento = document.querySelector('.btn-aba[data-aba="aba-monitoramento"]');
+    if (btnMonitoramento) {
+      btnMonitoramento.click();
+    } else {
+      window.location.href = "painel.html#monitoramento";
+    }
+  };
+
   function carregarResumoProvaAtivaNoPainel() {
     const painelResumo = document.getElementById("painel-resumo-escola-ativacao");
-    const conteudoResumo = document.getElementById("conteudo-resumo-ativacao");
-    if (!painelResumo || !conteudoResumo) return;
 
     onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
+      let blocoTopoAtiva = document.querySelector(".bloco-prova-ativa-atual") || document.getElementById("bloco-prova-ativa-topo");
+      if (!blocoTopoAtiva) {
+        const centralAtivacao = document.querySelector(".central-ativacao-topo") || document.querySelector("#aba-ativacao") || document.querySelector(".container") || document.body;
+        blocoTopoAtiva = document.createElement("div");
+        blocoTopoAtiva.id = "bloco-prova-ativa-topo";
+        blocoTopoAtiva.style.marginBottom = "20px";
+        if (centralAtivacao.firstChild) {
+          centralAtivacao.insertBefore(blocoTopoAtiva, centralAtivacao.firstChild);
+        } else {
+          centralAtivacao.appendChild(blocoTopoAtiva);
+        }
+      }
+
       if (docSnap.exists()) {
         const dados = docSnap.data();
-        painelResumo.classList.remove("hidden");
-
-        let dataAgendadaStr = "Não agendado (Imediato)";
-        if (dados.agendamento && dados.agendamento > 0) {
-          dataAgendadaStr = new Date(dados.agendamento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        if (painelResumo) {
+          painelResumo.classList.remove("hidden");
+          painelResumo.innerHTML = `
+            <div style="background: rgba(37, 99, 235, 0.15); border: 1px solid #3b82f6; padding: 14px; border-radius: 10px; color: #f8fafc;">
+              <strong style="color: #4ade80;">🚀 Escola Ativa:</strong> ${dados.escolaAtiva || 'N/D'}<br>
+              <strong style="color: #60a5fa;">📚 Matérias:</strong> ${(dados.materiasAtivas || []).join(', ')}<br>
+              <strong style="color: #facc15;">🏫 Turmas:</strong> ${(dados.turmasAtivas || []).join(' | ')}
+            </div>
+          `;
         }
 
-        let htmlResumo = `
-          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.5;">
-            <div style="display: flex; align-items: center; gap: 8px;">🏫 <span><strong>Escola Ativa:</strong> <span style="color: #60a5fa;">${dados.escolaAtiva || 'N/D'}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">🎓 <span><strong>Tipo de Ensino / Plataforma:</strong> <span style="color: #4ade80; font-weight: bold;">${dados.tipoEnsino || 'Geral'}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">📚 <span><strong>Matérias Selecionadas:</strong> <span style="color: #cbd5e1;">${(dados.materiasAtivas || []).join(', ') || 'Nenhuma'}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">📅 <span><strong>Período / Ciclo:</strong> <span style="color: #cbd5e1;">${dados.periodoAtivo || 'Geral'}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">🔒 <span><strong>Token / Senha de Acesso:</strong> <span style="color: #facc15; font-weight: bold;">${dados.token || 'Nenhum (Livre)'}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">⏰ <span><strong>Início Simultâneo Agendado:</strong> <span style="color: #facc15; font-weight: bold;">${dataAgendadaStr}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">⚙️ <span><strong>Qtd. de Questões:</strong> <span style="color: #cbd5e1;">${dados.quantidadeQuestoes || 10}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">⏱️ <span><strong>Tempo Mínimo:</strong> <span style="color: #cbd5e1;">${dados.tempoMinimoMinutos ? dados.tempoMinimoMinutos + ' min' : 'Nenhum'}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">⏳ <span><strong>Tempo Limite:</strong> <span style="color: #cbd5e1;">${dados.tempoLimiteMinutos ? dados.tempoLimiteMinutos + ' min' : 'Sem limite'}</span></span></div>
-            <div style="display: flex; align-items: center; gap: 8px;">🏫 <span><strong>Turmas Liberadas:</strong> <span style="color: #4ade80; font-weight: bold;">${(dados.turmasAtivas || []).join(' | ') || 'Nenhuma'}</span></span></div>
+        blocoTopoAtiva.innerHTML = `
+          <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">🚀 Central de Ativação de Provas</div>
+          <div style="background: rgba(37, 99, 235, 0.2); border: 2px solid #3b82f6; padding: 14px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s ease; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; cursor: pointer;" onclick="window.location.href='escola.html?escola=${encodeURIComponent(dados.escolaAtiva || '')}'" title="Clique para configurar a unidade">
+              <span style="color: #4ade80; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 PROVA ATIVA NO MOMENTO:</span>
+              <span style="color: #ffffff; font-weight: bold; font-size: 16px;">${dados.escolaAtiva || 'N/D'}</span>
+              <span style="color: #cbd5e1; font-size: 12px;">📚 Matérias: ${(dados.materiasAtivas || []).join(', ')} | 🏫 Turmas: ${(dados.turmasAtivas || []).join(', ')}</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 5px;">👁️ Testar Prova do Aluno</a>
+              <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 5px;">📊 Monitoramento</button>
+              <button type="button" style="background: #2563eb; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="window.location.href='escola.html?escola=${encodeURIComponent(dados.escolaAtiva || '')}'">⚙️ Unidade</button>
+            </div>
           </div>
         `;
-        conteudoResumo.innerHTML = htmlResumo;
+      } else {
+        if (painelResumo) {
+          painelResumo.classList.add("hidden");
+        }
+        blocoTopoAtiva.innerHTML = `
+          <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Central de Ativação de Provas</div>
+          <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; padding: 14px 18px; border-radius: 10px; color: #f8fafc; font-weight: bold; font-size: 14px;">
+            ⚠️ Nenhuma prova ativa no momento. Vá até a aba abaixo e publique uma avaliação.
+          </div>
+        `;
       }
     });
   }
@@ -521,7 +616,6 @@ if (window.location.pathname.includes("painel.html")) {
   const containerCalculadoraAtivacao = document.getElementById("container-calculadora-ativacao");
   const gridMateriasAtivacao = document.getElementById("grid-materias-ativacao");
   const selectPeriodoAtivacao = document.getElementById("select-periodo-ativacao");
-  const selectTipoEnsinoAtivacao = document.getElementById("select-tipo-ensino-ativacao");
   const gridTurmasAtivacao = document.getElementById("grid-turmas-ativacao");
 
   async function carregarListaEscolas() {
@@ -540,18 +634,18 @@ if (window.location.pathname.includes("painel.html")) {
         } else {
           escolas.forEach(esc => {
             htmlCadastradas += `
-              <div class="card-escola-lista">
-                <div>
-                  <strong>🏫 ${esc.nome}</strong><br>
-                  <span style="font-size: 11px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
-                </div>
-                <div class="acoes-escola-card">
-                  <a href="escola.html?escola=${encodeURIComponent(esc.nome)}" class="btn-acao" style="background:#2563eb; padding:5px 10px; text-decoration:none; font-size:11px; margin:0;">⚙️ Configurar</a>
-                  <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">✏️ Editar</button>
-                  <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">🗑️ Excluir</button>
-                </div>
-              </div>
-            `;
+  <div class="card-escola-lista">
+    <div>
+      <strong>🏫 ${esc.nome}</strong><br>
+      <span style="font-size: 11px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
+    </div>
+    <div class="acoes-escola-card">
+      <a href="escola.html?escola=${encodeURIComponent(esc.nome)}" class="btn-acao" style="background:#2563eb; padding:6px 12px; text-decoration:none; font-size:11px; margin:0;">⚙️ Configurar</a>
+      <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">✏️ Editar</button>
+      <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">🗑️ Excluir</button>
+    </div>
+  </div>
+`;
           });
         }
         listaEscolasContainer.innerHTML = htmlCadastradas;
@@ -631,10 +725,22 @@ if (window.location.pathname.includes("painel.html")) {
         if (painelResumo) painelResumo.classList.remove("hidden");
 
         if (gridMateriasAtivacao) {
-          let htmlMat = "";
-          (tab.materias || []).forEach(m => {
+          let listaMat = tab.materias || [];
+          let htmlMat = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; width: 100%; flex-wrap: wrap; gap: 6px;">
+              <span style="font-size: 13px; color: #94a3b8; font-weight: bold;">Selecione as disciplinas:</span>
+              <div class="acoes-topo-bloco">
+                <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-materia-ativacao')">☑ Marcar/Limpar</button>
+                <button type="button" class="btn-mini" onclick="ordenarMatAtivacao('asc')">⬆ A-Z</button>
+                <button type="button" class="btn-mini" onclick="ordenarMatAtivacao('desc')">⬇ Z-A</button>
+              </div>
+            </div>
+            <div id="wrapper-chk-materias" style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+          `;
+          listaMat.forEach(m => {
             htmlMat += `<label class="checkbox-item"><input type="checkbox" class="chk-materia-ativacao" value="${m}" checked> ${m}</label>`;
           });
+          htmlMat += `</div>`;
           gridMateriasAtivacao.innerHTML = htmlMat;
         }
 
@@ -643,39 +749,63 @@ if (window.location.pathname.includes("painel.html")) {
           (tab.periodos || []).forEach(p => { selectPeriodoAtivacao.innerHTML += `<option value="${p}">${p}</option>`; });
         }
 
-        if (selectTipoEnsinoAtivacao) {
-          let listaTipos = tab.tipos_ensino || [];
-          if (listaTipos.length === 0) {
-            estruturaGlobalBoxes.forEach(b => {
-              if (b.id === "tipos_ensino" || b.titulo.toLowerCase().includes("ensino") || b.titulo.toLowerCase().includes("plataforma")) {
-                listaTipos = b.itens;
-              }
-            });
-          }
-          selectTipoEnsinoAtivacao.innerHTML = "";
-          listaTipos.forEach(t => { selectTipoEnsinoAtivacao.innerHTML += `<option value="${t}">${t}</option>`; });
-        }
-
         if (gridTurmasAtivacao) {
-          let htmlTurmas = "";
-          (tab.turmas || []).forEach(t => {
+          let listaTurmas = tab.turmas || [];
+          let htmlTurmas = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; width: 100%; flex-wrap: wrap; gap: 6px;">
+              <span style="font-size: 13px; color: #94a3b8; font-weight: bold;">Selecione as turmas:</span>
+              <div class="acoes-topo-bloco">
+                <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-turma-ativacao')">☑ Marcar/Limpar</button>
+                <button type="button" class="btn-mini" onclick="ordenarTurmaAtivacao('asc')">⬆ A-Z</button>
+                <button type="button" class="btn-mini" onclick="ordenarTurmaAtivacao('desc')">⬇ Z-A</button>
+              </div>
+            </div>
+            <div id="wrapper-chk-turmas" style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+          `;
+          listaTurmas.forEach(t => {
             htmlTurmas += `<label class="checkbox-item"><input type="checkbox" class="chk-turma-ativacao" value="${t}" checked> ${t}</label>`;
           });
+          htmlTurmas += `</div>`;
           gridTurmasAtivacao.innerHTML = htmlTurmas;
         }
       } else {
         containerCalculadoraAtivacao.classList.add("hidden");
         if (painelResumo) painelResumo.classList.add("hidden");
-        mostrarNotificacao("⚠️ Configure e confirme os boxes desta escola primeiro.");
+        mostrarNotificacao("⚠️ Configure e confirme os boxes desta escola na aba de configuração individual primeiro.");
       }
     } catch (err) { console.error(err); }
   });
+
+  window.ordenarMatAtivacao = function(direcao) {
+    const wrapper = document.getElementById("wrapper-chk-materias");
+    if (!wrapper) return;
+    let items = Array.from(wrapper.querySelectorAll(".checkbox-item"));
+    items.sort((a, b) => {
+      let txtA = a.textContent.trim();
+      let txtB = b.textContent.trim();
+      return direcao === 'asc' ? txtA.localeCompare(txtB) : txtB.localeCompare(txtA);
+    });
+    wrapper.innerHTML = "";
+    items.forEach(it => wrapper.appendChild(it));
+  };
+
+  window.ordenarTurmaAtivacao = function(direcao) {
+    const wrapper = document.getElementById("wrapper-chk-turmas");
+    if (!wrapper) return;
+    let items = Array.from(wrapper.querySelectorAll(".checkbox-item"));
+    items.sort((a, b) => {
+      let txtA = a.textContent.trim();
+      let txtB = b.textContent.trim();
+      return direcao === 'asc' ? txtA.localeCompare(txtB, undefined, {numeric: true}) : txtB.localeCompare(txtA, undefined, {numeric: true});
+    });
+    wrapper.innerHTML = "";
+    items.forEach(it => wrapper.appendChild(it));
+  };
 
   document.getElementById("btn-publicar-prova-escola")?.addEventListener("click", async (e) => {
     const escolaEscolhida = selectEscolaAtivacao?.value;
     const materiasSelecionadas = Array.from(document.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
     const periodoEscolhido = selectPeriodoAtivacao?.value || "Geral";
-    const tipoEnsinoEscolhido = selectTipoEnsinoAtivacao?.value || "Geral";
     const qtdQ = parseInt(document.getElementById("qtd-questoes-ativacao").value) || 10;
     const tempoMin = parseInt(document.getElementById("tempo-prova-ativacao").value) || 0;
     const tempoMinimoConclusao = parseInt(document.getElementById("tempo-minimo-ativacao").value) || 0;
@@ -694,7 +824,7 @@ if (window.location.pathname.includes("painel.html")) {
       timestampAgendamento = new Date(agendamentoData).getTime();
       const agora = Date.now();
       if (timestampAgendamento < agora) {
-        alert("⚠️ ATENÇÃO: A data e horário de início agendado que você escolheu já passou!\n\nNão é permitido realizar a ativação com uma data anterior ao momento atual.\nPor favor, mude para uma data/horário futuro.");
+        alert("⚠️ ATENÇÃO: A data e horário de início agendado que você escolheu já passou!\n\nNão é permitido realizar a ativação com uma data anterior ao momento atual.");
         return;
       }
     }
@@ -704,7 +834,6 @@ if (window.location.pathname.includes("painel.html")) {
         escolaAtiva: escolaEscolhida,
         materiasAtivas: materiasSelecionadas,
         periodoAtivo: periodoEscolhido,
-        tipoEnsino: tipoEnsinoEscolhido,
         quantidadeQuestoes: qtdQ,
         tempoLimiteMinutos: tempoMin,
         tempoMinimoMinutos: tempoMinimoConclusao,
@@ -944,12 +1073,8 @@ if (window.location.pathname.includes("painel.html")) {
             return sobrenomeA.localeCompare(sobrenomeB);
           case "turma-asc":
             return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
-          case "turma-desc":
-            return (b.turma || "").localeCompare(a.turma || "", undefined, {numeric: true});
           case "escola-asc":
             return (a.escola || "").localeCompare(b.escola || "");
-          case "escola-desc":
-            return (b.escola || "").localeCompare(a.escola || "");
           case "nota-desc":
             return notaB - notaA;
           case "nota-asc":
@@ -1064,9 +1189,35 @@ if (window.location.pathname.includes("painel.html")) {
     }
   };
 
+  window.exportarResultadosCSV = function() {
+    if (!resultadosGlobaisCache || resultadosGlobaisCache.length === 0) {
+      alert("⚠️ Não há resultados para exportar.");
+      return;
+    }
+    let csvContent = "\uFEFFStatus;Data/Hora;Escola;Período;Aluno;Turma;Matéria;Tempo Gasto;Acertos;Erros;Nota\n";
+    resultadosGlobaisCache.forEach(res => {
+      let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
+      let totalQ = res.totalQuestoes || 0;
+      let acertos = res.pontuacao || 0;
+      let erros = totalQ - acertos;
+      let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
+      let linha = `"Finalizado";"${dataFormatada}";"${res.escola || ''}";"${res.periodo || ''}";"${res.nome || ''}";"${res.turma || ''}";"${res.materia || ''}";"${res.tempoGastoFormatado || ''}";"${acertos}";"${erros}";"${nota}"\n`;
+      csvContent += linha;
+    });
+    let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `resultados_avaliacoes_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   function inicializarTabelaTempoReal() {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
     if (!corpoTabelaTempoReal) return;
+    
     onSnapshot(collection(db, "alunos_online"), (snapshot) => {
       alunosOnlineCache = [];
       snapshot.forEach(docSnap => { 
@@ -1112,8 +1263,6 @@ if (window.location.pathname.includes("painel.html")) {
             return tA - tB;
           case "nome-asc":
             return (a.nome || "").localeCompare(b.nome || "");
-          case "nome-desc":
-            return (b.nome || "").localeCompare(a.nome || "");
           case "escola-asc":
             return (a.escola || "").localeCompare(b.escola || "");
           case "tempo-desc":
@@ -1237,77 +1386,6 @@ if (window.location.pathname.includes("painel.html")) {
     }
   };
 
-  window.limparEEnviarMonitoramentoParaRelatorio = async function() {
-    if (!alunosOnlineCache || alunosOnlineCache.length === 0) {
-      alert("⚠️ Não há alunos ativos no monitoramento no momento.");
-      return;
-    }
-
-    if (!confirm(`Deseja finalizar a prova dos ${alunosOnlineCache.length} aluno(s) ativos, salvando o progresso atual de cada um nos relatórios?`)) {
-      return;
-    }
-
-    try {
-      for (const aluno of alunosOnlineCache) {
-        const agora = Date.now();
-        let min = Math.floor((aluno.segundosPassados || 0) / 60);
-        let seg = (aluno.segundosPassados || 0) % 60;
-        let tempoGastoFormatado = `${min}m ${seg}s`;
-
-        let totalQ = aluno.totalQuestoes || 10;
-        let questaoParada = aluno.questaoAtual || 1;
-        let pontuacaoAtual = aluno.pontuacao !== undefined ? aluno.pontuacao : Math.min(questaoParada - 1, totalQ);
-
-        await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
-          idAluno: aluno.idDoc,
-          nome: aluno.nome || "Aluno",
-          turma: aluno.turma || "N/D",
-          escola: aluno.escola || "Escola",
-          periodo: aluno.periodo || "Geral",
-          materia: aluno.materia || "Geral",
-          pontuacao: pontuacaoAtual,
-          totalQuestoes: totalQ,
-          tempoGastoSegundos: aluno.segundosPassados || 0,
-          tempoGastoFormatado: tempoGastoFormatado,
-          dataEnvio: serverTimestamp(),
-          timestamp: agora
-        });
-
-        await setDoc(doc(db, "permissoes_alunos", aluno.idDoc), { podeFazer: false }, { merge: true });
-        await deleteDoc(doc(db, "alunos_online", aluno.idDoc));
-      }
-
-      mostrarNotificacao("✅ Alunos removidos do monitoramento e enviados com sucesso para os relatórios!");
-    } catch (err) {
-      mostrarNotificacao("Erro ao processar: " + err.message);
-    }
-  };
-
-  window.exportarResultadosCSV = function() {
-    if (!resultadosGlobaisCache || resultadosGlobaisCache.length === 0) {
-      alert("⚠️ Não há resultados para exportar.");
-      return;
-    }
-    let csvContent = "\uFEFFStatus;Data/Hora;Escola;Período;Aluno;Turma;Matéria;Tempo Gasto;Acertos;Erros;Nota\n";
-    resultadosGlobaisCache.forEach(res => {
-      let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
-      let totalQ = res.totalQuestoes || 0;
-      let acertos = res.pontuacao || 0;
-      let erros = totalQ - acertos;
-      let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
-      let linha = `"Finalizado";"${dataFormatada}";"${res.escola || ''}";"${res.periodo || ''}";"${res.nome || ''}";"${res.turma || ''}";"${res.materia || ''}";"${res.tempoGastoFormatado || ''}";"${acertos}";"${erros}";"${nota}"\n`;
-      csvContent += linha;
-    });
-    let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    let url = URL.createObjectURL(blob);
-    let a = document.createElement('a');
-    a.href = url;
-    a.download = `resultados_avaliacoes_${Date.now()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
   inicializarPainel();
 }
 
@@ -1336,7 +1414,7 @@ if (window.location.pathname.includes("escola.html")) {
         if (d.customBoxes) estruturaGlobalBoxes = d.customBoxes;
         if (d.customTurma) turmaDadosGlobal = d.customTurma;
       } else {
-        dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [], tipos_ensino: [] };
+        dadosConfirmadosEscola = { turmas: [], materias: [], periodos: [], bimestres: [] };
         estruturaGlobalBoxes.forEach(box => {
           let tipoChave = box.id || `box_${box}`;
           dadosConfirmadosEscola[tipoChave] = [...box.itens];
@@ -1764,23 +1842,25 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       let avisoAgendamentoHtml = "";
       if (dadosProvaAtiva.agendamento && dadosProvaAtiva.agendamento > 0) {
         let dataAgendada = new Date(dadosProvaAtiva.agendamento);
-        let dataFormatada = dataAgendada.toLocaleString('pt-BR', { 
-          dateStyle: 'short', 
-          timeStyle: 'short' 
-        });
-        avisoAgendamentoHtml = `📅 <strong>Início Agendado:</strong> <span style="color: #facc15; font-size: 14px;">${dataFormatada}</span><br>`;
+        let dataFormatada = dataAgendada.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        avisoAgendamentoHtml = `
+          <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+            <span>📅</span>
+            <span><strong>Início Agendado:</strong> <span style="color: #facc15; font-size: 14px;">${dataFormatada}</span></span>
+          </div>`;
       }
 
       if (detalhesProvaAtiva) {
         detalhesProvaAtiva.innerHTML = `
-          🏫 <strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}<br>
-          🎓 <strong>Tipo de Ensino:</strong> ${dadosProvaAtiva.tipoEnsino || 'Geral'}<br>
-          📅 <strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}<br>
-          📚 <strong>Matéria(s):</strong> ${matsStr || 'Geral'}<br>
-          ${avisoAgendamentoHtml}
-          🔒 <strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}<br>
-          ⏱️ <strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}<br>
-          ⏳ <strong>Tempo Limite:</strong> ${tempoMin > 0 ? tempoMin + ' minutos' : 'Sem limite'}
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>🏫</span><span><strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}</span></div>
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>📅</span><span><strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}</span></div>
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>📚</span><span><strong>Matéria(s):</strong> ${matsStr || 'Geral'}</span></div>
+            ${avisoAgendamentoHtml}
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>🔒</span><span><strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}</span></div>
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>⏱️</span><span><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}</span></div>
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>⏳</span><span><strong>Tempo Limite:</strong> ${tempoMin > 0 ? tempoMin + ' minutos' : 'Sem limite'}</span></div>
+          </div>
         `;
       }
 
@@ -1789,6 +1869,13 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         (dadosProvaAtiva.turmasAtivas || []).forEach(t => {
           selectTurma.innerHTML += `<option value="${t}">${t}</option>`;
         });
+      }
+    } else {
+      if (detalhesProvaAtiva) {
+        detalhesProvaAtiva.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ Nenhuma prova foi liberada pelo professor no momento.</span>`;
+      }
+      if (selectTurma) {
+        selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma disponível</option>`;
       }
     }
   });
@@ -1835,7 +1922,6 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     alunoAtual.nome = nomeInput;
     alunoAtual.escola = dadosProvaAtiva.escolaAtiva || "Escola";
     alunoAtual.periodo = dadosProvaAtiva.periodoAtivo || "Geral";
-    alunoAtual.tipoEnsino = dadosProvaAtiva.tipoEnsino || "Geral";
     let materiasAtivas = dadosProvaAtiva.materiasAtivas || ["Geral"];
     alunoAtual.materia = materiasAtivas.join(" / ");
     alunoAtual.turma = turmaInput;
@@ -1857,7 +1943,6 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         nome: alunoAtual.nome,
         turma: alunoAtual.turma,
         escola: alunoAtual.escola,
-        tipoEnsino: alunoAtual.tipoEnsino,
         materia: alunoAtual.materia,
         periodo: alunoAtual.periodo,
         questaoAtual: 1,
@@ -1900,7 +1985,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     filtradas.sort(() => Math.random() - 0.5);
     listaQuestoes = filtradas.slice(0, qtdQ).map(q => normalizarDocumentoQuestao(q));
 
-    document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | ${alunoAtual.tipoEnsino} | Turma: ${alunoAtual.turma} | ${alunoAtual.materia}`;
+    document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma} | ${alunoAtual.materia}`;
     document.getElementById("tela-login").classList.add("hidden");
     document.getElementById("tela-quiz").classList.remove("hidden");
     
@@ -2003,9 +2088,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         nome: alunoAtual.nome,
         turma: alunoAtual.turma,
         escola: alunoAtual.escola,
-        tipoEnsino: alunoAtual.tipoEnsino,
         materia: alunoAtual.materia,
-        periodo: alunoAtual.periodo || "Geral",
+        periodo: alunoAtual.periodo,
         questaoAtual: indiceAtual + 1,
         totalQuestoes: listaQuestoes.length,
         pontuacao: acertosParciais,
@@ -2062,8 +2146,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       nav = document.createElement("div");
       nav.id = "nav-quiz"; nav.style.display = "flex"; nav.style.justifyContent = "space-between"; nav.style.marginTop = "20px";
       nav.innerHTML = `<button id="ant" style="padding:10px 15px; background:#4b5563; color:white; border:none; border-radius:8px;">⬅ Anterior</button>
-                       <button id="prox" style="padding:10px 15px; background:#2563eb; color:white; border:none; border-radius:8px;">Próxima ➡</button>
-                       <button id="fin" style="padding:10px 15px; background:#22c55e; color:white; border:none; border-radius:8px; display:none;">🏁 Finalizar</button>`;
+                        <button id="prox" style="padding:10px 15px; background:#2563eb; color:white; border:none; border-radius:8px;">Próxima ➡</button>
+                        <button id="fin" style="padding:10px 15px; background:#22c55e; color:white; border:none; border-radius:8px; display:none;">🏁 Finalizar</button>`;
       document.getElementById("tela-quiz").appendChild(nav);
     }
     document.getElementById("ant").onclick = () => { if(indiceAtual > 0) { indiceAtual--; exibirQuestao(); } };
@@ -2124,7 +2208,6 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         nome: alunoAtual.nome || "Aluno",
         turma: alunoAtual.turma || "N/D",
         escola: alunoAtual.escola || "Escola",
-        tipoEnsino: alunoAtual.tipoEnsino || "Geral",
         periodo: alunoAtual.periodo || "Geral",
         materia: alunoAtual.materia || "Geral",
         pontuacao: acertos,
