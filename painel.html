@@ -84,25 +84,6 @@
     }
     .grupo-controles-esquerda, .grupo-controles-direita { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-    .card-escola-lista { 
-      background: #0f172a; 
-      border: 1px solid var(--border); 
-      padding: 16px; 
-      border-radius: 8px; 
-      margin-bottom: 14px; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      flex-wrap: nowrap; 
-      gap: 15px; 
-    }
-    .acoes-escola-card { 
-      display: flex; 
-      gap: 6px; 
-      align-items: center; 
-      white-space: nowrap; 
-    }
-
     .bloco-calculadora { background: #0f172a; border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-top: 12px; position: relative; }
     .sub-titulo-linha { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
     .sub-titulo-linha h3 { color: #60a5fa; font-size: 15px; display: flex; align-items: center; gap: 6px; }
@@ -114,12 +95,6 @@
     .grid-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px; }
     .checkbox-item-global, .checkbox-item { background: #1e293b; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; width: 100%; }
     .checkbox-item-global span, .checkbox-item span { display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; word-break: break-word; }
-    .acoes-item-global { display: flex; gap: 4px; }
-    .btn-editar-item, .btn-excluir-item { background: none; border: none; cursor: pointer; font-size: 11px; padding: 2px 4px; border-radius: 4px; }
-
-    .input-grupo-add { display: flex; gap: 8px; margin-top: 10px; }
-    .input-grupo-add input { flex: 1; padding: 6px 10px; background: #1e293b; border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 12px; }
-    .input-grupo-add button { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
     .escolas-seletor-topo { background: #0f172a; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 
@@ -215,6 +190,21 @@
     <!-- ABA 2: ATIVAÇÃO DE PROVAS -->
     <div id="aba-ativacao" class="aba-conteudo hidden">
       
+      <!-- Caixa de Status e Botão de Encerrar Prova Ativa -->
+      <div id="painel-status-prova-ativa" style="background: #0f172a; border: 1px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span style="background: #db2777; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">🚀 Prova Ativa no Momento</span>
+            <div id="detalhes-prova-ativa-painel" style="font-size: 13px; color: #cbd5e1; margin-top: 8px; line-height: 1.5;">
+              Verificando status...
+            </div>
+          </div>
+          <div>
+            <button type="button" id="btn-encerrar-prova-ativa" class="btn-acao btn-danger" onclick="encerrarProvaAtivaAgora()">🛑 Encerrar Prova Ativa</button>
+          </div>
+        </div>
+      </div>
+
       <label style="color: #60a5fa; font-size: 15px;">🏫 1. Escolher Escola:</label>
       <select id="select-escola-ativacao" style="max-width: 400px; font-weight: bold; font-size: 14px;">
         <option value="" disabled selected>Selecione uma escola para ativar...</option>
@@ -274,7 +264,7 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
             <div>
               <label>Qtd. de Questões:</label>
-              <input type="number" id="qtd-questoes-ativacao" value="10" min="1" max="50">
+              <input type="number" id="qtd-questoes-ativacao" value="10" min="1" max="100">
             </div>
             <div>
               <label>Tempo Mínimo (minutos):</label>
@@ -325,7 +315,7 @@
 
       <div class="bloco-calculadora" style="margin-top: 25px;">
         <div class="sub-titulo-linha">
-          <h3>📂 Importação em Massa de Questões (TXT, Word, Excel)</h3>
+          <h3>📂 Importação em Massa de Questões (TXT, Word, Excel) - Sem Limites (Suporta 100+ por Matéria)</h3>
         </div>
         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
           Selecione um arquivo (<strong style="color: #60a5fa;">.txt, .docx, .xlsx</strong>) ou cole o conteúdo no formato: <br>
@@ -410,6 +400,72 @@
     </div>
 
   </div>
+
+  <!-- Firebase e Scripts de Suporte (Monitoramento de Prova Ativa e Auto-Encerramento) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
+      authDomain: "quiz-interativo-8a98c.firebaseapp.com",
+      databaseURL: "https://quiz-interativo-8a98c-default-rtdb.firebaseio.com",
+      projectId: "quiz-interativo-8a98c",
+      storageBucket: "quiz-interativo-8a98c.firebasestorage.app",
+      messagingSenderId: "948601017774",
+      appId: "1:948601017774:web:bd0e038611ff6d2148643f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Monitoramento da Prova Ativa com Auto-Encerramento Inteligente
+    const divStatusAtiva = document.getElementById("painel-status-prova-ativa");
+    const divDetalhesAtiva = document.getElementById("detalhes-prova-ativa-painel");
+
+    onSnapshot(doc(db, "configuracoes", "prova_ativa"), async (docSnap) => {
+      if (docSnap.exists()) {
+        const dados = docSnap.data();
+        let mats = (dados.materiasAtivas || []).join(", ");
+        let turmas = (dados.turmasAtivas || []).join(", ");
+        
+        // Verificação de Auto-Encerramento por tempo limite (se configurado)
+        if (dados.tempoLimiteMinutos && dados.tempoLimiteMinutos > 0 && dados.atualizadoEm) {
+          let tempoCriacao = dados.atualizadoEm.toDate ? dados.atualizadoEm.toDate().getTime() : Date.now();
+          let limiteMs = dados.tempoLimiteMinutos * 60 * 1000;
+          if (Date.now() > (tempoCriacao + limiteMs + 300000)) { // Margem de 5 min
+            try {
+              await deleteDoc(doc(db, "configuracoes", "prova_ativa"));
+              return;
+            } catch(e) {}
+          }
+        }
+
+        divDetalhesAtiva.innerHTML = `
+          🏫 <strong>Escola:</strong> ${dados.escolaAtiva || 'N/D'}<br>
+          📚 <strong>Matérias:</strong> ${mats || 'Geral'}<br>
+          👥 <strong>Turmas:</strong> ${turmas || 'N/D'}<br>
+          🏛️ <strong>Período:</strong> ${dados.periodoAtivo || 'Geral'}<br>
+          ⏳ <strong>Tempo Limite:</strong> ${dados.tempoLimiteMinutos ? dados.tempoLimiteMinutos + ' min' : 'Sem limite'}
+        `;
+        divStatusAtiva.style.display = "block";
+      } else {
+        divStatusAtiva.style.display = "none";
+        divDetalhesAtiva.innerHTML = "";
+      }
+    });
+
+    window.encerrarProvaAtivaAgora = async function() {
+      if (confirm("⚠️ Tem certeza que deseja encerrar a prova ativa agora? Isso impedirá novos acessos dos alunos.")) {
+        try {
+          await deleteDoc(doc(db, "configuracoes", "prova_ativa"));
+          alert("✅ Prova ativa encerrada com sucesso!");
+        } catch (err) {
+          alert("❌ Erro ao encerrar a prova.");
+        }
+      }
+    };
+  </script>
 
   <script type="module" src="app.js"></script>
 </body>

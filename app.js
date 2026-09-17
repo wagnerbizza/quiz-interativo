@@ -139,21 +139,12 @@ window.toggleDropdown = function(event, idMenu, idBtn) {
   if (!menu) return;
   const estaMostrando = menu.classList.contains('show');
   
-  // Fecha todos os outros menus abertos
   document.querySelectorAll('.dropdown-menu-win').forEach(m => m.classList.remove('show'));
   
-  // Se não estava aberto, abre exatamente abaixo do botão atual
   if (!estaMostrando) {
     menu.classList.add('show');
   }
 };
-
-// Fecha o menu ao clicar fora dele
-window.addEventListener("click", (e) => {
-  if (!e.target.closest('.dropdown-win')) {
-    document.querySelectorAll('.dropdown-menu-win').forEach(menu => menu.classList.remove('show'));
-  }
-});
 
 function forcarMenuClassificarCompleto() {
   const menuResultados = document.getElementById("dropdown-menu-resultados");
@@ -634,18 +625,18 @@ if (window.location.pathname.includes("painel.html")) {
         } else {
           escolas.forEach(esc => {
             htmlCadastradas += `
-  <div class="card-escola-lista">
-    <div>
-      <strong>🏫 ${esc.nome}</strong><br>
-      <span style="font-size: 11px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
-    </div>
-    <div class="acoes-escola-card">
-      <a href="escola.html?escola=${encodeURIComponent(esc.nome)}" class="btn-acao" style="background:#2563eb; padding:6px 12px; text-decoration:none; font-size:11px; margin:0;">⚙️ Configurar</a>
-      <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">✏️ Editar</button>
-      <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">🗑️ Excluir</button>
-    </div>
-  </div>
-`;
+              <div class="card-escola-lista">
+                <div>
+                  <strong>🏫 ${esc.nome}</strong><br>
+                  <span style="font-size: 11px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
+                </div>
+                <div class="acoes-escola-card">
+                  <a href="escola.html?escola=${encodeURIComponent(esc.nome)}" class="btn-acao" style="background:#2563eb; padding:6px 12px; text-decoration:none; font-size:11px; margin:0;">⚙️ Configurar</a>
+                  <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">✏️ Editar</button>
+                  <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">🗑️ Excluir</button>
+                </div>
+              </div>
+            `;
           });
         }
         listaEscolasContainer.innerHTML = htmlCadastradas;
@@ -726,21 +717,10 @@ if (window.location.pathname.includes("painel.html")) {
 
         if (gridMateriasAtivacao) {
           let listaMat = tab.materias || [];
-          let htmlMat = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; width: 100%; flex-wrap: wrap; gap: 6px;">
-              <span style="font-size: 13px; color: #94a3b8; font-weight: bold;">Selecione as disciplinas:</span>
-              <div class="acoes-topo-bloco">
-                <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-materia-ativacao')">☑ Marcar/Limpar</button>
-                <button type="button" class="btn-mini" onclick="ordenarMatAtivacao('asc')">⬆ A-Z</button>
-                <button type="button" class="btn-mini" onclick="ordenarMatAtivacao('desc')">⬇ Z-A</button>
-              </div>
-            </div>
-            <div id="wrapper-chk-materias" style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
-          `;
+          let htmlMat = ``;
           listaMat.forEach(m => {
             htmlMat += `<label class="checkbox-item"><input type="checkbox" class="chk-materia-ativacao" value="${m}" checked> ${m}</label>`;
           });
-          htmlMat += `</div>`;
           gridMateriasAtivacao.innerHTML = htmlMat;
         }
 
@@ -751,21 +731,10 @@ if (window.location.pathname.includes("painel.html")) {
 
         if (gridTurmasAtivacao) {
           let listaTurmas = tab.turmas || [];
-          let htmlTurmas = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; width: 100%; flex-wrap: wrap; gap: 6px;">
-              <span style="font-size: 13px; color: #94a3b8; font-weight: bold;">Selecione as turmas:</span>
-              <div class="acoes-topo-bloco">
-                <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-turma-ativacao')">☑ Marcar/Limpar</button>
-                <button type="button" class="btn-mini" onclick="ordenarTurmaAtivacao('asc')">⬆ A-Z</button>
-                <button type="button" class="btn-mini" onclick="ordenarTurmaAtivacao('desc')">⬇ Z-A</button>
-              </div>
-            </div>
-            <div id="wrapper-chk-turmas" style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
-          `;
+          let htmlTurmas = ``;
           listaTurmas.forEach(t => {
             htmlTurmas += `<label class="checkbox-item"><input type="checkbox" class="chk-turma-ativacao" value="${t}" checked> ${t}</label>`;
           });
-          htmlTurmas += `</div>`;
           gridTurmasAtivacao.innerHTML = htmlTurmas;
         }
       } else {
@@ -777,29 +746,29 @@ if (window.location.pathname.includes("painel.html")) {
   });
 
   window.ordenarMatAtivacao = function(direcao) {
-    const wrapper = document.getElementById("wrapper-chk-materias");
-    if (!wrapper) return;
-    let items = Array.from(wrapper.querySelectorAll(".checkbox-item"));
+    const grid = document.getElementById("grid-materias-ativacao");
+    if (!grid) return;
+    let items = Array.from(grid.querySelectorAll(".checkbox-item"));
     items.sort((a, b) => {
       let txtA = a.textContent.trim();
       let txtB = b.textContent.trim();
       return direcao === 'asc' ? txtA.localeCompare(txtB) : txtB.localeCompare(txtA);
     });
-    wrapper.innerHTML = "";
-    items.forEach(it => wrapper.appendChild(it));
+    grid.innerHTML = "";
+    items.forEach(it => grid.appendChild(it));
   };
 
   window.ordenarTurmaAtivacao = function(direcao) {
-    const wrapper = document.getElementById("wrapper-chk-turmas");
-    if (!wrapper) return;
-    let items = Array.from(wrapper.querySelectorAll(".checkbox-item"));
+    const grid = document.getElementById("grid-turmas-ativacao");
+    if (!grid) return;
+    let items = Array.from(grid.querySelectorAll(".checkbox-item"));
     items.sort((a, b) => {
       let txtA = a.textContent.trim();
       let txtB = b.textContent.trim();
       return direcao === 'asc' ? txtA.localeCompare(txtB, undefined, {numeric: true}) : txtB.localeCompare(txtA, undefined, {numeric: true});
     });
-    wrapper.innerHTML = "";
-    items.forEach(it => wrapper.appendChild(it));
+    grid.innerHTML = "";
+    items.forEach(it => grid.appendChild(it));
   };
 
   document.getElementById("btn-publicar-prova-escola")?.addEventListener("click", async (e) => {

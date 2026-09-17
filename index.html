@@ -6,90 +6,732 @@
   <title>Área do Aluno - Avaliação</title>
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --card-bg: #1e293b;
-      --primary: #2563eb;
+      --bg-dark: #0b0f19;
+      --card-bg: #111827;
+      --border-color: #1f2937;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
       --success: #22c55e;
       --danger: #ef4444;
-      --warning: #eab308;
-      --text: #f8fafc;
-      --border: #334155;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text); padding: 15px; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
-    .container { max-width: 700px; width: 100%; background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    h1 { color: #60a5fa; font-size: 22px; text-align: center; margin-bottom: 20px; }
     
-    .info-box { background: #0f172a; border: 1px solid var(--border); padding: 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; line-height: 1.8; }
-    .info-linha { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .info-icone { font-size: 16px; min-width: 24px; text-align: center; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
 
-    label { display: block; margin-top: 12px; color: #cbd5e1; font-size: 13px; font-weight: bold; }
-    input[type="text"], select { width: 100%; padding: 10px 12px; margin-top: 6px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 14px; }
+    .container {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 30px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    }
 
-    .btn-acao { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; font-size: 15px; transition: opacity 0.2s; }
-    .btn-acao:hover { opacity: 0.9; }
+    h1, h2 { text-align: center; margin-bottom: 20px; color: #38bdf8; }
+    
+    .grupo-form {
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label { font-size: 14px; font-weight: bold; color: var(--text-muted); }
+
+    input, select {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #374151;
+      color: white;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 15px;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+      margin-top: 10px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:hover { background: var(--accent-hover); }
 
     .hidden { display: none !important; }
-    #badge-escola-ativa { background: #1e3a8a; color: #93c5fd; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 15px; width: 100%; text-align: center; }
-    .pergunta-card { background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; font-size: 15px; font-weight: 500; }
+
+    .info-box {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid #334155;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .linha-detalhe {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .linha-detalhe span.icone {
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .linha-detalhe div.conteudo-texto {
+      flex: 1;
+      word-break: break-word;
+    }
+
+    .opcao-btn {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      text-align: left;
+      background: rgba(15, 23, 42, 0.6);
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .opcao-btn:hover {
+      border-color: var(--accent);
+      background: rgba(37, 99, 235, 0.15);
+    }
+
+    .opcao-btn.selecionada {
+      background: var(--accent);
+      border-color: #60a5fa;
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .item-revisao {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #334155;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .item-revisao.correta { border-color: var(--success); }
+    .item-revisao.incorreta { border-color: var(--danger); }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>📝 ÁREA DO ALUNO - AVALIAÇÃO</h1>
-
+    <!-- TELA DE LOGIN DO ALUNO -->
     <div id="tela-login">
+      <h1>Área do Aluno - Avaliação</h1>
       
-      <div class="info-box" id="detalhes-prova-ativa">
-        <div class="info-linha"><span class="info-icone">🏫</span> <span><strong>Escola:</strong> Carregando...</span></div>
-        <div class="info-linha"><span class="info-icone">🎓</span> <span><strong>Tipo de Ensino / Plataforma:</strong> Carregando...</span></div>
-        <div class="info-linha"><span class="info-icone">📅</span> <span><strong>Período:</strong> Carregando...</span></div>
-        <div class="info-linha"><span class="info-icone">📚</span> <span><strong>Matéria(s):</strong> Carregando...</span></div>
-        <div class="info-linha"><span class="info-icone">🔒</span> <span><strong>Exige Token:</strong> Carregando...</span></div>
-        <div class="info-linha"><span class="info-icone">⏱️</span> <span><strong>Tempo Mínimo:</strong> Carregando...</span></div>
-        <div class="info-linha"><span class="info-icone">⏳</span> <span><strong>Tempo Limite:</strong> Carregando...</span></div>
+      <div id="detalhes-prova-ativa" class="info-box">
+        ⏳ Verificando se há alguma prova ativa no momento...
       </div>
 
       <form id="form-login">
-        <label>Nome Completo:</label>
-        <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required autocomplete="off">
-        
-        <label>Turma:</label>
-        <select id="turma-aluno" required>
-          <option value="" disabled selected>Selecione sua turma...</option>
-        </select>
+        <div class="grupo-form">
+          <label for="nome-aluno">Nome Completo:</label>
+          <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required>
+        </div>
 
-        <!-- Adicionar logo abaixo do select de turmas -->
-<div id="grupo-token-aluno" class="hidden" style="margin-top: 12px;">
-  <label>Token de Acesso da Prova:</label>
-  <input type="text" id="input-token-aluno" placeholder="Digite a senha fornecida pelo professor..." autocomplete="off">
-</div>
+        <div class="grupo-form">
+          <label for="turma-aluno">Sua Turma:</label>
+          <select id="turma-aluno" required>
+            <option value="" disabled selected>Aguardando liberação de turmas...</option>
+          </select>
+        </div>
 
-        <button type="submit" class="btn-acao">🚀 Entrar e Iniciar Prova</button>
+        <button type="submit" id="btn-iniciar-prova" class="btn">🚀 Iniciar Avaliação</button>
       </form>
     </div>
 
+    <!-- TELA DO QUIZ / PROVA -->
     <div id="tela-quiz" class="hidden">
-      <div id="relogio-cronometro">⏱️ Tempo Gasto: 00:00</div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; color: #94a3b8;">
-        <span id="progresso-txt">Questão 1 de 10</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span id="badge-escola-ativa" style="font-size: 13px; color: var(--text-muted); font-weight: bold;">🏫 Escola</span>
+        <span id="progresso-txt" style="font-size: 14px; font-weight: bold; color: #38bdf8;">Questão 1 de 10</span>
       </div>
-      <div id="pergunta-txt" class="pergunta-card">Carregando pergunta...</div>
+
+      <div id="relogio-cronometro" style="display: none;">⏱️ Tempo Gasto: 00:00</div>
+
+      <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; padding: 18px; border-radius: 10px; margin-bottom: 20px;">
+        <h3 id="pergunta-txt" style="font-size: 17px; line-height: 1.4; color: white;">Carregando pergunta...</h3>
+      </div>
+
       <div id="opcoes-container"></div>
+
+      <div id="nav-quiz" style="display: flex; justify-content: space-between; margin-top: 20px; gap: 10px;">
+        <button id="ant" class="btn" style="background: #475569; display: none;">⬅ Anterior</button>
+        <button id="prox" class="btn">Próxima ➡</button>
+        <button id="fin" class="btn" style="background: var(--success); display: none;">🏁 Finalizar Prova</button>
+      </div>
     </div>
 
-    <div id="tela-resultado" class="hidden" style="text-align: center;">
-      <h2 style="color: #4ade80; margin-bottom: 10px;">🎉 Avaliação Concluída!</h2>
-      <p id="nota-final-txt" style="font-size: 18px; font-weight: bold; color: #60a5fa; margin-bottom: 8px;"></p>
-      <p id="detalhes-acertos-txt" style="font-size: 14px; color: #cbd5e1; margin-bottom: 15px;"></p>
-      <div style="text-align: left; max-height: 250px; overflow-y: auto; margin-bottom: 15px;" id="container-revisao-resultado"></div>
-      <p id="status-envio-txt" style="font-size: 13px; font-weight: bold; color: #4ade80; margin-bottom: 15px;"></p>
-      <button type="button" class="btn-acao" id="btn-reiniciar">🔄 Voltar ao Inicio</button>
+    <!-- TELA DE RESULTADO -->
+    <div id="tela-resultado" class="hidden">
+      <h1>🎉 Avaliação Concluída!</h1>
+      <div class="info-box" style="text-align: center;">
+        <h2 id="nota-final-txt" style="color: var(--success); margin-bottom: 5px;">Nota: 0.0 / 10.0</h2>
+        <p id="detalhes-acertos-txt" style="color: var(--text-muted);">Acertos e erros processados com sucesso.</p>
+        <p id="status-envio-txt" style="color: #38bdf8; margin-top: 8px; font-weight: bold;"></p>
+      </div>
+
+      <h3 style="margin-bottom: 10px; font-size: 15px;">Revisão das Questões:</h3>
+      <div id="container-revisao-resultado" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
+
+      <button type="button" id="btn-reiniciar" class="btn">🔄 Sair / Tela Inicial</button>
     </div>
   </div>
 
-  <script type="module" src="app.js"></script>
+  <!-- Firebase SDK v10 (Modular via ESM) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, onSnapshot, serverTimestamp, deleteDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
+      authDomain: "quiz-interativo-8a98c.firebaseapp.com",
+      databaseURL: "https://quiz-interativo-8a98c-default-rtdb.firebaseio.com",
+      projectId: "quiz-interativo-8a98c",
+      storageBucket: "quiz-interativo-8a98c.firebasestorage.app",
+      messagingSenderId: "948601017774",
+      appId: "1:948601017774:web:bd0e038611ff6d2148643f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let dadosProvaAtiva = {};
+    let listaQuestoes = [], indiceAtual = 0, respostasUsuario = {};
+    let alunoAtual = {}, qtdQ = 10;
+    let timerInterval = null, segundosPassados = 0, tempoRestanteSegundos = 0;
+    let avisoTempoMinimoExibido = false;
+    let watcherPermissaoInterval = null;
+    let verificadorHorarioInterval = null;
+    let syncOnlineInterval = null;
+
+    const selectTurma = document.getElementById("turma-aluno");
+    const inputNomeAluno = document.getElementById("nome-aluno");
+    const detalhesProvaAtiva = document.getElementById("detalhes-prova-ativa");
+    const btnIniciarProva = document.getElementById("btn-iniciar-prova");
+
+    function atualizarInterfaceStatusProva() {
+      if (!dadosProvaAtiva.escolaAtiva) {
+        detalhesProvaAtiva.innerHTML = `<span style="color: var(--danger); font-weight: bold;">⚠️ Nenhuma prova foi liberada pelo professor no painel ainda.</span>`;
+        if (btnIniciarProva) {
+          btnIniciarProva.disabled = true;
+          btnIniciarProva.style.background = "#475569";
+          btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
+        }
+        return;
+      }
+
+      let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
+      let turmas = dadosProvaAtiva.turmasAtivas || [];
+      let tempoMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
+      let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+
+      let avisoAgendamentoHtml = "";
+      let bloqueioTipo = null; 
+      let agora = Date.now();
+      let agendamentoTime = dadosProvaAtiva.agendamento || 0;
+
+      if (agendamentoTime > 0) {
+        let dataAgendada = new Date(agendamentoTime);
+        let dataFormatada = dataAgendada.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        
+        if (agora < agendamentoTime) {
+          bloqueioTipo = 'futuro';
+          avisoAgendamentoHtml = `
+            <div class="linha-detalhe">
+              <span class="icone">⏳</span>
+              <div class="conteudo-texto"><strong style="color: #f87171;">Aviso: Esta prova está agendada para iniciar em ${dataFormatada}. O acesso está bloqueado até o horário correto.</strong></div>
+            </div>`;
+        } else {
+          if (tempoMin > 0) {
+            let tempoExpiracao = agendamentoTime + (tempoMin * 60 * 1000);
+            if (agora > tempoExpiracao) {
+              bloqueioTipo = 'expirado';
+              avisoAgendamentoHtml = `
+                <div class="linha-detalhe">
+                  <span class="icone">❌</span>
+                  <div class="conteudo-texto"><strong style="color: #ef4444;">O prazo para realizar esta avaliação já se encerrou. Por favor, procure o seu professor.</strong></div>
+                </div>`;
+            } else {
+              bloqueioTipo = 'liberado';
+              avisoAgendamentoHtml = `
+                <div class="linha-detalhe">
+                  <span class="icone">🟢</span>
+                  <div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div>
+                </div>`;
+            }
+          } else {
+            bloqueioTipo = 'liberado';
+            avisoAgendamentoHtml = `
+              <div class="linha-detalhe">
+                <span class="icone">🟢</span>
+                <div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div>
+              </div>`;
+          }
+        }
+      } else {
+        bloqueioTipo = 'liberado';
+        avisoAgendamentoHtml = `
+          <div class="linha-detalhe">
+            <span class="icone">🟢</span>
+            <div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div>
+          </div>`;
+      }
+
+      detalhesProvaAtiva.innerHTML = `
+        <div class="linha-detalhe"><span class="icone">🏫</span><div class="conteudo-texto"><strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}</div></div>
+        <div class="linha-detalhe"><span class="icone">📚</span><div class="conteudo-texto"><strong>Matéria(s):</strong> ${matsStr || 'Geral'}</div></div>
+        <div class="linha-detalhe"><span class="icone">🏛️</span><div class="conteudo-texto"><strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}</div></div>
+        ${avisoAgendamentoHtml}
+        <div class="linha-detalhe"><span class="icone">⏱️</span><div class="conteudo-texto"><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMin + ' minutos' : 'Nenhum'}</div></div>
+        <div class="linha-detalhe"><span class="icone">⏳</span><div class="conteudo-texto"><strong>Tempo Limite:</strong> ${tempoMin > 0 ? tempoMin + ' minutos' : 'Sem limite'}</div></div>
+        <div class="linha-detalhe"><span class="icone">🔒</span><div class="conteudo-texto"><strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}</div></div>
+      `;
+
+      if (bloqueioTipo === 'futuro') {
+        if (btnIniciarProva) {
+          btnIniciarProva.disabled = true;
+          btnIniciarProva.style.background = "#475569";
+          btnIniciarProva.style.cursor = "not-allowed";
+          btnIniciarProva.textContent = "⏳ Aguardando Horário Agendado";
+        }
+      } else if (bloqueioTipo === 'expirado') {
+        if (btnIniciarProva) {
+          btnIniciarProva.disabled = true;
+          btnIniciarProva.style.background = "#7f1d1d";
+          btnIniciarProva.style.cursor = "not-allowed";
+          btnIniciarProva.textContent = "❌ Avaliação Encerrada";
+        }
+      } else {
+        if (btnIniciarProva) {
+          btnIniciarProva.disabled = false;
+          btnIniciarProva.style.background = "var(--accent)";
+          btnIniciarProva.style.cursor = "pointer";
+          btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
+        }
+      }
+
+      if (selectTurma && selectTurma.options.length <= 1) {
+        if (turmas.length > 0) {
+          selectTurma.innerHTML = `<option value="" disabled selected>Selecione sua turma...</option>`;
+          turmas.forEach(t => {
+            selectTurma.innerHTML += `<option value="${t}">${t}</option>`;
+          });
+        }
+      }
+    }
+
+    onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
+      if (docSnap.exists()) {
+        dadosProvaAtiva = docSnap.data();
+        atualizarInterfaceStatusProva();
+
+        if (verificadorHorarioInterval) clearInterval(verificadorHorarioInterval);
+        verificadorHorarioInterval = setInterval(() => {
+          if (dadosProvaAtiva.agendamento) {
+            atualizarInterfaceStatusProva();
+          }
+        }, 1000);
+      } else {
+        dadosProvaAtiva = {};
+        atualizarInterfaceStatusProva();
+      }
+    });
+
+    document.getElementById("form-login")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nomeVal = inputNomeAluno.value.trim().toUpperCase();
+      const turmaVal = selectTurma.value;
+
+      if (!nomeVal || !turmaVal) {
+        alert("⚠️ Preencha seu nome e selecione sua turma.");
+        return;
+      }
+
+      if (!dadosProvaAtiva.escolaAtiva) {
+        alert("⚠️ A prova ainda não foi totalmente publicada pelo professor. Aguarde um instante.");
+        return;
+      }
+
+      let tempoAgendado = dadosProvaAtiva.agendamento || 0;
+      let tempoLimiteMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
+      let agora = Date.now();
+
+      if (tempoAgendado > 0) {
+        if (agora < tempoAgendado) {
+          let dataAgendadaObj = new Date(tempoAgendado);
+          let dataFormatadaEspera = dataAgendadaObj.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+          alert(`❌ ACESSO BLOQUEADO!\n\nA prova ainda não está no horário correto.\nData e horário agendados: ${dataFormatadaEspera}`);
+          return;
+        }
+
+        if (tempoLimiteMin > 0) {
+          let tempoExpiracao = tempoAgendado + (tempoLimiteMin * 60 * 1000);
+          if (agora > tempoExpiracao) {
+            alert("❌ O prazo para realizar esta avaliação já se encerrou. Por favor, procure o seu professor.");
+            return;
+          }
+        }
+      }
+
+      if (dadosProvaAtiva.token && dadosProvaAtiva.token.trim() !== "") {
+        let tokenInput = prompt("🔒 Digite o token/senha fornecido pelo professor para acessar a prova:");
+        if (tokenInput !== dadosProvaAtiva.token) {
+          alert("❌ Token incorreto! Acesso negado.");
+          return;
+        }
+      }
+
+      const idAlunoUnico = `${nomeVal.replace(/[^A-Z0-9]/g, "_")}_${turmaVal.replace(/[^A-Z0-9]/g, "_")}`;
+
+      try {
+        const permDoc = await getDoc(doc(db, "permissoes_alunos", idAlunoUnico));
+        if (permDoc.exists() && permDoc.data().podeFazer === false) {
+          alert("⚠️ Você já realizou esta avaliação e não pode refazê-la.");
+          return;
+        }
+      } catch (err) { console.error(err); }
+
+      alunoAtual = {
+        nome: nomeVal,
+        escola: dadosProvaAtiva.escolaAtiva,
+        periodo: dadosProvaAtiva.periodoAtivo || "Geral",
+        materia: (dadosProvaAtiva.materiasAtivas || ["Geral"]).join(" / "),
+        turma: turmaVal,
+        id: idAlunoUnico
+      };
+
+      btnIniciarProva.disabled = true;
+      btnIniciarProva.textContent = "Carregando avaliação...";
+
+      await iniciarCarregamentoProva();
+    });
+
+    async function iniciarCarregamentoProva() {
+      let tempoAgendado = dadosProvaAtiva.agendamento || 0;
+      if (tempoAgendado > 0 && tempoAgendado <= Date.now()) {
+        segundosPassados = Math.floor((Date.now() - tempoAgendado) / 1000);
+      } else {
+        segundosPassados = 0;
+      }
+
+      try {
+        await setDoc(doc(db, "alunos_online", alunoAtual.id), {
+          nome: alunoAtual.nome,
+          turma: alunoAtual.turma,
+          escola: alunoAtual.escola,
+          materia: alunoAtual.materia,
+          periodo: alunoAtual.periodo,
+          questaoAtual: 1,
+          totalQuestoes: qtdQ,
+          segundosPassados: segundosPassados,
+          pontuacao: 0,
+          dataInicio: serverTimestamp(),
+          atualizadoEm: serverTimestamp()
+        });
+      } catch(e) { console.error(e); }
+
+      let banco = [];
+      try {
+        const snap = await getDocs(collection(db, "questoes"));
+        snap.forEach(s => {
+          let d = s.data();
+          let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
+          let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
+          let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
+          let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
+          
+          banco.push({
+            pergunta: perguntaLimpa,
+            opcoes: opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim()),
+            correta: letraCorreta,
+            categoria: d.categoria || d.materia || "Geral"
+          });
+        });
+      } catch(e) { console.error(e); }
+
+      let materiasAtivas = dadosProvaAtiva.materiasAtivas || [];
+      let filtradas = [];
+      
+      if (materiasAtivas.length > 0) {
+        materiasAtivas.forEach(mat => {
+          let qMat = banco.filter(q => q.categoria.toLowerCase().includes(mat.toLowerCase()) || mat.toLowerCase().includes(q.categoria.toLowerCase()));
+          filtradas.push(...qMat);
+        });
+      }
+
+      if (filtradas.length === 0) {
+        filtradas = banco;
+      }
+
+      if (filtradas.length === 0) {
+        for (let i = 1; i <= qtdQ; i++) {
+          filtradas.push({
+            pergunta: `Questão padrão ${i} gerada automaticamente.`,
+            opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
+            correta: "A",
+            categoria: "Geral"
+          });
+        }
+      }
+
+      filtradas.sort(() => Math.random() - 0.5);
+      listaQuestoes = filtradas.slice(0, qtdQ);
+
+      document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
+      document.getElementById("tela-login").classList.add("hidden");
+      document.getElementById("tela-quiz").classList.remove("hidden");
+
+      iniciarCronogerenciamento();
+      iniciarMonitoramentoFechamentoRemoto();
+      iniciarSincronizacaoTempoReal();
+      exibirQuestao();
+    }
+
+    function iniciarCronogerenciamento() {
+      avisoTempoMinimoExibido = false;
+      let tempoLimiteMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
+      let tempoMinimoMinutos = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+      
+      let tempoLimiteSegundosTotais = tempoLimiteMin > 0 ? tempoLimiteMin * 60 : 0;
+      tempoRestanteSegundos = tempoLimiteSegundosTotais > 0 ? Math.max(0, tempoLimiteSegundosTotais - segundosPassados) : 0;
+
+      if (tempoLimiteMin > 0 && tempoRestanteSegundos <= 0) {
+        alert("❌ O prazo para realizar esta avaliação já se encerrou. Por favor, procure o seu professor.");
+        location.reload();
+        return;
+      }
+
+      const cronometroDiv = document.getElementById("relogio-cronometro");
+      if (cronometroDiv) {
+        cronometroDiv.style.display = "block";
+        cronometroDiv.style.background = "#1e293b";
+        cronometroDiv.style.border = "1px solid #eab308";
+        cronometroDiv.style.color = "#facc15";
+        cronometroDiv.style.padding = "8px 12px";
+        cronometroDiv.style.borderRadius = "8px";
+        cronometroDiv.style.textAlign = "center";
+        cronometroDiv.style.marginBottom = "15px";
+        cronometroDiv.style.fontWeight = "bold";
+        cronometroDiv.style.fontSize = "15px";
+      }
+
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        segundosPassados++;
+
+        if (tempoMinimoMinutos > 0 && !avisoTempoMinimoExibido) {
+          if (segundosPassados >= tempoMinimoMinutos * 60) {
+            avisoTempoMinimoExibido = true;
+            alert("✅ O tempo mínimo obrigatório foi concluído! Agora você já pode finalizar a prova quando desejar.");
+          }
+        }
+
+        if (tempoLimiteMin > 0) {
+          if (tempoRestanteSegundos <= 0) {
+            clearInterval(timerInterval);
+            alert("⏱️ O tempo limite da prova esgotou! A prova será finalizada automaticamente agora.");
+            finalizarProva();
+            return;
+          }
+          tempoRestanteSegundos--;
+        }
+
+        let m = Math.floor(segundosPassados / 60);
+        let s = segundosPassados % 60;
+        let textoRelogio = `⏱️ Tempo Gasto: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+        if (tempoLimiteMin > 0) {
+          let lm = Math.floor(tempoRestanteSegundos / 60);
+          let ls = tempoRestanteSegundos % 60;
+          textoRelogio += ` | Restante: ${lm.toString().padStart(2, '0')}:${ls.toString().padStart(2, '0')}`;
+        }
+
+        if (cronometroDiv) {
+          cronometroDiv.textContent = textoRelogio;
+        }
+      }, 1000);
+    }
+
+    // Sincroniza o tempo gasto e a questão atual no Firebase a cada 5 segundos para atualizar o painel do professor
+    function iniciarSincronizacaoTempoReal() {
+      if (syncOnlineInterval) clearInterval(syncOnlineInterval);
+      syncOnlineInterval = setInterval(async () => {
+        if (!alunoAtual.id) return;
+        try {
+          await setDoc(doc(db, "alunos_online", alunoAtual.id), {
+            nome: alunoAtual.nome,
+            turma: alunoAtual.turma,
+            escola: alunoAtual.escola,
+            materia: alunoAtual.materia,
+            periodo: alunoAtual.periodo,
+            questaoAtual: indiceAtual + 1,
+            totalQuestoes: listaQuestoes.length,
+            segundosPassados: segundosPassados,
+            atualizadoEm: serverTimestamp()
+          }, { merge: true });
+        } catch(e) {}
+      }, 5000);
+    }
+
+    function iniciarMonitoramentoFechamentoRemoto() {
+      if (watcherPermissaoInterval) clearInterval(watcherPermissaoInterval);
+      watcherPermissaoInterval = setInterval(async () => {
+        if (!alunoAtual.id) return;
+        try {
+          const pDoc = await getDoc(doc(db, "permissoes_alunos", alunoAtual.id));
+          if (pDoc.exists() && pDoc.data().podeFazer === false) {
+            clearInterval(watcherPermissaoInterval);
+            if (timerInterval) clearInterval(timerInterval);
+            if (syncOnlineInterval) clearInterval(syncOnlineInterval);
+            alert("🔒 Sua prova foi encerrada pelo professor.");
+            location.reload();
+          }
+        } catch(e) {}
+      }, 3000);
+    }
+
+    function exibirQuestao() {
+      const q = listaQuestoes[indiceAtual];
+      document.getElementById("pergunta-txt").textContent = `${indiceAtual + 1}. ${q.pergunta}`;
+      document.getElementById("progresso-txt").textContent = `Questão ${indiceAtual + 1} de ${listaQuestoes.length}`;
+
+      const container = document.getElementById("opcoes-container");
+      container.innerHTML = "";
+
+      ["A", "B", "C", "D"].forEach((letra, idx) => {
+        const textoOpcao = q.opcoes[idx] || `Opção ${letra}`;
+        const btn = document.createElement("button");
+        btn.className = `opcao-btn ${respostasUsuario[indiceAtual] === letra ? 'selecionada' : ''}`;
+        btn.textContent = `${letra}) ${textoOpcao}`;
+        btn.onclick = () => {
+          respostasUsuario[indiceAtual] = letra;
+          exibirQuestao();
+        };
+        container.appendChild(btn);
+      });
+
+      document.getElementById("ant").style.display = indiceAtual === 0 ? "none" : "block";
+      document.getElementById("prox").style.display = indiceAtual === listaQuestoes.length - 1 ? "none" : "block";
+      document.getElementById("fin").style.display = indiceAtual === listaQuestoes.length - 1 ? "block" : "none";
+    }
+
+    document.getElementById("ant")?.addEventListener("click", () => { if (indiceAtual > 0) { indiceAtual--; exibirQuestao(); } });
+    document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
+    document.getElementById("fin")?.addEventListener("click", tentarFinalizarProva);
+
+    function tentarFinalizarProva() {
+      let tempoMinimoMinutos = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+      if (tempoMinimoMinutos > 0) {
+        let minutosPassados = segundosPassados / 60;
+        if (minutosPassados < tempoMinimoMinutos) {
+          let faltamSeg = Math.ceil((tempoMinimoMinutos * 60) - segundosPassados);
+          let fm = Math.floor(faltamSeg / 60);
+          let fs = faltamSeg % 60;
+          alert(`⚠️ O professor determinou um tempo mínimo de ${tempoMinimoMinutos} minuto(s) para entrega.\nFaltam ${fm}m ${fs}s para liberar a finalização.`);
+          return;
+        }
+      }
+      finalizarProva();
+    }
+
+    async function finalizarProva() {
+      if (timerInterval) clearInterval(timerInterval);
+      if (watcherPermissaoInterval) clearInterval(watcherPermissaoInterval);
+      if (syncOnlineInterval) clearInterval(syncOnlineInterval);
+      document.getElementById("tela-quiz").classList.add("hidden");
+      document.getElementById("tela-resultado").classList.remove("hidden");
+
+      let acertos = 0;
+      let htmlRev = "";
+      listaQuestoes.forEach((q, idx) => {
+        const resp = respostasUsuario[idx] || "-";
+        const correta = (resp === q.correta);
+        if (correta) acertos++;
+        htmlRev += `<div class="item-revisao ${correta ? 'correta' : 'incorreta'}"><p><strong>${idx+1}. ${q.pergunta}</strong></p><p>Sua resposta: ${resp} ${correta ? '✅' : '❌'}</p></div>`;
+      });
+
+      let erros = listaQuestoes.length - acertos;
+      let nota = listaQuestoes.length > 0 ? ((acertos / listaQuestoes.length) * 10).toFixed(1) : "0.0";
+      let min = Math.floor(segundosPassados / 60);
+      let seg = segundosPassados % 60;
+      let tempoGastoFormatado = `${min}m ${seg}s`;
+
+      document.getElementById("nota-final-txt").textContent = `Nota Proporcional: ${nota} / 10.0`;
+      document.getElementById("detalhes-acertos-txt").textContent = `Acertos: ${acertos} | Erros: ${erros} | Tempo: ${tempoGastoFormatado}`;
+      document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
+
+      try {
+        const agora = Date.now();
+        await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
+          idAluno: alunoAtual.id,
+          nome: alunoAtual.nome,
+          turma: alunoAtual.turma,
+          escola: alunoAtual.escola,
+          periodo: alunoAtual.periodo,
+          materia: alunoAtual.materia,
+          pontuacao: acertos,
+          totalQuestoes: listaQuestoes.length,
+          tempoGastoSegundos: segundosPassados,
+          tempoGastoFormatado: tempoGastoFormatado,
+          dataEnvio: serverTimestamp(),
+          timestamp: agora
+        });
+
+        await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), { podeFazer: false }, { merge: true });
+        await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
+
+        document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
+      } catch (err) {
+        document.getElementById("status-envio-txt").textContent = "⚠️ Erro ao salvar resultado online.";
+      }
+    }
+
+    document.getElementById("btn-reiniciar")?.addEventListener("click", () => location.reload());
+  </script>
 </body>
 </html>
