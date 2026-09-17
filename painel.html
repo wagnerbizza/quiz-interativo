@@ -102,7 +102,23 @@
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
     th { background-color: #0f172a; color: #60a5fa; position: sticky; top: 180px; z-index: 870; }
 
-    #toast-notification { position: fixed; top: 20px; right: 20px; background-color: #1e293b; color: #fff; padding: 14px 20px; border-radius: 8px; border-left: 6px solid #2563eb; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 9999; display: none; font-weight: bold; font-size: 13px; }
+    /* AVISO / TOAST AMPLIADO E MAIS VISÍVEL */
+    #toast-notification { 
+      position: fixed; 
+      top: 25px; 
+      right: 25px; 
+      background-color: #1e293b; 
+      color: #fff; 
+      padding: 18px 28px; 
+      border-radius: 10px; 
+      border-left: 8px solid #22c55e; 
+      box-shadow: 0 15px 35px rgba(0,0,0,0.7); 
+      z-index: 99999; 
+      display: none; 
+      font-weight: bold; 
+      font-size: 16px; 
+      letter-spacing: 0.3px;
+    }
 
     @media print {
       body { background-color: #fff !important; color: #000 !important; }
@@ -401,7 +417,7 @@
 
   </div>
 
-  <!-- Firebase e Scripts de Suporte (Monitoramento de Prova Ativa e Auto-Encerramento) -->
+  <!-- Firebase e Scripts de Suporte -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -419,7 +435,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Monitoramento da Prova Ativa com Auto-Encerramento Inteligente
     const divStatusAtiva = document.getElementById("painel-status-prova-ativa");
     const divDetalhesAtiva = document.getElementById("detalhes-prova-ativa-painel");
 
@@ -429,11 +444,10 @@
         let mats = (dados.materiasAtivas || []).join(", ");
         let turmas = (dados.turmasAtivas || []).join(", ");
         
-        // Verificação de Auto-Encerramento por tempo limite (se configurado)
         if (dados.tempoLimiteMinutos && dados.tempoLimiteMinutos > 0 && dados.atualizadoEm) {
           let tempoCriacao = dados.atualizadoEm.toDate ? dados.atualizadoEm.toDate().getTime() : Date.now();
           let limiteMs = dados.tempoLimiteMinutos * 60 * 1000;
-          if (Date.now() > (tempoCriacao + limiteMs + 300000)) { // Margem de 5 min
+          if (Date.now() > (tempoCriacao + limiteMs + 300000)) {
             try {
               await deleteDoc(doc(db, "configuracoes", "prova_ativa"));
               return;
