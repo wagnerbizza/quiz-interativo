@@ -266,8 +266,8 @@
 
       let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
       let turmas = dadosProvaAtiva.turmasAtivas || [];
-     let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
-     let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
+      let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+      let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
 
       let avisoAgendamentoHtml = "";
       let bloqueioTipo = null; 
@@ -286,8 +286,8 @@
               <div class="conteudo-texto"><strong style="color: #f87171;">Aviso: Esta prova está agendada para iniciar em ${dataFormatada}. O acesso está bloqueado até o horário correto.</strong></div>
             </div>`;
         } else {
-          if (tempoMin > 0) {
-            let tempoExpiracao = agendamentoTime + (tempoMin * 60 * 1000);
+          if (tempoLimite > 0) {
+            let tempoExpiracao = agendamentoTime + (tempoLimite * 60 * 1000);
             if (agora > tempoExpiracao) {
               bloqueioTipo = 'expirado';
               avisoAgendamentoHtml = `
@@ -354,12 +354,14 @@
         }
       }
 
-      if (selectTurma && selectTurma.options.length <= 1) {
+      if (selectTurma) {
         if (turmas.length > 0) {
           selectTurma.innerHTML = `<option value="" disabled selected>Selecione sua turma...</option>`;
           turmas.forEach(t => {
             selectTurma.innerHTML += `<option value="${t}">${t}</option>`;
           });
+        } else {
+          selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma disponível</option>`;
         }
       }
     }
@@ -367,6 +369,7 @@
     onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
       if (docSnap.exists()) {
         dadosProvaAtiva = docSnap.data();
+        qtdQ = parseInt(dadosProvaAtiva.quantidadeQuestoes) || 10;
         atualizarInterfaceStatusProva();
 
         if (verificadorHorarioInterval) clearInterval(verificadorHorarioInterval);
@@ -450,78 +453,93 @@
       await iniciarCarregamentoProva();
     });
 
-    let banco = [];
-    try {
-      const snap = await getDocs(collection(db, "questoes"));
-      snap.forEach(s => {
-        let d = s.data();
-        let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
-        let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
-        let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
-        let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
-        
-        banco.push({
-          pergunta: perguntaLimpa,
-          opcoes: opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim()),
-          correta: letraCorreta,
-          categoria: d.categoria || d.materia || "Geral"
-        });
-      });
-    } catch(e) { console.error(e); }
-
-    let materiasAtivas = dadosProvaAtiva.materiasAtivas || [];
-    let filtradas = [];
-    
-    // Sincroniza e puxa as questões de TODAS as matérias ativas selecionadas pelo professor
-    if (materiasAtivas.length > 0) {
-      materiasAtivas.forEach(mat => {
-        let qMat = banco.filter(q => 
-          q.categoria.toLowerCase().includes(mat.toLowerCase()) || 
-          mat.toLowerCase().includes(q.categoria.toLowerCase())
-        );
-        filtradas.push(...qMat);
-      });
-    }
-
-    // Se nenhuma matéria específica for encontrada ou se a lista estiver vazia, utiliza todo o banco
-    if (filtradas.length === 0) {
-      filtradas = [...banco];
-    }
-
-    // Deduplicação rigorosa baseada no texto da pergunta para evitar repetições
-    let mapaUnicas = new Map();
-    filtradas.forEach(q => {
-      let chave = q.pergunta.toLowerCase().trim();
-      if (!mapaUnicas.has(chave)) {
-        mapaUnicas.set(chave, q);
+    async function iniciarCarregamentoProva() {
+      let tempoAgendado = dadosProvaAtiva.agendamento || 0;
+      if (tempoAgendado > 0 && tempoAgendado <= Date.now()) {
+        segundosPassados = Math.floor((Date.now() - tempoAgendado) / 1000);
+      } else {
+        segundosPassados = 0;
       }
-    });
-    let unicasArray = Array.from(mapaUnicas.values());
 
-    // Embaralhamento completo e robusto (Fisher-Yates) para garantir aleatoriedade real entre as matérias
-    for (let i = unicasArray.length - 1; i > 0; i--) {
-      let j = Math.floor(Math.random() * (i + 1));
-      [unicasArray[i], unicasArray[j]] = [unicasArray[j], unicasArray[i]];
-    }
+      try {
+        await setDoc(doc(db, "alunos_online", alunoAtual.id), {
+          nome: alunoAtual.nome,
+          turma: alunoAtual.turma,
+          escola: alunoAtual.escola,
+          materia: alunoAtual.materia,
+          periodo: alunoAtual.periodo,
+          questaoAtual: 1,
+          totalQuestoes: qtdQ,
+          segundosPassados: segundosPassados,
+          pontuacao: 0,
+          dataInicio: serverTimestamp(),
+          atualizadoEm: serverTimestamp()
+        });
+      } catch(e) { console.error(e); }
 
-    // Limita à quantidade exata de questões configurada no painel (qtdQ)
-    listaQuestoes = unicasArray.slice(0, qtdQ);
+      let banco = [];
+      try {
+        const snap = await getDocs(collection(db, "questoes"));
+        snap.forEach(s => {
+          let d = s.data();
+          let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
+          let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
+          let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
+          let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
+          
+          banco.push({
+            pergunta: perguntaLimpa,
+            opcoes: opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim()),
+            correta: letraCorreta,
+            categoria: d.categoria || d.materia || "Geral"
+          });
+        });
+      } catch(e) { console.error(e); }
 
-    // Caso o banco tenha menos questões do que o solicitado, preenche com dinâmicas de apoio
-    if (listaQuestoes.length < qtdQ) {
-      let faltam = qtdQ - listaQuestoes.length;
-      for (let i = 1; i <= faltam; i++) {
-        listaQuestoes.push({
-          pergunta: `Questão complementar de reforço ${i}: Qual conceito se aplica a esta avaliação?`,
-          opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
-          correta: "A",
-          categoria: "Geral"
+      let materiasAtivas = dadosProvaAtiva.materiasAtivas || [];
+      let filtradas = [];
+      
+      if (materiasAtivas.length > 0) {
+        materiasAtivas.forEach(mat => {
+          let qMat = banco.filter(q => 
+            q.categoria.toLowerCase().includes(mat.toLowerCase()) || 
+            mat.toLowerCase().includes(q.categoria.toLowerCase())
+          );
+          filtradas.push(...qMat);
         });
       }
-    }
 
-      filtradas.sort(() => Math.random() - 0.5);
-      listaQuestoes = filtradas.slice(0, qtdQ);
+      if (filtradas.length === 0) {
+        filtradas = [...banco];
+      }
+
+      let mapaUnicas = new Map();
+      filtradas.forEach(q => {
+        let chave = q.pergunta.toLowerCase().trim();
+        if (!mapaUnicas.has(chave)) {
+          mapaUnicas.set(chave, q);
+        }
+      });
+      let unicasArray = Array.from(mapaUnicas.values());
+
+      for (let i = unicasArray.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [unicasArray[i], unicasArray[j]] = [unicasArray[j], unicasArray[i]];
+      }
+
+      listaQuestoes = unicasArray.slice(0, qtdQ);
+
+      if (listaQuestoes.length < qtdQ) {
+        let faltam = qtdQ - listaQuestoes.length;
+        for (let i = 1; i <= faltam; i++) {
+          listaQuestoes.push({
+            pergunta: `Questão complementar de reforço ${i}: Qual conceito se aplica a esta avaliação?`,
+            opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
+            correta: "A",
+            categoria: "Geral"
+          });
+        }
+      }
 
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
       document.getElementById("tela-login").classList.add("hidden");
@@ -599,7 +617,6 @@
       }, 1000);
     }
 
-    // Sincroniza o tempo gasto e a questão atual no Firebase a cada 5 segundos para atualizar o painel do professor
     function iniciarSincronizacaoTempoReal() {
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
       syncOnlineInterval = setInterval(async () => {

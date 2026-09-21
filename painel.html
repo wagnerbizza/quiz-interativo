@@ -206,20 +206,10 @@
     <!-- ABA 2: ATIVAÇÃO DE PROVAS -->
     <div id="aba-ativacao" class="aba-conteudo hidden">
       
-      <!-- Caixa de Status, Botão de Edição e Botão de Encerrar Prova Ativa -->
-      <div id="painel-status-prova-ativa" style="background: #0f172a; border: 1px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <span style="background: #db2777; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;">🚀 Prova Ativa no Momento</span>
-            <div id="detalhes-prova-ativa-painel" style="font-size: 13px; color: #cbd5e1; margin-top: 8px; line-height: 1.5;">
-              Verificando status...
-            </div>
-          </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button type="button" id="btn-editar-prova-ativa" class="btn-acao btn-warning" onclick="carregarDadosParaEdicao()">✏️ Editar Prova</button>
-            <button type="button" id="btn-encerrar-prova-ativa" class="btn-acao btn-danger" onclick="encerrarProvaAtivaAgora()">🛑 Encerrar Prova Ativa</button>
-          </div>
-        </div>
+      <!-- Caixa Única Unificada de Status/Ativação -->
+      <div id="bloco-prova-ativa-topo" style="background: #0f172a; border: 2px solid #3b82f6; padding: 16px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+        <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 13px; text-transform: uppercase;">🚀 Central de Ativação de Provas</div>
+        <div id="detalhes-prova-ativa-painel"></div>
       </div>
 
       <label style="color: #60a5fa; font-size: 15px;">🏫 1. Escolher Escola:</label>
@@ -418,10 +408,10 @@
 
   </div>
 
-  <!-- Firebase e Scripts de Suporte com Lógica de Edição e Sincronização -->
+  <!-- Script Unificado com Limpeza Rigorosa de Dados no Firestore -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
@@ -436,53 +426,93 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const divStatusAtiva = document.getElementById("painel-status-prova-ativa");
     const divDetalhesAtiva = document.getElementById("detalhes-prova-ativa-painel");
     let dadosProvaAtivaAtual = null;
 
-    onSnapshot(doc(db, "configuracoes", "prova_ativa"), async (docSnap) => {
-      if (docSnap.exists()) {
-        dadosProvaAtivaAtual = docSnap.data();
+    onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
+      const data = docSnap.data();
+      // Validação ultra rigorosa: se não tiver escola ativa válida, limpa tudo imediatamente na tela
+      if (docSnap.exists() && data && data.escolaAtiva && data.escolaAtiva.trim() !== "" && data.escolaAtiva !== "N/D" && data.escolaAtiva !== "undefined") {
+        dadosProvaAtivaAtual = data;
         let mats = (dadosProvaAtivaAtual.materiasAtivas || []).join(", ");
         let turmas = (dadosProvaAtivaAtual.turmasAtivas || []).join(", ");
         
         divDetalhesAtiva.innerHTML = `
-          🏫 <strong>Escola:</strong> ${dadosProvaAtivaAtual.escolaAtiva || 'N/D'}<br>
-          📚 <strong>Matérias:</strong> ${mats || 'Geral'}<br>
-          👥 <strong>Turmas:</strong> ${turmas || 'N/D'}<br>
-          🏛️ <strong>Período:</strong> ${dadosProvaAtivaAtual.periodoAtivo || 'Geral'}<br>
-          ⏱️ <strong>Tempo Mínimo:</strong> ${dadosProvaAtivaAtual.tempoMinimoMinutos ? dadosProvaAtivaAtual.tempoMinimoMinutos + ' min' : 'Nenhum'}<br>
-          ⏳ <strong>Tempo Limite:</strong> ${dadosProvaAtivaAtual.tempoLimiteMinutos ? dadosProvaAtivaAtual.tempoLimiteMinutos + ' min' : 'Sem limite'}
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <span style="color: #4ade80; font-weight: bold; font-size: 12px; text-transform: uppercase;">🟢 PROVA ATIVA NO MOMENTO:</span>
+              <div style="color: #ffffff; font-weight: bold; font-size: 18px; margin-top: 2px;">${dadosProvaAtivaAtual.escolaAtiva}</div>
+            </div>
+            <div style="color: #cbd5e1; font-size: 13px; background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; border: 1px solid #334155;">
+              📅 <strong>Período:</strong> ${dadosProvaAtivaAtual.periodoAtivo || 'Geral'} | ⏱️ <strong>Mín:</strong> ${dadosProvaAtivaAtual.tempoMinimoMinutos ? dadosProvaAtivaAtual.tempoMinimoMinutos + ' min' : 'Nenhum'} | ⏳ <strong>Limite:</strong> ${dadosProvaAtivaAtual.tempoLimiteMinutos ? dadosProvaAtivaAtual.tempoLimiteMinutos + ' min' : 'Sem limite'}
+            </div>
+          </div>
+          <div style="font-size: 13px; color: #e2e8f0; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+            <div>📚 <strong>Matérias:</strong> ${mats || 'Geral'}</div>
+            <div>👥 <strong>Turmas:</strong> ${turmas || 'N/D'}</div>
+          </div>
+          <hr style="border: none; border-top: 1px solid #334155; margin: 8px 0;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+            <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">👁️ Testar Prova do Aluno</a>
+            <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">📊 Monitoramento</button>
+            <button type="button" onclick="reembaralharQuestoesAtivas()" style="background: #8b5cf6; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">🔀 Reembaralhar Questões</button>
+            <button type="button" onclick="carregarDadosParaEdicao()" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">✏️ Editar Prova</button>
+            <button type="button" onclick="encerrarProvaAtivaAgora()" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">🛑 Encerrar Prova</button>
+          </div>
         `;
-        divStatusAtiva.style.display = "block";
       } else {
         dadosProvaAtivaAtual = null;
-        divStatusAtiva.style.display = "none";
-        divDetalhesAtiva.innerHTML = "";
+        divDetalhesAtiva.innerHTML = `
+          <div style="color: #f8fafc; font-weight: bold; font-size: 14px; text-align: center; padding: 12px;">
+            ⚠️ Nenhuma prova ativa no momento. Aguardando ativação da prova...
+          </div>
+        `;
       }
     });
 
-    // Função para carregar os dados da prova ativa para edição no formulário
+    window.irParaMonitoramentoTab = function() {
+      if (!dadosProvaAtivaAtual) {
+        alert("⚠️ Nenhuma prova ativa no momento. Ative uma prova primeiro!");
+        return;
+      }
+      const btnMonitoramento = document.querySelector('.btn-aba[data-aba="aba-monitoramento"]');
+      if (btnMonitoramento) btnMonitoramento.click();
+    };
+
+    window.reembaralharQuestoesAtivas = async function() {
+      if (!dadosProvaAtivaAtual) {
+        alert("⚠️ Nenhuma prova ativa no momento. Ative uma prova primeiro!");
+        return;
+      }
+      if (confirm("🔀 Deseja reembaralhar imediatamente todas as questões da prova ativa?")) {
+        try {
+          await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
+            seedReordenacao: Date.now().toString() 
+          }, { merge: true });
+          alert("✅ Questões reembaralhadas com sucesso para novas tentativas!");
+        } catch(err) {
+          alert("Erro ao reembaralhar: " + err.message);
+        }
+      }
+    };
+
     window.carregarDadosParaEdicao = function() {
       if (!dadosProvaAtivaAtual) {
-        alert("⚠️ Nenhuma prova ativa encontrada para editar.");
+        alert("⚠️ Nenhuma prova ativa no momento. Ative uma prova primeiro!");
         return;
       }
 
-      // Muda para a aba de ativação
       document.querySelectorAll('.aba-conteudo').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.btn-aba').forEach(el => el.classList.remove('active'));
       document.getElementById('aba-ativacao').classList.remove('hidden');
       document.querySelector('[data-aba="aba-ativacao"]').classList.add('active');
 
-      // Preenche a escola
       const selectEscola = document.getElementById("select-escola-ativacao");
       if (selectEscola) {
         selectEscola.value = dadosProvaAtivaAtual.escolaAtiva;
         selectEscola.dispatchEvent(new Event('change'));
       }
 
-      // Preenche os inputs após breve delay para garantir renderização dos campos da escola
       setTimeout(() => {
         if(document.getElementById("qtd-questoes-ativacao")) document.getElementById("qtd-questoes-ativacao").value = dadosProvaAtivaAtual.quantidadeQuestoes || 10;
         if(document.getElementById("tempo-minimo-ativacao")) document.getElementById("tempo-minimo-ativacao").value = dadosProvaAtivaAtual.tempoMinimoMinutos || 0;
@@ -490,16 +520,30 @@
         if(document.getElementById("input-token-ativacao")) document.getElementById("input-token-ativacao").value = dadosProvaAtivaAtual.token || "";
       }, 400);
 
-      alert("✏️ Dados carregados no formulário de ativação! Faça as alterações desejadas (como o tempo mínimo) e clique em Publicar para salvar.");
+      alert("✏️ Dados carregados no formulário de ativação! Faça as alterações desejadas e clique em Publicar para salvar.");
     };
 
     window.encerrarProvaAtivaAgora = async function() {
-      if (confirm("⚠️ Tem certeza que deseja encerrar a prova ativa agora? Isso impedirá novos acessos dos alunos.")) {
+      if (!dadosProvaAtivaAtual) {
+        alert("⚠️ Nenhuma prova ativa no momento para encerrar.");
+        return;
+      }
+      if (confirm("⚠️ Tem certeza que deseja encerrar a prova ativa agora? Isso limpará todos os dados e impedirá novos acessos.")) {
         try {
-          await deleteDoc(doc(db, "configuracoes", "prova_ativa"));
-          alert("✅ Prova ativa encerrada com sucesso!");
+          // Zera rigorosamente todos os campos no Firestore para apagar a última prova da memória
+          await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
+            escolaAtiva: "",
+            materiasAtivas: [],
+            turmasAtivas: [],
+            periodoAtivo: "",
+            token: "",
+            quantidadeQuestoes: 0,
+            tempoMinimoMinutos: 0,
+            tempoLimiteMinutos: 0
+          });
+          alert("✅ Prova encerrada e dados limpos com sucesso!");
         } catch (err) {
-          alert("❌ Erro ao encerrar a prova.");
+          alert("❌ Erro ao encerrar a prova: " + err.message);
         }
       }
     };

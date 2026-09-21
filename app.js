@@ -215,7 +215,6 @@ function normalizarTexto(txt) {
   return txt.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
 }
 
-// Normalização segura e confiável que preserva exatamente as alternativas e o gabarito original
 function normalizarDocumentoQuestao(d, idDoc = null) {
   let pergunta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
   let opcoes = d.opcoes || d.alternativas || d.respostas || ["Opção A", "Opção B", "Opção C", "Opção D"];
@@ -284,7 +283,7 @@ async function garantirBancoMinimoQuestoes() {
     await carregarEstruturaGlobalFirebase();
     const bancoQuestoesTecnicasExtendido = {
       "Inteligencia Artificial": [
-        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com as respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
+        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com las respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
         { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" }
       ],
       "Programação Front-End": [
@@ -370,41 +369,67 @@ if (window.location.pathname.includes("painel.html")) {
 
       if (docSnap.exists()) {
         const dados = docSnap.data();
-        if (painelResumo) {
-          painelResumo.classList.remove("hidden");
-          painelResumo.innerHTML = `
-            <div style="background: rgba(37, 99, 235, 0.15); border: 1px solid #3b82f6; padding: 14px; border-radius: 10px; color: #f8fafc;">
-              <strong style="color: #4ade80;">🚀 Escola Ativa:</strong> ${dados.escolaAtiva || 'N/D'}<br>
-              <strong style="color: #60a5fa;">📚 Matérias:</strong> ${(dados.materiasAtivas || []).join(', ')}<br>
-              <strong style="color: #facc15;">🏫 Turmas:</strong> ${(dados.turmasAtivas || []).join(' | ')}
+        const escolaNome = dados.escolaAtiva || '';
+        
+        // Verificação estrita para garantir que não exiba dados residuais se a prova estiver desativada (vazia ou N/D)
+        if (!escolaNome || escolaNome.trim() === "" || escolaNome === "N/D" || escolaNome === "undefined") {
+          if (painelResumo) painelResumo.classList.add("hidden");
+          blocoTopoAtiva.innerHTML = `
+            <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Central de Ativação de Provas</div>
+            <div style="background: rgba(239, 68, 68, 0.15); border: 2px solid #ef4444; padding: 14px 18px; border-radius: 10px; color: #f8fafc; font-weight: bold; font-size: 14px;">
+              ⚠️ Nenhuma prova ativa no momento. Vá até os campos abaixo e publique uma avaliação.
             </div>
           `;
+          return;
         }
 
-        blocoTopoAtiva.innerHTML = `
-          <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">🚀 Central de Ativação de Provas</div>
-          <div style="background: rgba(37, 99, 235, 0.2); border: 2px solid #3b82f6; padding: 14px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s ease; gap: 12px; flex-wrap: wrap;">
-            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; cursor: pointer;" onclick="window.location.href='escola.html?escola=${encodeURIComponent(dados.escolaAtiva || '')}'" title="Clique para configurar a unidade">
-              <span style="color: #4ade80; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 PROVA ATIVA NO MOMENTO:</span>
-              <span style="color: #ffffff; font-weight: bold; font-size: 16px;">${dados.escolaAtiva || 'N/D'}</span>
-              <span style="color: #cbd5e1; font-size: 12px;">📚 Matérias: ${(dados.materiasAtivas || []).join(', ')} | 🏫 Turmas: ${(dados.turmasAtivas || []).join(', ')}</span>
-            </div>
-            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-              <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 5px;">👁️ Testar Prova do Aluno</a>
-              <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 5px;">📊 Monitoramento</button>
-              <button type="button" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="carregarDadosParaEdicao()">✏️ Editar Prova</button>
-              <button type="button" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="encerrarProvaAtivaAgora()">🛑 Encerrar Prova</button>
-            </div>
-          </div>
-        `;
-      } else {
+        const materiasStr = (dados.materiasAtivas || []).join(', ');
+        const turmasStr = (dados.turmasAtivas || []).join(', ');
+        const periodoStr = dados.periodoAtivo || 'Geral';
+        const tempoMin = dados.tempoMinimoMinutos ? `${dados.tempoMinimoMinutos} minuto(s)` : 'Nenhum';
+        const tempoLim = dados.tempoLimiteMinutos ? `${dados.tempoLimiteMinutos} minuto(s)` : 'Sem limite';
+
         if (painelResumo) {
           painelResumo.classList.add("hidden");
         }
+
         blocoTopoAtiva.innerHTML = `
           <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Central de Ativação de Provas</div>
-          <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; padding: 14px 18px; border-radius: 10px; color: #f8fafc; font-weight: bold; font-size: 14px;">
-            ⚠️ Nenhuma prova ativa no momento. Vá até a aba abaixo e publique uma avaliação.
+          <div style="background: rgba(37, 99, 235, 0.15); border: 2px solid #3b82f6; padding: 18px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 12px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <span style="color: #4ade80; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">🟢 PROVA ATIVA NO MOMENTO:</span>
+                <div style="color: #ffffff; font-weight: bold; font-size: 18px; margin-top: 2px;">${escolaNome}</div>
+              </div>
+              <div style="color: #cbd5e1; font-size: 13px; background: rgba(15, 23, 42, 0.4); padding: 6px 10px; border-radius: 6px; border: 1px solid #334155;">
+                📅 <strong>Período:</strong> ${periodoStr} | ⏱️ <strong>Mín:</strong> ${tempoMin} | ⏳ <strong>Limite:</strong> ${tempoLim}
+              </div>
+            </div>
+
+            <div style="font-size: 13px; color: #e2e8f0; display: flex; flex-direction: column; gap: 4px;">
+              <div>📚 <strong>Matérias:</strong> ${materiasStr || 'Nenhuma'}</div>
+              <div>🏫 <strong>Turmas:</strong> ${turmasStr || 'Nenhuma'}</div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #334155; margin: 4px 0;">
+
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+              <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">👁️ Testar Prova do Aluno</a>
+              <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">📊 Monitoramento</button>
+              <button type="button" id="btn-embaralhar-manual-ativas" style="background: #8b5cf6; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🔀 Reembaralhar Questões</button>
+              <button type="button" onclick="carregarDadosParaEdicao()" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✏️ Editar Prova</button>
+              <button type="button" onclick="encerrarProvaAtivaAgora()" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🛑 Encerrar Prova</button>
+            </div>
+
+          </div>
+        `;
+      } else {
+        if (painelResumo) painelResumo.classList.add("hidden");
+        blocoTopoAtiva.innerHTML = `
+          <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Central de Ativação de Provas</div>
+          <div style="background: rgba(239, 68, 68, 0.15); border: 2px solid #ef4444; padding: 14px 18px; border-radius: 10px; color: #f8fafc; font-weight: bold; font-size: 14px;">
+            ⚠️ Nenhuma prova ativa no momento. Vá até os campos abaixo e publique uma avaliação.
           </div>
         `;
       }
@@ -755,6 +780,10 @@ if (window.location.pathname.includes("painel.html")) {
     items.forEach(it => grid.appendChild(it));
   };
 
+  // =========================================================================
+  // GESTÃO, EDIÇÃO E EMBARALHAMENTO DA PROVA ATIVA (CORRIGIDO E UNIFICADO)
+  // =========================================================================
+
   window.carregarDadosParaEdicao = async function() {
     try {
       const docSnap = await getDoc(doc(db, "configuracoes", "prova_ativa"));
@@ -774,37 +803,48 @@ if (window.location.pathname.includes("painel.html")) {
       }
 
       setTimeout(() => {
-        if (document.getElementById("qtd-questoes-ativacao")) document.getElementById("qtd-questoes-ativacao").value = dados.quantidadeQuestoes || 10;
-        if (document.getElementById("tempo-minimo-ativacao")) document.getElementById("tempo-minimo-ativacao").value = dados.tempoMinimoMinutos || 0;
-        if (document.getElementById("tempo-prova-ativacao")) document.getElementById("tempo-prova-ativacao").value = dados.tempoLimiteMinutos || 0;
-        if (document.getElementById("input-token-ativacao")) document.getElementById("input-token-ativacao").value = dados.token || "";
+        if (document.getElementById("qtd-questoes-ativacao")) {
+          document.getElementById("qtd-questoes-ativacao").value = dados.quantidadeQuestoes || 10;
+        }
+        if (document.getElementById("tempo-minimo-ativacao")) {
+          document.getElementById("tempo-minimo-ativacao").value = dados.tempoMinimoMinutos || 0;
+        }
+        if (document.getElementById("tempo-prova-ativacao")) {
+          document.getElementById("tempo-prova-ativacao").value = dados.tempoLimiteMinutos || 0;
+        }
+        if (document.getElementById("input-token-ativacao")) {
+          document.getElementById("input-token-ativacao").value = dados.token || "";
+        }
+        if (document.getElementById("select-periodo-ativacao")) {
+          document.getElementById("select-periodo-ativacao").value = dados.periodoAtivo || "Geral";
+        }
+        if (document.getElementById("input-agendamento-ativacao") && dados.agendamento) {
+          let dataObj = new Date(dados.agendamento);
+          let ano = dataObj.getFullYear();
+          let mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+          let dia = String(dataObj.getDate()).padStart(2, '0');
+          let hora = String(dataObj.getHours()).padStart(2, '0');
+          let min = String(dataObj.getMinutes()).padStart(2, '0');
+          document.getElementById("input-agendamento-ativacao").value = `${ano}-${mes}-${dia}T${hora}:${min}`;
+        }
 
         if (dados.materiasAtivas) {
           document.querySelectorAll(".chk-materia-ativacao").forEach(chk => {
-            if (dados.materiasAtivas.includes(chk.value)) chk.checked = true;
+            chk.checked = dados.materiasAtivas.includes(chk.value);
           });
         }
+
         if (dados.turmasAtivas) {
           document.querySelectorAll(".chk-turma-ativacao").forEach(chk => {
-            if (dados.turmasAtivas.includes(chk.value)) chk.checked = true;
+            chk.checked = dados.turmasAtivas.includes(chk.value);
           });
         }
-      }, 500);
+      }, 600);
 
-      mostrarNotificacao("✏️ Dados carregados para edição! Altere o que precisar e clique em Publicar.");
+      alert("✏️ Dados da prova carregados para edição com sucesso! Altere o que precisar e clique em Publicar.");
     } catch(err) {
       console.error(err);
-    }
-  };
-
-  window.encerrarProvaAtivaAgora = async function() {
-    if (confirm("⚠️ Deseja realmente encerrar a prova ativa agora?")) {
-      try {
-        await deleteDoc(doc(db, "configuracoes", "prova_ativa"));
-        mostrarNotificacao("🛑 Prova ativa encerrada!");
-      } catch(err) {
-        alert("Erro ao encerrar prova.");
-      }
+      alert("⚠️ Erro ao carregar dados para edição.");
     }
   };
 
@@ -814,7 +854,6 @@ if (window.location.pathname.includes("painel.html")) {
     const periodoEscolhido = selectPeriodoAtivacao?.value || "Geral";
     const qtdQ = parseInt(document.getElementById("qtd-questoes-ativacao").value) || 10;
     
-    // Mapeamento exato e correto dos campos de tempo configurados no painel do professor
     const tempoMinimoConclusao = parseInt(document.getElementById("tempo-minimo-ativacao").value) || 0;
     const tempoLimiteMin = parseInt(document.getElementById("tempo-prova-ativacao").value) || 0;
     
@@ -823,7 +862,7 @@ if (window.location.pathname.includes("painel.html")) {
     const agendamentoData = document.getElementById("input-agendamento-ativacao")?.value || "";
 
     if (!escolaEscolhida || materiasSelecionadas.length === 0 || turmasSelecionadas.length === 0) {
-      mostrarNotificacao("⚠️ Selecione a escola, ao menos uma matéria e uma turma!");
+      alert("⚠️ Por favor, selecione a escola, ao menos uma matéria e uma turma!");
       return;
     }
 
@@ -832,7 +871,13 @@ if (window.location.pathname.includes("painel.html")) {
       timestampAgendamento = new Date(agendamentoData).getTime();
     }
 
+    if (!confirm(`Deseja realmente publicar a avaliação para a escola "${escolaEscolhida}" com ${qtdQ} questões?`)) {
+      return;
+    }
+
     try {
+      const seedEmbaralhamento = Date.now().toString();
+
       const dadosPublicacao = {
         escolaAtiva: escolaEscolhida,
         materiasAtivas: materiasSelecionadas,
@@ -843,14 +888,67 @@ if (window.location.pathname.includes("painel.html")) {
         turmasAtivas: turmasSelecionadas,
         token: tokenProva,
         agendamento: timestampAgendamento,
+        seedReordenacao: seedEmbaralhamento,
         publicadoEm: serverTimestamp()
       };
 
       await setDoc(doc(db, "configuracoes", "prova_ativa"), dadosPublicacao);
-      animarBotaoSucesso(e.target);
-      mostrarNotificacao(`✅ Prova atualizada e sincronizada com sucesso!`);
-    } catch (err) { mostrarNotificacao("Erro ao publicar: " + err.message); }
+      
+      const btn = e.target;
+      const textoOriginal = btn.textContent;
+      btn.textContent = "✅ Publicado com Sucesso!";
+      btn.style.background = "#22c55e";
+      setTimeout(() => {
+        btn.textContent = textoOriginal;
+        btn.style.background = "";
+      }, 2500);
+
+      alert(`✅ Prova da escola "${escolaEscolhida}" publicada e sincronizada com sucesso!`);
+    } catch (err) { 
+      console.error(err);
+      alert("Erro ao publicar: " + err.message); 
+    }
   });
+
+  // Correção do botão de reembaralhar manual nas ativas
+  document.addEventListener("click", async (e) => {
+    if (e.target && e.target.id === "btn-embaralhar-manual-ativas") {
+      if (confirm("🔀 Deseja reembaralhar imediatamente todas as questões da prova ativa para eliminar qualquer repetição relatada pelos alunos?")) {
+        try {
+          await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
+            seedReordenacao: Date.now().toString() 
+          }, { merge: true });
+          alert("✅ Questões reembaralhadas com sucesso! Nova ordem aplicada para novas tentativas dos alunos.");
+        } catch(err) {
+          alert("Erro ao reembaralhar: " + err.message);
+        }
+      }
+    }
+  });
+
+  // Correção de encerramento para limpeza total dos dados residuais no Firestore
+  window.encerrarProvaAtivaAgora = async function() {
+    if (confirm("⚠️ Tem certeza que deseja encerrar a prova ativa no momento? Todos os alunos ativos serão bloqueados e os dados serão limpos.")) {
+      try {
+        await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
+          escolaAtiva: "",
+          materiasAtivas: [],
+          turmasAtivas: [],
+          periodoAtivo: "",
+          token: "",
+          quantidadeQuestoes: 0,
+          tempoMinimoMinutos: 0,
+          tempoLimiteMinutos: 0
+        });
+        mostrarNotificacao("🛑 Prova encerrada e dados limpos com sucesso!");
+      } catch(err) {
+        console.error(err);
+        alert("⚠️ Erro ao encerrar prova.");
+      }
+    }
+  };
+
+  // =========================================================================
 
   function popularSelectMateriasQuestao() {
     const sel = document.getElementById("cad-materia");
@@ -1834,7 +1932,6 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       qtdQ = dadosProvaAtiva.quantidadeQuestoes || 10;
       let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
       
-      // Leitura exata e correta dos parâmetros de tempo para exibição do aluno
       let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
       let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
 
@@ -1981,7 +2078,6 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       }
     }
 
-    // Filtro rigoroso baseado em Map para eliminar duplicatas por texto exato da pergunta
     let mapaUnicas = new Map();
     filtradas.forEach(q => {
       let chaveUnica = normalizarTexto(q.pergunta);
@@ -1991,7 +2087,6 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     });
     let unicasArray = Array.from(mapaUnicas.values());
 
-    // Embaralhamento aleatório (Fisher-Yates) das questões únicas sem repetir
     for (let i = unicasArray.length - 1; i > 0; i--) {
       let j = Math.floor(Math.random() * (i + 1));
       [unicasArray[i], unicasArray[j]] = [unicasArray[j], unicasArray[i]];
@@ -2002,7 +2097,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma} | ${alunoAtual.materia}`;
     document.getElementById("tela-login").classList.add("hidden");
     document.getElementById("tela-quiz").classList.remove("hidden");
-    
+     
     iniciarCronogerenciamento();
     iniciarMonitoramentoFechamentoRemoto();
     exibirQuestao();
@@ -2012,7 +2107,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     avisoTempoMinimoExibido = false;
     let tempoLimiteMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
     let tempoMinimoMinutos = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
-    
+     
     let tempoLimiteSegundosTotais = tempoLimiteMin > 0 ? tempoLimiteMin * 60 : 0;
     tempoRestanteSegundos = tempoLimiteSegundosTotais > 0 ? Math.max(0, tempoLimiteSegundosTotais - segundosPassados) : 0;
 
@@ -2090,7 +2185,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     try {
       const docRef = doc(db, "alunos_online", alunoAtual.id);
       const docSnap = await getDoc(docRef);
-      
+       
       let acertosParciais = 0;
       listaQuestoes.forEach((q, idx) => {
         if (respostasUsuario[idx] && respostasUsuario[idx] === q.correta) {
@@ -2123,7 +2218,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     const q = listaQuestoes[indiceAtual];
     document.getElementById("pergunta-txt").textContent = `${indiceAtual + 1}. ${q.pergunta}`;
     document.getElementById("progresso-txt").textContent = `Questão ${indiceAtual + 1} de ${listaQuestoes.length}`;
-    
+     
     atualizarStatusOnlineFirebase();
 
     const container = document.getElementById("opcoes-container");
@@ -2131,7 +2226,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     ["A", "B", "C", "D"].forEach((letra, idx) => {
       const btn = document.createElement("button");
       btn.className = "opcao-btn";
-      
+       
       btn.textContent = `${letra}) ${q.opcoes[idx] || ""}`;
       btn.style.width = "100%"; 
       btn.style.padding = "12px 16px"; 
@@ -2147,7 +2242,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       btn.style.cursor = "pointer";
       btn.style.fontWeight = "500";
       btn.style.fontSize = "14px";
-      
+       
       btn.onclick = () => { respostasUsuario[indiceAtual] = letra; exibirQuestao(); };
       container.appendChild(btn);
     });
@@ -2160,8 +2255,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       nav = document.createElement("div");
       nav.id = "nav-quiz"; nav.style.display = "flex"; nav.style.justifyContent = "space-between"; nav.style.marginTop = "20px";
       nav.innerHTML = `<button id="ant" style="padding:10px 15px; background:#4b5563; color:white; border:none; border-radius:8px;">⬅ Anterior</button>
-                        <button id="prox" style="padding:10px 15px; background:#2563eb; color:white; border:none; border-radius:8px;">Próxima ➡</button>
-                        <button id="fin" style="padding:10px 15px; background:#22c55e; color:white; border:none; border-radius:8px; display:none;">🏁 Finalizar</button>`;
+                          <button id="prox" style="padding:10px 15px; background:#2563eb; color:white; border:none; border-radius:8px;">Próxima ➡</button>
+                          <button id="fin" style="padding:10px 15px; background:#22c55e; color:white; border:none; border-radius:8px; display:none;">🏁 Finalizar</button>`;
       document.getElementById("tela-quiz").appendChild(nav);
     }
     document.getElementById("ant").onclick = () => { if(indiceAtual > 0) { indiceAtual--; exibirQuestao(); } };
@@ -2205,7 +2300,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     let erros = listaQuestoes.length - acertos;
     const nota = listaQuestoes.length > 0 ? ((acertos / listaQuestoes.length) * 10).toFixed(1) : "0.0";
-    
+     
     let minGasto = Math.floor(segundosPassados / 60);
     let segGasto = segundosPassados % 60;
     let tempoGastoFormatado = `${minGasto}m ${segGasto}s`;
@@ -2216,7 +2311,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     try {
       const agora = Date.now();
-      
+       
       await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
         idAluno: alunoAtual.id,
         nome: alunoAtual.nome || "Aluno",
@@ -2231,7 +2326,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         dataEnvio: serverTimestamp(),
         timestamp: agora
       });
-      
+       
       await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), { podeFazer: false }, { merge: true });
       await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
