@@ -266,8 +266,8 @@
 
       let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
       let turmas = dadosProvaAtiva.turmasAtivas || [];
-      let tempoMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
-      let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+     let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+     let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
 
       let avisoAgendamentoHtml = "";
       let bloqueioTipo = null; 
@@ -326,8 +326,8 @@
         <div class="linha-detalhe"><span class="icone">📚</span><div class="conteudo-texto"><strong>Matéria(s):</strong> ${matsStr || 'Geral'}</div></div>
         <div class="linha-detalhe"><span class="icone">🏛️</span><div class="conteudo-texto"><strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}</div></div>
         ${avisoAgendamentoHtml}
-        <div class="linha-detalhe"><span class="icone">⏱️</span><div class="conteudo-texto"><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMin + ' minutos' : 'Nenhum'}</div></div>
-        <div class="linha-detalhe"><span class="icone">⏳</span><div class="conteudo-texto"><strong>Tempo Limite:</strong> ${tempoMin > 0 ? tempoMin + ' minutos' : 'Sem limite'}</div></div>
+        <div class="linha-detalhe"><span class="icone">⏱️</span><div class="conteudo-texto"><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}</div></div>
+        <div class="linha-detalhe"><span class="icone">⏳</span><div class="conteudo-texto"><strong>Tempo Limite:</strong> ${tempoLimite > 0 ? tempoLimite + ' minutos' : 'Sem limite'}</div></div>
         <div class="linha-detalhe"><span class="icone">🔒</span><div class="conteudo-texto"><strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}</div></div>
       `;
 
@@ -450,73 +450,75 @@
       await iniciarCarregamentoProva();
     });
 
-    async function iniciarCarregamentoProva() {
-      let tempoAgendado = dadosProvaAtiva.agendamento || 0;
-      if (tempoAgendado > 0 && tempoAgendado <= Date.now()) {
-        segundosPassados = Math.floor((Date.now() - tempoAgendado) / 1000);
-      } else {
-        segundosPassados = 0;
-      }
-
-      try {
-        await setDoc(doc(db, "alunos_online", alunoAtual.id), {
-          nome: alunoAtual.nome,
-          turma: alunoAtual.turma,
-          escola: alunoAtual.escola,
-          materia: alunoAtual.materia,
-          periodo: alunoAtual.periodo,
-          questaoAtual: 1,
-          totalQuestoes: qtdQ,
-          segundosPassados: segundosPassados,
-          pontuacao: 0,
-          dataInicio: serverTimestamp(),
-          atualizadoEm: serverTimestamp()
+    let banco = [];
+    try {
+      const snap = await getDocs(collection(db, "questoes"));
+      snap.forEach(s => {
+        let d = s.data();
+        let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
+        let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
+        let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
+        let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
+        
+        banco.push({
+          pergunta: perguntaLimpa,
+          opcoes: opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim()),
+          correta: letraCorreta,
+          categoria: d.categoria || d.materia || "Geral"
         });
-      } catch(e) { console.error(e); }
+      });
+    } catch(e) { console.error(e); }
 
-      let banco = [];
-      try {
-        const snap = await getDocs(collection(db, "questoes"));
-        snap.forEach(s => {
-          let d = s.data();
-          let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
-          let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
-          let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
-          let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
-          
-          banco.push({
-            pergunta: perguntaLimpa,
-            opcoes: opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim()),
-            correta: letraCorreta,
-            categoria: d.categoria || d.materia || "Geral"
-          });
+    let materiasAtivas = dadosProvaAtiva.materiasAtivas || [];
+    let filtradas = [];
+    
+    // Sincroniza e puxa as questões de TODAS as matérias ativas selecionadas pelo professor
+    if (materiasAtivas.length > 0) {
+      materiasAtivas.forEach(mat => {
+        let qMat = banco.filter(q => 
+          q.categoria.toLowerCase().includes(mat.toLowerCase()) || 
+          mat.toLowerCase().includes(q.categoria.toLowerCase())
+        );
+        filtradas.push(...qMat);
+      });
+    }
+
+    // Se nenhuma matéria específica for encontrada ou se a lista estiver vazia, utiliza todo o banco
+    if (filtradas.length === 0) {
+      filtradas = [...banco];
+    }
+
+    // Deduplicação rigorosa baseada no texto da pergunta para evitar repetições
+    let mapaUnicas = new Map();
+    filtradas.forEach(q => {
+      let chave = q.pergunta.toLowerCase().trim();
+      if (!mapaUnicas.has(chave)) {
+        mapaUnicas.set(chave, q);
+      }
+    });
+    let unicasArray = Array.from(mapaUnicas.values());
+
+    // Embaralhamento completo e robusto (Fisher-Yates) para garantir aleatoriedade real entre as matérias
+    for (let i = unicasArray.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
+      [unicasArray[i], unicasArray[j]] = [unicasArray[j], unicasArray[i]];
+    }
+
+    // Limita à quantidade exata de questões configurada no painel (qtdQ)
+    listaQuestoes = unicasArray.slice(0, qtdQ);
+
+    // Caso o banco tenha menos questões do que o solicitado, preenche com dinâmicas de apoio
+    if (listaQuestoes.length < qtdQ) {
+      let faltam = qtdQ - listaQuestoes.length;
+      for (let i = 1; i <= faltam; i++) {
+        listaQuestoes.push({
+          pergunta: `Questão complementar de reforço ${i}: Qual conceito se aplica a esta avaliação?`,
+          opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
+          correta: "A",
+          categoria: "Geral"
         });
-      } catch(e) { console.error(e); }
-
-      let materiasAtivas = dadosProvaAtiva.materiasAtivas || [];
-      let filtradas = [];
-      
-      if (materiasAtivas.length > 0) {
-        materiasAtivas.forEach(mat => {
-          let qMat = banco.filter(q => q.categoria.toLowerCase().includes(mat.toLowerCase()) || mat.toLowerCase().includes(q.categoria.toLowerCase()));
-          filtradas.push(...qMat);
-        });
       }
-
-      if (filtradas.length === 0) {
-        filtradas = banco;
-      }
-
-      if (filtradas.length === 0) {
-        for (let i = 1; i <= qtdQ; i++) {
-          filtradas.push({
-            pergunta: `Questão padrão ${i} gerada automaticamente.`,
-            opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
-            correta: "A",
-            categoria: "Geral"
-          });
-        }
-      }
+    }
 
       filtradas.sort(() => Math.random() - 0.5);
       listaQuestoes = filtradas.slice(0, qtdQ);

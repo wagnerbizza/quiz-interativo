@@ -215,34 +215,17 @@ function normalizarTexto(txt) {
   return txt.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
 }
 
+// Normalização segura e confiável que preserva exatamente as alternativas e o gabarito original
 function normalizarDocumentoQuestao(d, idDoc = null) {
-  let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
-  let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
-
-  let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
-  let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
-  
-  let textoCorretoOriginal = opcoesBrutas[0];
-  if (letraCorreta === 'B') textoCorretoOriginal = opcoesBrutas[1];
-  if (letraCorreta === 'C') textoCorretoOriginal = opcoesBrutas[2];
-  if (letraCorreta === 'D') textoCorretoOriginal = opcoesBrutas[3];
-
-  let opcoesLimpas = opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim());
-  let textoCorretoLimpo = (textoCorretoOriginal || "").replace(/^[A-D]\)\s*/, "").trim();
-
-  let indices = [0, 1, 2, 3];
-  indices.sort(() => Math.random() - 0.5);
-
-  let opcoesEmbaralhadas = indices.map(i => opcoesLimpas[i]);
-  let novoIndexCorreto = indices.findIndex(i => opcoesLimpas[i] === textoCorretoLimpo);
-  if (novoIndexCorreto === -1) novoIndexCorreto = 0;
-  let novaLetraCorreta = ["A", "B", "C", "D"][novoIndexCorreto];
+  let pergunta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
+  let opcoes = d.opcoes || d.alternativas || d.respostas || ["Opção A", "Opção B", "Opção C", "Opção D"];
+  let correta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
 
   return {
     idDoc: idDoc,
-    pergunta: perguntaLimpa,
-    opcoes: opcoesEmbaralhadas,
-    correta: novaLetraCorreta,
+    pergunta: pergunta.trim(),
+    opcoes: opcoes.map(op => op.toString().trim()),
+    correta: ["A", "B", "C", "D"].includes(correta) ? correta : "A",
     categoria: d.categoria || d.materia || d.disciplina || "Geral"
   };
 }
@@ -301,7 +284,7 @@ async function garantirBancoMinimoQuestoes() {
     await carregarEstruturaGlobalFirebase();
     const bancoQuestoesTecnicasExtendido = {
       "Inteligencia Artificial": [
-        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com las respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
+        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com as respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
         { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" }
       ],
       "Programação Front-End": [
@@ -329,7 +312,7 @@ async function garantirBancoMinimoQuestoes() {
             materia: mat,
             categoria: mat,
             pergunta: `[Técnico ${i + 1}] ${baseModelo.p}`,
-            opcoes: [`A) ${baseModelo.ops[0]}`, `B) ${baseModelo.ops[1]}`, `C) ${baseModelo.ops[2]}`, `D) ${baseModelo.ops[3]}`],
+            opcoes: [`${baseModelo.ops[0]}`, `${baseModelo.ops[1]}`, `${baseModelo.ops[2]}`, `${baseModelo.ops[3]}`],
             correta: baseModelo.c,
             criadoEm: serverTimestamp()
           });
@@ -409,7 +392,8 @@ if (window.location.pathname.includes("painel.html")) {
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 5px;">👁️ Testar Prova do Aluno</a>
               <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 5px;">📊 Monitoramento</button>
-              <button type="button" style="background: #2563eb; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="window.location.href='escola.html?escola=${encodeURIComponent(dados.escolaAtiva || '')}'">⚙️ Unidade</button>
+              <button type="button" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="carregarDadosParaEdicao()">✏️ Editar Prova</button>
+              <button type="button" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="encerrarProvaAtivaAgora()">🛑 Encerrar Prova</button>
             </div>
           </div>
         `;
@@ -771,15 +755,70 @@ if (window.location.pathname.includes("painel.html")) {
     items.forEach(it => grid.appendChild(it));
   };
 
+  window.carregarDadosParaEdicao = async function() {
+    try {
+      const docSnap = await getDoc(doc(db, "configuracoes", "prova_ativa"));
+      if (!docSnap.exists()) {
+        alert("⚠️ Nenhuma prova ativa no momento para editar.");
+        return;
+      }
+      const dados = docSnap.data();
+
+      const abaBtn = document.querySelector('.btn-aba[data-aba="aba-ativacao"]');
+      if (abaBtn) abaBtn.click();
+
+      const selEscola = document.getElementById("select-escola-ativacao");
+      if (selEscola) {
+        selEscola.value = dados.escolaAtiva || "";
+        selEscola.dispatchEvent(new Event("change"));
+      }
+
+      setTimeout(() => {
+        if (document.getElementById("qtd-questoes-ativacao")) document.getElementById("qtd-questoes-ativacao").value = dados.quantidadeQuestoes || 10;
+        if (document.getElementById("tempo-minimo-ativacao")) document.getElementById("tempo-minimo-ativacao").value = dados.tempoMinimoMinutos || 0;
+        if (document.getElementById("tempo-prova-ativacao")) document.getElementById("tempo-prova-ativacao").value = dados.tempoLimiteMinutos || 0;
+        if (document.getElementById("input-token-ativacao")) document.getElementById("input-token-ativacao").value = dados.token || "";
+
+        if (dados.materiasAtivas) {
+          document.querySelectorAll(".chk-materia-ativacao").forEach(chk => {
+            if (dados.materiasAtivas.includes(chk.value)) chk.checked = true;
+          });
+        }
+        if (dados.turmasAtivas) {
+          document.querySelectorAll(".chk-turma-ativacao").forEach(chk => {
+            if (dados.turmasAtivas.includes(chk.value)) chk.checked = true;
+          });
+        }
+      }, 500);
+
+      mostrarNotificacao("✏️ Dados carregados para edição! Altere o que precisar e clique em Publicar.");
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  window.encerrarProvaAtivaAgora = async function() {
+    if (confirm("⚠️ Deseja realmente encerrar a prova ativa agora?")) {
+      try {
+        await deleteDoc(doc(db, "configuracoes", "prova_ativa"));
+        mostrarNotificacao("🛑 Prova ativa encerrada!");
+      } catch(err) {
+        alert("Erro ao encerrar prova.");
+      }
+    }
+  };
+
   document.getElementById("btn-publicar-prova-escola")?.addEventListener("click", async (e) => {
     const escolaEscolhida = selectEscolaAtivacao?.value;
     const materiasSelecionadas = Array.from(document.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
     const periodoEscolhido = selectPeriodoAtivacao?.value || "Geral";
     const qtdQ = parseInt(document.getElementById("qtd-questoes-ativacao").value) || 10;
-    const tempoMin = parseInt(document.getElementById("tempo-prova-ativacao").value) || 0;
-    const tempoMinimoConclusao = parseInt(document.getElementById("tempo-minimo-ativacao").value) || 0;
-    const turmasSelecionadas = Array.from(document.querySelectorAll(".chk-turma-ativacao:checked")).map(c => c.value);
     
+    // Mapeamento exato e correto dos campos de tempo configurados no painel do professor
+    const tempoMinimoConclusao = parseInt(document.getElementById("tempo-minimo-ativacao").value) || 0;
+    const tempoLimiteMin = parseInt(document.getElementById("tempo-prova-ativacao").value) || 0;
+    
+    const turmasSelecionadas = Array.from(document.querySelectorAll(".chk-turma-ativacao:checked")).map(c => c.value);
     const tokenProva = document.getElementById("input-token-ativacao")?.value.trim() || "";
     const agendamentoData = document.getElementById("input-agendamento-ativacao")?.value || "";
 
@@ -791,11 +830,6 @@ if (window.location.pathname.includes("painel.html")) {
     let timestampAgendamento = 0;
     if (agendamentoData) {
       timestampAgendamento = new Date(agendamentoData).getTime();
-      const agora = Date.now();
-      if (timestampAgendamento < agora) {
-        alert("⚠️ ATENÇÃO: A data e horário de início agendado que você escolheu já passou!\n\nNão é permitido realizar a ativação com uma data anterior ao momento atual.");
-        return;
-      }
     }
 
     try {
@@ -804,8 +838,8 @@ if (window.location.pathname.includes("painel.html")) {
         materiasAtivas: materiasSelecionadas,
         periodoAtivo: periodoEscolhido,
         quantidadeQuestoes: qtdQ,
-        tempoLimiteMinutos: tempoMin,
         tempoMinimoMinutos: tempoMinimoConclusao,
+        tempoLimiteMinutos: tempoLimiteMin,
         turmasAtivas: turmasSelecionadas,
         token: tokenProva,
         agendamento: timestampAgendamento,
@@ -814,7 +848,7 @@ if (window.location.pathname.includes("painel.html")) {
 
       await setDoc(doc(db, "configuracoes", "prova_ativa"), dadosPublicacao);
       animarBotaoSucesso(e.target);
-      mostrarNotificacao(`✅ Prova integrada ativada e salva com sucesso!`);
+      mostrarNotificacao(`✅ Prova atualizada e sincronizada com sucesso!`);
     } catch (err) { mostrarNotificacao("Erro ao publicar: " + err.message); }
   });
 
@@ -1024,10 +1058,6 @@ if (window.location.pathname.includes("painel.html")) {
         let notaB = b.totalQuestoes > 0 ? (b.pontuacao / b.totalQuestoes) * 10 : 0;
         let nomeA = (a.nome || "").trim();
         let nomeB = (b.nome || "").trim();
-        let partesA = nomeA.split(" ");
-        let partesB = nomeB.split(" ");
-        let sobrenomeA = partesA.length > 1 ? partesA[partesA.length - 1] : nomeA;
-        let sobrenomeB = partesB.length > 1 ? partesB[partesB.length - 1] : nomeB;
 
         switch (ordemAtualResultados) {
           case "data-asc":
@@ -1038,8 +1068,6 @@ if (window.location.pathname.includes("painel.html")) {
             return nomeA.localeCompare(nomeB);
           case "nome-desc":
             return nomeB.localeCompare(nomeA);
-          case "sobrenome-asc":
-            return sobrenomeA.localeCompare(sobrenomeB);
           case "turma-asc":
             return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
           case "escola-asc":
@@ -1805,8 +1833,10 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       dadosProvaAtiva = docSnap.data();
       qtdQ = dadosProvaAtiva.quantidadeQuestoes || 10;
       let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
-      let tempoMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
+      
+      // Leitura exata e correta dos parâmetros de tempo para exibição do aluno
       let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+      let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
 
       let avisoAgendamentoHtml = "";
       if (dadosProvaAtiva.agendamento && dadosProvaAtiva.agendamento > 0) {
@@ -1828,7 +1858,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
             ${avisoAgendamentoHtml}
             <div style="display: flex; align-items: flex-start; gap: 8px;"><span>🔒</span><span><strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}</span></div>
             <div style="display: flex; align-items: flex-start; gap: 8px;"><span>⏱️</span><span><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}</span></div>
-            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>⏳</span><span><strong>Tempo Limite:</strong> ${tempoMin > 0 ? tempoMin + ' minutos' : 'Sem limite'}</span></div>
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>⏳</span><span><strong>Tempo Limite:</strong> ${tempoLimite > 0 ? tempoLimite + ' minutos' : 'Sem limite'}</span></div>
           </div>
         `;
       }
@@ -1951,8 +1981,23 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       }
     }
 
-    filtradas.sort(() => Math.random() - 0.5);
-    listaQuestoes = filtradas.slice(0, qtdQ).map(q => normalizarDocumentoQuestao(q));
+    // Filtro rigoroso baseado em Map para eliminar duplicatas por texto exato da pergunta
+    let mapaUnicas = new Map();
+    filtradas.forEach(q => {
+      let chaveUnica = normalizarTexto(q.pergunta);
+      if (!mapaUnicas.has(chaveUnica)) {
+        mapaUnicas.set(chaveUnica, q);
+      }
+    });
+    let unicasArray = Array.from(mapaUnicas.values());
+
+    // Embaralhamento aleatório (Fisher-Yates) das questões únicas sem repetir
+    for (let i = unicasArray.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
+      [unicasArray[i], unicasArray[j]] = [unicasArray[j], unicasArray[i]];
+    }
+
+    listaQuestoes = unicasArray.slice(0, qtdQ).map(q => normalizarDocumentoQuestao(q));
 
     document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma} | ${alunoAtual.materia}`;
     document.getElementById("tela-login").classList.add("hidden");

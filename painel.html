@@ -57,6 +57,7 @@
     button.btn-sucesso-animado { background-color: var(--success) !important; }
     button.btn-danger { background-color: var(--danger) !important; }
     button.btn-secondary { background-color: #475569 !important; }
+    button.btn-warning { background-color: #d97706 !important; }
 
     .dropdown-win { position: relative !important; display: inline-block !important; }
     .btn-dropdown-win { background-color: #334155; color: white; border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; }
@@ -102,7 +103,6 @@
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
     th { background-color: #0f172a; color: #60a5fa; position: sticky; top: 180px; z-index: 870; }
 
-    /* AVISO / TOAST AMPLIADO E MAIS VISÍVEL */
     #toast-notification { 
       position: fixed; 
       top: 25px; 
@@ -206,7 +206,7 @@
     <!-- ABA 2: ATIVAÇÃO DE PROVAS -->
     <div id="aba-ativacao" class="aba-conteudo hidden">
       
-      <!-- Caixa de Status e Botão de Encerrar Prova Ativa -->
+      <!-- Caixa de Status, Botão de Edição e Botão de Encerrar Prova Ativa -->
       <div id="painel-status-prova-ativa" style="background: #0f172a; border: 1px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div>
@@ -215,7 +215,8 @@
               Verificando status...
             </div>
           </div>
-          <div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" id="btn-editar-prova-ativa" class="btn-acao btn-warning" onclick="carregarDadosParaEdicao()">✏️ Editar Prova</button>
             <button type="button" id="btn-encerrar-prova-ativa" class="btn-acao btn-danger" onclick="encerrarProvaAtivaAgora()">🛑 Encerrar Prova Ativa</button>
           </div>
         </div>
@@ -417,7 +418,7 @@
 
   </div>
 
-  <!-- Firebase e Scripts de Suporte -->
+  <!-- Firebase e Scripts de Suporte com Lógica de Edição e Sincronização -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -437,37 +438,60 @@
 
     const divStatusAtiva = document.getElementById("painel-status-prova-ativa");
     const divDetalhesAtiva = document.getElementById("detalhes-prova-ativa-painel");
+    let dadosProvaAtivaAtual = null;
 
     onSnapshot(doc(db, "configuracoes", "prova_ativa"), async (docSnap) => {
       if (docSnap.exists()) {
-        const dados = docSnap.data();
-        let mats = (dados.materiasAtivas || []).join(", ");
-        let turmas = (dados.turmasAtivas || []).join(", ");
+        dadosProvaAtivaAtual = docSnap.data();
+        let mats = (dadosProvaAtivaAtual.materiasAtivas || []).join(", ");
+        let turmas = (dadosProvaAtivaAtual.turmasAtivas || []).join(", ");
         
-        if (dados.tempoLimiteMinutos && dados.tempoLimiteMinutos > 0 && dados.atualizadoEm) {
-          let tempoCriacao = dados.atualizadoEm.toDate ? dados.atualizadoEm.toDate().getTime() : Date.now();
-          let limiteMs = dados.tempoLimiteMinutos * 60 * 1000;
-          if (Date.now() > (tempoCriacao + limiteMs + 300000)) {
-            try {
-              await deleteDoc(doc(db, "configuracoes", "prova_ativa"));
-              return;
-            } catch(e) {}
-          }
-        }
-
         divDetalhesAtiva.innerHTML = `
-          🏫 <strong>Escola:</strong> ${dados.escolaAtiva || 'N/D'}<br>
+          🏫 <strong>Escola:</strong> ${dadosProvaAtivaAtual.escolaAtiva || 'N/D'}<br>
           📚 <strong>Matérias:</strong> ${mats || 'Geral'}<br>
           👥 <strong>Turmas:</strong> ${turmas || 'N/D'}<br>
-          🏛️ <strong>Período:</strong> ${dados.periodoAtivo || 'Geral'}<br>
-          ⏳ <strong>Tempo Limite:</strong> ${dados.tempoLimiteMinutos ? dados.tempoLimiteMinutos + ' min' : 'Sem limite'}
+          🏛️ <strong>Período:</strong> ${dadosProvaAtivaAtual.periodoAtivo || 'Geral'}<br>
+          ⏱️ <strong>Tempo Mínimo:</strong> ${dadosProvaAtivaAtual.tempoMinimoMinutos ? dadosProvaAtivaAtual.tempoMinimoMinutos + ' min' : 'Nenhum'}<br>
+          ⏳ <strong>Tempo Limite:</strong> ${dadosProvaAtivaAtual.tempoLimiteMinutos ? dadosProvaAtivaAtual.tempoLimiteMinutos + ' min' : 'Sem limite'}
         `;
         divStatusAtiva.style.display = "block";
       } else {
+        dadosProvaAtivaAtual = null;
         divStatusAtiva.style.display = "none";
         divDetalhesAtiva.innerHTML = "";
       }
     });
+
+    // Função para carregar os dados da prova ativa para edição no formulário
+    window.carregarDadosParaEdicao = function() {
+      if (!dadosProvaAtivaAtual) {
+        alert("⚠️ Nenhuma prova ativa encontrada para editar.");
+        return;
+      }
+
+      // Muda para a aba de ativação
+      document.querySelectorAll('.aba-conteudo').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.btn-aba').forEach(el => el.classList.remove('active'));
+      document.getElementById('aba-ativacao').classList.remove('hidden');
+      document.querySelector('[data-aba="aba-ativacao"]').classList.add('active');
+
+      // Preenche a escola
+      const selectEscola = document.getElementById("select-escola-ativacao");
+      if (selectEscola) {
+        selectEscola.value = dadosProvaAtivaAtual.escolaAtiva;
+        selectEscola.dispatchEvent(new Event('change'));
+      }
+
+      // Preenche os inputs após breve delay para garantir renderização dos campos da escola
+      setTimeout(() => {
+        if(document.getElementById("qtd-questoes-ativacao")) document.getElementById("qtd-questoes-ativacao").value = dadosProvaAtivaAtual.quantidadeQuestoes || 10;
+        if(document.getElementById("tempo-minimo-ativacao")) document.getElementById("tempo-minimo-ativacao").value = dadosProvaAtivaAtual.tempoMinimoMinutos || 0;
+        if(document.getElementById("tempo-prova-ativacao")) document.getElementById("tempo-prova-ativacao").value = dadosProvaAtivaAtual.tempoLimiteMinutos || 0;
+        if(document.getElementById("input-token-ativacao")) document.getElementById("input-token-ativacao").value = dadosProvaAtivaAtual.token || "";
+      }, 400);
+
+      alert("✏️ Dados carregados no formulário de ativação! Faça as alterações desejadas (como o tempo mínimo) e clique em Publicar para salvar.");
+    };
 
     window.encerrarProvaAtivaAgora = async function() {
       if (confirm("⚠️ Tem certeza que deseja encerrar a prova ativa agora? Isso impedirá novos acessos dos alunos.")) {
