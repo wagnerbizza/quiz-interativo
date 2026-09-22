@@ -20,13 +20,30 @@ let resultadosGlobaisCache = [];
 let alunosOnlineCache = [];
 let ordemAtualMonitoramento = "nenhum";
 let ordemAtualResultados = "nenhum";
+let escolaAtivaSelecionadaIndependente = ""; 
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.body.classList.add("fade-in");
+  document.body.style.opacity = "1";
   garantirBancoMinimoQuestoes();
   forcarMenuClassificarCompleto();
   injetarEstilosGlobaisAjustados();
+  injetarBarraNavegacaoGlobalTopo();
+  removerAbaConfiguracoesGeraisDoDom();
 });
+
+function removerAbaConfiguracoesGeraisDoDom() {
+  const botoesAba = document.querySelectorAll('.btn-aba, button');
+  botoesAba.forEach(btn => {
+    if (btn.textContent.includes("Configurações Gerais")) {
+      btn.remove();
+    }
+  });
+
+  const conteudoConfig = document.getElementById("aba-configuracoes") || document.querySelector('[id*="configuracoes"]');
+  if (conteudoConfig && !conteudoConfig.tagName.toLowerCase().includes('body')) {
+    conteudoConfig.remove();
+  }
+}
 
 function injetarEstilosGlobaisAjustados() {
   if (!document.getElementById("estilo-global-ajustado")) {
@@ -88,8 +105,125 @@ function injetarEstilosGlobaisAjustados() {
         align-items: center !important;
         justify-content: flex-end !important;
       }
+      .item-revisao {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        color: #f8fafc;
+      }
+      .item-revisao.correta { border-left: 5px solid #22c55e; }
+      .item-revisao.incorreta { border-left: 5px solid #ef4444; }
+      .btn-escola-clicavel {
+        background: #1e293b;
+        color: #f8fafc;
+        border: 2px solid #334155;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-escola-clicavel:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+      }
+      .btn-escola-clicavel.ativo {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ade80;
+      }
+      .card-escola-dinamico {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid #334155;
+        padding: 16px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        gap: 12px;
+        flex-wrap: wrap;
+        transition: all 0.25s ease;
+        cursor: pointer;
+      }
+      .card-escola-dinamico:hover {
+        border-color: #3b82f6;
+        background: rgba(30, 41, 59, 0.9);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+        transform: translateY(-2px);
+      }
+      .barra-nav-global {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #0f172a;
+        border-bottom: 1px solid #334155;
+        padding: 10px 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .barra-nav-global .nav-botoes-grupo {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .btn-nav-icone {
+        background: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: background 0.2s;
+      }
+      .btn-nav-icone:hover {
+        background: #334155;
+        border-color: #3b82f6;
+        color: #60a5fa;
+      }
     `;
     document.head.appendChild(st);
+  }
+}
+
+function injetarBarraNavegacaoGlobalTopo() {
+  if (document.getElementById("barra-nav-topo-global")) return;
+  
+  const barra = document.createElement("div");
+  barra.id = "barra-nav-topo-global";
+  barra.className = "barra-nav-global";
+  
+  barra.innerHTML = `
+    <div class="nav-botoes-grupo" id="grupo-botoes-topo-dinamico">
+      <a href="painel.html" class="btn-nav-icone" title="Ir para o Painel Principal">🏠 Home / Painel</a>
+      <button type="button" class="btn-nav-icone" onclick="if(window.history.length > 1) { window.history.back(); } else { window.location.href='painel.html'; }" title="Voltar página anterior">⬅️ Voltar</button>
+      <button type="button" class="btn-nav-icone" onclick="window.history.forward()" title="Avançar página">➡️ Avançar</button>
+    </div>
+    <div style="font-size: 12px; color: #94a3b8; font-weight: bold; display:flex; align-items:center; gap:8px;">
+      <span>⚡ Sistema de Avaliações</span>
+    </div>
+  `;
+
+  const containerPrincipal = document.querySelector(".container") || document.querySelector("body");
+  if (containerPrincipal.firstChild) {
+    containerPrincipal.insertBefore(barra, containerPrincipal.firstChild);
+  } else {
+    containerPrincipal.appendChild(barra);
   }
 }
 
@@ -181,8 +315,7 @@ document.addEventListener("click", (e) => {
   if (link && link.href && link.href.startsWith(window.location.origin) && !link.getAttribute("target")) {
     e.preventDefault();
     const destino = link.href;
-    document.body.style.opacity = "0";
-    setTimeout(() => { window.location.href = destino; }, 300);
+    window.location.href = destino;
   }
 });
 
@@ -215,15 +348,29 @@ function normalizarTexto(txt) {
   return txt.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
 }
 
+function limparPrefixoPergunta(pergunta) {
+  if (!pergunta) return "";
+  return pergunta.replace(/^\[.*?\]\s*/, "").trim();
+}
+
+function limparPrefixoOpcao(opcaoStr) {
+  if (!opcaoStr) return "";
+  return opcaoStr.toString().replace(/^[a-zA-Z][\)\.\-\s]+\s*/, "").trim();
+}
+
 function normalizarDocumentoQuestao(d, idDoc = null) {
-  let pergunta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
-  let opcoes = d.opcoes || d.alternativas || d.respostas || ["Opção A", "Opção B", "Opção C", "Opção D"];
+  let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
+  let perguntaLimpa = limparPrefixoPergunta(perguntaBruta);
+  
+  let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || ["Opção A", "Opção B", "Opção C", "Opção D"];
+  let opcoesLimpas = opcoesBrutas.map(op => limparPrefixoOpcao(op));
+
   let correta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
 
   return {
     idDoc: idDoc,
-    pergunta: pergunta.trim(),
-    opcoes: opcoes.map(op => op.toString().trim()),
+    pergunta: perguntaLimpa,
+    opcoes: opcoesLimpas,
     correta: ["A", "B", "C", "D"].includes(correta) ? correta : "A",
     categoria: d.categoria || d.materia || d.disciplina || "Geral"
   };
@@ -268,22 +415,12 @@ async function carregarEstruturaGlobalFirebase() {
   } catch (e) { console.error(e); }
 }
 
-async function salvarEstruturaGlobalFirebase() {
-  try {
-    await setDoc(doc(db, "configuracoes", "estrutura_global_v2"), {
-      boxes: estruturaGlobalBoxes,
-      turmas: turmaDadosGlobal,
-      atualizadoEm: serverTimestamp()
-    });
-  } catch (e) { console.error(e); }
-}
-
 async function garantirBancoMinimoQuestoes() {
   try {
     await carregarEstruturaGlobalFirebase();
     const bancoQuestoesTecnicasExtendido = {
       "Inteligencia Artificial": [
-        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com las respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
+        { p: "O que caracteriza o aprendizado supervisionado em Inteligência Artificial?", ops: ["Dados sem rótulos descobertos automaticamente", "Uso de dados de entrada juntamente com as respostas corretas desejadas", "Tentativa e erro autônoma sem histórico", "Regras fixas de lógica booleana"], c: "B" },
         { p: "Qual é a principal função de uma rede neural artificial?", ops: ["Gerenciar partições físicas de disco rígido", "Compilar códigos de baixo nível", "Processar dados através de camadas de nós para reconhecimento de padrões", "Imprimir relatórios em formato PDF"], c: "C" }
       ],
       "Programação Front-End": [
@@ -303,14 +440,14 @@ async function garantirBancoMinimoQuestoes() {
 
     for (const [mat, listaBase] of Object.entries(bancoQuestoesTecnicasExtendido)) {
       let qMat = bancoAtual.filter(q => normalizarTexto(q.categoria).includes(normalizarTexto(mat)) || normalizarTexto(mat).includes(normalizarTexto(q.categoria)));
-      if (qMat.length < 20) {
-        let faltam = 20 - qMat.length;
+      if (qMat.length < 15) {
+        let faltam = 15 - qMat.length;
         for (let i = 0; i < faltam; i++) {
           let baseModelo = listaBase[i % listaBase.length];
           await addDoc(collection(db, "questoes"), {
             materia: mat,
             categoria: mat,
-            pergunta: `[Técnico ${i + 1}] ${baseModelo.p}`,
+            pergunta: `[Técnico ${i + 1} - ${Date.now()}] ${baseModelo.p}`,
             opcoes: [`${baseModelo.ops[0]}`, `${baseModelo.ops[1]}`, `${baseModelo.ops[2]}`, `${baseModelo.ops[3]}`],
             correta: baseModelo.c,
             criadoEm: serverTimestamp()
@@ -330,15 +467,42 @@ if (window.location.pathname.includes("painel.html")) {
     await carregarEstruturaGlobalFirebase();
     renderizarSeletorEscolasTopo();
     popularFiltroEscolaRelatorio();
-    renderizarBoxesGlobais();
     carregarListaEscolas();
+    renderizarSeletorEscolasAtivacaoIndependente();
     inicializarTabelaResultados();
     inicializarTabelaTempoReal();
     popularSelectMateriasQuestao();
+    organizarLayoutAbaRelatorios();
     setTimeout(() => {
       forcarMenuClassificarCompleto();
       carregarResumoProvaAtivaNoPainel();
     }, 400);
+
+    const btnEscolasAba = document.querySelector('.btn-aba[data-aba="aba-escolas"]');
+    if (btnEscolasAba) {
+      btnEscolasAba.click();
+    }
+
+    if (window.location.hash) {
+      const abaHash = window.location.hash.replace("#", "aba-");
+      const btnAlvo = document.querySelector(`.btn-aba[data-aba="${abaHash}"]`);
+      if (btnAlvo) btnAlvo.click();
+    }
+  }
+
+  function organizarLayoutAbaRelatorios() {
+    const abaRelatorios = document.getElementById("aba-relatorios");
+    if (!abaRelatorios) return;
+
+    let barraControles = abaRelatorios.querySelector(".barra-controles-relatorios") || abaRelatorios.querySelector(".acoes-topo-bloco") || abaRelatorios.querySelector("div");
+    if (barraControles) {
+      barraControles.style.display = "flex";
+      barraControles.style.flexWrap = "wrap";
+      barraControles.style.gap = "10px";
+      barraControles.style.alignItems = "center";
+      barraControles.style.justifyContent = "space-between";
+      barraControles.style.marginBottom = "15px";
+    }
   }
 
   window.irParaMonitoramentoTab = function() {
@@ -349,6 +513,100 @@ if (window.location.pathname.includes("painel.html")) {
       window.location.href = "painel.html#monitoramento";
     }
   };
+
+  function renderizarSeletorEscolasAtivacaoIndependente() {
+    const elementoAntigo = document.getElementById("select-escola-ativacao");
+    if (!elementoAntigo) return;
+    
+    let html = `
+      <label style="display:block; font-weight:bold; margin-bottom:8px; color:#93c5fd;">🏫 Clique na escola desejada para configurar e ativar independentemente:</label>
+      <div id="grid-botoes-escolas-ativacao" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+    `;
+
+    if (listaEscolasCache.length === 0) {
+      html += `<p style="color: #94a3b8; font-size: 13px;">Nenhuma escola cadastrada. Cadastre na aba "Cadastro de Escolas".</p>`;
+    } else {
+      listaEscolasCache.forEach(esc => {
+        let classeAtiva = escolaAtivaSelecionadaIndependente === esc.nome ? "ativo" : "";
+        html += `<button type="button" class="btn-escola-clicavel ${classeAtiva}" data-nome-escola="${esc.nome}">🏫 ${esc.nome}</button>`;
+      });
+    }
+
+    html += `
+      </div>
+      <div id="acoes-escola-selecionada-painel" style="display: ${escolaAtivaSelecionadaIndependente ? 'flex' : 'none'}; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; background: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px; border: 1px solid #334155;">
+        <span style="color: #4ade80; font-weight: bold; font-size: 13px;" id="span-escola-selecionada-nome">Unidade Selecionada: ${escolaAtivaSelecionadaIndependente}</span>
+        <a id="link-configurar-unidade-direto" href="escola.html?escola=${encodeURIComponent(escolaAtivaSelecionadaIndependente)}&retorno=ativacao" class="btn-acao" style="background: #0d9488; padding: 6px 12px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-flex;">⚙️ Abrir Configurações da Unidade</a>
+      </div>
+    `;
+
+    const wrapper = document.createElement("div");
+    wrapper.id = "wrapper-escola-ativacao-independente";
+    wrapper.innerHTML = html;
+    elementoAntigo.parentNode.replaceChild(wrapper, elementoAntigo);
+
+    document.querySelectorAll(".btn-escola-clicavel").forEach(btn => {
+      btn.onclick = () => {
+        const nomeEscola = btn.getAttribute("data-nome-escola");
+        escolaAtivaSelecionadaIndependente = nomeEscola;
+        
+        document.querySelectorAll(".btn-escola-clicavel").forEach(b => b.classList.remove("ativo"));
+        btn.classList.add("ativo");
+
+        const acoesDiv = document.getElementById("acoes-escola-selecionada-painel");
+        const spanNome = document.getElementById("span-escola-selecionada-nome");
+        const linkConfig = document.getElementById("link-configurar-unidade-direto");
+
+        if (acoesDiv) acoesDiv.style.display = "flex";
+        if (spanNome) spanNome.textContent = `Unidade Selecionada: ${nomeEscola}`;
+        if (linkConfig) linkConfig.href = `escola.html?escola=${encodeURIComponent(nomeEscola)}&retorno=ativacao`;
+
+        carregarConfiguracoesEscolaParaAtivacao(nomeEscola);
+      };
+    });
+  }
+
+  async function carregarConfiguracoesEscolaParaAtivacao(escolaNome) {
+    const containerCalculadoraAtivacao = document.getElementById("container-calculadora-ativacao");
+    const gridMateriasAtivacao = document.getElementById("grid-materias-ativacao");
+    const selectPeriodoAtivacao = document.getElementById("select-periodo-ativacao");
+    const gridTurmasAtivacao = document.getElementById("grid-turmas-ativacao");
+
+    try {
+      const docSnap = await getDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaNome)));
+      if (containerCalculadoraAtivacao) containerCalculadoraAtivacao.classList.remove("hidden");
+
+      let tab = {};
+      if (docSnap.exists()) {
+        tab = docSnap.data().tabelasConfirmadas || {};
+      }
+
+      if (gridMateriasAtivacao) {
+        let listaMat = tab.materias && tab.materias.length > 0 ? tab.materias : ["Inteligência Artificial", "Programação Front-End"];
+        let htmlMat = ``;
+        listaMat.forEach(m => {
+          htmlMat += `<label class="checkbox-item"><input type="checkbox" class="chk-materia-ativacao" value="${m}" checked> ${m}</label>`;
+        });
+        gridMateriasAtivacao.innerHTML = htmlMat;
+      }
+
+      if (selectPeriodoAtivacao) {
+        let listaPer = tab.periodos && tab.periodos.length > 0 ? tab.periodos : ["Manhã", "Tarde", "Noite", "Geral"];
+        selectPeriodoAtivacao.innerHTML = "";
+        listaPer.forEach(p => { selectPeriodoAtivacao.innerHTML += `<option value="${p}">${p}</option>`; });
+      }
+
+      if (gridTurmasAtivacao) {
+        let listaTurmas = tab.turmas && tab.turmas.length > 0 ? tab.turmas : ["1A", "2A", "3A"];
+        let htmlTurmas = ``;
+        listaTurmas.forEach(t => {
+          htmlTurmas += `<label class="checkbox-item"><input type="checkbox" class="chk-turma-ativacao" value="${t}" checked> ${t}</label>`;
+        });
+        gridTurmasAtivacao.innerHTML = htmlTurmas;
+      }
+      mostrarNotificacao(`📂 Configurações carregadas para: ${escolaNome}`);
+    } catch(err) { console.error(err); }
+  }
 
   function carregarResumoProvaAtivaNoPainel() {
     const painelResumo = document.getElementById("painel-resumo-escola-ativacao");
@@ -369,15 +627,14 @@ if (window.location.pathname.includes("painel.html")) {
 
       if (docSnap.exists()) {
         const dados = docSnap.data();
-        const escolaNome = dados.escolaAtiva || '';
+        const escolaAtiva = dados.escolaAtiva || "N/D";
         
-        // Verificação estrita para garantir que não exiba dados residuais se a prova estiver desativada (vazia ou N/D)
-        if (!escolaNome || escolaNome.trim() === "" || escolaNome === "N/D" || escolaNome === "undefined") {
+        if (!escolaAtiva || escolaAtiva === "" || escolaAtiva === "N/D") {
           if (painelResumo) painelResumo.classList.add("hidden");
           blocoTopoAtiva.innerHTML = `
             <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Central de Ativação de Provas</div>
             <div style="background: rgba(239, 68, 68, 0.15); border: 2px solid #ef4444; padding: 14px 18px; border-radius: 10px; color: #f8fafc; font-weight: bold; font-size: 14px;">
-              ⚠️ Nenhuma prova ativa no momento. Vá até os campos abaixo e publique uma avaliação.
+              ⚠️ Nenhuma prova ativa no momento. Clique em uma escola acima para configurar e publicar uma avaliação.
             </div>
           `;
           return;
@@ -389,52 +646,187 @@ if (window.location.pathname.includes("painel.html")) {
         const tempoMin = dados.tempoMinimoMinutos ? `${dados.tempoMinimoMinutos} minuto(s)` : 'Nenhum';
         const tempoLim = dados.tempoLimiteMinutos ? `${dados.tempoLimiteMinutos} minuto(s)` : 'Sem limite';
 
-        if (painelResumo) {
-          painelResumo.classList.add("hidden");
-        }
+        if (painelResumo) painelResumo.classList.add("hidden");
 
         blocoTopoAtiva.innerHTML = `
           <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Central de Ativação de Provas</div>
           <div style="background: rgba(37, 99, 235, 0.15); border: 2px solid #3b82f6; padding: 18px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 12px;">
-            
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
               <div>
-                <span style="color: #4ade80; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">🟢 PROVA ATIVA NO MOMENTO:</span>
-                <div style="color: #ffffff; font-weight: bold; font-size: 18px; margin-top: 2px;">${escolaNome}</div>
+                <span style="color: #4ade80; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">🟢 ESCOLA COM PROVA ATIVA:</span>
+                <div style="color: #ffffff; font-weight: bold; font-size: 18px; margin-top: 2px;">${escolaAtiva}</div>
               </div>
               <div style="color: #cbd5e1; font-size: 13px; background: rgba(15, 23, 42, 0.4); padding: 6px 10px; border-radius: 6px; border: 1px solid #334155;">
                 📅 <strong>Período:</strong> ${periodoStr} | ⏱️ <strong>Mín:</strong> ${tempoMin} | ⏳ <strong>Limite:</strong> ${tempoLim}
               </div>
             </div>
-
             <div style="font-size: 13px; color: #e2e8f0; display: flex; flex-direction: column; gap: 4px;">
               <div>📚 <strong>Matérias:</strong> ${materiasStr || 'Nenhuma'}</div>
               <div>🏫 <strong>Turmas:</strong> ${turmasStr || 'Nenhuma'}</div>
             </div>
-
             <hr style="border: none; border-top: 1px solid #334155; margin: 4px 0;">
-
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-              <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">👁️ Testar Prova do Aluno</a>
-              <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">📊 Monitoramento</button>
-              <button type="button" id="btn-embaralhar-manual-ativas" style="background: #8b5cf6; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🔀 Reembaralhar Questões</button>
-              <button type="button" onclick="carregarDadosParaEdicao()" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✏️ Editar Prova</button>
-              <button type="button" onclick="encerrarProvaAtivaAgora()" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">🛑 Encerrar Prova</button>
+              <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">👁️ Testar Prova do Aluno</a>
+              <button type="button" onclick="gerarCopiaProvaAtivaPDF()" style="background: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">📄 Gerar Cópia Geral</button>
+              <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">📊 Monitoramento</button>
+              <button type="button" id="btn-embaralhar-manual-ativas" style="background: #8b5cf6; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🔀 Reembaralhar</button>
+              <button type="button" onclick="carregarDadosParaEdicao()" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">✏️ Editar</button>
+              <button type="button" onclick="encerrarProvaAtivaAgora()" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🛑 Encerrar</button>
             </div>
-
           </div>
         `;
       } else {
         if (painelResumo) painelResumo.classList.add("hidden");
         blocoTopoAtiva.innerHTML = `
-          <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Central de Ativação de Provas</div>
+          <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 14px; text-transform: uppercase;">🚀 Central de Ativação de Provas</div>
           <div style="background: rgba(239, 68, 68, 0.15); border: 2px solid #ef4444; padding: 14px 18px; border-radius: 10px; color: #f8fafc; font-weight: bold; font-size: 14px;">
-            ⚠️ Nenhuma prova ativa no momento. Vá até os campos abaixo e publique uma avaliação.
+            ⚠️ Nenhuma prova ativa no momento. Publique uma avaliação abaixo.
           </div>
         `;
       }
     });
   }
+
+  window.gerarCopiaProvaAtivaPDF = async function() {
+    try {
+      const snap = await getDoc(doc(db, "configuracoes", "prova_ativa"));
+      if (!snap.exists()) { alert("⚠️ Nenhuma prova ativa."); return; }
+      const pData = snap.data();
+      const escola = pData.escolaAtiva || 'Rede de Ensino';
+      const materias = pData.materiasAtivas || [];
+      const dataHoraAtual = new Date().toLocaleString('pt-BR');
+      const periodo = pData.periodoAtivo || 'Geral';
+      
+      const qSnap = await getDocs(collection(db, "questoes"));
+      let questoesValidas = [];
+      qSnap.forEach(s => {
+        let q = normalizarDocumentoQuestao(s.data(), s.id);
+        if (materias.length === 0 || materias.some(m => normalizarTexto(q.categoria).includes(normalizarTexto(m)))) {
+          questoesValidas.push(q);
+        }
+      });
+
+      let janelaImpressao = window.open('', '_blank');
+      let html = `
+      <html>
+      <head>
+        <title>Avaliação Oficial - ${escola}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 30px; color: #000; line-height: 1.6; }
+          .cabecalho { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
+          .questao { margin-bottom: 25px; page-break-inside: avoid; }
+          .opcoes { margin-left: 20px; margin-top: 8px; }
+          .gabarito { margin-top: 40px; border-top: 2px dashed #000; padding-top: 20px; page-break-before: always; }
+        </style>
+      </head>
+      <body>
+        <div class="cabecalho">
+          <h2>AVALIAÇÃO DE SISTEMA - ${escola}</h2>
+          <p><strong>Aluno(a):</strong> _________________________________________________ <strong>Turma:</strong> ________</p>
+          <p><strong>Matéria(s):</strong> ${materias.join(', ')} | <strong>Período/Turno:</strong> ${periodo}</p>
+          <p><strong>Data e Horário de Emissão:</strong> ${dataHoraAtual}</p>
+        </div>
+      `;
+
+      let limitQ = pData.quantidadeQuestoes || 10;
+      let selecionadas = questoesValidas.slice(0, limitQ);
+
+      selecionadas.forEach((q, idx) => {
+        html += `
+          <div class="questao">
+            <p><strong>Questão ${idx + 1}:</strong> ${q.pergunta}</p>
+            <div class="opcoes">
+              A) ${q.opcoes[0] || ''}<br>
+              B) ${q.opcoes[1] || ''}<br>
+              C) ${q.opcoes[2] || ''}<br>
+              D) ${q.opcoes[3] || ''}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `<div class="gabarito"><h3>GABARITO OFICIAL (USO EXCLUSIVO DO PROFESSOR)</h3><ul>`;
+      selecionadas.forEach((q, idx) => {
+        html += `<li><strong>Questão ${idx + 1}:</strong> Resposta Correta: <strong>${q.correta}</strong></li>`;
+      });
+      html += `</ul></div>`;
+
+      html += `</body></html>`;
+      janelaImpressao.document.write(html);
+      janelaImpressao.document.close();
+      janelaImpressao.print();
+    } catch(err) {
+      alert("Erro ao gerar cópia: " + err.message);
+    }
+  };
+
+  window.gerarCopiaProvaIndividual = async function(nomeAluno, turmaAluno, materiaAluno, periodoAluno = 'Geral', dataEnvioAluno = null, escolaAluno = '') {
+    try {
+      const snapProva = await getDoc(doc(db, "configuracoes", "prova_ativa"));
+      const pData = snapProva.exists() ? snapProva.data() : { quantidadeQuestoes: 10 };
+      
+      const qSnap = await getDocs(collection(db, "questoes"));
+      let banco = [];
+      qSnap.forEach(s => banco.push(normalizarDocumentoQuestao(s.data(), s.id)));
+
+      let filtradas = banco.filter(q => normalizarTexto(q.categoria).includes(normalizarTexto(materiaAluno)) || normalizarTexto(materiaAluno).includes(normalizarTexto(q.categoria)));
+      if (filtradas.length === 0) filtradas = banco;
+
+      let qtdQ = pData.quantidadeQuestoes || 10;
+      let questoesAluno = filtradas.slice(0, qtdQ);
+
+      let dataImpressaoStr = dataEnvioAluno ? dataEnvioAluno : new Date().toLocaleString('pt-BR');
+
+      let win = window.open('', '_blank');
+      let html = `
+        <html>
+        <head>
+          <title>Caderno de Prova - ${nomeAluno}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 30px; color: #000; line-height: 1.6; }
+            .cabecalho { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
+            .questao { margin-bottom: 25px; page-break-inside: avoid; }
+            .opcoes { margin-left: 20px; margin-top: 8px; }
+            .gabarito { margin-top: 40px; border-top: 2px dashed #000; padding-top: 20px; page-break-before: always; }
+          </style>
+        </head>
+        <body>
+          <div class="cabecalho">
+            <h2>CADERNO DE PROVA INDIVIDUAL ${escolaAluno ? '- ' + escolaAluno : ''}</h2>
+            <p><strong>Aluno(a):</strong> ${nomeAluno} | <strong>Turma:</strong> ${turmaAluno}</p>
+            <p><strong>Matéria:</strong> ${materiaAluno} | <strong>Período/Turno:</strong> ${periodoAluno}</p>
+            <p><strong>Data e Horário da Prova/Emissão:</strong> ${dataImpressaoStr}</p>
+          </div>
+      `;
+
+      questoesAluno.forEach((q, idx) => {
+        html += `
+          <div class="questao">
+            <p><strong>Questão ${idx + 1}:</strong> ${q.pergunta}</p>
+            <div class="opcoes">
+              A) ${q.opcoes[0] || ''}<br>
+              B) ${q.opcoes[1] || ''}<br>
+              C) ${q.opcoes[2] || ''}<br>
+              D) ${q.opcoes[3] || ''}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `<div class="gabarito"><h3>GABARITO DA AVALIAÇÃO</h3><ul>`;
+      questoesAluno.forEach((q, idx) => {
+        html += `<li><strong>Questão ${idx + 1}:</strong> Resposta Correta: <strong>${q.correta}</strong></li>`;
+      });
+      html += `</ul></div>`;
+
+      html += `</body></html>`;
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    } catch (err) {
+      alert("Erro ao gerar prova individual: " + err.message);
+    }
+  };
 
   function renderizarSeletorEscolasTopo() {
     const select = document.getElementById("select-escola-geral-topo");
@@ -454,7 +846,7 @@ if (window.location.pathname.includes("painel.html")) {
     if (btnIr) {
       btnIr.onclick = () => {
         const escolaEscolhida = select.value;
-        if (escolaEscolhida) { window.location.href = `escola.html?escola=${encodeURIComponent(escolaEscolhida)}`; }
+        if (escolaEscolhida) { window.location.href = `escola.html?escola=${encodeURIComponent(escolaEscolhida)}&retorno=escolas`; }
       };
     }
   }
@@ -463,133 +855,16 @@ if (window.location.pathname.includes("painel.html")) {
     const selectFiltro = document.getElementById("select-filtro-escola-relatorio");
     if (!selectFiltro) return;
 
-    let html = `<option value="TODAS">🏫 Escolas</option>`;
+    let html = `<option value="TODAS">🏫 Escolas (Todas)</option>`;
     listaEscolasCache.forEach(esc => {
       html += `<option value="${esc.nome}">${esc.nome}</option>`;
     });
     selectFiltro.innerHTML = html;
+
+    selectFiltro.onchange = () => {
+      renderizarTabelaResultadosFiltrada();
+    };
   }
-
-  window.renderizarBoxesGlobais = function() {
-    const container = document.getElementById("container-boxes-globais");
-    if (!container) return;
-    let html = "";
-    estruturaGlobalBoxes.forEach((box, bIdx) => {
-      html += `
-        <div class="bloco-calculadora" data-box-index="${bIdx}">
-          <div class="sub-titulo-linha">
-            <h3>
-              <span>${box.titulo}</span>
-              <button type="button" class="btn-editar-item" onclick="editarTituloBoxGlobal(${bIdx})" title="Editar Título">✏️</button>
-            </h3>
-            <div class="acoes-box">
-              <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-global-${bIdx}')">☑ Marcar/Limpar</button>
-              <button type="button" class="btn-mini" onclick="ordenarBoxGlobal(${bIdx}, 'asc')">⬆ A-Z</button>
-              <button type="button" class="btn-mini" onclick="ordenarBoxGlobal(${bIdx}, 'desc')">⬇ Z-A</button>
-              <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:3px 6px; border-radius:4px; font-weight:bold;" onclick="excluirBoxGlobal(${bIdx})" title="Excluir Box">🗑️</button>
-            </div>
-          </div>
-          <div class="grid-checkboxes" id="grid-global-${bIdx}">
-      `;
-      box.itens.forEach((item, iIdx) => {
-        html += `
-          <div class="checkbox-item-global">
-            <span><input type="checkbox" class="chk-global-${bIdx}" value="${item}" checked> ${item}</span>
-            <div class="acoes-item-global">
-              <button type="button" class="btn-editar-item" onclick="editarItemGlobal(${bIdx}, ${iIdx})">✏️</button>
-              <button type="button" class="btn-excluir-item" onclick="excluirItemGlobal(${bIdx}, ${iIdx})">🗑️</button>
-            </div>
-          </div>
-        `;
-      });
-      html += `
-          </div>
-          <div class="input-grupo-add">
-            <input type="text" id="input-add-global-${bIdx}" placeholder="Adicionar novo item...">
-            <button type="button" onclick="adicionarItemGlobal(${bIdx})">➕</button>
-          </div>
-        </div>
-      `;
-    });
-    container.innerHTML = html;
-  };
-
-  window.editarTituloBoxGlobal = function(bIdx) {
-    let atual = estruturaGlobalBoxes[bIdx].titulo;
-    let novo = prompt("Novo título para esta box:", atual);
-    if (novo && novo.trim() !== "") {
-      estruturaGlobalBoxes[bIdx].titulo = novo.trim();
-      renderizarBoxesGlobais();
-      mostrarNotificacao("✏️ Título atualizado!");
-    }
-  };
-
-  window.excluirBoxGlobal = function(bIdx) {
-    if (confirm(`Deseja excluir a box "${estruturaGlobalBoxes[bIdx].titulo}"?`)) {
-      estruturaGlobalBoxes.splice(bIdx, 1);
-      renderizarBoxesGlobais();
-      mostrarNotificacao("🗑️ Box excluída!");
-    }
-  };
-
-  window.criarNovaBoxGlobal = function() {
-    const input = document.getElementById("nova-box-titulo");
-    const nome = input.value.trim();
-    if (!nome) { alert("⚠️ Digite o nome da nova box!"); return; }
-    estruturaGlobalBoxes.push({ id: normalizarTexto(nome) + "_" + Date.now(), titulo: nome, itens: ["Exemplo 1"] });
-    input.value = "";
-    renderizarBoxesGlobais();
-    mostrarNotificacao("➕ Nova box criada!");
-  };
-
-  window.painelMarcarLimpar = function(classe) {
-    const checks = document.querySelectorAll(`.${classe}`);
-    const todos = Array.from(checks).every(c => c.checked);
-    checks.forEach(c => c.checked = !todos);
-  };
-
-  window.ordenarBoxGlobal = function(bIdx, direcao) {
-    estruturaGlobalBoxes[bIdx].itens.sort((a, b) => direcao === 'asc' ? a.localeCompare(b) : b.localeCompare(a));
-    renderizarBoxesGlobais();
-  };
-
-  window.adicionarItemGlobal = function(bIdx) {
-    const input = document.getElementById(`input-add-global-${bIdx}`);
-    if (!input) return;
-    const val = input.value.trim();
-    if (!val) return;
-    if (!estruturaGlobalBoxes[bIdx].itens.includes(val)) {
-      estruturaGlobalBoxes[bIdx].itens.push(val);
-      renderizarBoxesGlobais();
-      mostrarNotificacao(`➕ "${val}" adicionado!`);
-    }
-  };
-
-  window.editarItemGlobal = function(bIdx, iIdx) {
-    let atual = estruturaGlobalBoxes[bIdx].itens[iIdx];
-    let novo = prompt("Editar item:", atual);
-    if (novo && novo.trim() !== "") {
-      estruturaGlobalBoxes[bIdx].itens[iIdx] = novo.trim();
-      renderizarBoxesGlobais();
-      mostrarNotificacao("✏️ Item atualizado!");
-    }
-  };
-
-  window.excluirItemGlobal = function(bIdx, iIdx) {
-    let removido = estruturaGlobalBoxes[bIdx].itens[iIdx];
-    if (confirm(`Excluir "${removido}"?`)) {
-      estruturaGlobalBoxes[bIdx].itens.splice(iIdx, 1);
-      renderizarBoxesGlobais();
-      mostrarNotificacao("🗑️ Item excluído!");
-    }
-  };
-
-  document.getElementById("btn-salvar-global-definitivo")?.addEventListener("click", async (e) => {
-    await salvarEstruturaGlobalFirebase();
-    animarBotaoSucesso(e.target);
-    await garantirBancoMinimoQuestoes();
-    mostrarNotificacao("✅ Configurações gerais salvas e atualizadas!");
-  });
 
   const botoesAba = document.querySelectorAll(".btn-aba");
   const conteudosAba = document.querySelectorAll(".aba-conteudo");
@@ -598,9 +873,17 @@ if (window.location.pathname.includes("painel.html")) {
       botoesAba.forEach(b => b.classList.remove("active"));
       conteudosAba.forEach(c => c.classList.add("hidden"));
       btn.classList.add("active");
-      document.getElementById(btn.getAttribute("data-aba")).classList.remove("hidden");
-      if(btn.getAttribute("data-aba") === "aba-questoes") { popularSelectMateriasQuestao(); }
-      if(btn.getAttribute("data-aba") === "aba-relatorios") { forcarMenuClassificarCompleto(); }
+      const abaId = btn.getAttribute("data-aba");
+      const alvo = document.getElementById(abaId);
+      if (alvo) alvo.classList.remove("hidden");
+      
+      const hashNome = abaId.replace("aba-", "");
+      if (history.replaceState) {
+        history.replaceState(null, null, `#${hashNome}`);
+      }
+
+      if(abaId === "aba-questoes") { popularSelectMateriasQuestao(); }
+      if(abaId === "aba-relatorios") { forcarMenuClassificarCompleto(); organizarLayoutAbaRelatorios(); }
     });
   });
 
@@ -612,12 +895,6 @@ if (window.location.pathname.includes("painel.html")) {
   const btnCancelarEdicao = document.getElementById("btn-cancelar-edicao");
   const listaEscolasContainer = document.getElementById("lista-escolas-cadastradas-container");
 
-  const selectEscolaAtivacao = document.getElementById("select-escola-ativacao");
-  const containerCalculadoraAtivacao = document.getElementById("container-calculadora-ativacao");
-  const gridMateriasAtivacao = document.getElementById("grid-materias-ativacao");
-  const selectPeriodoAtivacao = document.getElementById("select-periodo-ativacao");
-  const gridTurmasAtivacao = document.getElementById("grid-turmas-ativacao");
-
   async function carregarListaEscolas() {
     try {
       const snap = await getDocs(collection(db, "escolas_cadastradas"));
@@ -626,6 +903,7 @@ if (window.location.pathname.includes("painel.html")) {
       listaEscolasCache = escolas;
       renderizarSeletorEscolasTopo();
       popularFiltroEscolaRelatorio();
+      renderizarSeletorEscolasAtivacaoIndependente();
 
       if (listaEscolasContainer) {
         let htmlCadastradas = "";
@@ -634,15 +912,14 @@ if (window.location.pathname.includes("painel.html")) {
         } else {
           escolas.forEach(esc => {
             htmlCadastradas += `
-              <div class="card-escola-lista">
-                <div>
-                  <strong>🏫 ${esc.nome}</strong><br>
-                  <span style="font-size: 11px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
+              <div class="card-escola-dinamico" onclick="window.location.href='escola.html?escola=${encodeURIComponent(esc.nome)}&retorno=escolas';">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <strong style="font-size: 16px; color: #ffffff; display: flex; align-items: center; gap: 6px;">🏫 ${esc.nome} <span style="font-size: 11px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 6px; border-radius: 4px;">⚙️ Clique para Configurar Unidade</span></strong>
+                  <span style="font-size: 12px; color: #94a3b8;">Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
                 </div>
-                <div class="acoes-escola-card">
-                  <a href="escola.html?escola=${encodeURIComponent(esc.nome)}" class="btn-acao" style="background:#2563eb; padding:6px 12px; text-decoration:none; font-size:11px; margin:0;">⚙️ Configurar</a>
-                  <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">✏️ Editar</button>
-                  <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">🗑️ Excluir</button>
+                <div style="display: flex; gap: 6px; align-items: center;" onclick="event.stopPropagation();">
+                  <button class="btn-editar-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;" title="Editar Dados Cadastrais">✏️ Editar</button>
+                  <button class="btn-excluir-escola" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;" title="Excluir Escola">🗑️ Excluir</button>
                 </div>
               </div>
             `;
@@ -652,7 +929,8 @@ if (window.location.pathname.includes("painel.html")) {
 
         document.querySelectorAll(".btn-editar-escola").forEach(btn => {
           btn.onclick = (e) => {
-            const b = e.target;
+            e.stopPropagation();
+            const b = e.target.closest("button");
             inputEscolaIdEditando.value = b.getAttribute("data-id");
             inputNomeEscola.value = b.getAttribute("data-nome");
             inputGestorEscola.value = b.getAttribute("data-gestor");
@@ -665,8 +943,10 @@ if (window.location.pathname.includes("painel.html")) {
 
         document.querySelectorAll(".btn-excluir-escola").forEach(btn => {
           btn.onclick = async (e) => {
-            const id = e.target.getAttribute("data-id");
-            const nomeEscola = e.target.getAttribute("data-nome");
+            e.stopPropagation();
+            const b = e.target.closest("button");
+            const id = b.getAttribute("data-id");
+            const nomeEscola = b.getAttribute("data-nome");
             if (confirm(`Deseja excluir a escola "${nomeEscola}"?`)) {
               await deleteDoc(doc(db, "escolas_cadastradas", id));
               await deleteDoc(doc(db, "escolas_configuracoes", normalizarTexto(nomeEscola)));
@@ -675,12 +955,6 @@ if (window.location.pathname.includes("painel.html")) {
             }
           };
         });
-      }
-
-      if (selectEscolaAtivacao) {
-        let htmlOpt = `<option value="" disabled selected>Selecione uma escola para ativar...</option>`;
-        escolas.forEach(esc => { htmlOpt += `<option value="${esc.nome}">${esc.nome}</option>`; });
-        selectEscolaAtivacao.innerHTML = htmlOpt;
       }
     } catch (e) { console.error(e); }
   }
@@ -712,78 +986,6 @@ if (window.location.pathname.includes("painel.html")) {
     } catch (err) { mostrarNotificacao("Erro: " + err.message); }
   });
 
-  selectEscolaAtivacao?.addEventListener("change", async (e) => {
-    const escolaEscolhida = e.target.value;
-    const painelResumo = document.getElementById("painel-resumo-escola-ativacao");
-
-    try {
-      const docSnap = await getDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaEscolhida)));
-      if (docSnap.exists()) {
-        const dados = docSnap.data();
-        const tab = dados.tabelasConfirmadas || {};
-        containerCalculadoraAtivacao.classList.remove("hidden");
-        if (painelResumo) painelResumo.classList.remove("hidden");
-
-        if (gridMateriasAtivacao) {
-          let listaMat = tab.materias || [];
-          let htmlMat = ``;
-          listaMat.forEach(m => {
-            htmlMat += `<label class="checkbox-item"><input type="checkbox" class="chk-materia-ativacao" value="${m}" checked> ${m}</label>`;
-          });
-          gridMateriasAtivacao.innerHTML = htmlMat;
-        }
-
-        if (selectPeriodoAtivacao) {
-          selectPeriodoAtivacao.innerHTML = "";
-          (tab.periodos || []).forEach(p => { selectPeriodoAtivacao.innerHTML += `<option value="${p}">${p}</option>`; });
-        }
-
-        if (gridTurmasAtivacao) {
-          let listaTurmas = tab.turmas || [];
-          let htmlTurmas = ``;
-          listaTurmas.forEach(t => {
-            htmlTurmas += `<label class="checkbox-item"><input type="checkbox" class="chk-turma-ativacao" value="${t}" checked> ${t}</label>`;
-          });
-          gridTurmasAtivacao.innerHTML = htmlTurmas;
-        }
-      } else {
-        containerCalculadoraAtivacao.classList.add("hidden");
-        if (painelResumo) painelResumo.classList.add("hidden");
-        mostrarNotificacao("⚠️ Configure e confirme os boxes desta escola na aba de configuração individual primeiro.");
-      }
-    } catch (err) { console.error(err); }
-  });
-
-  window.ordenarMatAtivacao = function(direcao) {
-    const grid = document.getElementById("grid-materias-ativacao");
-    if (!grid) return;
-    let items = Array.from(grid.querySelectorAll(".checkbox-item"));
-    items.sort((a, b) => {
-      let txtA = a.textContent.trim();
-      let txtB = b.textContent.trim();
-      return direcao === 'asc' ? txtA.localeCompare(txtB) : txtB.localeCompare(txtA);
-    });
-    grid.innerHTML = "";
-    items.forEach(it => grid.appendChild(it));
-  };
-
-  window.ordenarTurmaAtivacao = function(direcao) {
-    const grid = document.getElementById("grid-turmas-ativacao");
-    if (!grid) return;
-    let items = Array.from(grid.querySelectorAll(".checkbox-item"));
-    items.sort((a, b) => {
-      let txtA = a.textContent.trim();
-      let txtB = b.textContent.trim();
-      return direcao === 'asc' ? txtA.localeCompare(txtB, undefined, {numeric: true}) : txtB.localeCompare(txtA, undefined, {numeric: true});
-    });
-    grid.innerHTML = "";
-    items.forEach(it => grid.appendChild(it));
-  };
-
-  // =========================================================================
-  // GESTÃO, EDIÇÃO E EMBARALHAMENTO DA PROVA ATIVA (CORRIGIDO E UNIFICADO)
-  // =========================================================================
-
   window.carregarDadosParaEdicao = async function() {
     try {
       const docSnap = await getDoc(doc(db, "configuracoes", "prova_ativa"));
@@ -795,12 +997,6 @@ if (window.location.pathname.includes("painel.html")) {
 
       const abaBtn = document.querySelector('.btn-aba[data-aba="aba-ativacao"]');
       if (abaBtn) abaBtn.click();
-
-      const selEscola = document.getElementById("select-escola-ativacao");
-      if (selEscola) {
-        selEscola.value = dados.escolaAtiva || "";
-        selEscola.dispatchEvent(new Event("change"));
-      }
 
       setTimeout(() => {
         if (document.getElementById("qtd-questoes-ativacao")) {
@@ -828,6 +1024,11 @@ if (window.location.pathname.includes("painel.html")) {
           document.getElementById("input-agendamento-ativacao").value = `${ano}-${mes}-${dia}T${hora}:${min}`;
         }
 
+        if (dados.escolaAtiva) {
+          const btnEscola = document.querySelector(`.btn-escola-clicavel[data-nome-escola="${dados.escolaAtiva}"]`);
+          if (btnEscola) btnEscola.click();
+        }
+
         if (dados.materiasAtivas) {
           document.querySelectorAll(".chk-materia-ativacao").forEach(chk => {
             chk.checked = dados.materiasAtivas.includes(chk.value);
@@ -841,7 +1042,7 @@ if (window.location.pathname.includes("painel.html")) {
         }
       }, 600);
 
-      alert("✏️ Dados da prova carregados para edição com sucesso! Altere o que precisar e clique em Publicar.");
+      alert("✏️ Dados da prova carregados para edição com sucesso!");
     } catch(err) {
       console.error(err);
       alert("⚠️ Erro ao carregar dados para edição.");
@@ -849,111 +1050,74 @@ if (window.location.pathname.includes("painel.html")) {
   };
 
   document.getElementById("btn-publicar-prova-escola")?.addEventListener("click", async (e) => {
-    const escolaEscolhida = selectEscolaAtivacao?.value;
+    const escolaSelecionada = escolaAtivaSelecionadaIndependente;
     const materiasSelecionadas = Array.from(document.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
-    const periodoEscolhido = selectPeriodoAtivacao?.value || "Geral";
-    const qtdQ = parseInt(document.getElementById("qtd-questoes-ativacao").value) || 10;
-    
-    const tempoMinimoConclusao = parseInt(document.getElementById("tempo-minimo-ativacao").value) || 0;
-    const tempoLimiteMin = parseInt(document.getElementById("tempo-prova-ativacao").value) || 0;
-    
+    const periodoEscolhido = document.getElementById("select-periodo-ativacao")?.value || "Geral";
+    const qtdQ = parseInt(document.getElementById("qtd-questoes-ativacao")?.value) || 10;
+    const tempoMin = parseInt(document.getElementById("tempo-minimo-ativacao")?.value) || 0;
+    const tempoLim = parseInt(document.getElementById("tempo-prova-ativacao")?.value) || 0;
     const turmasSelecionadas = Array.from(document.querySelectorAll(".chk-turma-ativacao:checked")).map(c => c.value);
     const tokenProva = document.getElementById("input-token-ativacao")?.value.trim() || "";
     const agendamentoData = document.getElementById("input-agendamento-ativacao")?.value || "";
 
-    if (!escolaEscolhida || materiasSelecionadas.length === 0 || turmasSelecionadas.length === 0) {
-      alert("⚠️ Por favor, selecione a escola, ao menos uma matéria e uma turma!");
+    if (!escolaSelecionada || materiasSelecionadas.length === 0 || turmasSelecionadas.length === 0) {
+      alert("⚠️ Clique em uma escola acima, selecione pelo menos uma matéria e uma turma!");
       return;
     }
 
-    let timestampAgendamento = 0;
-    if (agendamentoData) {
-      timestampAgendamento = new Date(agendamentoData).getTime();
-    }
+    let timestampAgendamento = agendamentoData ? new Date(agendamentoData).getTime() : 0;
 
-    if (!confirm(`Deseja realmente publicar a avaliação para a escola "${escolaEscolhida}" com ${qtdQ} questões?`)) {
-      return;
-    }
+    if (!confirm(`Deseja publicar a avaliação especificamente para a unidade "${escolaSelecionada}"?`)) return;
 
     try {
-      const seedEmbaralhamento = Date.now().toString();
-
       const dadosPublicacao = {
-        escolaAtiva: escolaEscolhida,
+        escolaAtiva: escolaSelecionada,
         materiasAtivas: materiasSelecionadas,
         periodoAtivo: periodoEscolhido,
         quantidadeQuestoes: qtdQ,
-        tempoMinimoMinutos: tempoMinimoConclusao,
-        tempoLimiteMinutos: tempoLimiteMin,
+        tempoMinimoMinutos: tempoMin,
+        tempoLimiteMinutos: tempoLim,
         turmasAtivas: turmasSelecionadas,
         token: tokenProva,
         agendamento: timestampAgendamento,
-        seedReordenacao: seedEmbaralhamento,
+        seedReordenacao: Date.now().toString(),
         publicadoEm: serverTimestamp()
       };
 
       await setDoc(doc(db, "configuracoes", "prova_ativa"), dadosPublicacao);
-      
-      const btn = e.target;
-      const textoOriginal = btn.textContent;
-      btn.textContent = "✅ Publicado com Sucesso!";
-      btn.style.background = "#22c55e";
-      setTimeout(() => {
-        btn.textContent = textoOriginal;
-        btn.style.background = "";
-      }, 2500);
-
-      alert(`✅ Prova da escola "${escolaEscolhida}" publicada e sincronizada com sucesso!`);
-    } catch (err) { 
-      console.error(err);
-      alert("Erro ao publicar: " + err.message); 
+      animarBotaoSucesso(e.target);
+      alert(`✅ Prova publicada com sucesso para a unidade "${escolaSelecionada}"!`);
+    } catch (err) {
+      alert("Erro ao publicar: " + err.message);
     }
   });
 
-  // Correção do botão de reembaralhar manual nas ativas
   document.addEventListener("click", async (e) => {
     if (e.target && e.target.id === "btn-embaralhar-manual-ativas") {
-      if (confirm("🔀 Deseja reembaralhar imediatamente todas as questões da prova ativa para eliminar qualquer repetição relatada pelos alunos?")) {
+      if (confirm("🔀 Deseja reembaralhar imediatamente todas as questões da prova ativa?")) {
         try {
-          await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
-            seedReordenacao: Date.now().toString() 
-          }, { merge: true });
-          alert("✅ Questões reembaralhadas com sucesso! Nova ordem aplicada para novas tentativas dos alunos.");
-        } catch(err) {
-          alert("Erro ao reembaralhar: " + err.message);
-        }
+          await setDoc(doc(db, "configuracoes", "prova_ativa"), { seedReordenacao: Date.now().toString() }, { merge: true });
+          alert("✅ Questões reembaralhadas com sucesso!");
+        } catch(err) { alert("Erro: " + err.message); }
       }
     }
   });
 
-  // Correção de encerramento para limpeza total dos dados residuais no Firestore
   window.encerrarProvaAtivaAgora = async function() {
-    if (confirm("⚠️ Tem certeza que deseja encerrar a prova ativa no momento? Todos os alunos ativos serão bloqueados e os dados serão limpos.")) {
+    if (confirm("⚠️ Deseja encerrar a prova ativa no momento?")) {
       try {
         await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
-          escolaAtiva: "",
-          materiasAtivas: [],
-          turmasAtivas: [],
-          periodoAtivo: "",
-          token: "",
-          quantidadeQuestoes: 0,
-          tempoMinimoMinutos: 0,
-          tempoLimiteMinutos: 0
+          escolaAtiva: "", materiasAtivas: [], turmasAtivas: [], periodoAtivo: "", token: "", quantidadeQuestoes: 0 
         });
-        mostrarNotificacao("🛑 Prova encerrada e dados limpos com sucesso!");
-      } catch(err) {
-        console.error(err);
-        alert("⚠️ Erro ao encerrar prova.");
-      }
+        mostrarNotificacao("🛑 Prova encerrada com sucesso!");
+      } catch(err) { alert("Erro ao encerrar."); }
     }
   };
-
-  // =========================================================================
 
   function popularSelectMateriasQuestao() {
     const sel = document.getElementById("cad-materia");
     if (!sel) return;
-    let materias = [];
+    let materias = ["Inteligência Artificial", "Programação Front-End", "Matemática", "Língua Portuguesa"];
     estruturaGlobalBoxes.forEach(b => {
       if (b.id === "materias" || b.titulo.toLowerCase().includes("disciplina") || b.titulo.toLowerCase().includes("matéria")) {
         materias = b.itens;
@@ -1060,7 +1224,7 @@ if (window.location.pathname.includes("painel.html")) {
     for (let linha of linhas) {
       if (!linha.trim()) continue;
       let partes = linha.split("|").map(p => p.trim());
-      
+       
       try {
         if (partes.length >= 7) {
           await addDoc(collection(db, "questoes"), {
@@ -1104,14 +1268,9 @@ if (window.location.pathname.includes("painel.html")) {
       snapshot.forEach(docSnap => {
         resultadosGlobaisCache.push({ idDoc: docSnap.id, ...docSnap.data() });
       });
-
       renderizarTabelaResultadosFiltrada();
     });
   }
-
-  window.filtrarResultadosPorEscolaSelecionada = function() {
-    renderizarTabelaResultadosFiltrada();
-  };
 
   window.aplicarOrdenacaoResultados = function(criterio) {
     ordemAtualResultados = criterio;
@@ -1133,11 +1292,14 @@ if (window.location.pathname.includes("painel.html")) {
 
     let dadosFiltrados = [...resultadosGlobaisCache];
 
-    if (escolaSelecionada !== "TODAS") {
-      dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.escola) === normalizarTexto(escolaSelecionada));
+    if (escolaSelecionada && escolaSelecionada !== "TODAS") {
+      dadosFiltrados = dadosFiltrados.filter(res => {
+        let escolaRes = (res.escola || "").trim();
+        return normalizarTexto(escolaRes) === normalizarTexto(escolaSelecionada) || escolaRes.toLowerCase() === escolaSelecionada.toLowerCase();
+      });
     }
 
-    if (periodoSelecionado !== "TODOS") {
+    if (periodoSelecionado && periodoSelecionado !== "TODOS") {
       dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.periodo) === normalizarTexto(periodoSelecionado));
     }
 
@@ -1158,30 +1320,21 @@ if (window.location.pathname.includes("painel.html")) {
         let nomeB = (b.nome || "").trim();
 
         switch (ordemAtualResultados) {
-          case "data-asc":
-            return (a.timestamp || 0) - (b.timestamp || 0);
-          case "data-desc":
-            return (b.timestamp || 0) - (a.timestamp || 0);
-          case "nome-asc":
-            return nomeA.localeCompare(nomeB);
-          case "nome-desc":
-            return nomeB.localeCompare(nomeA);
-          case "turma-asc":
-            return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
-          case "escola-asc":
-            return (a.escola || "").localeCompare(b.escola || "");
-          case "nota-desc":
-            return notaB - notaA;
-          case "nota-asc":
-            return notaA - notaB;
-          default:
-            return (b.timestamp || 0) - (a.timestamp || 0);
+          case "data-asc": return (a.timestamp || 0) - (b.timestamp || 0);
+          case "data-desc": return (b.timestamp || 0) - (a.timestamp || 0);
+          case "nome-asc": return nomeA.localeCompare(nomeB);
+          case "nome-desc": return nomeB.localeCompare(nomeA);
+          case "turma-asc": return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
+          case "escola-asc": return (a.escola || "").localeCompare(b.escola || "");
+          case "nota-desc": return notaB - notaA;
+          case "nota-asc": return notaA - notaB;
+          default: return (b.timestamp || 0) - (a.timestamp || 0);
         }
       });
     }
 
     if (dadosFiltrados.length === 0) {
-      corpoTabelaResultados.innerHTML = `<tr><td colspan="12" style="text-align:center; color: #94a3b8;">Nenhum resultado registrado encontrado.</td></tr>`;
+      corpoTabelaResultados.innerHTML = `<tr><td colspan="12" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum resultado registrado encontrado para os filtros selecionados.</td></tr>`;
       return;
     }
 
@@ -1194,7 +1347,7 @@ if (window.location.pathname.includes("painel.html")) {
       let notaCalculada = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
       let tempoGastoStr = res.tempoGastoFormatado || "N/D";
       let idAlunoAlvo = res.idAluno || obterIdAluno(res.nome, res.turma);
-      
+       
       htmlResultados += `
         <tr>
           <td class="chk-col" style="text-align: center;">
@@ -1210,13 +1363,59 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="color: #facc15;">⏱️ ${tempoGastoStr}</span></td>
           <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
           <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
-          <td style="text-align: center;">
-            <button type="button" class="btn-acao" style="background-color: #eab308; padding: 5px 8px; font-size: 11px; margin: 0;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome}')" title="Permitir que o aluno refaça a prova">🔄 Refazer</button>
+          <td style="text-align: center; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="btn-acao" style="background:#0284c7; padding:4px 8px; font-size:10px; margin:0;" onclick="gerarBoletimIndividual('${res.nome || 'Aluno'}', '${res.turma || ''}', '${res.escola || ''}', '${notaCalculada}', '${res.materia || 'Geral'}')">📜 Boletim</button>
+            <button type="button" class="btn-acao" style="background:#0d9488; padding:4px 8px; font-size:10px; margin:0;" onclick="gerarCopiaProvaIndividual('${res.nome || 'Aluno'}', '${res.turma || ''}', '${res.materia || 'Geral'}', '${res.periodo || 'Geral'}', '${dataFormatada}', '${res.escola || ''}')">📄 Prova</button>
+            <button type="button" class="btn-acao" style="background:#10b981; padding:4px 8px; font-size:10px; margin:0;" onclick="gerarCertificadoIndividual('${res.nome || 'Aluno'}', '${res.escola || ''}', '${notaCalculada}')">🎓 Certificado</button>
+            <button type="button" class="btn-acao" style="background: #eab308; padding: 4px 8px; font-size: 10px; margin: 0;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome || 'Aluno'}')">🔄 Refazer</button>
           </td>
         </tr>
       `;
     });
     corpoTabelaResultados.innerHTML = htmlResultados;
+  };
+
+  window.gerarBoletimIndividual = function(nome, turma, escola, nota, materia) {
+    let win = window.open('', '_blank');
+    win.document.write(`
+      <html>
+      <head><title>Boletim - ${nome}</title></head>
+      <body style="font-family: Arial; padding: 30px; text-align: center; border: 5px solid #1e293b; margin: 20px;">
+        <h1>📜 BOLETIM DE AVALIAÇÃO ESCOLAR</h1>
+        <h3>${escola}</h3>
+        <hr style="margin: 20px 0;">
+        <p style="text-align: left; font-size: 16px;"><strong>Aluno(a):</strong> ${nome}</p>
+        <p style="text-align: left; font-size: 16px;"><strong>Turma:</strong> ${turma} | <strong>Matéria:</strong> ${materia}</p>
+        <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <h2>Nota Final: <span style="color: #2563eb;">${nota} / 10.0</span></h2>
+        </div>
+        <p style="margin-top: 60px;">___________________________________________________<br>Assinatura da Coordenação Pedagógica</p>
+      </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
+  };
+
+  window.gerarCertificadoIndividual = function(nome, escola, nota) {
+    let win = window.open('', '_blank');
+    win.document.write(`
+      <html>
+      <head><title>Certificado - ${nome}</title></head>
+      <body style="font-family: Georgia, serif; padding: 40px; text-align: center; border: 10px double #b45309; margin: 20px; background: #fffbeb;">
+        <h1 style="color: #b45309; font-size: 32px;">CERTIFICADO DE CONCLUSÃO</h1>
+        <p style="font-size: 18px; margin-top: 20px;">Certificamos para os devidos fins que</p>
+        <h2 style="font-size: 28px; color: #1e293b; border-bottom: 2px solid #b45309; display: inline-block; padding: 0 20px; margin: 15px 0;">${nome}</h2>
+        <p style="font-size: 18px; line-height: 1.6;">concluiu com êxito a avaliação oficial aplicada pela instituição <strong>${escola}</strong>, alcançando média <strong>${nota}</strong>.</p>
+        <div style="margin-top: 80px; display: flex; justify-content: space-around;">
+          <div>________________________________________<br>Direção Escolar</div>
+          <div>________________________________________<br>Coordenação</div>
+        </div>
+      </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
   };
 
   function atualizarGraficosDesempenho(lista) {
@@ -1261,34 +1460,21 @@ if (window.location.pathname.includes("painel.html")) {
 
   window.selecionarTodosResultados = function(marcar) {
     document.querySelectorAll(".chk-item-resultado").forEach(chk => chk.checked = marcar);
-    const mainChk = document.getElementById("chk-marcar-todos-resultados");
-    if (mainChk) mainChk.checked = marcar;
   };
 
   window.excluirResultadosSelecionados = async function() {
     const selecionados = Array.from(document.querySelectorAll(".chk-item-resultado:checked")).map(c => c.value);
-    if (selecionados.length === 0) {
-      alert("⚠️ Selecione ao menos um resultado para excluir.");
-      return;
-    }
-
-    if (confirm(`Deseja excluir permanentemente os ${selecionados.length} resultado(s) selecionado(s)?`)) {
+    if (selecionados.length === 0) { alert("⚠️ Selecione ao menos um resultado."); return; }
+    if (confirm(`Excluir permanentemente os ${selecionados.length} resultado(s) selecionado(s)?`)) {
       try {
-        for (const idDoc of selecionados) {
-          await deleteDoc(doc(db, "avaliacoes", idDoc));
-        }
-        mostrarNotificacao(`🗑️ ${selecionados.length} resultado(s) excluído(s) com sucesso!`);
-      } catch (err) {
-        mostrarNotificacao("Erro ao excluir: " + err.message);
-      }
+        for (const idDoc of selecionados) { await deleteDoc(doc(db, "avaliacoes", idDoc)); }
+        mostrarNotificacao(`🗑️ Resultados excluídos!`);
+      } catch (err) { mostrarNotificacao("Erro: " + err.message); }
     }
   };
 
   window.exportarResultadosCSV = function() {
-    if (!resultadosGlobaisCache || resultadosGlobaisCache.length === 0) {
-      alert("⚠️ Não há resultados para exportar.");
-      return;
-    }
+    if (!resultadosGlobaisCache || resultadosGlobaisCache.length === 0) { alert("⚠️ Sem dados."); return; }
     let csvContent = "\uFEFFStatus;Data/Hora;Escola;Período;Aluno;Turma;Matéria;Tempo Gasto;Acertos;Erros;Nota\n";
     resultadosGlobaisCache.forEach(res => {
       let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
@@ -1296,14 +1482,13 @@ if (window.location.pathname.includes("painel.html")) {
       let acertos = res.pontuacao || 0;
       let erros = totalQ - acertos;
       let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
-      let linha = `"Finalizado";"${dataFormatada}";"${res.escola || ''}";"${res.periodo || ''}";"${res.nome || ''}";"${res.turma || ''}";"${res.materia || ''}";"${res.tempoGastoFormatado || ''}";"${acertos}";"${erros}";"${nota}"\n`;
-      csvContent += linha;
+      csvContent += `"Finalizado";"${dataFormatada}";"${res.escola || ''}";"${res.periodo || ''}";"${res.nome || ''}";"${res.turma || ''}";"${res.materia || ''}";"${res.tempoGastoFormatado || ''}";"${acertos}";"${erros}";"${nota}"\n`;
     });
     let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     let url = URL.createObjectURL(blob);
     let a = document.createElement('a');
     a.href = url;
-    a.download = `resultados_avaliacoes_${Date.now()}.csv`;
+    a.download = `resultados_${Date.now()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1312,13 +1497,12 @@ if (window.location.pathname.includes("painel.html")) {
   function inicializarTabelaTempoReal() {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
     if (!corpoTabelaTempoReal) return;
-    
+     
     onSnapshot(collection(db, "alunos_online"), (snapshot) => {
       alunosOnlineCache = [];
       snapshot.forEach(docSnap => { 
         alunosOnlineCache.push({ idDoc: docSnap.id, ...docSnap.data() }); 
       });
-
       renderizarTabelaTempoReal();
     });
   }
@@ -1354,23 +1538,17 @@ if (window.location.pathname.includes("painel.html")) {
         let tA = a.dataInicio?.seconds || a.dataInicio || 0;
         let tB = b.dataInicio?.seconds || b.dataInicio || 0;
         switch (ordemAtualMonitoramento) {
-          case "inicio-asc":
-            return tA - tB;
-          case "nome-asc":
-            return (a.nome || "").localeCompare(b.nome || "");
-          case "escola-asc":
-            return (a.escola || "").localeCompare(b.escola || "");
-          case "tempo-desc":
-            return (b.segundosPassados || 0) - (a.segundosPassados || 0);
-          case "inicio-desc":
-          default:
-            return tB - tA;
+          case "inicio-asc": return tA - tB;
+          case "nome-asc": return (a.nome || "").localeCompare(b.nome || "");
+          case "escola-asc": return (a.escola || "").localeCompare(b.escola || "");
+          case "tempo-desc": return (b.segundosPassados || 0) - (a.segundosPassados || 0);
+          case "inicio-desc": default: return tB - tA;
         }
       });
     }
 
     if (dadosFiltrados.length === 0) {
-      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8;">Nenhum aluno correspondente encontrado no monitoramento.</td></tr>`;
+      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno online no momento.</td></tr>`;
       return;
     }
 
@@ -1381,6 +1559,9 @@ if (window.location.pathname.includes("painel.html")) {
       let tempoStr = `${min}m ${seg}s`;
       let dataInicioStr = aluno.dataInicio?.toDate ? aluno.dataInicio.toDate().toLocaleString('pt-BR') : "Agora";
       let estaMarcado = selecionadosAntes.has(aluno.idDoc) ? "checked" : "";
+      
+      let questaoAtualProgresso = aluno.questaoAtual || 1;
+      let totalQProgresso = aluno.totalQuestoes || 10;
 
       htmlOnline += `
         <tr>
@@ -1393,10 +1574,10 @@ if (window.location.pathname.includes("painel.html")) {
           <td>${aluno.nome || 'Aluno'}</td>
           <td>${aluno.turma || 'N/D'}</td>
           <td>${aluno.materia || 'Geral'}</td>
-          <td><strong style="color: #60a5fa;">Q.${aluno.questaoAtual || 1}/${aluno.totalQuestoes || 10}</strong></td>
+          <td><span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
           <td><span style="color: #facc15;">⏱️ ${tempoStr}</span></td>
           <td style="text-align: center;">
-            <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)" title="Finalizar prova deste aluno">🏁 Finalizar</button>
+            <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)">🏁 Finalizar</button>
           </td>
         </tr>
       `;
@@ -1405,79 +1586,38 @@ if (window.location.pathname.includes("painel.html")) {
   };
 
   window.finalizarAlunoElemento = function(btn) {
-    const idAluno = btn.getAttribute("data-id");
-    const nomeAluno = btn.getAttribute("data-nome");
-    window.finalizarAlunoIndividual(idAluno, nomeAluno);
+    window.finalizarAlunoIndividual(btn.getAttribute("data-id"), btn.getAttribute("data-nome"));
   };
 
   window.finalizarAlunoIndividual = async function(idAluno, nomeAluno) {
-    if (!idAluno) {
-      mostrarNotificacao("⚠️ ID do aluno inválido.");
-      return;
-    }
-
-    if (confirm(`Deseja finalizar e enviar para o relatório a prova do aluno(a) "${nomeAluno}" salvando o progresso atual?`)) {
+    if (!idAluno) return;
+    if (confirm(`Deseja finalizar a prova de "${nomeAluno}" agora?`)) {
       try {
         let alunoObj = alunosOnlineCache.find(a => a.idDoc === idAluno);
         const agora = Date.now();
         let segundos = alunoObj ? (alunoObj.segundosPassados || 0) : 0;
-        let min = Math.floor(segundos / 60);
-        let seg = segundos % 60;
-        let tempoGastoFormatado = `${min}m ${seg}s`;
-
         let totalQ = alunoObj?.totalQuestoes || 10;
-        let questaoParada = alunoObj?.questaoAtual || 1;
-        let pontuacaoAtual = alunoObj?.pontuacao !== undefined ? alunoObj.pontuacao : Math.min(questaoParada - 1, totalQ);
+        let pontuacaoAtual = alunoObj?.pontuacao || 0;
 
         await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
           idAluno: idAluno,
-          nome: alunoObj?.nome || nomeAluno || "Aluno",
+          nome: alunoObj?.nome || nomeAluno,
           turma: alunoObj?.turma || "N/D",
-          escola: alunoObj?.escola || "Escola",
+          escola: alunoObj?.escola || escolaAtivaSelecionadaIndependente || "Escola",
           periodo: alunoObj?.periodo || "Geral",
           materia: alunoObj?.materia || "Geral",
           pontuacao: pontuacaoAtual,
           totalQuestoes: totalQ,
           tempoGastoSegundos: segundos,
-          tempoGastoFormatado: tempoGastoFormatado,
+          tempoGastoFormatado: `${Math.floor(segundos/60)}m ${segundos%60}s`,
           dataEnvio: serverTimestamp(),
           timestamp: agora
         });
 
         await setDoc(doc(db, "permissoes_alunos", idAluno), { podeFazer: false }, { merge: true });
         await deleteDoc(doc(db, "alunos_online", idAluno));
-
-        mostrarNotificacao(`✅ Prova de ${nomeAluno} finalizada e salva com o progresso atual!`);
-      } catch (err) {
-        console.error("Erro ao finalizar:", err);
-        mostrarNotificacao("Erro ao finalizar aluno: " + err.message);
-      }
-    }
-  };
-
-  window.selecionarTodosOnline = function(marcar) {
-    document.querySelectorAll(".chk-item-online").forEach(chk => chk.checked = marcar);
-    const mainChk = document.getElementById("chk-marcar-todos-online");
-    if (mainChk) mainChk.checked = marcar;
-  };
-
-  window.excluirOnlineSelecionados = async function() {
-    const selecionados = Array.from(document.querySelectorAll(".chk-item-online:checked")).map(c => c.value);
-    if (selecionados.length === 0) {
-      alert("⚠️ Selecione ao menos um aluno online para encerrar.");
-      return;
-    }
-
-    if (confirm(`Deseja encerrar e remover do monitoramento os ${selecionados.length} aluno(s) selecionados?`)) {
-      try {
-        for (const idDoc of selecionados) {
-          await setDoc(doc(db, "permissoes_alunos", idDoc), { podeFazer: false }, { merge: true });
-          await deleteDoc(doc(db, "alunos_online", idDoc));
-        }
-        mostrarNotificacao(`🧹 ${selecionados.length} aluno(s) encerrado(s) com sucesso!`);
-      } catch (err) {
-        mostrarNotificacao("Erro ao encerrar: " + err.message);
-      }
+        mostrarNotificacao(`✅ Prova de ${nomeAluno} finalizada!`);
+      } catch (err) { alert("Erro: " + err.message); }
     }
   };
 
@@ -1489,8 +1629,10 @@ if (window.location.pathname.includes("painel.html")) {
 // ==========================================
 if (window.location.pathname.includes("escola.html")) {
   let escolaUrl = "";
+  let retornoAba = "escolas";
   const urlParams = new URLSearchParams(window.location.search);
   escolaUrl = urlParams.get("escola") ? decodeURIComponent(urlParams.get("escola")) : "";
+  retornoAba = urlParams.get("retorno") || "escolas";
 
   async function inicializarEscolaPage() {
     await carregarEstruturaGlobalFirebase();
@@ -1589,7 +1731,7 @@ if (window.location.pathname.includes("escola.html")) {
     }
 
     if (combinadas.length === 0) {
-      container.innerHTML = "Nenhuma combinação gerada. Selecione números e letras acima.";
+      container.innerHTML = "Nenhuma combinação gerada.";
     } else {
       let html = "";
       combinadas.forEach(t => {
@@ -1641,7 +1783,7 @@ if (window.location.pathname.includes("escola.html")) {
               <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:3px 6px; border-radius:4px; font-weight:bold;" onclick="excluirBoxEscola(${bIdx})">🗑️</button>
             </div>
           </div>
-          <div class="aviso-geral">💡 Informação herdada das Configurações Gerais. Modifique livremente para esta unidade.</div>
+          <div class="aviso-geral">💡 Informação personalizada para esta unidade.</div>
           <div class="sub-secao">
             <div class="sub-titulo-linha">
               <h3>Gerenciar e Selecionar Itens</h3>
@@ -1667,15 +1809,13 @@ if (window.location.pathname.includes("escola.html")) {
       html += `
             </div>
             <div class="input-grupo-add">
-              <input type="text" id="escola-input-add-${bIdx}" placeholder="Adicionar novo item nesta escola...">
+              <input type="text" id="escola-input-add-${bIdx}" placeholder="Adicionar novo item...">
               <button type="button" onclick="escolaAdicionarItem(${bIdx})">➕</button>
             </div>
           </div>
 
           <div class="sub-secao">
-            <div class="sub-titulo-linha">
-              <h3>👁️ Pré-visualização</h3>
-            </div>
+            <div class="sub-titulo-linha"><h3>👁️ Pré-visualização</h3></div>
             <div id="escola-prev-${tipoChave}" class="resultado-parcial">Nenhum item selecionado.</div>
           </div>
 
@@ -1686,9 +1826,7 @@ if (window.location.pathname.includes("escola.html")) {
 
           <div style="margin-top: 16px;">
             <h3 style="color: #60a5fa; font-size: 14px; margin-bottom: 6px;">📋 Tabela de Conferência</h3>
-            <div id="escola-tabela-${tipoChave}">
-              <p style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum item confirmado na tabela final ainda.</p>
-            </div>
+            <div id="escola-tabela-${tipoChave}"><p style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum item confirmado.</p></div>
           </div>
         </div>
       `;
@@ -1703,7 +1841,7 @@ if (window.location.pathname.includes("escola.html")) {
 
   window.editarTituloBoxEscola = function(bIdx) {
     let atual = estruturaGlobalBoxes[bIdx].titulo;
-    let novo = prompt("Novo título para esta box nesta escola:", atual);
+    let novo = prompt("Novo título:", atual);
     if (novo && novo.trim() !== "") {
       estruturaGlobalBoxes[bIdx].titulo = novo.trim();
       renderizarBoxesEscola();
@@ -1712,7 +1850,7 @@ if (window.location.pathname.includes("escola.html")) {
   };
 
   window.excluirBoxEscola = function(bIdx) {
-    if (confirm("Excluir esta box da escola?")) {
+    if (confirm("Excluir box?")) {
       estruturaGlobalBoxes.splice(bIdx, 1);
       renderizarBoxesEscola();
       mostrarNotificacao("🗑️ Box excluída!");
@@ -1722,7 +1860,7 @@ if (window.location.pathname.includes("escola.html")) {
   window.criarNovaBoxEscola = function() {
     const input = document.getElementById("input-nova-box-escola");
     const nome = input.value.trim();
-    if (!nome) { alert("Digite o nome da box!"); return; }
+    if (!nome) { alert("Digite o nome!"); return; }
     estruturaGlobalBoxes.push({ id: normalizarTexto(nome) + "_" + Date.now(), titulo: nome, itens: ["Exemplo 1"] });
     input.value = "";
     renderizarBoxesEscola();
@@ -1790,7 +1928,7 @@ if (window.location.pathname.includes("escola.html")) {
     atualizarPreviaEscola(tipoChave);
     renderizarTabelaConferenciaEscolaGenerica(tipoChave);
     atualizarResumoFinalConsolidado();
-    mostrarNotificacao("✅ Confirmado na tabela final!");
+    mostrarNotificacao("✅ Confirmado!");
   };
 
   window.escolaLimparSelecao = function(tipoChave) {
@@ -1825,7 +1963,7 @@ if (window.location.pathname.includes("escola.html")) {
     if (!container) return;
     let lista = dadosConfirmadosEscola[tipoChave] || [];
     if (lista.length === 0) {
-      container.innerHTML = `<p style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum item confirmado na tabela final ainda.</p>`;
+      container.innerHTML = `<p style="color: #94a3b8; font-size: 12px; font-style: italic;">Nenhum item confirmado.</p>`;
       return;
     }
     let html = `<table class="tabela-conferencia"><thead><tr><th>Item Confirmado</th><th style="width: 120px; text-align: right;">Ações</th></tr></thead><tbody>`;
@@ -1905,7 +2043,10 @@ if (window.location.pathname.includes("escola.html")) {
       await setDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaUrl)), configData);
       animarBotaoSucesso(e.target);
       mostrarNotificacao("✅ Configurações salvas para esta escola!");
-      setTimeout(() => { window.location.href = "painel.html"; }, 1500);
+      setTimeout(() => { 
+        let hashRetorno = retornoAba === "ativacao" ? "#ativacao" : "#escolas";
+        window.location.href = `painel.html${hashRetorno}`; 
+      }, 1500);
     } catch(err) { mostrarNotificacao("Erro: " + err.message); }
   });
 
@@ -1931,7 +2072,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       dadosProvaAtiva = docSnap.data();
       qtdQ = dadosProvaAtiva.quantidadeQuestoes || 10;
       let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
-      
+      let escolaStr = dadosProvaAtiva.escolaAtiva || "N/D";
+       
       let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
       let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
 
@@ -1949,7 +2091,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       if (detalhesProvaAtiva) {
         detalhesProvaAtiva.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>🏫</span><span><strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}</span></div>
+            <div style="display: flex; align-items: flex-start; gap: 8px;"><span>🏫</span><span><strong>Escola:</strong> ${escolaStr}</span></div>
             <div style="display: flex; align-items: flex-start; gap: 8px;"><span>📅</span><span><strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}</span></div>
             <div style="display: flex; align-items: flex-start; gap: 8px;"><span>📚</span><span><strong>Matéria(s):</strong> ${matsStr || 'Geral'}</span></div>
             ${avisoAgendamentoHtml}
@@ -1970,9 +2112,6 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       if (detalhesProvaAtiva) {
         detalhesProvaAtiva.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ Nenhuma prova foi liberada pelo professor no momento.</span>`;
       }
-      if (selectTurma) {
-        selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma disponível</option>`;
-      }
     }
   });
 
@@ -1991,8 +2130,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     if (tempoAgendado > Date.now()) {
       let dataAgendadaObj = new Date(tempoAgendado);
       let dataFormatadaEspera = dataAgendadaObj.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-      
-      alert(`⏳ A prova ainda não está no horário correto!\n\nData e horário agendados: ${dataFormatadaEspera}\n\nPor favor, aguarde o dia e horário corretos para iniciar.`);
+      alert(`⏳ A prova ainda não está no horário correto!\n\nHorário agendado: ${dataFormatadaEspera}`);
       document.getElementById("form-login").reset();
       return;
     }
@@ -2011,9 +2149,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         alert("⚠️ Você já realizou esta avaliação e não pode refazê-la.");
         return;
       }
-    } catch (err) {
-      console.error("Erro ao verificar permissão do aluno:", err);
-    }
+    } catch (err) {}
 
     alunoAtual.nome = nomeInput;
     alunoAtual.escola = dadosProvaAtiva.escolaAtiva || "Escola";
@@ -2067,23 +2203,12 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       filtradas.push(...qMat);
     }
 
-    if (filtradas.length === 0) {
-      for (let i = 1; i <= qtdQ; i++) {
-        filtradas.push({
-          pergunta: `Questão dinâmica de reforço ${i}: Qual conceito se aplica a esta avaliação?`,
-          opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
-          correta: "A",
-          categoria: "Geral"
-        });
-      }
-    }
+    if (filtradas.length === 0) filtradas = banco;
 
     let mapaUnicas = new Map();
     filtradas.forEach(q => {
       let chaveUnica = normalizarTexto(q.pergunta);
-      if (!mapaUnicas.has(chaveUnica)) {
-        mapaUnicas.set(chaveUnica, q);
-      }
+      if (!mapaUnicas.has(chaveUnica)) mapaUnicas.set(chaveUnica, q);
     });
     let unicasArray = Array.from(mapaUnicas.values());
 
@@ -2129,20 +2254,19 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     timerInterval = setInterval(() => {
       segundosPassados++;
-
       atualizarStatusOnlineFirebase();
 
       if (tempoMinimoMinutos > 0 && !avisoTempoMinimoExibido) {
         if (segundosPassados >= tempoMinimoMinutos * 60) {
           avisoTempoMinimoExibido = true;
-          alert("✅ O tempo mínimo obrigatório foi concluído! Agora você já pode finalizar a prova quando desejar.");
+          alert("✅ O tempo mínimo obrigatório foi concluído!");
         }
       }
 
       if (tempoLimiteMin > 0) {
         if (tempoRestanteSegundos <= 0) {
           clearInterval(timerInterval);
-          alert("⏱️ O tempo limite da prova esgotou! A prova será finalizada automaticamente.");
+          alert("⏱️ O tempo limite esgotou! A prova será finalizada automaticamente.");
           finalizarProva();
           return;
         }
@@ -2159,9 +2283,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
         textoRelogio += ` | Restante: ${lm.toString().padStart(2, '0')}:${ls.toString().padStart(2, '0')}`;
       }
 
-      if (cronometroDiv) {
-        cronometroDiv.textContent = textoRelogio;
-      }
+      if (cronometroDiv) cronometroDiv.textContent = textoRelogio;
     }, 1000);
   }
 
@@ -2188,9 +2310,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
        
       let acertosParciais = 0;
       listaQuestoes.forEach((q, idx) => {
-        if (respostasUsuario[idx] && respostasUsuario[idx] === q.correta) {
-          acertosParciais++;
-        }
+        if (respostasUsuario[idx] && respostasUsuario[idx] === q.correta) acertosParciais++;
       });
 
       let dadosAtualizacao = {
@@ -2226,23 +2346,11 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
     ["A", "B", "C", "D"].forEach((letra, idx) => {
       const btn = document.createElement("button");
       btn.className = "opcao-btn";
-       
       btn.textContent = `${letra}) ${q.opcoes[idx] || ""}`;
-      btn.style.width = "100%"; 
-      btn.style.padding = "12px 16px"; 
-      btn.style.marginBottom = "10px";
-      btn.style.textAlign = "left"; 
-      btn.style.display = "flex";
-      btn.style.alignItems = "center";
-      btn.style.justifyContent = "flex-start";
+      btn.style.width = "100%"; btn.style.padding = "12px 16px"; btn.style.marginBottom = "10px";
+      btn.style.textAlign = "left"; btn.style.display = "flex"; btn.style.alignItems = "center";
       btn.style.background = respostasUsuario[indiceAtual] === letra ? "#2563eb" : "#0f172a";
-      btn.style.color = "white"; 
-      btn.style.border = "1px solid #3b82f6"; 
-      btn.style.borderRadius = "8px"; 
-      btn.style.cursor = "pointer";
-      btn.style.fontWeight = "500";
-      btn.style.fontSize = "14px";
-       
+      btn.style.color = "white"; btn.style.border = "1px solid #3b82f6"; btn.style.borderRadius = "8px"; btn.style.cursor = "pointer";
       btn.onclick = () => { respostasUsuario[indiceAtual] = letra; exibirQuestao(); };
       container.appendChild(btn);
     });
@@ -2255,8 +2363,8 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       nav = document.createElement("div");
       nav.id = "nav-quiz"; nav.style.display = "flex"; nav.style.justifyContent = "space-between"; nav.style.marginTop = "20px";
       nav.innerHTML = `<button id="ant" style="padding:10px 15px; background:#4b5563; color:white; border:none; border-radius:8px;">⬅ Anterior</button>
-                          <button id="prox" style="padding:10px 15px; background:#2563eb; color:white; border:none; border-radius:8px;">Próxima ➡</button>
-                          <button id="fin" style="padding:10px 15px; background:#22c55e; color:white; border:none; border-radius:8px; display:none;">🏁 Finalizar</button>`;
+                       <button id="prox" style="padding:10px 15px; background:#2563eb; color:white; border:none; border-radius:8px;">Próxima ➡</button>
+                       <button id="fin" style="padding:10px 15px; background:#22c55e; color:white; border:none; border-radius:8px; display:none;">🏁 Finalizar</button>`;
       document.getElementById("tela-quiz").appendChild(nav);
     }
     document.getElementById("ant").onclick = () => { if(indiceAtual > 0) { indiceAtual--; exibirQuestao(); } };
@@ -2274,9 +2382,7 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
       let minutosPassados = segundosPassados / 60;
       if (minutosPassados < tempoMinimoMinutos) {
         let faltamSeg = Math.ceil((tempoMinimoMinutos * 60) - segundosPassados);
-        let fm = Math.floor(faltamSeg / 60);
-        let fs = faltamSeg % 60;
-        alert(`⚠️ O professor determinou um tempo mínimo de ${tempoMinimoMinutos} minuto(s) para entrega.\nFaltam ${fm}m ${fs}s para liberar a finalização.`);
+        alert(`⚠️ O tempo mínimo é de ${tempoMinimoMinutos} minuto(s). Faltam ${Math.floor(faltamSeg/60)}m ${faltamSeg%60}s.`);
         return;
       }
     }
@@ -2291,11 +2397,37 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     let acertos = 0;
     let htmlRev = "";
+    
     listaQuestoes.forEach((q, idx) => {
-      const resp = respostasUsuario[idx] || "X";
-      const correta = (resp === q.correta);
+      const respAluno = respostasUsuario[idx] || "Não respondida";
+      const correta = (respAluno === q.correta);
       if (correta) acertos++;
-      htmlRev += `<div class="item-revisao ${correta ? 'correta' : 'incorreta'}"><p><strong>${idx+1}. ${q.pergunta}</strong></p><p>Sua resposta: ${resp} ${correta ? '✅' : '❌'}</p></div>`;
+
+      let opcoesHtml = "";
+      ["A", "B", "C", "D"].forEach((letra, oIdx) => {
+        let estiloOpcao = "padding: 6px 10px; margin: 4px 0; border-radius: 4px;";
+        let indicador = "";
+        
+        if (letra === q.correta) {
+          estiloOpcao += " background: rgba(34, 197, 94, 0.25); border: 1px solid #22c55e; color: #4ade80; font-weight: bold;";
+          indicador = " ⭐ (Resposta Correta)";
+        } else if (letra === respAluno && !correta) {
+          estiloOpcao += " background: rgba(239, 68, 68, 0.25); border: 1px solid #ef4444; color: #f87171;";
+          indicador = " ❌ (Sua Resposta)";
+        } else {
+          estiloOpcao += " background: rgba(15, 23, 42, 0.5); color: #cbd5e1;";
+        }
+
+        opcoesHtml += `<div style="${estiloOpcao}">${letra}) ${q.opcoes[oIdx] || ""}${indicador}</div>`;
+      });
+
+      htmlRev += `
+        <div class="item-revisao ${correta ? 'correta' : 'incorreta'}">
+          <p><strong>Questão ${idx + 1}:</strong> ${q.pergunta}</p>
+          <div style="margin-top: 8px;">${opcoesHtml}</div>
+          <p style="margin-top: 8px; font-size: 13px;"><strong>Sua resposta:</strong> ${respAluno} | <strong>Status:</strong> ${correta ? '<span style="color:#4ade80;">Correta ✅</span>' : '<span style="color:#ef4444;">Incorreta ❌</span>'}</p>
+        </div>
+      `;
     });
 
     let erros = listaQuestoes.length - acertos;
@@ -2311,12 +2443,11 @@ if (window.location.pathname.includes("index.html") || window.location.pathname.
 
     try {
       const agora = Date.now();
-       
       await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
         idAluno: alunoAtual.id,
         nome: alunoAtual.nome || "Aluno",
         turma: alunoAtual.turma || "N/D",
-        escola: alunoAtual.escola || "Escola",
+        escola: alunoAtual.escola || dadosProvaAtiva.escolaAtiva || "Escola",
         periodo: alunoAtual.periodo || "Geral",
         materia: alunoAtual.materia || "Geral",
         pontuacao: acertos,
