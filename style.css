@@ -264,6 +264,72 @@ th {
   color: var(--correct-color);
 }
 
+.card-escola-lista { 
+  background: #0f172a; 
+  border: 1px solid var(--border); 
+  padding: 16px; 
+  border-radius: 8px; 
+  margin-bottom: 14px;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  flex-wrap: nowrap;
+  gap: 15px; 
+}
+
+.acoes-escola-card { 
+  display: flex; 
+  gap: 6px; 
+  align-items: center; 
+  white-space: nowrap;
+}
+
+.progresso-blocos-container {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:15px;
+  justify-content:center;
+}
+
+.bloco-progresso-item{
+  width:40px;
+  height:40px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.bloco-progresso-item.pendente{
+  background:#1e293b;
+  border:1px solid #334155;
+  color:#94a3b8;
+}
+
+.bloco-progresso-item.respondida{
+  background:#16a34a;
+  border:1px solid #22c55e;
+  color:white;
+}
+
+.bloco-progresso-item.atual{
+  background:#2563eb;
+  border:2px solid #60a5fa;
+  color:white;
+  transform:scale(1.08);
+}
+
+.resumo-progresso{
+  text-align:center;
+  margin-bottom:10px;
+  color:#38bdf8;
+  font-weight:bold;
+}
+
 /* Regras de Impressão */
 @media print {
   body {
@@ -289,24 +355,4 @@ th {
   th {
     background-color: #f1f5f9;
   }
-
-  .card-escola-lista { 
-  background: #0f172a; 
-  border: 1px solid var(--border); 
-  padding: 16px; 
-  border-radius: 8px; 
-  margin-bottom: 14px; /* Aumenta o espaço/respiro entre uma escola e outra */
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  flex-wrap: nowrap; /* Mantém os botões sempre na mesma linha da escola */
-  gap: 15px; 
-}
-
-.acoes-escola-card { 
-  display: flex; 
-  gap: 6px; 
-  align-items: center; 
-  white-space: nowrap; /* Evita que os botões quebrem para a linha de baixo */
-}
 }

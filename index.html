@@ -36,7 +36,7 @@
       border: 1px solid var(--border-color);
       border-radius: 14px;
       padding: 30px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
 
     h1, h2 { text-align: center; margin-bottom: 20px; color: #38bdf8; }
@@ -60,12 +60,6 @@
       width: 100%;
     }
 
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
-    }
-
     .btn {
       background: var(--accent);
       color: white;
@@ -78,11 +72,9 @@
       width: 100%;
       transition: background 0.2s;
       margin-top: 10px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
     }
 
     .btn:hover { background: var(--accent-hover); }
-
     .hidden { display: none !important; }
 
     .info-box {
@@ -95,23 +87,9 @@
       line-height: 1.6;
     }
 
-    .linha-detalhe {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .linha-detalhe span.icone {
-      min-width: 22px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .linha-detalhe div.conteudo-texto {
-      flex: 1;
-      word-break: break-word;
-    }
+    .linha-detalhe { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+    .linha-detalhe span.icone { min-width: 22px; text-align: center; flex-shrink: 0; }
+    .linha-detalhe div.conteudo-texto { flex: 1; word-break: break-word; }
 
     .opcao-btn {
       width: 100%;
@@ -130,17 +108,14 @@
       transition: all 0.2s ease;
     }
 
-    .opcao-btn:hover {
-      border-color: var(--accent);
-      background: rgba(37, 99, 235, 0.15);
-    }
+    .opcao-btn:hover { border-color: var(--accent); background: rgba(37, 99, 235, 0.15); }
+    .opcao-btn.selecionada { background: var(--accent); border-color: #60a5fa; color: white; }
 
-    .opcao-btn.selecionada {
-      background: var(--accent);
-      border-color: #60a5fa;
-      color: white;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    }
+    .progresso-blocos-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 15px; }
+    .bloco-progresso-item { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .bloco-progresso-item.pendente { background: #1e293b; border: 1px solid #334155; color: #94a3b8; }
+    .bloco-progresso-item.respondida { background: #16a34a; border: 2px solid #22c55e; color: #fff; }
+    .bloco-progresso-item.atual { background: #2563eb; border: 2px solid #60a5fa; color: #fff; }
 
     .item-revisao {
       background: rgba(15, 23, 42, 0.6);
@@ -148,6 +123,7 @@
       padding: 12px;
       border-radius: 8px;
       margin-bottom: 10px;
+      text-align: left;
     }
     .item-revisao.correta { border-color: var(--success); }
     .item-revisao.incorreta { border-color: var(--danger); }
@@ -156,38 +132,33 @@
 <body>
 
   <div class="container">
-    <!-- TELA DE LOGIN DO ALUNO -->
     <div id="tela-login">
-      <h1>Área do Aluno - Avaliação</h1>
-      
-      <div id="detalhes-prova-ativa" class="info-box">
-        ⏳ Verificando se há alguma prova ativa no momento...
-      </div>
+      <h1>ÁREA DO ALUNO - Avaliação</h1>
+      <div id="detalhes-prova-ativa" class="info-box">⏳ Verificando se há alguma prova ativa no momento...</div>
 
       <form id="form-login">
         <div class="grupo-form">
           <label for="nome-aluno">Nome Completo:</label>
           <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required>
         </div>
-
         <div class="grupo-form">
           <label for="turma-aluno">Sua Turma:</label>
           <select id="turma-aluno" required>
             <option value="" disabled selected>Aguardando liberação de turmas...</option>
           </select>
         </div>
-
         <button type="submit" id="btn-iniciar-prova" class="btn">🚀 Iniciar Avaliação</button>
       </form>
     </div>
 
-    <!-- TELA DO QUIZ / PROVA -->
     <div id="tela-quiz" class="hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <span id="badge-escola-ativa" style="font-size: 13px; color: var(--text-muted); font-weight: bold;">🏫 Escola</span>
         <span id="progresso-txt" style="font-size: 14px; font-weight: bold; color: #38bdf8;">Questão 1 de 10</span>
       </div>
 
+      <div id="resumo-progresso" style="text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;"></div>
+      <div id="progresso-blocos-topo" class="progresso-blocos-container"></div>
       <div id="relogio-cronometro" style="display: none;">⏱️ Tempo Gasto: 00:00</div>
 
       <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; padding: 18px; border-radius: 10px; margin-bottom: 20px;">
@@ -203,7 +174,6 @@
       </div>
     </div>
 
-    <!-- TELA DE RESULTADO -->
     <div id="tela-resultado" class="hidden">
       <h1>🎉 Avaliação Concluída!</h1>
       <div class="info-box" style="text-align: center;">
@@ -212,14 +182,13 @@
         <p id="status-envio-txt" style="color: #38bdf8; margin-top: 8px; font-weight: bold;"></p>
       </div>
 
-      <h3 style="margin-bottom: 10px; font-size: 15px;">Revisão das Questões:</h3>
+      <h3 style="margin-bottom: 10px; font-size: 15px; text-align: left;">Revisão das Questões:</h3>
       <div id="container-revisao-resultado" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
 
       <button type="button" id="btn-reiniciar" class="btn">🔄 Sair / Tela Inicial</button>
     </div>
   </div>
 
-  <!-- Firebase SDK v10 (Modular via ESM) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -242,10 +211,7 @@
     let dadosProvaAtiva = {};
     let listaQuestoes = [], indiceAtual = 0, respostasUsuario = {};
     let alunoAtual = {}, qtdQ = 10;
-    let timerInterval = null, segundosPassados = 0, tempoRestanteSegundos = 0;
-    let avisoTempoMinimoExibido = false;
-    let watcherPermissaoInterval = null;
-    let verificadorHorarioInterval = null;
+    let timerInterval = null, segundosPassados = 0;
     let syncOnlineInterval = null;
 
     const selectTurma = document.getElementById("turma-aluno");
@@ -253,134 +219,48 @@
     const detalhesProvaAtiva = document.getElementById("detalhes-prova-ativa");
     const btnIniciarProva = document.getElementById("btn-iniciar-prova");
 
-    function atualizarInterfaceStatusProva() {
-      if (!dadosProvaAtiva.escolaAtiva) {
-        detalhesProvaAtiva.innerHTML = `<span style="color: var(--danger); font-weight: bold;">⚠️ Nenhuma prova foi liberada pelo professor no painel ainda.</span>`;
-        if (btnIniciarProva) {
-          btnIniciarProva.disabled = true;
-          btnIniciarProva.style.background = "#475569";
-          btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
-        }
-        return;
-      }
+    function limparPrefixoPergunta(pergunta) {
+      if (!pergunta) return "";
+      let limpa = pergunta.replace(/^\[.*?\]\s*/, "").trim();
+      limpa = limpa.replace(/^\(\d+\)\s*/, "").trim();
+      limpa = limpa.replace(/^\d+[\)\.\-\s]+\s*/, "").trim();
+      return limpa;
+    }
 
-      let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
-      let turmas = dadosProvaAtiva.turmasAtivas || [];
-      let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
-      let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
-
-      let avisoAgendamentoHtml = "";
-      let bloqueioTipo = null; 
-      let agora = Date.now();
-      let agendamentoTime = dadosProvaAtiva.agendamento || 0;
-
-      if (agendamentoTime > 0) {
-        let dataAgendada = new Date(agendamentoTime);
-        let dataFormatada = dataAgendada.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-        
-        if (agora < agendamentoTime) {
-          bloqueioTipo = 'futuro';
-          avisoAgendamentoHtml = `
-            <div class="linha-detalhe">
-              <span class="icone">⏳</span>
-              <div class="conteudo-texto"><strong style="color: #f87171;">Aviso: Esta prova está agendada para iniciar em ${dataFormatada}. O acesso está bloqueado até o horário correto.</strong></div>
-            </div>`;
-        } else {
-          if (tempoLimite > 0) {
-            let tempoExpiracao = agendamentoTime + (tempoLimite * 60 * 1000);
-            if (agora > tempoExpiracao) {
-              bloqueioTipo = 'expirado';
-              avisoAgendamentoHtml = `
-                <div class="linha-detalhe">
-                  <span class="icone">❌</span>
-                  <div class="conteudo-texto"><strong style="color: #ef4444;">O prazo para realizar esta avaliação já se encerrou. Por favor, procure o seu professor.</strong></div>
-                </div>`;
-            } else {
-              bloqueioTipo = 'liberado';
-              avisoAgendamentoHtml = `
-                <div class="linha-detalhe">
-                  <span class="icone">🟢</span>
-                  <div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div>
-                </div>`;
-            }
-          } else {
-            bloqueioTipo = 'liberado';
-            avisoAgendamentoHtml = `
-              <div class="linha-detalhe">
-                <span class="icone">🟢</span>
-                <div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div>
-              </div>`;
-          }
-        }
-      } else {
-        bloqueioTipo = 'liberado';
-        avisoAgendamentoHtml = `
-          <div class="linha-detalhe">
-            <span class="icone">🟢</span>
-            <div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div>
-          </div>`;
-      }
-
-      detalhesProvaAtiva.innerHTML = `
-        <div class="linha-detalhe"><span class="icone">🏫</span><div class="conteudo-texto"><strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}</div></div>
-        <div class="linha-detalhe"><span class="icone">📚</span><div class="conteudo-texto"><strong>Matéria(s):</strong> ${matsStr || 'Geral'}</div></div>
-        <div class="linha-detalhe"><span class="icone">🏛️</span><div class="conteudo-texto"><strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}</div></div>
-        ${avisoAgendamentoHtml}
-        <div class="linha-detalhe"><span class="icone">⏱️</span><div class="conteudo-texto"><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}</div></div>
-        <div class="linha-detalhe"><span class="icone">⏳</span><div class="conteudo-texto"><strong>Tempo Limite:</strong> ${tempoLimite > 0 ? tempoLimite + ' minutos' : 'Sem limite'}</div></div>
-        <div class="linha-detalhe"><span class="icone">🔒</span><div class="conteudo-texto"><strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}</div></div>
-      `;
-
-      if (bloqueioTipo === 'futuro') {
-        if (btnIniciarProva) {
-          btnIniciarProva.disabled = true;
-          btnIniciarProva.style.background = "#475569";
-          btnIniciarProva.style.cursor = "not-allowed";
-          btnIniciarProva.textContent = "⏳ Aguardando Horário Agendado";
-        }
-      } else if (bloqueioTipo === 'expirado') {
-        if (btnIniciarProva) {
-          btnIniciarProva.disabled = true;
-          btnIniciarProva.style.background = "#7f1d1d";
-          btnIniciarProva.style.cursor = "not-allowed";
-          btnIniciarProva.textContent = "❌ Avaliação Encerrada";
-        }
-      } else {
-        if (btnIniciarProva) {
-          btnIniciarProva.disabled = false;
-          btnIniciarProva.style.background = "var(--accent)";
-          btnIniciarProva.style.cursor = "pointer";
-          btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
-        }
-      }
-
-      if (selectTurma) {
-        if (turmas.length > 0) {
-          selectTurma.innerHTML = `<option value="" disabled selected>Selecione sua turma...</option>`;
-          turmas.forEach(t => {
-            selectTurma.innerHTML += `<option value="${t}">${t}</option>`;
-          });
-        } else {
-          selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma disponível</option>`;
-        }
-      }
+    function limparPrefixoOpcao(opcaoStr) {
+      if (!opcaoStr) return "";
+      let limpo = opcaoStr.toString().replace(/^[a-zA-Z][\)\.\-\s]+\s*/, "").trim();
+      let lower = limpo.toLowerCase();
+      if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return "";
+      return limpo;
     }
 
     onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
       if (docSnap.exists()) {
         dadosProvaAtiva = docSnap.data();
         qtdQ = parseInt(dadosProvaAtiva.quantidadeQuestoes) || 10;
-        atualizarInterfaceStatusProva();
+        
+        let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
+        let turmas = dadosProvaAtiva.turmasAtivas || [];
+        let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
+        let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
 
-        if (verificadorHorarioInterval) clearInterval(verificadorHorarioInterval);
-        verificadorHorarioInterval = setInterval(() => {
-          if (dadosProvaAtiva.agendamento) {
-            atualizarInterfaceStatusProva();
-          }
-        }, 1000);
-      } else {
-        dadosProvaAtiva = {};
-        atualizarInterfaceStatusProva();
+        detalhesProvaAtiva.innerHTML = `
+          <div class="linha-detalhe"><span class="icone">🏫</span><div class="conteudo-texto"><strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}</div></div>
+          <div class="linha-detalhe"><span class="icone">📚</span><div class="conteudo-texto"><strong>Matéria(s):</strong> ${matsStr || 'Geral'}</div></div>
+          <div class="linha-detalhe"><span class="icone">🏛️</span><div class="conteudo-texto"><strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}</div></div>
+          <div class="linha-detalhe"><span class="icone">🟢</span><div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div></div>
+          <div class="linha-detalhe"><span class="icone">⏱️</span><div class="conteudo-texto"><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}</div></div>
+          <div class="linha-detalhe"><span class="icone">⏳</span><div class="conteudo-texto"><strong>Tempo Limite:</strong> ${tempoLimite > 0 ? tempoLimite + ' minutos' : 'Sem limite'}</div></div>
+          <div class="linha-detalhe"><span class="icone">🔒</span><div class="conteudo-texto"><strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}</div></div>
+        `;
+
+        if (selectTurma && turmas.length > 0) {
+          selectTurma.innerHTML = `<option value="" disabled selected>Selecione sua turma...</option>`;
+          turmas.forEach(t => {
+            selectTurma.innerHTML += `<option value="${t}">${t}</option>`;
+          });
+        }
       }
     });
 
@@ -389,36 +269,7 @@
       const nomeVal = inputNomeAluno.value.trim().toUpperCase();
       const turmaVal = selectTurma.value;
 
-      if (!nomeVal || !turmaVal) {
-        alert("⚠️ Preencha seu nome e selecione sua turma.");
-        return;
-      }
-
-      if (!dadosProvaAtiva.escolaAtiva) {
-        alert("⚠️ A prova ainda não foi totalmente publicada pelo professor. Aguarde um instante.");
-        return;
-      }
-
-      let tempoAgendado = dadosProvaAtiva.agendamento || 0;
-      let tempoLimiteMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
-      let agora = Date.now();
-
-      if (tempoAgendado > 0) {
-        if (agora < tempoAgendado) {
-          let dataAgendadaObj = new Date(tempoAgendado);
-          let dataFormatadaEspera = dataAgendadaObj.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-          alert(`❌ ACESSO BLOQUEADO!\n\nA prova ainda não está no horário correto.\nData e horário agendados: ${dataFormatadaEspera}`);
-          return;
-        }
-
-        if (tempoLimiteMin > 0) {
-          let tempoExpiracao = tempoAgendado + (tempoLimiteMin * 60 * 1000);
-          if (agora > tempoExpiracao) {
-            alert("❌ O prazo para realizar esta avaliação já se encerrou. Por favor, procure o seu professor.");
-            return;
-          }
-        }
-      }
+      if (!nomeVal || !turmaVal) { alert("⚠️ Preencha seu nome e turma."); return; }
 
       if (dadosProvaAtiva.token && dadosProvaAtiva.token.trim() !== "") {
         let tokenInput = prompt("🔒 Digite o token/senha fornecido pelo professor para acessar a prova:");
@@ -428,193 +279,164 @@
         }
       }
 
-      const idAlunoUnico = `${nomeVal.replace(/[^A-Z0-9]/g, "_")}_${turmaVal.replace(/[^A-Z0-9]/g, "_")}`;
-
-      try {
-        const permDoc = await getDoc(doc(db, "permissoes_alunos", idAlunoUnico));
-        if (permDoc.exists() && permDoc.data().podeFazer === false) {
-          alert("⚠️ Você já realizou esta avaliação e não pode refazê-la.");
-          return;
-        }
-      } catch (err) { console.error(err); }
-
       alunoAtual = {
         nome: nomeVal,
         escola: dadosProvaAtiva.escolaAtiva,
         periodo: dadosProvaAtiva.periodoAtivo || "Geral",
         materia: (dadosProvaAtiva.materiasAtivas || ["Geral"]).join(" / "),
         turma: turmaVal,
-        id: idAlunoUnico
+        id: `${nomeVal.replace(/[^A-Z0-9]/g, "_")}_${turmaVal.replace(/[^A-Z0-9]/g, "_")}`
       };
 
       btnIniciarProva.disabled = true;
-      btnIniciarProva.textContent = "Carregando avaliação...";
-
+      btnIniciarProva.textContent = "Carregando...";
       await iniciarCarregamentoProva();
     });
 
     async function iniciarCarregamentoProva() {
-      let tempoAgendado = dadosProvaAtiva.agendamento || 0;
-      if (tempoAgendado > 0 && tempoAgendado <= Date.now()) {
-        segundosPassados = Math.floor((Date.now() - tempoAgendado) / 1000);
-      } else {
-        segundosPassados = 0;
-      }
-
-      try {
-        await setDoc(doc(db, "alunos_online", alunoAtual.id), {
-          nome: alunoAtual.nome,
-          turma: alunoAtual.turma,
-          escola: alunoAtual.escola,
-          materia: alunoAtual.materia,
-          periodo: alunoAtual.periodo,
-          questaoAtual: 1,
-          totalQuestoes: qtdQ,
-          segundosPassados: segundosPassados,
-          pontuacao: 0,
-          dataInicio: serverTimestamp(),
-          atualizadoEm: serverTimestamp()
-        });
-      } catch(e) { console.error(e); }
-
+      segundosPassados = 0;
       let banco = [];
       try {
-        const snap = await getDocs(collection(db, "questoes"));
+        let snap = await getDocs(collection(db, "questoes"));
+        if (snap.empty) {
+          snap = await getDocs(collection(db, "banco_questoes"));
+        }
+
         snap.forEach(s => {
           let d = s.data();
-          let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
-          let perguntaLimpa = perguntaBruta.replace(/\[Técnico\s*\d+\]\s*/gi, "").trim();
+          let perguntaLimpa = limparPrefixoPergunta(d.pergunta || d.questao || d.titulo || "Sem Título");
           let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
-          let letraCorreta = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
           
+          let opcoesLimpas = opcoesBrutas
+            .map(op => limparPrefixoOpcao(op))
+            .filter(op => {
+              if (!op || op === "") return false;
+              let lower = op.toLowerCase();
+              if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return false;
+              return true;
+            });
+
+          let letraOriginal = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
+          let indiceOriginal = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}[letraOriginal] || 0;
+          if (indiceOriginal >= opcoesLimpas.length) indiceOriginal = 0;
+
+          let alternativasMapeadas = opcoesLimpas.map((texto, idx) => ({
+            texto: texto,
+            ehCorreta: (idx === indiceOriginal)
+          }));
+
+          let distratoresSeguros = [
+            "Processamento autônomo baseado em regras estáticas locais",
+            "Conversão estruturada de metadados em arquivos compactados",
+            "Execução direta de rotinas em camada de hardware isolada",
+            "Indexação sequencial de logs e repositórios desatualizados"
+          ];
+
+          let contC = 0;
+          while (alternativasMapeadas.length < 5) {
+            let txtComp = distratoresSeguros[contC % distratoresSeguros.length];
+            contC++;
+            alternativasMapeadas.push({ texto: txtComp, ehCorreta: false });
+          }
+
+          if (alternativasMapeadas.length > 5) alternativasMapeadas = alternativasMapeadas.slice(0, 5);
+
+          for (let i = alternativasMapeadas.length - 1; i > 0; i--) {
+            const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
+            const j = Math.floor((aleatorio / 4294967295) * (i + 1));
+            [alternativasMapeadas[i], alternativasMapeadas[j]] = [alternativasMapeadas[j], alternativasMapeadas[i]];
+          }
+
+          let novoIndiceCorreto = alternativasMapeadas.findIndex(alt => alt.ehCorreta);
+          if (novoIndiceCorreto === -1) novoIndiceCorreto = 0;
+          let letraCorretaFinal = ["A", "B", "C", "D", "E"][novoIndiceCorreto];
+
           banco.push({
             pergunta: perguntaLimpa,
-            opcoes: opcoesBrutas.map(op => op.replace(/^[A-D]\)\s*/, "").trim()),
-            correta: letraCorreta,
+            opcoes: alternativasMapeadas.map(alt => alt.texto),
+            correta: letraCorretaFinal,
             categoria: d.categoria || d.materia || "Geral"
           });
         });
-      } catch(e) { console.error(e); }
+      } catch(e) { console.error("Erro ao buscar no Firebase:", e); }
 
       let materiasAtivas = dadosProvaAtiva.materiasAtivas || [];
       let filtradas = [];
       
       if (materiasAtivas.length > 0) {
         materiasAtivas.forEach(mat => {
-          let qMat = banco.filter(q => 
-            q.categoria.toLowerCase().includes(mat.toLowerCase()) || 
-            mat.toLowerCase().includes(q.categoria.toLowerCase())
-          );
+          let normMat = mat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          let qMat = banco.filter(q => {
+            let normCat = (q.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            return normCat.includes(normMat) || normMat.includes(normCat);
+          });
           filtradas.push(...qMat);
         });
       }
 
-      if (filtradas.length === 0) {
-        filtradas = [...banco];
+      if (filtradas.length === 0) filtradas = [...banco];
+
+      let qtdDesejada = parseInt(qtdQ) || 10;
+      let materiaNome = materiasAtivas.length > 0 ? materiasAtivas[0] : "Conteúdo Geral";
+
+      let poolTemasBase = [
+        "Fundamentos e diretrizes estruturais aplicadas ao contexto operacional",
+        "Parâmetro secundário de validação e verificação de integridade",
+        "Mecanismo auxiliar de processamento síncrono e integrado",
+        "Diretiva de controle e auditoria de fluxo sistêmico",
+        "Abordagem complementar voltada ao suporte técnico avançado",
+        "Otimização contínua de parâmetros em ambientes de alta carga",
+        "Gerenciamento autônomo de dependências em camadas isoladas",
+        "Tratamento estruturado de exceções e logs de auditoria",
+        "Mapeamento sequencial de metadados em repositórios remotos",
+        "Sincronização de estados entre arquiteturas distribuídas"
+      ];
+
+      let contadorGeracao = 1;
+      while (filtradas.length < qtdDesejada) {
+        let temaAtual = poolTemasBase[(contadorGeracao - 1) % poolTemasBase.length];
+        filtradas.push({
+          pergunta: `Análise técnica e conceitual sobre os aspectos práticos da disciplina de ${materiaNome} - Módulo ${contadorGeracao}`,
+          opcoes: [
+            temaAtual,
+            "Processamento autônomo baseado em regras estáticas locais",
+            "Conversão estruturada de metadados em arquivos compactados",
+            "Execução direta de rotinas em camada de hardware isolada",
+            "Indexação sequencial de logs e repositórios desatualizados"
+          ],
+          correta: "A",
+          categoria: materiaNome
+        });
+        contadorGeracao++;
       }
 
       let mapaUnicas = new Map();
       filtradas.forEach(q => {
-        let chave = q.pergunta.toLowerCase().trim();
-        if (!mapaUnicas.has(chave)) {
-          mapaUnicas.set(chave, q);
-        }
+        let chave = (q.pergunta || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        if (chave && !mapaUnicas.has(chave)) mapaUnicas.set(chave, q);
       });
       let unicasArray = Array.from(mapaUnicas.values());
 
       for (let i = unicasArray.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
+        const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
+        const j = Math.floor((aleatorio / 4294967295) * (i + 1));
         [unicasArray[i], unicasArray[j]] = [unicasArray[j], unicasArray[i]];
       }
 
-      listaQuestoes = unicasArray.slice(0, qtdQ);
-
-      if (listaQuestoes.length < qtdQ) {
-        let faltam = qtdQ - listaQuestoes.length;
-        for (let i = 1; i <= faltam; i++) {
-          listaQuestoes.push({
-            pergunta: `Questão complementar de reforço ${i}: Qual conceito se aplica a esta avaliação?`,
-            opcoes: ["Alternativa Correta", "Alternativa Incorreta 1", "Alternativa Incorreta 2", "Alternativa Incorreta 3"],
-            correta: "A",
-            categoria: "Geral"
-          });
-        }
-      }
+      listaQuestoes = unicasArray.slice(0, qtdDesejada);
 
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
       document.getElementById("tela-login").classList.add("hidden");
       document.getElementById("tela-quiz").classList.remove("hidden");
 
       iniciarCronogerenciamento();
-      iniciarMonitoramentoFechamentoRemoto();
       iniciarSincronizacaoTempoReal();
       exibirQuestao();
     }
 
     function iniciarCronogerenciamento() {
-      avisoTempoMinimoExibido = false;
-      let tempoLimiteMin = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
-      let tempoMinimoMinutos = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
-      
-      let tempoLimiteSegundosTotais = tempoLimiteMin > 0 ? tempoLimiteMin * 60 : 0;
-      tempoRestanteSegundos = tempoLimiteSegundosTotais > 0 ? Math.max(0, tempoLimiteSegundosTotais - segundosPassados) : 0;
-
-      if (tempoLimiteMin > 0 && tempoRestanteSegundos <= 0) {
-        alert("❌ O prazo para realizar esta avaliação já se encerrou. Por favor, procure o seu professor.");
-        location.reload();
-        return;
-      }
-
-      const cronometroDiv = document.getElementById("relogio-cronometro");
-      if (cronometroDiv) {
-        cronometroDiv.style.display = "block";
-        cronometroDiv.style.background = "#1e293b";
-        cronometroDiv.style.border = "1px solid #eab308";
-        cronometroDiv.style.color = "#facc15";
-        cronometroDiv.style.padding = "8px 12px";
-        cronometroDiv.style.borderRadius = "8px";
-        cronometroDiv.style.textAlign = "center";
-        cronometroDiv.style.marginBottom = "15px";
-        cronometroDiv.style.fontWeight = "bold";
-        cronometroDiv.style.fontSize = "15px";
-      }
-
       if (timerInterval) clearInterval(timerInterval);
-
-      timerInterval = setInterval(() => {
-        segundosPassados++;
-
-        if (tempoMinimoMinutos > 0 && !avisoTempoMinimoExibido) {
-          if (segundosPassados >= tempoMinimoMinutos * 60) {
-            avisoTempoMinimoExibido = true;
-            alert("✅ O tempo mínimo obrigatório foi concluído! Agora você já pode finalizar a prova quando desejar.");
-          }
-        }
-
-        if (tempoLimiteMin > 0) {
-          if (tempoRestanteSegundos <= 0) {
-            clearInterval(timerInterval);
-            alert("⏱️ O tempo limite da prova esgotou! A prova será finalizada automaticamente agora.");
-            finalizarProva();
-            return;
-          }
-          tempoRestanteSegundos--;
-        }
-
-        let m = Math.floor(segundosPassados / 60);
-        let s = segundosPassados % 60;
-        let textoRelogio = `⏱️ Tempo Gasto: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-
-        if (tempoLimiteMin > 0) {
-          let lm = Math.floor(tempoRestanteSegundos / 60);
-          let ls = tempoRestanteSegundos % 60;
-          textoRelogio += ` | Restante: ${lm.toString().padStart(2, '0')}:${ls.toString().padStart(2, '0')}`;
-        }
-
-        if (cronometroDiv) {
-          cronometroDiv.textContent = textoRelogio;
-        }
-      }, 1000);
+      timerInterval = setInterval(() => { segundosPassados++; }, 1000);
     }
 
     function iniciarSincronizacaoTempoReal() {
@@ -622,6 +444,11 @@
       syncOnlineInterval = setInterval(async () => {
         if (!alunoAtual.id) return;
         try {
+          let acertosParciais = 0;
+          listaQuestoes.forEach((q, idx) => {
+            if (respostasUsuario[idx] === q.correta) acertosParciais++;
+          });
+
           await setDoc(doc(db, "alunos_online", alunoAtual.id), {
             nome: alunoAtual.nome,
             turma: alunoAtual.turma,
@@ -631,27 +458,11 @@
             questaoAtual: indiceAtual + 1,
             totalQuestoes: listaQuestoes.length,
             segundosPassados: segundosPassados,
+            pontuacao: acertosParciais,
             atualizadoEm: serverTimestamp()
           }, { merge: true });
         } catch(e) {}
       }, 5000);
-    }
-
-    function iniciarMonitoramentoFechamentoRemoto() {
-      if (watcherPermissaoInterval) clearInterval(watcherPermissaoInterval);
-      watcherPermissaoInterval = setInterval(async () => {
-        if (!alunoAtual.id) return;
-        try {
-          const pDoc = await getDoc(doc(db, "permissoes_alunos", alunoAtual.id));
-          if (pDoc.exists() && pDoc.data().podeFazer === false) {
-            clearInterval(watcherPermissaoInterval);
-            if (timerInterval) clearInterval(timerInterval);
-            if (syncOnlineInterval) clearInterval(syncOnlineInterval);
-            alert("🔒 Sua prova foi encerrada pelo professor.");
-            location.reload();
-          }
-        } catch(e) {}
-      }, 3000);
     }
 
     function exibirQuestao() {
@@ -659,18 +470,22 @@
       document.getElementById("pergunta-txt").textContent = `${indiceAtual + 1}. ${q.pergunta}`;
       document.getElementById("progresso-txt").textContent = `Questão ${indiceAtual + 1} de ${listaQuestoes.length}`;
 
+      let htmlBlocos = "";
+      listaQuestoes.forEach((_, index) => {
+        let classe = index === indiceAtual ? "atual" : (respostasUsuario[index] !== undefined ? "respondida" : "pendente");
+        htmlBlocos += `<div class="bloco-progresso-item ${classe}" onclick="window.irQuestao(${index})">${index + 1}</div>`;
+      });
+      document.getElementById("progresso-blocos-topo").innerHTML = htmlBlocos;
+
       const container = document.getElementById("opcoes-container");
       container.innerHTML = "";
 
-      ["A", "B", "C", "D"].forEach((letra, idx) => {
-        const textoOpcao = q.opcoes[idx] || `Opção ${letra}`;
+      ["A", "B", "C", "D", "E"].forEach((letra, idx) => {
+        const texto = q.opcoes[idx] || `Alternativa ${letra}`;
         const btn = document.createElement("button");
-        btn.className = `opcao-btn ${respostasUsuario[indiceAtual] === letra ? 'selecionada' : ''}`;
-        btn.textContent = `${letra}) ${textoOpcao}`;
-        btn.onclick = () => {
-          respostasUsuario[indiceAtual] = letra;
-          exibirQuestao();
-        };
+        btn.className = "opcao-btn" + (respostasUsuario[indiceAtual] === letra ? " selecionada" : "");
+        btn.textContent = `${letra}) ${texto}`;
+        btn.onclick = () => { respostasUsuario[indiceAtual] = letra; exibirQuestao(); };
         container.appendChild(btn);
       });
 
@@ -679,28 +494,14 @@
       document.getElementById("fin").style.display = indiceAtual === listaQuestoes.length - 1 ? "block" : "none";
     }
 
+    window.irQuestao = function(index) { indiceAtual = index; exibirQuestao(); };
+
     document.getElementById("ant")?.addEventListener("click", () => { if (indiceAtual > 0) { indiceAtual--; exibirQuestao(); } });
     document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
-    document.getElementById("fin")?.addEventListener("click", tentarFinalizarProva);
-
-    function tentarFinalizarProva() {
-      let tempoMinimoMinutos = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
-      if (tempoMinimoMinutos > 0) {
-        let minutosPassados = segundosPassados / 60;
-        if (minutosPassados < tempoMinimoMinutos) {
-          let faltamSeg = Math.ceil((tempoMinimoMinutos * 60) - segundosPassados);
-          let fm = Math.floor(faltamSeg / 60);
-          let fs = faltamSeg % 60;
-          alert(`⚠️ O professor determinou um tempo mínimo de ${tempoMinimoMinutos} minuto(s) para entrega.\nFaltam ${fm}m ${fs}s para liberar a finalização.`);
-          return;
-        }
-      }
-      finalizarProva();
-    }
+    document.getElementById("fin")?.addEventListener("click", finalizarProva);
 
     async function finalizarProva() {
       if (timerInterval) clearInterval(timerInterval);
-      if (watcherPermissaoInterval) clearInterval(watcherPermissaoInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
       document.getElementById("tela-quiz").classList.add("hidden");
       document.getElementById("tela-resultado").classList.remove("hidden");

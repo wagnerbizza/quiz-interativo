@@ -81,7 +81,7 @@
     .dropdown-menu-win.show { display: block !important; }
     
     .painel-controle-topo { 
-      display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; gap: 8px; position: sticky; top: 120px; z-index: 880; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; gap: 12px; position: sticky; top: 120px; z-index: 880; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .grupo-controles-esquerda, .grupo-controles-direita { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
@@ -100,8 +100,45 @@
     .escolas-seletor-topo { background: #0f172a; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { background-color: #0f172a; color: #60a5fa; position: sticky; top: 180px; z-index: 870; }
+    td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background-color: #0f172a; color: #60a5fa; position: relative; z-index: 2; padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+
+    #modal-ocultos {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
+      z-index: 99999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    #modal-ocultos.show { display: flex !important; }
+    .modal-conteudo-win {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 800px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .modal-cabecalho {
+      background: #0f172a;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-corpo {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
 
     #toast-notification { 
       position: fixed; 
@@ -131,14 +168,44 @@
 
   <div id="toast-notification">Notificação</div>
 
+  <div id="modal-ocultos">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #60a5fa; font-size: 16px; display: flex; align-items: center; gap: 8px;">📁 Alunos Arquivados / Conferidos Ocultos</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalOcultos()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Estes registros foram ocultados da tabela principal após a conferência. Selecione-os e clique em "Resgatar Selecionados" para trazê-los de volta à visualização ativa.</p>
+        <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+          <button type="button" class="btn-acao" style="background:#0d9488;" onclick="resgatarAlunosSelecionados()">♻️ Resgatar Selecionados</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px; text-align: center;"><input type="checkbox" id="chk-todos-modal-ocultos" onclick="alternarTodosModalOcultos(this.checked)"></th>
+              <th>Data/Hora</th>
+              <th>Aluno</th>
+              <th>Turma</th>
+              <th>Matéria</th>
+              <th>Nota</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-ocultos">
+            <tr><td colspan="6" style="text-align:center; color:#94a3b8;">Nenhum registro oculto no momento.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <header>
-      <h1>👨‍🏫 Painel de Controle Escolar</h1>
+      <h1>👨‍🏫 PAINEL DE CONTROLE ESCOLAR</h1>
     </header>
 
     <div class="barra-acoes-topo no-print">
       <div class="status-tempo-real">
-        <span class="ponto-ativo"></span> Sincronizado com Firebase em Tempo Real
+        <span class="ponto-ativo"></span> Sincronizado com Firebase em Tempo Real...
       </div>
       <button id="btn-recarregar-painel" class="btn-acao btn-secondary" onclick="location.reload()">🔄 Recarregar</button>
     </div>
@@ -206,7 +273,6 @@
     <!-- ABA 2: ATIVAÇÃO DE PROVAS -->
     <div id="aba-ativacao" class="aba-conteudo hidden">
       
-      <!-- Caixa Única Unificada de Status/Ativação -->
       <div id="bloco-prova-ativa-topo" style="background: #0f172a; border: 2px solid #3b82f6; padding: 16px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
         <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 13px; text-transform: uppercase;">🚀 Central de Ativação de Provas</div>
         <div id="detalhes-prova-ativa-painel"></div>
@@ -229,8 +295,6 @@
             <h3>📚 2. Seleção Múltipla de Disciplinas / Matérias</h3>
             <div class="acoes-box">
               <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-materia-ativacao')">☑ Marcar/Limpar</button>
-              <button type="button" class="btn-mini" onclick="ordenarMatAtivacao('asc')">⬆ A-Z</button>
-              <button type="button" class="btn-mini" onclick="ordenarMatAtivacao('desc')">⬇ Z-A</button>
             </div>
           </div>
           <div id="grid-materias-ativacao" class="grid-checkboxes" style="max-height: 200px; overflow-y: auto; margin-top: 8px;"></div>
@@ -289,8 +353,6 @@
             <h3>🏫 6. Selecionar Turmas Cadastradas</h3>
             <div class="acoes-box">
               <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-turma-ativacao')">☑ Marcar/Limpar</button>
-              <button type="button" class="btn-mini" onclick="ordenarTurmaAtivacao('asc')">⬆ A-Z</button>
-              <button type="button" class="btn-mini" onclick="ordenarTurmaAtivacao('desc')">⬇ Z-A</button>
             </div>
           </div>
           <div id="grid-turmas-ativacao" class="grid-checkboxes" style="max-height: 200px; overflow-y: auto; margin-top: 8px;"></div>
@@ -302,31 +364,32 @@
 
     <!-- ABA 3: BANCO DE QUESTÕES -->
     <div id="aba-questoes" class="aba-conteudo hidden">
-      <h2>➕ Cadastrar Nova Questão</h2>
+      <h2>➕ Cadastrar Nova Questão (Com 5 Alternativas: A a E)</h2>
       <form id="form-cadastrar-questao">
         <label>Matéria / Disciplina:</label>
         <select id="cad-materia" required></select>
         <label>Enunciado da Pergunta:</label>
         <textarea id="cad-pergunta" rows="2" required></textarea>
-        <label>Opções de Resposta:</label>
+        <label>Opções de Resposta (A a E):</label>
         <input type="text" id="cad-op-a" placeholder="Opção A" required>
         <input type="text" id="cad-op-b" placeholder="Opção B" required>
         <input type="text" id="cad-op-c" placeholder="Opção C" required>
         <input type="text" id="cad-op-d" placeholder="Opção D" required>
+        <input type="text" id="cad-op-e" placeholder="Opção E" required>
         <label>Alternativa Correta:</label>
         <select id="cad-correta" required>
-          <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+          <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
         </select>
         <button type="submit" class="btn-acao" style="margin-top:15px;">➕ Salvar Questão no Banco</button>
       </form>
 
       <div class="bloco-calculadora" style="margin-top: 25px;">
         <div class="sub-titulo-linha">
-          <h3>📂 Importação em Massa de Questões (TXT, Word, Excel) - Sem Limites (Suporta 100+ por Matéria)</h3>
+          <h3>📂 Importação em Massa de Questões (TXT, Word, Excel) - 5 Alternativas</h3>
         </div>
         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
           Selecione um arquivo (<strong style="color: #60a5fa;">.txt, .docx, .xlsx</strong>) ou cole o conteúdo no formato: <br>
-          <code style="color: #facc15; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">Matéria | Pergunta | Opção A | Opção B | Opção C | Opção D | Correta (A/B/C/D)</code>
+          <code style="color: #facc15; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">Matéria | Pergunta | Opção A | Opção B | Opção C | Opção D | Opção E | Correta (A/B/C/D/E)</code>
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -372,27 +435,35 @@
     <!-- ABA 5: RESULTADOS -->
     <div id="aba-resultados" class="aba-conteudo hidden">
       <h2>📊 Histórico de Resultados e Relatórios</h2>
+      
       <div class="painel-controle-topo no-print">
-        <div class="grupo-controles-esquerda">
-          <button type="button" class="btn-acao" onclick="selecionarTodosResultados(true)">☑️ Marcar</button>
-          <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosResultados(false)">🔲 Limpar</button>
-          <button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()">🗑️ Excluir</button>
+        <div class="grupo-controles-esquerda" id="bloco-esquerda-relatorios">
+          <button type="button" class="btn-acao" onclick="selecionarTodosResultados(true)" title="Marcar todos visíveis">☑️ Marcar</button>
+          <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosResultados(false)" title="Desmarcar todos">🔲 Limpar</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()" title="Excluir selecionados">🗑️ Excluir</button>
+          <button type="button" class="btn-acao" style="background-color: #0d9488;" onclick="ocultarAlunosSelecionados()" title="Ocultar os alunos selecionados">📁 Ocultar Conferidos</button>
+          <button type="button" class="btn-acao" style="background-color: #475569;" onclick="abrirModalOcultos()" title="Visualizar e resgatar alunos ocultados">📂 Ver Ocultos</button>
         </div>
-        <div class="grupo-controles-direita">
+
+        <div class="grupo-controles-direita" id="bloco-direita-relatorios">
           <input type="text" id="input-busca-resultados" placeholder="🔍 Pesquisar..." style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:12px; width: 120px;" oninput="renderizarTabelaResultadosFiltrada()">
-          <select id="select-filtro-escola-relatorio" style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:110px; font-size: 12px;" onchange="filtrarResultadosPorEscolaSelecionada()">
+          
+          <select id="select-filtro-escola-relatorio" style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:110px; font-size: 12px;">
             <option value="TODAS">🏫 Escolas</option>
           </select>
+
           <div class="dropdown-win">
             <button type="button" id="btn-dropdown-resultados" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-resultados', 'btn-dropdown-resultados')">
               🔄 Classificar <span style="font-size: 10px;">▼</span>
             </button>
             <div id="dropdown-menu-resultados" class="dropdown-menu-win"></div>
           </div>
-          <button type="button" class="btn-acao" style="background-color: #22c55e;" onclick="exportarResultadosCSV()">📥 Exportar CSV</button>
+
+          <button type="button" class="btn-acao" style="background-color: #22c55e;" onclick="exportarResultadosCSV()">📥 CSV</button>
           <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="window.print()">🖨️ PDF</button>
         </div>
       </div>
+
       <table>
         <thead>
           <tr>
@@ -407,147 +478,6 @@
     </div>
 
   </div>
-
-  <!-- Script Unificado com Limpeza Rigorosa de Dados no Firestore -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
-      authDomain: "quiz-interativo-8a98c.firebaseapp.com",
-      databaseURL: "https://quiz-interativo-8a98c-default-rtdb.firebaseio.com",
-      projectId: "quiz-interativo-8a98c",
-      storageBucket: "quiz-interativo-8a98c.firebasestorage.app",
-      messagingSenderId: "948601017774",
-      appId: "1:948601017774:web:bd0e038611ff6d2148643f"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const divDetalhesAtiva = document.getElementById("detalhes-prova-ativa-painel");
-    let dadosProvaAtivaAtual = null;
-
-    onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
-      const data = docSnap.data();
-      // Validação ultra rigorosa: se não tiver escola ativa válida, limpa tudo imediatamente na tela
-      if (docSnap.exists() && data && data.escolaAtiva && data.escolaAtiva.trim() !== "" && data.escolaAtiva !== "N/D" && data.escolaAtiva !== "undefined") {
-        dadosProvaAtivaAtual = data;
-        let mats = (dadosProvaAtivaAtual.materiasAtivas || []).join(", ");
-        let turmas = (dadosProvaAtivaAtual.turmasAtivas || []).join(", ");
-        
-        divDetalhesAtiva.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-            <div>
-              <span style="color: #4ade80; font-weight: bold; font-size: 12px; text-transform: uppercase;">🟢 PROVA ATIVA NO MOMENTO:</span>
-              <div style="color: #ffffff; font-weight: bold; font-size: 18px; margin-top: 2px;">${dadosProvaAtivaAtual.escolaAtiva}</div>
-            </div>
-            <div style="color: #cbd5e1; font-size: 13px; background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; border: 1px solid #334155;">
-              📅 <strong>Período:</strong> ${dadosProvaAtivaAtual.periodoAtivo || 'Geral'} | ⏱️ <strong>Mín:</strong> ${dadosProvaAtivaAtual.tempoMinimoMinutos ? dadosProvaAtivaAtual.tempoMinimoMinutos + ' min' : 'Nenhum'} | ⏳ <strong>Limite:</strong> ${dadosProvaAtivaAtual.tempoLimiteMinutos ? dadosProvaAtivaAtual.tempoLimiteMinutos + ' min' : 'Sem limite'}
-            </div>
-          </div>
-          <div style="font-size: 13px; color: #e2e8f0; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-            <div>📚 <strong>Matérias:</strong> ${mats || 'Geral'}</div>
-            <div>👥 <strong>Turmas:</strong> ${turmas || 'N/D'}</div>
-          </div>
-          <hr style="border: none; border-top: 1px solid #334155; margin: 8px 0;">
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-            <a href="index.html" target="_blank" style="background: #22c55e; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">👁️ Testar Prova do Aluno</a>
-            <button type="button" onclick="irParaMonitoramentoTab()" style="background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">📊 Monitoramento</button>
-            <button type="button" onclick="reembaralharQuestoesAtivas()" style="background: #8b5cf6; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">🔀 Reembaralhar Questões</button>
-            <button type="button" onclick="carregarDadosParaEdicao()" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">✏️ Editar Prova</button>
-            <button type="button" onclick="encerrarProvaAtivaAgora()" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">🛑 Encerrar Prova</button>
-          </div>
-        `;
-      } else {
-        dadosProvaAtivaAtual = null;
-        divDetalhesAtiva.innerHTML = `
-          <div style="color: #f8fafc; font-weight: bold; font-size: 14px; text-align: center; padding: 12px;">
-            ⚠️ Nenhuma prova ativa no momento. Aguardando ativação da prova...
-          </div>
-        `;
-      }
-    });
-
-    window.irParaMonitoramentoTab = function() {
-      if (!dadosProvaAtivaAtual) {
-        alert("⚠️ Nenhuma prova ativa no momento. Ative uma prova primeiro!");
-        return;
-      }
-      const btnMonitoramento = document.querySelector('.btn-aba[data-aba="aba-monitoramento"]');
-      if (btnMonitoramento) btnMonitoramento.click();
-    };
-
-    window.reembaralharQuestoesAtivas = async function() {
-      if (!dadosProvaAtivaAtual) {
-        alert("⚠️ Nenhuma prova ativa no momento. Ative uma prova primeiro!");
-        return;
-      }
-      if (confirm("🔀 Deseja reembaralhar imediatamente todas as questões da prova ativa?")) {
-        try {
-          await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
-            seedReordenacao: Date.now().toString() 
-          }, { merge: true });
-          alert("✅ Questões reembaralhadas com sucesso para novas tentativas!");
-        } catch(err) {
-          alert("Erro ao reembaralhar: " + err.message);
-        }
-      }
-    };
-
-    window.carregarDadosParaEdicao = function() {
-      if (!dadosProvaAtivaAtual) {
-        alert("⚠️ Nenhuma prova ativa no momento. Ative uma prova primeiro!");
-        return;
-      }
-
-      document.querySelectorAll('.aba-conteudo').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.btn-aba').forEach(el => el.classList.remove('active'));
-      document.getElementById('aba-ativacao').classList.remove('hidden');
-      document.querySelector('[data-aba="aba-ativacao"]').classList.add('active');
-
-      const selectEscola = document.getElementById("select-escola-ativacao");
-      if (selectEscola) {
-        selectEscola.value = dadosProvaAtivaAtual.escolaAtiva;
-        selectEscola.dispatchEvent(new Event('change'));
-      }
-
-      setTimeout(() => {
-        if(document.getElementById("qtd-questoes-ativacao")) document.getElementById("qtd-questoes-ativacao").value = dadosProvaAtivaAtual.quantidadeQuestoes || 10;
-        if(document.getElementById("tempo-minimo-ativacao")) document.getElementById("tempo-minimo-ativacao").value = dadosProvaAtivaAtual.tempoMinimoMinutos || 0;
-        if(document.getElementById("tempo-prova-ativacao")) document.getElementById("tempo-prova-ativacao").value = dadosProvaAtivaAtual.tempoLimiteMinutos || 0;
-        if(document.getElementById("input-token-ativacao")) document.getElementById("input-token-ativacao").value = dadosProvaAtivaAtual.token || "";
-      }, 400);
-
-      alert("✏️ Dados carregados no formulário de ativação! Faça as alterações desejadas e clique em Publicar para salvar.");
-    };
-
-    window.encerrarProvaAtivaAgora = async function() {
-      if (!dadosProvaAtivaAtual) {
-        alert("⚠️ Nenhuma prova ativa no momento para encerrar.");
-        return;
-      }
-      if (confirm("⚠️ Tem certeza que deseja encerrar a prova ativa agora? Isso limpará todos os dados e impedirá novos acessos.")) {
-        try {
-          // Zera rigorosamente todos os campos no Firestore para apagar a última prova da memória
-          await setDoc(doc(db, "configuracoes", "prova_ativa"), { 
-            escolaAtiva: "",
-            materiasAtivas: [],
-            turmasAtivas: [],
-            periodoAtivo: "",
-            token: "",
-            quantidadeQuestoes: 0,
-            tempoMinimoMinutos: 0,
-            tempoLimiteMinutos: 0
-          });
-          alert("✅ Prova encerrada e dados limpos com sucesso!");
-        } catch (err) {
-          alert("❌ Erro ao encerrar a prova: " + err.message);
-        }
-      }
-    };
-  </script>
 
   <script type="module" src="app.js"></script>
 </body>
