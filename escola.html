@@ -77,71 +77,11 @@
 
     <div class="banner-topo">
       <h2 id="banner-escola-ativa-isolada">🏫 Configurando Unidade: Carregando...</h2>
-      <p style="font-size: 13px; color: #94a3b8;">Abaixo estão consolidadas todas as configurações ativas e herdadas para esta escola:</p>
       <div id="texto-resumo-escolhas" class="resumo-topo-detalhes">
         Carregando resumo das escolhas...
       </div>
     </div>
 
-    <div class="card-box">
-      <div class="box-header">
-        <h2>🏫 Gestão e Configuração de Turmas</h2>
-        <button type="button" class="btn-excluir-item" style="background:#ef4444; color:white; padding:4px 8px; border-radius:4px; font-weight:bold;" onclick="excluirSecaoTurmas()">🗑️ Limpar Turmas</button>
-      </div>
-      <div class="aviso-geral">💡 Selecione números e letras para gerar as combinações de turmas desta escola (Ex: 1A, 2B), ou gerencie os itens individualmente.</div>
-      
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-        <div class="sub-secao">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 5px;">
-            <h3 style="color:#60a5fa; font-size:14px;">Números</h3>
-            <div style="display: flex; gap: 4px;">
-              <button type="button" class="btn-mini" onclick="marcarLimparTurma('chk-numero')">☑ Marcar/Limpar</button>
-              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('numeros', 'asc')">⬆ A-Z</button>
-              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('numeros', 'desc')">⬇ Z-A</button>
-            </div>
-          </div>
-          <div class="grid-checkboxes" id="grid-numeros"></div>
-          <div class="input-grupo-add">
-            <input type="text" id="input-add-num" placeholder="Novo número...">
-            <button type="button" onclick="adicionarItemTurma('numeros', 'input-add-num')">➕</button>
-          </div>
-        </div>
-        <div class="sub-secao">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 5px;">
-            <h3 style="color:#60a5fa; font-size:14px;">Letras</h3>
-            <div style="display: flex; gap: 4px;">
-              <button type="button" class="btn-mini" onclick="marcarLimparTurma('chk-letra')">☑ Marcar/Limpar</button>
-              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('letras', 'asc')">⬆ A-Z</button>
-              <button type="button" class="btn-mini" onclick="ordenarTurmasLocal('letras', 'desc')">⬇ Z-A</button>
-            </div>
-          </div>
-          <div class="grid-checkboxes" id="grid-letras"></div>
-          <div class="input-grupo-add">
-            <input type="text" id="input-add-let" placeholder="Nova letra...">
-            <button type="button" onclick="adicionarItemTurma('letras', 'input-add-let')">➕</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top: 15px;">
-        <div class="sub-titulo-linha">
-          <h3 style="color: #60a5fa; font-size: 14px;">👁️ Pré-visualização de Combinações Geradas</h3>
-          <button type="button" class="btn-mini" onclick="marcarLimpar('chk-parcial-turma')">☑ Marcar/Limpar</button>
-        </div>
-        <div id="resultado-parcial-turmas" class="resultado-parcial">Nenhuma combinação gerada.</div>
-      </div>
-
-      <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <button type="button" class="btn-mini" style="background:#2563eb; padding:10px 16px; font-size:14px;" onclick="confirmarTurmasSelecionadas()">✅ Confirmar Turmas Selecionadas</button>
-      </div>
-
-      <div style="margin-top: 20px;">
-        <h3 style="color: #60a5fa; font-size: 15px; margin-bottom: 8px;">📋 Tabela de Conferência de Turmas</h3>
-        <div id="tabela-container-turmas">
-          <p style="color: #94a3b8; font-size: 13px; font-style: italic;">Nenhuma turma confirmada na tabela final ainda.</p>
-        </div>
-      </div>
-    </div>
 
     <div id="container-boxes-escola"></div>
 

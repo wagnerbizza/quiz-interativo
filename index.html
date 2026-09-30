@@ -192,7 +192,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, onSnapshot, serverTimestamp, deleteDoc 
+      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, onSnapshot, serverTimestamp, deleteDoc, query, where 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -271,6 +271,21 @@
 
       if (!nomeVal || !turmaVal) { alert("⚠️ Preencha seu nome e turma."); return; }
 
+      const idAlunoGerado = `${nomeVal.replace(/[^A-Z0-9]/g, "_")}_${turmaVal.replace(/[^A-Z0-9]/g, "_")}`;
+
+      // VERIFICAÇÃO INTELIGENTE DE PERMISSÃO: Respeita a reautorização do professor
+      try {
+        const docPermissao = await getDoc(doc(db, "permissoes_alunos", idAlunoGerado));
+        
+        // Se explicitamente configurado como false (e o professor não reautorizou para true), bloqueia
+        if (docPermissao.exists() && docPermissao.data().podeFazer === false) {
+          alert("❌ Registro encontrado: Esta avaliação já foi concluída e o acesso está bloqueado. Solicite liberação ao professor.");
+          return;
+        }
+      } catch (err) {
+        console.error("Erro ao verificar permissões:", err);
+      }
+
       if (dadosProvaAtiva.token && dadosProvaAtiva.token.trim() !== "") {
         let tokenInput = prompt("🔒 Digite o token/senha fornecido pelo professor para acessar a prova:");
         if (tokenInput !== dadosProvaAtiva.token) {
@@ -285,7 +300,7 @@
         periodo: dadosProvaAtiva.periodoAtivo || "Geral",
         materia: (dadosProvaAtiva.materiasAtivas || ["Geral"]).join(" / "),
         turma: turmaVal,
-        id: `${nomeVal.replace(/[^A-Z0-9]/g, "_")}_${turmaVal.replace(/[^A-Z0-9]/g, "_")}`
+        id: idAlunoGerado
       };
 
       btnIniciarProva.disabled = true;
@@ -551,7 +566,19 @@
       }
     }
 
-    document.getElementById("btn-reiniciar")?.addEventListener("click", () => location.reload());
+    document.getElementById("btn-reiniciar")?.addEventListener("click", () => {
+      respostasUsuario = {};
+      indiceAtual = 0;
+      listaQuestoes = [];
+      alunoAtual = {};
+      document.getElementById("tela-resultado").classList.add("hidden");
+      document.getElementById("tela-login").classList.remove("hidden");
+      if (btnIniciarProva) {
+        btnIniciarProva.disabled = false;
+        btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
+      }
+      if (inputNomeAluno) inputNomeAluno.value = "";
+    });
   </script>
 </body>
 </html>
