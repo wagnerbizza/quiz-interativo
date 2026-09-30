@@ -32,6 +32,7 @@ let ordemAtualResultados = "nenhum";
 let escolaAtivaSelecionadaIndependente = ""; 
 let alunosOcultosCache = new Set(JSON.parse(localStorage.getItem("alunos_ocultos_painel") || "[]")); 
 let alunosLixeiraCache = new Set(JSON.parse(localStorage.getItem("alunos_lixeira_painel") || "[]"));
+let escolaPrincipalFixadaId = localStorage.getItem("escola_principal_fixada_id") || "";
 let temaAtualSistema = localStorage.getItem("tema_sistema_escolar") || "dark";
 
 // ==========================================
@@ -120,7 +121,7 @@ function injetarEstilosGlobaisAjustados() {
       .aba-conteudo {
         display: flex;
         flex-direction: column !important;
-        gap: 20px !important;
+        gap: 25px !important;
         padding-top: 25px !important;
       }
       .aba-conteudo h2 {
@@ -128,6 +129,62 @@ function injetarEstilosGlobaisAjustados() {
         margin-bottom: 20px !important;
         padding-bottom: 10px !important;
       }
+
+      /* SEPARAÇÃO VISUAL EXATA DAS BOXES DE ESCOLAS E ATIVAÇÃO */
+      #aba-escolas {
+        display: flex;
+        flex-direction: column;
+        gap: 20px !important;
+      }
+      
+      /* Caixa 1: Formulário de Cadastro */
+      #aba-escolas h2:nth-of-type(1) {
+        background: rgba(30, 41, 59, 0.7);
+        padding: 14px 18px;
+        border-radius: 10px;
+        border: 1px solid #3b82f6;
+        margin-bottom: 10px !important;
+      }
+      #aba-escolas > div:has(#input-nome-escola),
+      #aba-escolas > form:has(#input-nome-escola) {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      }
+
+      /* Caixa 2: Lista de Escolas Cadastradas */
+      #aba-escolas h2:nth-of-type(2) {
+        background: rgba(30, 41, 59, 0.7);
+        padding: 14px 18px;
+        border-radius: 10px;
+        border: 1px solid #3b82f6;
+        margin-top: 15px !important;
+        margin-bottom: 10px !important;
+      }
+      #aba-escolas > div:has(#lista-escolas-cadastradas-container) {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      }
+
+      body.tema-claro-ativo #aba-escolas h2:nth-of-type(1),
+      body.tema-claro-ativo #aba-escolas h2:nth-of-type(2) {
+        background: #e2e8f0 !important;
+        border-color: #0284c7 !important;
+        color: #0f172a !important;
+      }
+      body.tema-claro-ativo #aba-escolas > div:has(#input-nome-escola),
+      body.tema-claro-ativo #aba-escolas > form:has(#input-nome-escola),
+      body.tema-claro-ativo #aba-escolas > div:has(#lista-escolas-cadastradas-container) {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      }
+
       .acoes-topo-bloco, .barra-controles-relatorios, div:has(> .acoes-topo-bloco) {
         position: relative !important;
         margin-top: 15px !important;
@@ -283,13 +340,32 @@ function injetarEstilosGlobaisAjustados() {
         margin-bottom: 10px;
         gap: 15px;
         flex-wrap: wrap;
-        cursor: pointer;
+        cursor: grab;
         color: #f8fafc;
+        transition: background 0.2s, border-color 0.2s;
+      }
+      .card-escola-dinamico:hover {
+        border-color: #3b82f6;
+        background: rgba(30, 41, 59, 0.9);
+      }
+      .card-escola-dinamico.dragging {
+        opacity: 0.4;
+        cursor: grabbing;
+      }
+      .card-escola-dinamico.fixada {
+        border: 2px solid #eab308 !important;
+        background: rgba(234, 179, 8, 0.1) !important;
+        cursor: default !important;
       }
       body.tema-claro-ativo .card-escola-dinamico {
         background: #ffffff !important;
         border-color: #cbd5e1 !important;
         color: #0f172a !important;
+      }
+      body.tema-claro-ativo .card-escola-dinamico.fixada {
+        border: 2px solid #ca8a04 !important;
+        background: #fef9c3 !important;
+        cursor: default !important;
       }
       .barra-nav-global {
         display: flex;
@@ -665,7 +741,7 @@ window.excluirOnlineSelecionados = async function() {
       for (const idDoc of selecionados) {
         await deleteDoc(doc(db, "alunos_online", idDoc));
       }
-      mostrarNotificacao(`🗑️ ${selecionados.length} registro(s) removido(s) com sucesso!`);
+      mostrarNotificacao(`🗑 ${selecionados.length} registro(s) removido(s) com sucesso!`);
     } catch (err) {
       alert("Erro ao excluir: " + err.message);
     }
@@ -746,7 +822,7 @@ function inicializarPaginaEscola() {
       turmasCadastradasDiretas = [];
       renderizarListaTurmasIndividuais();
       atualizarPainelResumoConsolidado();
-      mostrarNotificacao("🗑️ Turmas limpas!");
+      mostrarNotificacao("🗑 Turmas limpas!");
     }
   };
 
@@ -977,7 +1053,7 @@ function inicializarPaginaEscola() {
               <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparCard(this, true)" title="Marcar Tudo">☑️ Marcar</button>
               <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparCard(this, false)" title="Desmarcar Tudo">🔲 Limpar</button>
               <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarCardAZ(this)" title="Ordenar A-Z">🔤</button>
-              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑️ Box removida!');" title="Excluir Box Inteira">🗑️ Excluir Box</button>
+              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑️ Box removida!');" title="Excluir Box Inteira">🗑️️ Excluir Box</button>
             </div>
           </div>
           <div style="display:flex; gap:6px;">
@@ -1041,7 +1117,7 @@ function inicializarPaginaEscola() {
   window.removerItemBoxEscolaCard = function(btn) {
     btn.closest('.checkbox-item-compacto').remove();
     atualizarPainelResumoConsolidado();
-    mostrarNotificacao("🗑️ Item removido!");
+    mostrarNotificacao("🗑️️ Item removido!");
   };
 
   window.marcarLimparCard = function(btn, marcar) {
@@ -1440,19 +1516,39 @@ if (window.location.pathname.includes("painel.html")) {
       containerAtivacao.insertBefore(wrapperSeletor, containerAtivacao.children[1] || containerAtivacao.firstChild);
     }
 
+    // Ordena aplicando a escola fixada sempre no topo absoluto
+    let escolasOrdenadasAtivacao = [...listaEscolasCache];
+    escolasOrdenadasAtivacao.sort((a, b) => {
+      if (a.idDoc === escolaPrincipalFixadaId) return -1;
+      if (b.idDoc === escolaPrincipalFixadaId) return 1;
+      return 0;
+    });
+
     let html = `
-      <div style="background: rgba(30, 41, 59, 0.9); border: 1px solid #3b82f6; padding: 16px; border-radius: 10px; margin-bottom: 20px;">
-        <h4 style="margin: 0 0 10px 0; color: #60a5fa; font-size: 15px;">🏫 Selecione a Unidade Escolar para Configurar</h4>
-        <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 12px;">Clique na escola desejada para carregar e ativar independentemente:</p>
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+      <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 20px;">
+        <h4 style="margin: 0 0 10px 0; color: #60a5fa; font-size: 15px; background: rgba(30, 41, 59, 0.7); padding: 12px 16px; border-radius: 10px; border: 1px solid #3b82f6;">🏫 Selecione a Unidade Escolar para Configurar</h4>
+        <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 12px;">Clique na escola desejada para carregar e ativar independentemente (A escola fixada fica travada no topo e as demais podem ser arrastadas):</p>
+        <div id="container-botoes-escola-ativacao" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
     `;
 
-    if (listaEscolasCache.length === 0) {
+    if (escolasOrdenadasAtivacao.length === 0) {
       html += `<p style="color: #94a3b8; font-size: 13px;">Nenhuma escola cadastrada.</p>`;
     } else {
-      listaEscolasCache.forEach(esc => {
+      escolasOrdenadasAtivacao.forEach(esc => {
+        let ehFixada = esc.idDoc === escolaPrincipalFixadaId;
+        let classeFixada = ehFixada ? "fixada" : "";
         let classeAtiva = escolaAtivaSelecionadaIndependente === esc.nome ? "ativo" : "";
-        html += `<button type="button" class="btn-escola-clicavel ${classeAtiva}" data-nome-escola="${esc.nome}">🏫 ${esc.nome}</button>`;
+        let textoPin = ehFixada ? "📌 Fixada" : "📌 Fixar";
+        let draggableAttr = ehFixada ? "false" : "true";
+
+        html += `
+          <div class="card-escola-dinamico ${classeFixada} ${classeAtiva}" draggable="${draggableAttr}" data-id="${esc.idDoc}" data-nome-escola="${esc.nome}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; max-width: 320px; padding: 10px 14px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" onclick="selecionarEscolaAtivacaoDireta('${esc.nome}', this)">
+              <span style="font-size: 14px; font-weight: bold;">🏫 ${esc.nome} ${ehFixada ? '<span style="font-size:10px; color:#eab308; background:rgba(234,179,8,0.2); padding:2px 4px; border-radius:3px;">⭐ Principal</span>' : ''}</span>
+            </div>
+            <button type="button" class="btn-fixar-escola-ativacao btn-acao-mini" data-id="${esc.idDoc}" style="background:${ehFixada ? '#eab308' : '#334155'}; color:white;" title="Fixar Escola Principal">${textoPin}</button>
+          </div>
+        `;
       });
     }
 
@@ -1463,15 +1559,60 @@ if (window.location.pathname.includes("painel.html")) {
 
     wrapperSeletor.innerHTML = html;
 
-    wrapperSeletor.querySelectorAll(".btn-escola-clicavel").forEach(btn => {
-      btn.onclick = () => {
-        const nomeEscola = btn.getAttribute("data-nome-escola");
-        escolaAtivaSelecionadaIndependente = nomeEscola;
-         
-        wrapperSeletor.querySelectorAll(".btn-escola-clicavel").forEach(b => b.classList.remove("ativo"));
-        btn.classList.add("ativo");
+    window.selecionarEscolaAtivacaoDireta = function(nomeEscola, el) {
+      escolaAtivaSelecionadaIndependente = nomeEscola;
+      wrapperSeletor.querySelectorAll(".card-escola-dinamico").forEach(b => b.classList.remove("ativo"));
+      el.closest(".card-escola-dinamico").classList.add("ativo");
+      carregarConfiguracoesEscolaParaAtivacao(nomeEscola);
+    };
 
-        carregarConfiguracoesEscolaParaAtivacao(nomeEscola);
+    // Configura Drag and Drop bloqueando a escola fixada
+    const containerBotoesAtivacao = wrapperSeletor.querySelector("#container-botoes-escola-ativacao");
+    if (containerBotoesAtivacao) {
+      let cardArrastadoAtivacao = null;
+      containerBotoesAtivacao.querySelectorAll(".card-escola-dinamico").forEach(card => {
+        if (!card.classList.contains("fixada")) {
+          card.addEventListener("dragstart", () => {
+            cardArrastadoAtivacao = card;
+            card.classList.add("dragging");
+          });
+          card.addEventListener("dragend", () => {
+            card.classList.remove("dragging");
+            cardArrastadoAtivacao = null;
+          });
+        }
+
+        card.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          const cardAbaixo = e.target.closest(".card-escola-dinamico");
+          if (cardAbaixo && cardAbaixo !== cardArrastadoAtivacao && !cardAbaixo.classList.contains("fixada") && cardArrastadoAtivacao) {
+            const bounding = cardAbaixo.getBoundingClientRect();
+            const offset = e.clientY - bounding.top;
+            if (offset > bounding.height / 2) {
+              containerBotoesAtivacao.insertBefore(cardArrastadoAtivacao, cardAbaixo.nextSibling);
+            } else {
+              containerBotoesAtivacao.insertBefore(cardArrastadoAtivacao, cardAbaixo);
+            }
+          }
+        });
+      });
+    }
+
+    wrapperSeletor.querySelectorAll(".btn-fixar-escola-ativacao").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-id");
+        if (escolaPrincipalFixadaId === id) {
+          escolaPrincipalFixadaId = "";
+          localStorage.removeItem("escola_principal_fixada_id");
+          mostrarNotificacao("📌 Escola desfixada.");
+        } else {
+          escolaPrincipalFixadaId = id;
+          localStorage.setItem("escola_principal_fixada_id", id);
+          mostrarNotificacao("⭐ Escola definida como principal e fixada no topo!");
+        }
+        renderizarSeletorEscolasAtivacaoIndependente();
+        carregarListaEscolas();
       };
     });
   }
@@ -1549,9 +1690,9 @@ if (window.location.pathname.includes("painel.html")) {
       }
 
       painelDinamico.innerHTML = `
-        <div style="background: rgba(15, 23, 42, 0.8); border: 2px solid #3b82f6; padding: 20px; border-radius: 12px; margin-top: 15px; display: flex; flex-direction: column; gap: 20px;">
+        <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid #3b82f6; padding: 24px; border-radius: 12px; margin-top: 15px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
           
-          <div style="background: rgba(30, 41, 59, 0.9); border: 1px solid #1e293b; padding: 15px; border-radius: 8px;">
+          <div style="background: rgba(30, 41, 59, 0.9); border: 1px solid #1e293b; padding: 16px; border-radius: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
               <h5 style="margin: 0; color: #60a5fa; font-size: 14px;">📋 Resumo Geral da Unidade: <strong>${escolaNome}</strong></h5>
               <a href="escola.html?escola=${encodeURIComponent(escolaNome)}&retorno=ativacao" class="btn-acao-mini" style="background: #0d9488; color: white; padding: 6px 12px; text-decoration: none; border-radius: 6px;">⚙ Ir para Configuração do Cadastro</a>
@@ -1564,35 +1705,35 @@ if (window.location.pathname.includes("painel.html")) {
             </div>
           </div>
 
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 14px; border-radius: 8px;">
+          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
             <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">📚 Matérias para Ativação</h5>
             <div style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
               ${htmlMat}
             </div>
           </div>
 
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 14px; border-radius: 8px;">
+          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
             <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">📖 Disciplinas para Ativação</h5>
             <div style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
               ${htmlDisc}
             </div>
           </div>
 
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 14px; border-radius: 8px;">
+          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
             <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">🏫 Período / Turno</h5>
             <select id="select-periodo-ativacao" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               ${htmlPeriodos}
             </select>
           </div>
 
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 14px; border-radius: 8px;">
+          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
             <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">🎒 Turmas que Vão Fazer a Prova</h5>
             <div style="max-height: 160px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px;">
               ${htmlTurmas}
             </div>
           </div>
 
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 14px; border-radius: 8px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 12px;">
             <h5 style="margin: 0; color: #f8fafc; font-size: 13px;">⏱️ Parâmetros de Ativação, Tempo e Segurança</h5>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
               <div>
@@ -1618,7 +1759,7 @@ if (window.location.pathname.includes("painel.html")) {
             </div>
           </div>
 
-          <div style="background: rgba(15, 23, 42, 0.95); border: 1px dashed #38bdf8; padding: 16px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(15, 23, 42, 0.95); border: 1px dashed #38bdf8; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px;">
             <h5 style="margin: 0; color: #38bdf8; font-size: 14px;">🔍 Pré-visualização Geral e Confirmação</h5>
             <div id="bloco-preview-ativacao-geral" style="font-size: 13px; color: #e2e8f0; display: flex; flex-direction: column; gap: 4px;">
               <div>🏫 <strong>Unidade Selecionada:</strong> ${escolaNome}</div>
@@ -1799,7 +1940,7 @@ if (window.location.pathname.includes("painel.html")) {
   window.gerarCopiaProvaAtivaPDF = async function() {
     try {
       const snap = await getDoc(doc(db, "configuracoes", "prova_ativa"));
-      if (!snap.exists()) { alert("⚠️ Nenhuma prova ativa."); return; }
+      if (!snap.exists()) { alert("⚠ Nenhuma prova ativa."); return; }
       const pData = snap.data();
       const escola = pData.escolaAtiva || 'Rede de Ensino';
       const materias = pData.materiasAtivas || [];
@@ -2041,6 +2182,14 @@ if (window.location.pathname.includes("painel.html")) {
       const snap = await getDocs(collection(db, "escolas_cadastradas"));
       let escolas = [];
       snap.forEach(docSnap => { escolas.push({ idDoc: docSnap.id, ...docSnap.data() }); });
+      
+      // Ordenação estrita garantindo que a fixada fique sempre no topo
+      escolas.sort((a, b) => {
+        if (a.idDoc === escolaPrincipalFixadaId) return -1;
+        if (b.idDoc === escolaPrincipalFixadaId) return 1;
+        return 0;
+      });
+
       listaEscolasCache = escolas;
       renderizarSeletorEscolasTopo();
       popularFiltroEscolaRelatorio();
@@ -2052,24 +2201,75 @@ if (window.location.pathname.includes("painel.html")) {
           htmlCadastradas = `<p style="text-align:center; color:#94a3b8; padding: 10px;">Nenhuma escola cadastrada.</p>`;
         } else {
           escolas.forEach(esc => {
+            let ehFixada = esc.idDoc === escolaPrincipalFixadaId;
+            let classeFixada = ehFixada ? "fixada" : "";
+            let textoPin = ehFixada ? "📌 Fixada" : "📌 Fixar Principal";
+            let draggableAttr = ehFixada ? "false" : "true";
+
             htmlCadastradas += `
-              <div class="card-escola-dinamico" onclick="window.location.href='escola.html?escola=${encodeURIComponent(esc.nome)}&retorno=escolas';">
+              <div class="card-escola-dinamico ${classeFixada}" draggable="${draggableAttr}" data-id="${esc.idDoc}" onclick="window.location.href='escola.html?escola=${encodeURIComponent(esc.nome)}&retorno=escolas';">
                 <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
-                  <strong style="font-size: 15px; color: inherit; display: block;">🏫 ${esc.nome}</strong>
+                  <strong style="font-size: 15px; color: inherit; display: block;">🏫 ${esc.nome} ${ehFixada ? '<span style="font-size:11px; color:#eab308; background:rgba(234,179,8,0.2); padding:2px 6px; border-radius:4px; margin-left:6px;">⭐ Principal</span>' : ''}</strong>
                   <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; opacity: 0.85;">
                     <span>Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
                     <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚙️ Configurar Unidade</span>
                   </div>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;" onclick="event.stopPropagation();">
-                  <button class="btn-editar-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white;" title="Editar">✏️</button>
-                  <button class="btn-excluir-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white;" title="Excluir">🗑️</button>
+                  <button type="button" class="btn-fixar-escola btn-acao-mini" data-id="${esc.idDoc}" style="background:${ehFixada ? '#eab308' : '#334155'}; color:white;" title="Fixar Escola Principal">${textoPin}</button>
+                  <button type="button" class="btn-editar-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white;" title="Editar">✏️</button>
+                  <button type="button" class="btn-excluir-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white;" title="Excluir">🗑️</button>
                 </div>
               </div>
             `;
           });
         }
         listaEscolasContainer.innerHTML = htmlCadastradas;
+
+        let cardArrastado = null;
+        listaEscolasContainer.querySelectorAll(".card-escola-dinamico").forEach(card => {
+          if (!card.classList.contains("fixada")) {
+            card.addEventListener("dragstart", (e) => {
+              cardArrastado = card;
+              card.classList.add("dragging");
+            });
+            card.addEventListener("dragend", () => {
+              card.classList.remove("dragging");
+              cardArrastado = null;
+            });
+          }
+
+          card.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const cardAbaixo = e.target.closest(".card-escola-dinamico");
+            if (cardAbaixo && cardAbaixo !== cardArrastado && !cardAbaixo.classList.contains("fixada") && cardArrastado) {
+              const bounding = cardAbaixo.getBoundingClientRect();
+              const offset = e.clientY - bounding.top;
+              if (offset > bounding.height / 2) {
+                listaEscolasContainer.insertBefore(cardArrastado, cardAbaixo.nextSibling);
+              } else {
+                listaEscolasContainer.insertBefore(cardArrastado, cardAbaixo);
+              }
+            }
+          });
+        });
+
+        document.querySelectorAll(".btn-fixar-escola").forEach(btn => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            const id = btn.getAttribute("data-id");
+            if (escolaPrincipalFixadaId === id) {
+              escolaPrincipalFixadaId = "";
+              localStorage.removeItem("escola_principal_fixada_id");
+              mostrarNotificacao("📌 Escola desfixada.");
+            } else {
+              escolaPrincipalFixadaId = id;
+              localStorage.setItem("escola_principal_fixada_id", id);
+              mostrarNotificacao("⭐ Escola definida como principal e fixada no topo!");
+            }
+            carregarListaEscolas();
+          };
+        });
 
         document.querySelectorAll(".btn-editar-escola").forEach(btn => {
           btn.onclick = (e) => {
@@ -2590,7 +2790,7 @@ if (window.location.pathname.includes("painel.html")) {
     }
 
     if (dadosFiltrados.length === 0) {
-      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno online no momento.</td></tr>`;
+      corpoTabelaResultados.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno online no momento.</td></tr>`;
       return;
     }
 
@@ -2642,7 +2842,6 @@ if (window.location.pathname.includes("painel.html")) {
         let pontuacaoAtual = alunoObj?.pontuacao || 0;
         let escolaDestino = alunoObj?.escola || escolaAtivaSelecionadaIndependente || "Escola";
 
-        // 1. Salva o resultado definitivo na subcoleção de avaliações da escola
         await setDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaDestino), "avaliacoes", (9999999999999 - agora).toString()), {
           idAluno: idAluno,
           nome: alunoObj?.nome || nomeAluno,
@@ -2658,13 +2857,9 @@ if (window.location.pathname.includes("painel.html")) {
           timestamp: agora
         });
 
-        // 2. Bloqueia a permissão de refazer do aluno e força o status de prova encerrada
         await setDoc(doc(db, "permissoes_alunos", idAluno), { podeFazer: false, provaFinalizadaPeloProfessor: true }, { merge: true });
-
-        // 3. Remove imediatamente do monitoramento online
         await deleteDoc(doc(db, "alunos_online", idAluno));
 
-        // 4. Remove localmente do array de cache e atualiza a tela na hora
         alunosOnlineCache = alunosOnlineCache.filter(a => a.idDoc !== idAluno);
         renderizarTabelaTempoReal();
 
