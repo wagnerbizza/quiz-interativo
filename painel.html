@@ -57,7 +57,6 @@
     button.btn-sucesso-animado { background-color: var(--success) !important; }
     button.btn-danger { background-color: var(--danger) !important; }
     button.btn-secondary { background-color: #475569 !important; }
-    button.btn-warning { background-color: #d97706 !important; }
 
     .dropdown-win { position: relative !important; display: inline-block !important; }
     .btn-dropdown-win { background-color: #334155; color: white; border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; }
@@ -103,7 +102,7 @@
     td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
     th { background-color: #0f172a; color: #60a5fa; position: relative; z-index: 2; padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
 
-    #modal-ocultos {
+    #modal-ocultos, #modal-lixeira {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -113,7 +112,7 @@
       align-items: center;
       padding: 20px;
     }
-    #modal-ocultos.show { display: flex !important; }
+    #modal-ocultos.show, #modal-lixeira.show { display: flex !important; }
     .modal-conteudo-win {
       background: #1e293b;
       border: 1px solid var(--border);
@@ -168,6 +167,7 @@
 
   <div id="toast-notification">Notificação</div>
 
+  <!-- MODAL DE ALUNOS OCULTOS -->
   <div id="modal-ocultos">
     <div class="modal-conteudo-win">
       <div class="modal-cabecalho">
@@ -198,9 +198,41 @@
     </div>
   </div>
 
+  <!-- MODAL DA LIXEIRA DE EXCLUÍDOS -->
+  <div id="modal-lixeira">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #f87171; font-size: 16px; display: flex; align-items: center; gap: 8px;">🗑️ Lixeira de Alunos Excluídos</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalLixeira()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Estes registros foram removidos da tabela principal. Você pode restaurá-los de volta à visualização ou excluí-los permanentemente do banco de dados.</p>
+        <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-acao" style="background:#22c55e;" onclick="restaurarAlunosSelecionadosLixeira()">♻️ Restaurar Selecionados</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirPermanentementeSelecionados()">🔥 Excluir Permanentemente</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px; text-align: center;"><input type="checkbox" id="chk-todos-modal-lixeira" onclick="alternarTodosModalLixeira(this.checked)"></th>
+              <th>Data/Hora</th>
+              <th>Aluno</th>
+              <th>Turma</th>
+              <th>Matéria</th>
+              <th>Nota</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-lixeira">
+            <tr><td colspan="6" style="text-align:center; color:#94a3b8;">A lixeira está vazia.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <header>
-      <h1>👨‍🏫 PAINEL DE CONTROLE ESCOLAR</h1>
+      <h1>👨‍‍🏫 PAINEL DE CONTROLE ESCOLAR</h1>
     </header>
 
     <div class="barra-acoes-topo no-print">
@@ -221,7 +253,7 @@
 
     <!-- ABA 0: CONFIGURAÇÕES GERAIS -->
     <div id="aba-global" class="aba-conteudo">
-      <h2>⚙️ Configurações Gerais e Padrão Base</h2>
+      <h2>⚙ Configurações Gerais e Padrão Base</h2>
       
       <div class="escolas-seletor-topo">
         <div>
@@ -282,79 +314,6 @@
       <div id="painel-resumo-escola-ativacao" class="hidden" style="background: #0f172a; border: 1px solid #3b82f6; padding: 12px; border-radius: 8px; margin-top: 12px;">
         <h3 style="color: #60a5fa; font-size: 14px; margin-bottom: 6px;">📋 Resumo das Configurações Ativas desta Unidade:</h3>
         <div id="conteudo-resumo-ativacao" style="font-size: 12px; color: #cbd5e1; line-height: 1.5;"></div>
-      </div>
-
-      <div id="container-calculadora-ativacao" class="hidden">
-        
-        <div class="bloco-calculadora">
-          <div class="sub-titulo-linha">
-            <h3>📚 2. Seleção Múltipla de Disciplinas / Matérias</h3>
-            <div class="acoes-box">
-              <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-materia-ativacao')">☑ Marcar/Limpar</button>
-            </div>
-          </div>
-          <div id="grid-materias-ativacao" class="grid-checkboxes" style="max-height: 200px; overflow-y: auto; margin-top: 8px;"></div>
-        </div>
-
-        <div class="bloco-calculadora" id="bloco-tipo-ensino-ativacao">
-          <div class="sub-titulo-linha">
-            <h3>🎓 Tipo de Ensino / Plataforma</h3>
-          </div>
-          <div class="input-grupo" style="margin-top: 10px;">
-            <select id="select-tipo-ensino-ativacao" class="input-padrao" style="width: 100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 8px;">
-              <option value="" disabled selected>Selecione o tipo de ensino...</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="bloco-calculadora">
-          <h3>📅 3. Período / Ciclo</h3>
-          <select id="select-periodo-ativacao" style="max-width: 280px;"></select>
-        </div>
-
-        <div class="bloco-calculadora">
-          <h3>🔒 4. Segurança: Senha / Token e Agendamento Simultâneo</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-            <div>
-              <label>Token / Senha de Acesso da Prova:</label>
-              <input type="text" id="input-token-ativacao" placeholder="Ex: PROVA123 (Deixe em branco se não quiser token)">
-            </div>
-            <div>
-              <label>Agendar Início Simultâneo (Opcional):</label>
-              <input type="datetime-local" id="input-agendamento-ativacao">
-            </div>
-          </div>
-        </div>
-
-        <div class="bloco-calculadora">
-          <h3>⚙️ 5. Parâmetros de Tempo e Questões</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-            <div>
-              <label>Qtd. de Questões:</label>
-              <input type="number" id="qtd-questoes-ativacao" value="10" min="1" max="100">
-            </div>
-            <div>
-              <label>Tempo Mínimo (minutos):</label>
-              <input type="number" id="tempo-minimo-ativacao" placeholder="Ex: 5" min="0" value="0">
-            </div>
-            <div>
-              <label>Tempo Limite (minutos):</label>
-              <input type="number" id="tempo-prova-ativacao" placeholder="Ex: 30" min="0" value="0">
-            </div>
-          </div>
-        </div>
-
-        <div class="bloco-calculadora">
-          <div class="sub-titulo-linha">
-            <h3>🏫 6. Selecionar Turmas Cadastradas</h3>
-            <div class="acoes-box">
-              <button type="button" class="btn-mini" onclick="painelMarcarLimpar('chk-turma-ativacao')">☑ Marcar/Limpar</button>
-            </div>
-          </div>
-          <div id="grid-turmas-ativacao" class="grid-checkboxes" style="max-height: 200px; overflow-y: auto; margin-top: 8px;"></div>
-        </div>
-
-        <button id="btn-publicar-prova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 20px; width: 100%; font-size: 15px; padding: 14px; justify-content: center;">📢 Publicar e Liberar Avaliação para os Alunos</button>
       </div>
     </div>
 
@@ -439,6 +398,7 @@
           <button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()" title="Excluir selecionados">🗑️ Excluir</button>
           <button type="button" class="btn-acao" style="background-color: #0d9488;" onclick="ocultarAlunosSelecionados()" title="Ocultar os alunos selecionados">📁 Ocultar Conferidos</button>
           <button type="button" class="btn-acao" style="background-color: #475569;" onclick="abrirModalOcultos()" title="Visualizar e resgatar alunos ocultados">📂 Ver Ocultos</button>
+          <button type="button" class="btn-acao" style="background-color: #b91c1c;" onclick="abrirModalLixeira()" title="Abrir lixeira de excluídos">🗑️ Lixeira</button>
         </div>
 
         <div class="grupo-controles-direita" id="bloco-direita-relatorios">
@@ -474,6 +434,7 @@
     </div>
 
   </div>
+  
 
   <script type="module" src="app.js"></script>
 </body>
