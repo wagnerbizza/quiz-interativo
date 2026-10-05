@@ -1,0 +1,142 @@
+{
+  "versaoPacote": 1,
+  "ativa": true,
+  "escolaAtiva": "EE José Lins do Rego",
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 9,
+  "tempoMinimoMinutos": 0,
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791214120279,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "",
+  "seedReordenacao": "1791203320279",
+  "publicadoEm": "2026-10-05T12:28:40.970Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "GrVLW14GVkOosT7XkXXi",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 22] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "QE6rNdMxpWejc7Igut5I",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual função nativa do JavaScript verifica se um valor é NaN (Not-a-Number)?",
+      "opcoes": [
+        "isNaN()",
+        "checkNaN()",
+        "Number.isNaN()",
+        "verifyNaN()",
+        "isNotNumber()"
+      ]
+    },
+    {
+      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Inteligência Artificial Transparente?",
+      "opcoes": [
+        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
+        "Softwares cujo código-fonte está totalmente oculto dos usuários",
+        "Sistemas que funcionam apenas offline sem acesso externo",
+        "Plataformas de computação em nuvem sem suporte técnico",
+        "Redes de computadores protegidas por senhas complexas"
+      ]
+    },
+    {
+      "idQuestao": "LTWVBJ1YaGNiEMCZH5qy",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 100 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "M4pI6xVBIx32BQmjEZYd",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a regressão logística?",
+      "opcoes": [
+        "Um modelo estatístico usado para prever a probabilidade de um evento categórico (ex: sim/não, 0/1)",
+        "O cálculo de frete de entregas",
+        "A medição de velocidade de internet",
+        "A listagem de produtos em um e-commerce"
+      ]
+    },
+    {
+      "idQuestao": "uQaUchxDs5aavHCG6sVy",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
+      "opcoes": [
+        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
+        "Um ataque cibernético de vírus em massa",
+        "A queda de um servidor de rede",
+        "A organização de arquivos em pastas"
+      ]
+    },
+    {
+      "idQuestao": "1um9VgnUoXe2C7W7pvnm",
+      "materia": "Programacao Front-End",
+      "categoria": "Programacao Front-End",
+      "pergunta": "[Técnico 6 - 1790243768880]Qual a principal responsabilidade do CSS em páginas web?",
+      "opcoes": [
+        "Estruturar os textos semânticos",
+        "Controlar a aparência visual, layout, cores e responsividade",
+        "Processar regras de negócio no servidor",
+        "Armazenar dados em banco NoSQL"
+      ]
+    },
+    {
+      "idQuestao": "fuDtdmhurLLgExy4vNZI",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 33] O que significa o conceito de Deep Learning?",
+      "opcoes": [
+        "A) Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas",
+        "B) Processamento de planilhas eletrônicas gigantescas",
+        "C) Criptografia de ponta a ponta em redes locais",
+        "D) Compactação avançada de arquivos de vídeo"
+      ]
+    },
+    {
+      "idQuestao": "GAhiIK6EJdgROMhUj6W7",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 11] Qual a função de uma função de ativação em redes neurais?",
+      "opcoes": [
+        "A) Introduzir não-linearidade no modelo permitindo aprender padrões complexos",
+        "B) Ligar ou desligar o computador remotamente",
+        "C) Aumentar a velocidade do processador central",
+        "D) Compactar os pesos sinápticos"
+      ]
+    }
+  ]
+}

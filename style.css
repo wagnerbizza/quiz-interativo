@@ -356,3 +356,43 @@ th {
     background-color: #f1f5f9;
   }
 }
+
+/* ==========================================================
+   FASE 10C.3 — CONTROLES DOS RELATÓRIOS LOCAIS
+   Mantém os novos controles compactos e responsivos.
+   ========================================================== */
+#controles-cache-relatorios .btn-acao {
+  min-height: 40px;
+  width: auto;
+  padding: 9px 14px;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  #controles-cache-relatorios {
+    align-items: stretch !important;
+  }
+  #controles-cache-relatorios .btn-acao {
+    width: 100%;
+  }
+}
+
+
+/* FASE 10C.9 — modo offline restrito */
+.modo-offline-professor .btn-aba:disabled { opacity:.48; cursor:not-allowed; }
+.aviso-modo-offline-professor {
+  margin:10px 0; padding:10px 14px; border:1px solid currentColor;
+  border-radius:8px; font-weight:700;
+}
+
+
+/* FASE 10C.10 — estado visual coerente no modo offline */
+.modo-offline-professor button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: grayscale(.25);
+}
+
+/* FASE 10D — estado offline inequívoco */
+.modo-offline-professor #status-conexao-professor,
+.modo-offline-professor #status-firebase-tempo-real { color: #f59e0b; }
+.modo-offline-professor button:disabled { pointer-events: none; }

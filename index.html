@@ -1,3 +1,16 @@
+<!--
+==========================================================
+👨‍🎓 PÁGINA DO ALUNO
+Este arquivo controla a entrada do aluno, carregamento da
+avaliação, respostas e envio do resultado ao Firebase.
+
+ATENÇÃO:
+- A prova ativa usa Firebase e fallback em prova-publicada.json
+- O pacote estático nunca contém o gabarito
+- O resultado é salvo em: avaliacoes
+- Alunos em prova aparecem em: alunos_online
+==========================================================
+-->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -128,6 +141,57 @@
     .item-revisao.correta { border-color: var(--success); }
     .item-revisao.incorreta { border-color: var(--danger); }
   </style>
+
+<style id="fase8b-aluno-profissional">
+/* 🔵 FASE 8B — painel de tempo/progresso da tela do aluno */
+.painel-tempo-aluno{display:grid;grid-template-columns:repeat(4,minmax(105px,1fr));gap:8px;margin:10px 0 9px}
+.info-prova-aluno{display:flex;align-items:center;gap:8px;padding:9px 10px;min-height:52px;background:rgba(15,23,42,.78);border:1px solid #334155;border-radius:9px}
+.info-prova-aluno>span{font-size:17px}.info-prova-aluno div{display:flex;flex-direction:column;gap:2px}
+.info-prova-aluno small{color:#94a3b8;font-size:8px;font-weight:800;letter-spacing:.45px}
+.info-prova-aluno strong{color:#f8fafc;font-size:13px}.info-prova-aluno strong.tempo-alerta{color:#fbbf24}
+.aviso-tempo-aluno{padding:8px 11px;margin:0 0 11px;border-radius:8px;font-size:11px;line-height:1.35;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:#bfdbfe}
+.aviso-minimo{background:rgba(234,179,8,.09);border-color:rgba(234,179,8,.3);color:#fde68a}
+.aviso-limite{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.35);color:#fecaca}
+.aviso-ok{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:#bbf7d0}
+@media(max-width:720px){.painel-tempo-aluno{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+
+<style id="fase8c-alternativas-restauradas">
+/* 🔵 FASE 8C — alternativas protegidas do painel de contadores */
+#opcoes-container{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:10px !important;
+  width:100% !important;
+  height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  margin:12px 0 !important;
+}
+#opcoes-container .opcao-btn{
+  display:block !important;
+  width:100% !important;
+  height:auto !important;
+  min-height:50px !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+</style>
+
+
+<style id="fase8d-progresso-e-leitura">
+/* 🔵 FASE 8D — pergunta e alternativas com hierarquia visual clara */
+.rotulo-secao-prova{margin:4px 0 7px;color:#60a5fa;font-size:9px;font-weight:900;letter-spacing:1px}
+.rotulo-alternativas{margin:18px 2px 7px;color:#94a3b8}
+#pergunta-txt{border-left:4px solid #3b82f6;padding-left:12px}
+#opcoes-container .opcao-btn{border-left:3px solid #475569!important;font-size:14px!important;line-height:1.45!important;text-align:left!important;padding:14px 16px!important}
+#opcoes-container .opcao-btn:hover{border-left-color:#3b82f6!important;background:rgba(59,130,246,.08)!important}
+#opcoes-container .opcao-btn.selecionada{border-left-color:#22c55e!important;background:rgba(34,197,94,.12)!important}
+</style>
+
 </head>
 <body>
 
@@ -137,6 +201,13 @@
       <div id="detalhes-prova-ativa" class="info-box">⏳ Verificando se há alguma prova ativa no momento...</div>
 
       <form id="form-login">
+        <!-- 🏫 ALTERAR AQUI somente se quiser mudar o texto do seletor de escola -->
+        <div class="grupo-form">
+          <label for="escola-aluno">Sua Escola:</label>
+          <select id="escola-aluno" required>
+            <option value="" disabled selected>Carregando escolas...</option>
+          </select>
+        </div>
         <div class="grupo-form">
           <label for="nome-aluno">Nome Completo:</label>
           <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required>
@@ -157,14 +228,25 @@
         <span id="progresso-txt" style="font-size: 14px; font-weight: bold; color: #38bdf8;">Questão 1 de 10</span>
       </div>
 
+      <!-- 🔵 FASE 8B — INFORMAÇÕES VISÍVEIS DURANTE A PROVA -->
+      <div id="painel-tempo-aluno" class="painel-tempo-aluno">
+        <div class="info-prova-aluno"><span>⏱️</span><div><small>DECORRIDO</small><strong id="tempo-decorrido-aluno">00:00</strong></div></div>
+        <div class="info-prova-aluno"><span>🔒</span><div><small>TEMPO MÍNIMO</small><strong id="tempo-minimo-aluno">Livre</strong></div></div>
+        <div class="info-prova-aluno"><span>⌛</span><div><small>TEMPO RESTANTE</small><strong id="tempo-restante-aluno">Sem limite</strong></div></div>
+        <div class="info-prova-aluno"><span>📊</span><div><small>RESPONDIDAS</small><strong id="progresso-aluno">0 / 0</strong></div></div>
+      </div>
+      <div id="aviso-tempo-aluno" class="aviso-tempo-aluno">ℹ️ A avaliação é salva durante o andamento.</div>
+
       <div id="resumo-progresso" style="text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;"></div>
       <div id="progresso-blocos-topo" class="progresso-blocos-container"></div>
       <div id="relogio-cronometro" style="display: none;">⏱️ Tempo Gasto: 00:00</div>
 
       <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; padding: 18px; border-radius: 10px; margin-bottom: 20px;">
+        <div class="rotulo-secao-prova">PERGUNTA</div>
         <h3 id="pergunta-txt" style="font-size: 17px; line-height: 1.4; color: white;">Carregando pergunta...</h3>
       </div>
 
+      <div class="rotulo-secao-prova rotulo-alternativas">ESCOLHA UMA ALTERNATIVA</div>
       <div id="opcoes-container"></div>
 
       <div id="nav-quiz" style="display: flex; justify-content: space-between; margin-top: 20px; gap: 10px;">
@@ -191,9 +273,13 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, onSnapshot, serverTimestamp, deleteDoc, query, where 
+    import {
+      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, onSnapshot, serverTimestamp, deleteDoc, query, where
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    // 🔐 FASE 10C — o aluno recebe uma identidade anônima do Firebase.
+    // Ele não precisa criar conta nem digitar senha.
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
+      from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
@@ -205,8 +291,13 @@
       appId: "1:948601017774:web:bd0e038611ff6d2148643f"
     };
 
-    const app = initializeApp(firebaseConfig);
+    // 🔐 FASE 10C.6 — a Área do Aluno usa uma instância Firebase separada.
+    // Assim, abrir a prova e o Painel do Professor no mesmo navegador
+    // não faz o login anônimo substituir o login administrativo.
+    const app = initializeApp(firebaseConfig, "alunoApp");
     const db = getFirestore(app);
+    const auth = getAuth(app);
+    let uidAlunoFirebase = "";
 
     let dadosProvaAtiva = {};
     let listaQuestoes = [], indiceAtual = 0, respostasUsuario = {};
@@ -214,8 +305,28 @@
     let timerInterval = null, segundosPassados = 0;
     let syncOnlineInterval = null;
 
+    const selectEscola = document.getElementById("escola-aluno");
     const selectTurma = document.getElementById("turma-aluno");
     const inputNomeAluno = document.getElementById("nome-aluno");
+    let unsubscribeProvaEscola = null;
+    let encerramentoEscolaEmProcesso = false; // 🔵 FASE 9
+    let unsubscribePermissaoAluno = null; // 🔵 FASE 6: recebe finalização do professor em tempo real.
+
+    // 🔵 FASE 5B — ID DA ESCOLA
+    // IMPORTANTE: esta regra precisa ser IGUAL à usada no app.js.
+    // Exemplo:
+    // "EE José Lins do Rego" -> "eejoselinsdorego"
+    //
+    // Não altere esta função isoladamente. Se mudar aqui,
+    // a mesma regra precisa ser alterada no app.js.
+    function normalizarId(texto) {
+      if (!texto) return "";
+      return texto.toString()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "");
+    }
     const detalhesProvaAtiva = document.getElementById("detalhes-prova-ativa");
     const btnIniciarProva = document.getElementById("btn-iniciar-prova");
 
@@ -235,43 +346,147 @@
       return limpo;
     }
 
-    onSnapshot(doc(db, "configuracoes", "prova_ativa"), (docSnap) => {
-      if (docSnap.exists()) {
-        dadosProvaAtiva = docSnap.data();
-        qtdQ = parseInt(dadosProvaAtiva.quantidadeQuestoes) || 10;
-        
-        let matsStr = (dadosProvaAtiva.materiasAtivas || []).join(", ");
-        let turmas = dadosProvaAtiva.turmasAtivas || [];
-        let tempoMinimo = parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0;
-        let tempoLimite = parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0;
+    // ==========================================================
+    // 🏫 PROVAS POR ESCOLA
+    // Cada escola possui sua própria prova em:
+    // provas_ativas/{id_da_escola}
+    // ==========================================================
+    // 🔵 FASE 5 — CARREGAMENTO DAS ESCOLAS
+    // Lê a coleção "escolas_cadastradas" do Firebase.
+    // Se a lista não aparecer, procure por "FASE 5" neste arquivo.
+    async function carregarEscolasAluno() {
+      try {
+        const snap = await getDocs(collection(db, "escolas_cadastradas"));
+        const escolas = [];
+        snap.forEach(d => escolas.push({ id: d.id, ...d.data() }));
+        escolas.sort((a,b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
 
-        detalhesProvaAtiva.innerHTML = `
-          <div class="linha-detalhe"><span class="icone">🏫</span><div class="conteudo-texto"><strong>Escola:</strong> ${dadosProvaAtiva.escolaAtiva || 'N/D'}</div></div>
-          <div class="linha-detalhe"><span class="icone">📚</span><div class="conteudo-texto"><strong>Matéria(s):</strong> ${matsStr || 'Geral'}</div></div>
-          <div class="linha-detalhe"><span class="icone">🏛️</span><div class="conteudo-texto"><strong>Período:</strong> ${dadosProvaAtiva.periodoAtivo || 'Geral'}</div></div>
-          <div class="linha-detalhe"><span class="icone">🟢</span><div class="conteudo-texto"><strong style="color: #4ade80;">Horário liberado! Você já pode iniciar a sua avaliação.</strong></div></div>
-          <div class="linha-detalhe"><span class="icone">⏱️</span><div class="conteudo-texto"><strong>Tempo Mínimo:</strong> ${tempoMinimo > 0 ? tempoMinimo + ' minutos' : 'Nenhum'}</div></div>
-          <div class="linha-detalhe"><span class="icone">⏳</span><div class="conteudo-texto"><strong>Tempo Limite:</strong> ${tempoLimite > 0 ? tempoLimite + ' minutos' : 'Sem limite'}</div></div>
-          <div class="linha-detalhe"><span class="icone">🔒</span><div class="conteudo-texto"><strong>Exige Token:</strong> ${dadosProvaAtiva.token ? 'Sim' : 'Não'}</div></div>
-        `;
+        selectEscola.innerHTML = `<option value="" disabled selected>Selecione sua escola...</option>`;
+        escolas.forEach(e => {
+          const opt = document.createElement("option");
+          opt.value = e.nome || e.id;
+          opt.textContent = e.nome || e.id;
+          selectEscola.appendChild(opt);
+        });
 
-        if (selectTurma && turmas.length > 0) {
-          selectTurma.innerHTML = `<option value="" disabled selected>Selecione sua turma...</option>`;
-          turmas.forEach(t => {
-            selectTurma.innerHTML += `<option value="${t}">${t}</option>`;
-          });
+        if (escolas.length === 0) {
+          selectEscola.innerHTML = `<option value="" disabled selected>Nenhuma escola cadastrada</option>`;
+        } else {
+          // CORREÇÃO DEFINITIVA:
+          // preencher um <select> por JavaScript NÃO dispara o evento "change".
+          // Por isso a escola aparecia selecionada na tela, mas o listener da
+          // prova ativa nunca era iniciado até o aluno trocar manualmente a escola.
+          // Iniciamos a escuta imediatamente para a escola já selecionada.
+          if (selectEscola.value) {
+            acompanharProvaDaEscola(selectEscola.value);
+          }
         }
+      } catch (err) {
+        console.error("Erro ao carregar escolas:", err);
+        selectEscola.innerHTML = `<option value="" disabled selected>Erro ao carregar escolas</option>`;
+        detalhesProvaAtiva.innerHTML = `⚠️ Não foi possível carregar as escolas. Verifique a conexão/permissões do Firebase.`;
       }
+    }
+
+    // ==========================================================
+    // 10E — CONSULTA CONTROLADA DA PROVA ATIVA
+    // Faz apenas UMA leitura quando o aluno escolhe a escola.
+    // Isso reduz consumo do Firebase e evita ficar preso a um listener
+    // quando a cota/rede estiver indisponível.
+    // ==========================================================
+    async function carregarProvaEstatica(escolaNome) {
+      try {
+        const r=await fetch(`prova-publicada.json?v=${Date.now()}`,{cache:"no-store"});
+        if(!r.ok) return null;
+        const p=await r.json();
+        if(!p||p.ativa===false||normalizarId(p.escolaAtiva||"")!==normalizarId(escolaNome||"")) return null;
+        if(Number(p.expiraEmMillis||0)>0&&Date.now()>=Number(p.expiraEmMillis)) return null;
+        return p;
+      } catch(_){ return null; }
+    }
+
+    async function aplicarProvaRecebida(escolaNome,p,origem="firebase"){
+      if(!p||p.ativa===false) return false;
+      if(Number(p.expiraEmMillis||0)>0&&Date.now()>=Number(p.expiraEmMillis)) return false;
+      dadosProvaAtiva={...p,origemPublicacao:origem};
+      qtdQ=parseInt(p.quantidadeQuestoes)||10;
+      const turmas=p.turmasAtivas||[];
+      detalhesProvaAtiva.innerHTML=`
+        <div class="linha-detalhe"><span class="icone">🏫</span><div class="conteudo-texto"><strong>Escola:</strong> ${p.escolaAtiva||escolaNome}</div></div>
+        <div class="linha-detalhe"><span class="icone">📚</span><div class="conteudo-texto"><strong>Matéria(s):</strong> ${(p.materiasAtivas||[]).join(", ")||"Geral"}</div></div>
+        <div class="linha-detalhe"><span class="icone">🟢</span><div class="conteudo-texto"><strong style="color:#4ade80;">AVALIAÇÃO ATIVA — entrada liberada.</strong></div></div>
+        <div class="linha-detalhe"><span class="icone">📡</span><div class="conteudo-texto"><strong>Origem:</strong> ${origem==="github"?"GitHub / pacote publicado":"Firebase"}</div></div>`;
+      selectTurma.innerHTML=`<option value="" disabled selected>Selecione sua turma...</option>`;
+      turmas.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;selectTurma.appendChild(o);});
+      btnIniciarProva.disabled=!turmas.length;
+      return true;
+    }
+
+    function acompanharProvaDaEscola(escolaNome) {
+      // VERSÃO ESTÁVEL CORRIGIDA:
+      // Um único listener no documento da escola. Ele recebe somente mudanças
+      // daquela prova: ativação, encerramento e reembaralhamento.
+      // Isso evita a demora da consulta manual e elimina o polling de 20 s.
+      if (unsubscribeProvaEscola) {
+        unsubscribeProvaEscola();
+        unsubscribeProvaEscola = null;
+      }
+
+      dadosProvaAtiva = {};
+      btnIniciarProva.disabled = true;
+      selectTurma.innerHTML = `<option value="" disabled selected>Aguardando prova ativa...</option>`;
+      detalhesProvaAtiva.innerHTML = `⏳ Verificando avaliação para <strong>${escolaNome}</strong>...`;
+
+      const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
+
+      unsubscribeProvaEscola = onSnapshot(
+        provaRef,
+        async (docSnap) => {
+          if(docSnap.exists() && await aplicarProvaRecebida(escolaNome,docSnap.data(),"firebase")) return;
+          const pacote=await carregarProvaEstatica(escolaNome);
+          if(pacote && await aplicarProvaRecebida(escolaNome,pacote,"github")) return;
+          dadosProvaAtiva={};
+          detalhesProvaAtiva.innerHTML=`⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
+          selectTurma.innerHTML=`<option value="" disabled selected>Nenhuma turma liberada</option>`;
+          btnIniciarProva.disabled=true;
+        },
+        async (erro) => {
+          console.warn("Firebase indisponível; usando fallback do site:",erro?.code||erro);
+          const pacote=await carregarProvaEstatica(escolaNome);
+          if(pacote && await aplicarProvaRecebida(escolaNome,pacote,"github")) return;
+          detalhesProvaAtiva.innerHTML=`⚠️ Firebase indisponível e nenhuma prova publicada foi encontrada no site.`;
+          btnIniciarProva.disabled=true;
+        }
+      );
+    }
+
+    selectEscola?.addEventListener("change", () => acompanharProvaDaEscola(selectEscola.value));
+    // 🔐 FASE 10C — só acessa o Firestore depois que o Firebase entregar um UID ao aluno.
+    onAuthStateChanged(auth, async (usuario) => {
+      if (!usuario) return;
+      uidAlunoFirebase = usuario.uid;
+      await carregarEscolasAluno();
     });
+    // A sessão anônima fica apenas na memória desta página/instância.
+    // Ela não substitui o login persistente do professor.
+    setPersistence(auth, inMemoryPersistence)
+      .then(() => signInAnonymously(auth))
+      .catch((erro) => {
+        console.error("Falha na autenticação anônima:", erro);
+        detalhesProvaAtiva.innerHTML = "⚠️ Não foi possível iniciar uma sessão segura. Atualize a página.";
+      });
 
     document.getElementById("form-login")?.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const escolaVal = selectEscola.value;
       const nomeVal = inputNomeAluno.value.trim().toUpperCase();
       const turmaVal = selectTurma.value;
 
-      if (!nomeVal || !turmaVal) { alert("⚠️ Preencha seu nome e turma."); return; }
+      if (!escolaVal || !nomeVal || !turmaVal) { alert("⚠️ Selecione sua escola e preencha nome e turma."); return; }
+      if (!dadosProvaAtiva.escolaAtiva) { alert("⚠️ Não há avaliação ativa para esta escola."); return; }
 
-      const idAlunoGerado = `${nomeVal.replace(/[^A-Z0-9]/g, "_")}_${turmaVal.replace(/[^A-Z0-9]/g, "_")}`;
+      // 🟢 Agora o ID inclui ESCOLA + NOME + TURMA, evitando conflito entre escolas.
+      const idAlunoGerado = `${normalizarId(escolaVal)}__${normalizarId(nomeVal)}__${normalizarId(turmaVal)}`;
 
       // VERIFICAÇÃO INTELIGENTE DE PERMISSÃO: Respeita a reautorização do professor
       try {
@@ -296,7 +511,7 @@
 
       alunoAtual = {
         nome: nomeVal,
-        escola: dadosProvaAtiva.escolaAtiva,
+        escola: escolaVal,
         periodo: dadosProvaAtiva.periodoAtivo || "Geral",
         materia: (dadosProvaAtiva.materiasAtivas || ["Geral"]).join(" / "),
         turma: turmaVal,
@@ -312,9 +527,17 @@
       segundosPassados = 0;
       let banco = [];
       try {
-        let snap = await getDocs(collection(db, "questoes"));
-        if (snap.empty) {
-          snap = await getDocs(collection(db, "banco_questoes"));
+        // 🔐 FASE 10C — o aluno NÃO lê mais a coleção privada "questoes".
+        // "questoes_publicas" contém somente enunciado, alternativas e matéria;
+        // a resposta correta permanece na coleção privada, acessível ao professor.
+        let snap;
+        if(dadosProvaAtiva.origemPublicacao==="github" && Array.isArray(dadosProvaAtiva.questoesPublicas)){
+          const docsLocais=dadosProvaAtiva.questoesPublicas;
+          snap={empty:docsLocais.length===0,forEach:(cb)=>docsLocais.forEach((q,i)=>cb({
+            id:q.idQuestao||q.id||`local_${i}`,data:()=>q
+          }))};
+        } else {
+          snap=await getDocs(collection(db,"questoes_publicas"));
         }
 
         snap.forEach(s => {
@@ -330,50 +553,27 @@
               if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return false;
               return true;
             });
-
-          let letraOriginal = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
-          let indiceOriginal = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}[letraOriginal] || 0;
-          if (indiceOriginal >= opcoesLimpas.length) indiceOriginal = 0;
-
-          let alternativasMapeadas = opcoesLimpas.map((texto, idx) => ({
-            texto: texto,
-            ehCorreta: (idx === indiceOriginal)
-          }));
-
-          let distratoresSeguros = [
-            "Processamento autônomo baseado em regras estáticas locais",
-            "Conversão estruturada de metadados em arquivos compactados",
-            "Execução direta de rotinas em camada de hardware isolada",
-            "Indexação sequencial de logs e repositórios desatualizados"
-          ];
-
-          let contC = 0;
-          while (alternativasMapeadas.length < 5) {
-            let txtComp = distratoresSeguros[contC % distratoresSeguros.length];
-            contC++;
-            alternativasMapeadas.push({ texto: txtComp, ehCorreta: false });
-          }
-
-          if (alternativasMapeadas.length > 5) alternativasMapeadas = alternativasMapeadas.slice(0, 5);
-
-          for (let i = alternativasMapeadas.length - 1; i > 0; i--) {
-            const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-            const j = Math.floor((aleatorio / 4294967295) * (i + 1));
-            [alternativasMapeadas[i], alternativasMapeadas[j]] = [alternativasMapeadas[j], alternativasMapeadas[i]];
-          }
-
-          let novoIndiceCorreto = alternativasMapeadas.findIndex(alt => alt.ehCorreta);
-          if (novoIndiceCorreto === -1) novoIndiceCorreto = 0;
-          let letraCorretaFinal = ["A", "B", "C", "D", "E"][novoIndiceCorreto];
-
+          // 🔐 FASE 10C — nenhuma chave de resposta é carregada no navegador do aluno.
           banco.push({
+            idQuestao: d.idQuestao || s.id,
             pergunta: perguntaLimpa,
-            opcoes: alternativasMapeadas.map(alt => alt.texto),
-            correta: letraCorretaFinal,
+            opcoes: opcoesLimpas.slice(0, 5),
             categoria: d.categoria || d.materia || "Geral"
           });
         });
-      } catch(e) { console.error("Erro ao buscar no Firebase:", e); }
+      } catch(e) {
+        console.error("Erro ao buscar questões seguras no Firebase:", e);
+        alert("⚠️ Não foi possível carregar as questões seguras. Verifique se as regras da Fase 10C foram publicadas e publique novamente a prova pelo Painel do Professor.");
+        btnIniciarProva.disabled = false;
+        btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
+        return;
+      }
+      if (banco.length === 0) {
+        alert("⚠️ A prova está ativa, mas ainda não há questões em questoes_publicas. No Painel do Professor, encerre e publique a avaliação novamente para sincronizar o banco seguro.");
+        btnIniciarProva.disabled = false;
+        btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
+        return;
+      }
 
       let materiasAtivas = dadosProvaAtiva.materiasAtivas || [];
       let filtradas = [];
@@ -393,38 +593,8 @@
 
       let qtdDesejada = parseInt(qtdQ) || 10;
       let materiaNome = materiasAtivas.length > 0 ? materiasAtivas[0] : "Conteúdo Geral";
-
-      let poolTemasBase = [
-        "Fundamentos e diretrizes estruturais aplicadas ao contexto operacional",
-        "Parâmetro secundário de validação e verificação de integridade",
-        "Mecanismo auxiliar de processamento síncrono e integrado",
-        "Diretiva de controle e auditoria de fluxo sistêmico",
-        "Abordagem complementar voltada ao suporte técnico avançado",
-        "Otimização contínua de parâmetros em ambientes de alta carga",
-        "Gerenciamento autônomo de dependências em camadas isoladas",
-        "Tratamento estruturado de exceções e logs de auditoria",
-        "Mapeamento sequencial de metadados em repositórios remotos",
-        "Sincronização de estados entre arquiteturas distribuídas"
-      ];
-
-      let contadorGeracao = 1;
-      while (filtradas.length < qtdDesejada) {
-        let temaAtual = poolTemasBase[(contadorGeracao - 1) % poolTemasBase.length];
-        filtradas.push({
-          pergunta: `Análise técnica e conceitual sobre os aspectos práticos da disciplina de ${materiaNome} - Módulo ${contadorGeracao}`,
-          opcoes: [
-            temaAtual,
-            "Processamento autônomo baseado em regras estáticas locais",
-            "Conversão estruturada de metadados em arquivos compactados",
-            "Execução direta de rotinas em camada de hardware isolada",
-            "Indexação sequencial de logs e repositórios desatualizados"
-          ],
-          correta: "A",
-          categoria: materiaNome
-        });
-        contadorGeracao++;
-      }
-
+      // 🔐 FASE 10C — não cria questões artificiais. Se o banco público tiver
+      // menos questões que o solicitado, a prova usa somente as disponíveis.
       let mapaUnicas = new Map();
       filtradas.forEach(q => {
         let chave = (q.pergunta || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -432,13 +602,35 @@
       });
       let unicasArray = Array.from(mapaUnicas.values());
 
-      for (let i = unicasArray.length - 1; i > 0; i--) {
-        const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-        const j = Math.floor((aleatorio / 4294967295) * (i + 1));
-        [unicasArray[i], unicasArray[j]] = [unicasArray[j], unicasArray[i]];
+      // 🔵 FASE 7 — EMBARALHAMENTO QUE FUNCIONA TAMBÉM COM POUCAS QUESTÕES
+      // Usa o seed da prova + aluno. Quando o professor clica "Reembaralhar",
+      // o seed muda e a ordem muda inclusive em provas de 2 ou 3 questões.
+      const seedBase = `${dadosProvaAtiva.seedReordenacao || "0"}|${alunoAtual.id || ""}`;
+      function hashSimples(txt) {
+        let h = 2166136261;
+        for (let i = 0; i < txt.length; i++) {
+          h ^= txt.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
       }
 
-      listaQuestoes = unicasArray.slice(0, qtdDesejada);
+      unicasArray.sort((a, b) => {
+        const ha = hashSimples(seedBase + "|" + (a.idQuestao || a.pergunta || ""));
+        const hb = hashSimples(seedBase + "|" + (b.idQuestao || b.pergunta || ""));
+        return ha - hb;
+      });
+
+      // Com 2/3 questões, uma rotação adicional evita a sensação de que
+      // "não embaralhou" quando o conjunto é muito pequeno.
+      if (unicasArray.length > 1) {
+        const deslocamento = hashSimples(seedBase + "|rotacao") % unicasArray.length;
+        if (deslocamento > 0) {
+          unicasArray = unicasArray.slice(deslocamento).concat(unicasArray.slice(0, deslocamento));
+        }
+      }
+
+      listaQuestoes = unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
 
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
       document.getElementById("tela-login").classList.add("hidden");
@@ -446,12 +638,120 @@
 
       iniciarCronogerenciamento();
       iniciarSincronizacaoTempoReal();
+
+      // ==========================================================
+      // VERSÃO ESTÁVEL — CONTROLE DE ENCERRAMENTO
+      // 1) Mantém o listener individual de permissão para o botão
+      //    "Finalizar" do Monitoramento.
+      // 2) A cada 20 s verifica SOMENTE o documento da prova da escola.
+      //    Se o professor encerrar a ativação, quem já está fazendo a
+      //    prova também é finalizado pelo fluxo normal e tem o resultado salvo.
+      // ==========================================================
+      let finalizacaoEmAndamento = false;
+
+      const encerrarSessaoAluno = async (motivo) => {
+        if (finalizacaoEmAndamento) return;
+        finalizacaoEmAndamento = true;
+  await finalizarProva(motivo || "Avaliação encerrada pelo professor.", true);
+      };
+
+      if (unsubscribePermissaoAluno) unsubscribePermissaoAluno();
+      unsubscribePermissaoAluno = onSnapshot(
+        doc(db, "permissoes_alunos", alunoAtual.id),
+        (snapPermissao) => {
+          if (!snapPermissao.exists()) return;
+          const permissao = snapPermissao.data() || {};
+          if (permissao.provaFinalizadaPeloProfessor === true) {
+            encerrarSessaoAluno(permissao.motivoFinalizacao || "Finalizada manualmente pelo professor.");
+          }
+        },
+        (erro) => console.warn("Controle individual temporariamente indisponível:", erro?.code || erro)
+      );
+
+
       exibirQuestao();
+    }
+
+    function formatarRelogioAluno(totalSegundos) {
+      const min = Math.floor(Math.max(0, totalSegundos) / 60);
+      const seg = Math.max(0, totalSegundos) % 60;
+      return `${String(min).padStart(2, "0")}:${String(seg).padStart(2, "0")}`;
+    }
+
+    function atualizarPainelTempoAluno() {
+      const minimoSeg = (parseInt(dadosProvaAtiva.tempoMinimoMinutos) || 0) * 60;
+      const limiteSeg = (parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0) * 60;
+      // 🔵 FASE 8D — funciona com Array ou Objeto.
+      const respostasSeguras = respostasUsuario ? Object.values(respostasUsuario) : [];
+      const questoesSeguras = Array.isArray(listaQuestoes) ? listaQuestoes : [];
+      const respondidas = respostasSeguras.filter(r => r !== undefined && r !== null && r !== "").length;
+
+      const decorrido = document.getElementById("tempo-decorrido-aluno");
+      const minimo = document.getElementById("tempo-minimo-aluno");
+      const restante = document.getElementById("tempo-restante-aluno");
+      const progresso = document.getElementById("progresso-aluno");
+      const aviso = document.getElementById("aviso-tempo-aluno");
+
+      if (decorrido) decorrido.textContent = formatarRelogioAluno(segundosPassados);
+      if (minimo) minimo.textContent = minimoSeg > 0 ? formatarRelogioAluno(minimoSeg) : "Livre";
+      if (progresso) progresso.textContent = `${respondidas} / ${questoesSeguras.length}`;
+
+      if (limiteSeg > 0) {
+        const faltam = Math.max(0, limiteSeg - segundosPassados);
+        if (restante) {
+          restante.textContent = formatarRelogioAluno(faltam);
+          restante.classList.toggle("tempo-alerta", faltam <= 300);
+        }
+        if (aviso) {
+          if (faltam <= 300) {
+            aviso.className = "aviso-tempo-aluno aviso-limite";
+            aviso.innerHTML = `⚠️ Atenção: faltam <strong>${formatarRelogioAluno(faltam)}</strong> para o encerramento automático.`;
+          } else if (minimoSeg > 0 && segundosPassados < minimoSeg) {
+            aviso.className = "aviso-tempo-aluno aviso-minimo";
+            aviso.innerHTML = `🔒 Você poderá finalizar em <strong>${formatarRelogioAluno(minimoSeg - segundosPassados)}</strong>.`;
+          } else {
+            aviso.className = "aviso-tempo-aluno aviso-ok";
+            aviso.innerHTML = "✅ Tempo mínimo cumprido. Continue até concluir a avaliação.";
+          }
+        }
+      } else {
+        if (restante) restante.textContent = "Sem limite";
+        if (aviso) {
+          if (minimoSeg > 0 && segundosPassados < minimoSeg) {
+            aviso.className = "aviso-tempo-aluno aviso-minimo";
+            aviso.innerHTML = `🔒 Você poderá finalizar em <strong>${formatarRelogioAluno(minimoSeg - segundosPassados)}</strong>.`;
+          } else {
+            aviso.className = "aviso-tempo-aluno aviso-ok";
+            aviso.innerHTML = "✅ Avaliação sem limite máximo de tempo.";
+          }
+        }
+      }
+
+      // Libera o botão Finalizar somente após o tempo mínimo.
+      const btnFin = document.getElementById("fin");
+      if (btnFin) {
+        const podeFinalizar = minimoSeg === 0 || segundosPassados >= minimoSeg;
+        btnFin.disabled = !podeFinalizar;
+        btnFin.title = podeFinalizar ? "Finalizar avaliação" : "Aguarde o tempo mínimo";
+        btnFin.style.opacity = podeFinalizar ? "1" : ".55";
+      }
     }
 
     function iniciarCronogerenciamento() {
       if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => { segundosPassados++; }, 1000);
+      atualizarPainelTempoAluno();
+      timerInterval = setInterval(() => {
+        segundosPassados++;
+        atualizarPainelTempoAluno();
+
+        const limiteSeg = (parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0) * 60;
+        if (limiteSeg > 0 && segundosPassados >= limiteSeg) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          alert("⌛ O tempo máximo da avaliação terminou. A prova será finalizada automaticamente.");
+          finalizarProva();
+        }
+      }, 1000);
     }
 
     function iniciarSincronizacaoTempoReal() {
@@ -459,11 +759,8 @@
       syncOnlineInterval = setInterval(async () => {
         if (!alunoAtual.id) return;
         try {
-          let acertosParciais = 0;
-          listaQuestoes.forEach((q, idx) => {
-            if (respostasUsuario[idx] === q.correta) acertosParciais++;
-          });
-
+          // 🔐 FASE 10C — durante a prova enviamos somente progresso/respostas.
+          // A pontuação não é calculada no navegador do aluno.
           await setDoc(doc(db, "alunos_online", alunoAtual.id), {
             nome: alunoAtual.nome,
             turma: alunoAtual.turma,
@@ -473,16 +770,26 @@
             questaoAtual: indiceAtual + 1,
             totalQuestoes: listaQuestoes.length,
             segundosPassados: segundosPassados,
-            pontuacao: acertosParciais,
+            uid: uidAlunoFirebase,
+            respostas: respostasUsuario,
+            questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             atualizadoEm: serverTimestamp()
           }, { merge: true });
-        } catch(e) {}
-      }, 5000);
+        } catch(e) {
+          // 10E — não interrompe a prova por uma queda momentânea,
+          // mas registra o motivo para diagnóstico.
+          console.warn("10E — progresso não sincronizado neste ciclo:", e?.code || e?.message || e);
+        }
+      }, 10000);
     }
 
     function exibirQuestao() {
       const q = listaQuestoes[indiceAtual];
-      document.getElementById("pergunta-txt").textContent = `${indiceAtual + 1}. ${q.pergunta}`;
+      // 🔵 FASE 8D — a numeração já está em "Questão X de Y".
+      const perguntaLimpaTela = (q.pergunta || "")
+        .replace(/^\s*(?:quest[aã]o\s*)?\d+\s*[\.\-:\)]\s*/i, "")
+        .trim();
+      document.getElementById("pergunta-txt").textContent = perguntaLimpaTela;
       document.getElementById("progresso-txt").textContent = `Questão ${indiceAtual + 1} de ${listaQuestoes.length}`;
 
       let htmlBlocos = "";
@@ -495,18 +802,33 @@
       const container = document.getElementById("opcoes-container");
       container.innerHTML = "";
 
+      // 🔵 FASE 8C — primeiro monta TODAS as alternativas.
+      const opcoesSeguras = Array.isArray(q.opcoes) ? q.opcoes : [];
       ["A", "B", "C", "D", "E"].forEach((letra, idx) => {
-        const texto = q.opcoes[idx] || `Alternativa ${letra}`;
+        const texto = opcoesSeguras[idx];
+        if (!texto) return; // não cria alternativa artificial vazia
         const btn = document.createElement("button");
         btn.className = "opcao-btn" + (respostasUsuario[indiceAtual] === letra ? " selecionada" : "");
         btn.textContent = `${letra}) ${texto}`;
-        btn.onclick = () => { respostasUsuario[indiceAtual] = letra; exibirQuestao(); };
+        btn.onclick = () => {
+          respostasUsuario[indiceAtual] = letra;
+          try { atualizarPainelTempoAluno(); } catch (e) {}
+          exibirQuestao();
+        };
         container.appendChild(btn);
       });
 
       document.getElementById("ant").style.display = indiceAtual === 0 ? "none" : "block";
       document.getElementById("prox").style.display = indiceAtual === listaQuestoes.length - 1 ? "none" : "block";
       document.getElementById("fin").style.display = indiceAtual === listaQuestoes.length - 1 ? "block" : "none";
+
+      // 🔵 FASE 8C — o painel informativo vem por último.
+      // Se houver qualquer problema nele, as alternativas já estão na tela.
+      try {
+        atualizarPainelTempoAluno();
+      } catch (erroPainel) {
+        console.warn("Painel informativo:", erroPainel);
+      }
     }
 
     window.irQuestao = function(index) { indiceAtual = index; exibirQuestao(); };
@@ -515,30 +837,33 @@
     document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
     document.getElementById("fin")?.addEventListener("click", finalizarProva);
 
-    async function finalizarProva() {
+    async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (timerInterval) clearInterval(timerInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
+if (unsubscribePermissaoAluno) {
+        unsubscribePermissaoAluno();
+        unsubscribePermissaoAluno = null;
+      }
       document.getElementById("tela-quiz").classList.add("hidden");
       document.getElementById("tela-resultado").classList.remove("hidden");
-
-      let acertos = 0;
-      let htmlRev = "";
-      listaQuestoes.forEach((q, idx) => {
+      // 🔐 FASE 10C — o aluno não possui mais a resposta correta.
+      // Ele envia as respostas e o professor realiza a correção com o banco privado.
+      let htmlRev = listaQuestoes.map((q, idx) => {
         const resp = respostasUsuario[idx] || "-";
-        const correta = (resp === q.correta);
-        if (correta) acertos++;
-        htmlRev += `<div class="item-revisao ${correta ? 'correta' : 'incorreta'}"><p><strong>${idx+1}. ${q.pergunta}</strong></p><p>Sua resposta: ${resp} ${correta ? '✅' : '❌'}</p></div>`;
-      });
-
-      let erros = listaQuestoes.length - acertos;
-      let nota = listaQuestoes.length > 0 ? ((acertos / listaQuestoes.length) * 10).toFixed(1) : "0.0";
+        return `<div class="item-revisao"><p><strong>${idx+1}. ${q.pergunta}</strong></p><p>Resposta enviada: ${resp}</p></div>`;
+      }).join("");
       let min = Math.floor(segundosPassados / 60);
       let seg = segundosPassados % 60;
       let tempoGastoFormatado = `${min}m ${seg}s`;
 
-      document.getElementById("nota-final-txt").textContent = `Nota Proporcional: ${nota} / 10.0`;
-      document.getElementById("detalhes-acertos-txt").textContent = `Acertos: ${acertos} | Erros: ${erros} | Tempo: ${tempoGastoFormatado}`;
+      document.getElementById("nota-final-txt").textContent = "Avaliação enviada para correção segura";
+      document.getElementById("detalhes-acertos-txt").textContent = `Questões: ${listaQuestoes.length} | Tempo: ${tempoGastoFormatado}`;
       document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
+
+      if (encerradaPeloProfessor) {
+        document.getElementById("status-envio-txt").innerHTML =
+          `🏁 <strong>Avaliação encerrada pelo professor.</strong><br>Motivo: ${motivoEncerramento}`;
+      }
 
       try {
         const agora = Date.now();
@@ -549,18 +874,33 @@
           escola: alunoAtual.escola,
           periodo: alunoAtual.periodo,
           materia: alunoAtual.materia,
-          pontuacao: acertos,
+          // 🔐 FASE 10C — null indica que o painel ainda fará a correção.
+          pontuacao: null,
           totalQuestoes: listaQuestoes.length,
+          uid: uidAlunoFirebase,
+          respostas: respostasUsuario,
+          questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
           tempoGastoSegundos: segundosPassados,
           tempoGastoFormatado: tempoGastoFormatado,
           dataEnvio: serverTimestamp(),
-          timestamp: agora
+          timestamp: agora,
+          finalizadoPeloProfessor: encerradaPeloProfessor,
+          motivoFinalizacao: motivoEncerramento || ""
         });
 
-        await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), { podeFazer: false }, { merge: true });
+        // 🔐 FASE 10C — vincula o bloqueio ao UID anônimo desta sessão.
+        await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
+          podeFazer: false,
+          uid: uidAlunoFirebase
+        }, { merge: true });
         await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
-        document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
+        if (!encerradaPeloProfessor) {
+          document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
+        } else {
+          document.getElementById("status-envio-txt").innerHTML =
+            `🏁 <strong>Avaliação encerrada pelo professor.</strong><br>Motivo: ${motivoEncerramento}<br>✅ Resultado salvo com sucesso.`;
+        }
       } catch (err) {
         document.getElementById("status-envio-txt").textContent = "⚠️ Erro ao salvar resultado online.";
       }
@@ -571,7 +911,7 @@
       indiceAtual = 0;
       listaQuestoes = [];
       alunoAtual = {};
-      document.getElementById("tela-resultado").classList.add("hidden");
+document.getElementById("tela-resultado").classList.add("hidden");
       document.getElementById("tela-login").classList.remove("hidden");
       if (btnIniciarProva) {
         btnIniciarProva.disabled = false;

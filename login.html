@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login do Professor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080f1b;color:#f8fafc;font-family:Arial,sans-serif;padding:20px}
+.card{width:min(430px,100%);background:#111b2c;border:1px solid #293750;border-radius:16px;padding:30px;box-shadow:0 18px 60px #0006}
+.logo{text-align:center;font-size:38px}h1{text-align:center;margin:8px 0 5px;color:#38bdf8;font-size:25px}.sub{text-align:center;color:#94a3b8;font-size:13px;margin-bottom:25px}
+label{display:block;color:#cbd5e1;font-weight:700;font-size:12px;margin:14px 0 6px}input{width:100%;padding:13px 14px;border:1px solid #334155;border-radius:9px;background:#0f172a;color:white;outline:none}
+input:focus{border-color:#3b82f6}button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:9px;background:#2563eb;color:white;font-weight:800;cursor:pointer}
+button:disabled{opacity:.6}.msg{display:none;margin-top:14px;padding:10px;border-radius:8px;font-size:12px}.erro{display:block;background:#ef44441f;border:1px solid #ef444459;color:#fecaca}.ok{display:block;background:#22c55e1a;border:1px solid #22c55e4d;color:#bbf7d0}
+</style></head><body>
+<main class="card"><div class="logo">🔐</div><h1>Painel do Professor</h1>
+<div class="sub">Acesso protegido pelo Firebase Authentication</div>
+<form id="form-login"><label>E-mail</label><input id="email" type="email" autocomplete="username" required>
+<label>Senha</label><input id="senha" type="password" autocomplete="current-password" required>
+<button id="btn-login">🔑 Entrar no Painel</button>
+<button id="btn-entrar-offline" type="button" style="display:none;background:#475569;">📴 Entrar em modo offline</button><div id="mensagem" class="msg"></div></form></main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,getIdTokenResult} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+const firebaseConfig={apiKey:"AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",authDomain:"quiz-interativo-8a98c.firebaseapp.com",databaseURL:"https://quiz-interativo-8a98c-default-rtdb.firebaseio.com",projectId:"quiz-interativo-8a98c",storageBucket:"quiz-interativo-8a98c.firebasestorage.app",messagingSenderId:"948601017774",appId:"1:948601017774:web:bd0e038611ff6d2148643f"};
+const auth=getAuth(initializeApp(firebaseConfig)),form=document.getElementById("form-login"),btn=document.getElementById("btn-login"),msg=document.getElementById("mensagem");
+const CHAVE_PROFESSOR_OFFLINE="quiz_professor_offline_v10c9",btnOffline=document.getElementById("btn-entrar-offline");
+function autorizacaoOffline(){try{const d=JSON.parse(localStorage.getItem(CHAVE_PROFESSOR_OFFLINE)||"null");return d?.email&&d?.uid&&d?.validadoEm?d:null}catch(_){return null}}
+function atualizarBotaoOffline(forcarOffline=false){
+  if(!btnOffline) return;
+  const autorizado=Boolean(autorizacaoOffline());
+  btnOffline.style.display=(autorizado&&(!navigator.onLine||forcarOffline))?"block":"none";
+}
+btnOffline?.addEventListener("click",()=>{
+  if(autorizacaoOffline()) location.replace("painel.html?modo=offline");
+});
+window.addEventListener("online",atualizarBotaoOffline);window.addEventListener("offline",atualizarBotaoOffline);atualizarBotaoOffline();
+onAuthStateChanged(auth,async u=>{
+  if(!u) return;
+  // 🔐 FASE 10C.6 — não confunde sessão anônima de aluno com professor.
+  try{
+    const token=await getIdTokenResult(u);
+    const provedor=token?.signInProvider||token?.claims?.firebase?.sign_in_provider||"";
+    if(provedor==="password"){
+      localStorage.setItem(CHAVE_PROFESSOR_OFFLINE,JSON.stringify({email:u.email,uid:u.uid,validadoEm:Date.now()}));
+      location.replace("painel.html"); return;
+    }
+    // Remove somente a sessão antiga que estava ocupando o login do professor.
+    await signOut(auth);
+    msg.className="msg erro";
+    msg.textContent="ℹ️ A sessão de aluno foi encerrada. Entre com o e-mail e a senha do professor.";
+  }catch(err){
+    console.error(err);
+    await signOut(auth).catch(()=>{});
+  }
+});
+form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;btn.textContent="⏳ Verificando...";msg.className="msg";
+try{await signInWithEmailAndPassword(auth,email.value.trim(),senha.value);msg.className="msg ok";msg.textContent="✅ Login realizado."}
+catch(err){
+  console.error(err);
+  msg.className="msg erro";
+  const codigo=String(err?.code||"");
+  const erroRede=!navigator.onLine ||
+    codigo.includes("network-request-failed") ||
+    codigo.includes("timeout") ||
+    codigo.includes("unavailable") ||
+    codigo.includes("internal-error");
+
+  if(erroRede){
+    if(autorizacaoOffline()){
+      msg.textContent="📴 Sem conexão com o Firebase. Use “Entrar em modo offline”.";
+      atualizarBotaoOffline(true);
+    }else{
+      msg.textContent="📴 Sem conexão. Faça ao menos um login com internet neste navegador para habilitar o modo offline.";
+    }
+  }else if(
+    codigo.includes("invalid-credential") ||
+    codigo.includes("wrong-password") ||
+    codigo.includes("user-not-found") ||
+    codigo.includes("invalid-email")
+  ){
+    msg.textContent="❌ E-mail ou senha inválidos.";
+  }else{
+    msg.textContent="⚠️ Não foi possível entrar agora. Verifique a conexão e tente novamente.";
+  }
+  btn.disabled=false;
+  btn.textContent="🔑 Entrar no Painel";
+}});
+</script></body></html>

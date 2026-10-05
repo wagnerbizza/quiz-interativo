@@ -1,3 +1,14 @@
+<!--
+==========================================================
+👨‍🏫 PAINEL DO PROFESSOR
+Aqui ficam cadastro de escolas, ativação de provas,
+banco de questões, monitoramento e resultados.
+
+A maior parte da lógica desta página está em app.js.
+Procure no app.js pela seção:
+"PAINEL DO PROFESSOR".
+==========================================================
+-->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -9,6 +20,38 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
   <style>
+
+    /* CORREÇÃO DEFINITIVA DO MODAL DA LIXEIRA DE QUESTÕES */
+#modal-lixeira-questoes {
+  display: none;
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 999999;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+#modal-lixeira-questoes.show { 
+  display: flex !important; 
+}
+
+/* Garante que o conteúdo interno do modal não estoure a tela */
+#modal-lixeira-questoes .modal-conteudo-win {
+  width: 100%;
+  max-width: 850px;
+  max-height: 85vh;
+  background: #1e293b;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
     :root {
       --bg-dark: #0f172a;
       --card-bg: #1e293b;
@@ -27,6 +70,23 @@
     header { text-align: center; margin-bottom: 15px; }
     header h1 { color: #60a5fa; font-size: 26px; }
 
+    /* CORREÇÃO DO ESPAÇAMENTO INFERIOR PARA NÃO CORTAR AS ÚLTIMAS QUESTÕES */
+#aba-banco-dados {
+  padding-bottom: 120px !important;
+}
+#catalogo-questoes-grid {
+  margin-bottom: 80px !important;
+  padding-bottom: 50px !important;
+}
+
+/* ALINHAMENTO PERFEITO DOS BOTÕES CLASSIFICAR E VISUALIZAR */
+.painel-controle-topo .grupo-controles-direita {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+}
+
     .barra-acoes-topo { 
       display: flex; justify-content: space-between; align-items: center; 
       background-color: var(--card-bg); padding: 10px 16px; border-radius: 8px; 
@@ -40,9 +100,11 @@
       display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border); 
       padding-bottom: 8px; flex-wrap: wrap; position: sticky; top: 60px; background-color: var(--bg-dark); z-index: 890; padding-top: 5px;
     }
-    .btn-aba { background-color: #334155; color: white; border: none; padding: 10px 16px; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; }
+    .btn-aba { background-color: #334155; color: white; border: none; padding: 10px 16px; border-radius: 8px 8px 0 0; cursor: grab; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s; user-select: none; }
+    .btn-aba:active { cursor: grabbing; }
     .btn-aba:hover { background-color: #475569; }
     .btn-aba.active { background-color: var(--primary); }
+    .btn-aba.dragging { opacity: 0.4; transform: scale(0.95); }
 
     .aba-conteudo { background-color: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
     .hidden { display: none !important; }
@@ -87,10 +149,6 @@
     .bloco-calculadora { background: #0f172a; border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-top: 12px; position: relative; }
     .sub-titulo-linha { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
     .sub-titulo-linha h3 { color: #60a5fa; font-size: 15px; display: flex; align-items: center; gap: 6px; }
-    
-    .acoes-box { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-    .btn-mini { background: #334155; color: white; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px; transition: background 0.2s; }
-    .btn-mini:hover { background: #475569; }
 
     .grid-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px; }
     .checkbox-item-global, .checkbox-item { background: #1e293b; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; width: 100%; }
@@ -102,7 +160,83 @@
     td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
     th { background-color: #0f172a; color: #60a5fa; position: relative; z-index: 2; padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
 
-    #modal-ocultos, #modal-lixeira {
+    /* ESTILOS DO CATÁLOGO DE BANCO DE DADOS (MODOS: GRADE, LISTA, BLOCOS) */
+    .catalogo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 15px;
+    }
+    .catalogo-grid.modo-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .catalogo-grid.modo-blocos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .catalogo-card {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: border-color 0.2s;
+    }
+    .catalogo-card:hover {
+      border-color: #3b82f6;
+    }
+    .catalogo-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-materia {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .catalogo-enunciado {
+      font-size: 13.5px;
+      font-weight: bold;
+      color: #f8fafc;
+      line-height: 1.4;
+    }
+    .catalogo-opcoes-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .catalogo-opcao-item {
+      padding: 5px 8px;
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 6px;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .catalogo-opcao-item.correta {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border-color: rgba(34, 197, 94, 0.4);
+      font-weight: bold;
+    }
+
+    #modal-ocultos, #modal-lixeira, #modal-editar-questao {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -112,7 +246,7 @@
       align-items: center;
       padding: 20px;
     }
-    #modal-ocultos.show, #modal-lixeira.show { display: flex !important; }
+    #modal-ocultos.show, #modal-lixeira.show, #modal-editar-questao.show { display: flex !important; }
     .modal-conteudo-win {
       background: #1e293b;
       border: 1px solid var(--border);
@@ -162,10 +296,867 @@
       .aba-conteudo { background: #fff !important; border: none !important; padding: 0 !important; }
     }
   </style>
+
+<style id="fase4-banco-legivel">
+/* ==========================================================
+   🟢 FASE 4 — BANCO DE QUESTÕES MAIS LEGÍVEL
+   Altere somente este bloco se quiser mudar a aparência dos
+   cards/listagem do Banco de Dados.
+   ========================================================== */
+
+/* Permite que textos grandes cresçam sem serem cortados. */
+#container-catalogo-questoes,
+#lista-questoes-banco,
+#catalogo-questoes,
+#aba-banco-dados {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Qualquer card/linha de questão deve poder aumentar de altura. */
+#aba-banco-dados .questao-card,
+#aba-banco-dados .card-questao,
+#aba-banco-dados .item-questao,
+#aba-banco-dados .questao-item,
+#aba-banco-dados [class*="questao"] {
+  min-height: 0 !important;
+}
+
+/* Enunciados e alternativas: nunca cortar com "..." */
+#aba-banco-dados p,
+#aba-banco-dados span,
+#aba-banco-dados td,
+#aba-banco-dados div {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#aba-banco-dados .texto-pergunta,
+#aba-banco-dados .pergunta,
+#aba-banco-dados .enunciado,
+#aba-banco-dados [class*="pergunta"],
+#aba-banco-dados [class*="enunciado"],
+#aba-banco-dados [class*="alternativa"],
+#aba-banco-dados [class*="opcao"] {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-height: none !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+}
+
+/* Tabelas: a questão pode quebrar linha e aumentar a altura. */
+#aba-banco-dados table {
+  width: 100%;
+  table-layout: auto;
+}
+
+#aba-banco-dados th,
+#aba-banco-dados td {
+  white-space: normal !important;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+/* Área de alternativas mais confortável. */
+#aba-banco-dados ul,
+#aba-banco-dados ol {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding-left: 24px;
+}
+
+#aba-banco-dados li {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+/* Em telas pequenas, evita que o conteúdo suma lateralmente. */
+@media (max-width: 800px) {
+  #aba-banco-dados {
+    overflow-x: auto !important;
+  }
+  #aba-banco-dados table {
+    min-width: 700px;
+  }
+}
+</style>
+
+
+<style id="fase4b-corrige-final-catalogo">
+/* ==========================================================
+   🔧 CORREÇÃO FASE 4B — FINAL DO BANCO DE QUESTÕES
+   O problema era o contêiner da lista: o último card ficava
+   atrás do limite inferior da área e as alternativas sumiam.
+   ========================================================== */
+
+#aba-banco-dados {
+  height: auto !important;
+  min-height: calc(100vh - 120px);
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding-bottom: 100px !important;
+}
+
+#container-catalogo-questoes,
+#lista-questoes-banco,
+#catalogo-questoes,
+#container-questoes-db,
+#lista-questoes-db {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding-bottom: 80px !important;
+}
+
+/* Evita que o último card seja recortado por algum pai flex/grid. */
+#aba-banco-dados > *,
+#aba-banco-dados .questao-card,
+#aba-banco-dados .card-questao,
+#aba-banco-dados .item-questao,
+#aba-banco-dados .questao-item {
+  flex-shrink: 0;
+}
+
+/* Garante espaço após a última questão. */
+#aba-banco-dados::after {
+  content: "";
+  display: block;
+  height: 80px;
+  width: 100%;
+}
+</style>
+
+
+<style id="fase4c-grade-corrigida">
+/* ==========================================================
+   🔧 FASE 4C — GRADE DO BANCO DE DADOS
+   Corrige os espaços vazios entre as questões sem voltar a
+   cortar enunciados ou alternativas.
+
+   Se quiser mudar a quantidade de colunas futuramente,
+   procure por "grid-template-columns" neste bloco.
+   ========================================================== */
+
+/* A grade volta a preencher da esquerda para a direita. */
+#aba-banco-dados .grid-questoes,
+#aba-banco-dados .catalogo-grid,
+#aba-banco-dados [class*="grid"][class*="quest"] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
+  align-items: start !important;
+  align-content: start !important;
+  gap: 14px !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Os cards crescem conforme o conteúdo, sem reservar alturas gigantes. */
+#aba-banco-dados .questao-card,
+#aba-banco-dados .card-questao,
+#aba-banco-dados .item-questao,
+#aba-banco-dados .questao-item {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: start !important;
+  overflow: visible !important;
+}
+
+/* Remove o espaço artificial grande que a Fase 4B adicionava. */
+#aba-banco-dados::after {
+  height: 20px !important;
+}
+
+#container-catalogo-questoes,
+#lista-questoes-banco,
+#catalogo-questoes,
+#container-questoes-db,
+#lista-questoes-db {
+  padding-bottom: 25px !important;
+}
+
+/* Responsivo: 2 colunas e depois 1 coluna. */
+@media (max-width: 1200px) {
+  #aba-banco-dados .grid-questoes,
+  #aba-banco-dados .catalogo-grid,
+  #aba-banco-dados [class*="grid"][class*="quest"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #aba-banco-dados .grid-questoes,
+  #aba-banco-dados .catalogo-grid,
+  #aba-banco-dados [class*="grid"][class*="quest"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+
+<style id="fase4d-grade-sem-buracos">
+/* ==========================================================
+   🔧 FASE 4D — CORREÇÃO REAL DO "VAZIO NO CENTRO"
+
+   O catálogo usa cards com alturas diferentes.
+   CSS Grid cria linhas com a altura do maior card da linha,
+   deixando grandes espaços vazios embaixo dos cards menores.
+
+   Nesta correção o modo GRADE usa colunas independentes,
+   como um mural. Assim o próximo card ocupa o espaço livre.
+   ========================================================== */
+
+/* MODO GRADE PADRÃO — sem buracos entre cards */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+  display: block !important;
+  column-count: 3 !important;
+  column-gap: 14px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Este é o nome REAL dos cards criados pelo app.js */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) > .catalogo-card {
+  display: inline-flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 0 14px 0 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  vertical-align: top !important;
+  overflow: visible !important;
+}
+
+/* LISTA continua sendo uma questão abaixo da outra */
+#catalogo-questoes-grid.catalogo-grid.modo-lista {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  column-count: auto !important;
+}
+
+/* BLOCOS continua usando a grade compacta original */
+#catalogo-questoes-grid.catalogo-grid.modo-blocos {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 12px !important;
+  column-count: auto !important;
+}
+
+/* Texto e alternativas sempre completos */
+#catalogo-questoes-grid .catalogo-card,
+#catalogo-questoes-grid .catalogo-card * {
+  overflow-wrap: anywhere;
+}
+
+#catalogo-questoes-grid .catalogo-card {
+  white-space: normal !important;
+}
+
+/* Responsivo */
+@media (max-width: 1200px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+    column-count: 2 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+    column-count: 1 !important;
+  }
+}
+</style>
+
+
+<style id="fase4e-topo-corrigido">
+/* ==========================================================
+   🔧 FASE 4E — CORREÇÃO DO TOPO DO BANCO DE DADOS
+
+   A Fase 4D resolveu os espaços vazios, mas CSS columns pode
+   iniciar o primeiro card muito próximo/atrás da barra de
+   filtros. Este bloco cria uma separação segura no topo.
+   ========================================================== */
+
+/* A barra/filtros ficam no fluxo normal e acima dos cards. */
+#aba-banco-dados {
+  padding-top: 0 !important;
+}
+
+#catalogo-questoes-grid {
+  position: relative !important;
+  clear: both !important;
+  margin-top: 18px !important;
+  padding-top: 8px !important;
+  overflow: visible !important;
+}
+
+/* O primeiro card nunca sobe por baixo dos controles. */
+#catalogo-questoes-grid > .catalogo-card:first-child {
+  margin-top: 0 !important;
+}
+
+/* Mantém os cards inteiros no começo de cada coluna. */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) > .catalogo-card {
+  break-inside: avoid-column !important;
+  -webkit-column-break-inside: avoid !important;
+}
+
+/* Evita que elementos flutuantes anteriores invadam o catálogo. */
+#catalogo-questoes-grid::before {
+  content: "";
+  display: block;
+  height: 1px;
+  width: 100%;
+}
+</style>
+
+
+<style id="fase4f-masonry-estavel">
+/* ==========================================================
+   🔧 FASE 4F — SOLUÇÃO DEFINITIVA DA GRADE
+
+   IMPORTANTE:
+   As fases anteriores usavam CSS columns. O navegador podia
+   fragmentar uma questão entre duas colunas. Esta versão
+   desativa isso e usa 3 colunas reais criadas pelo app.js.
+
+   Para mudar a quantidade/visual das colunas, procure FASE 4F.
+   ========================================================== */
+
+/* Desativa completamente o sistema de colunas CSS anterior. */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+  display: block !important;
+  column-count: initial !important;
+  columns: initial !important;
+  column-gap: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-top: 0 !important;
+}
+
+/* Mural com três colunas independentes. */
+#catalogo-questoes-grid .mural-questoes-estavel {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+#catalogo-questoes-grid .mural-coluna {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+
+/* Cada questão é indivisível e cresce conforme o conteúdo. */
+#catalogo-questoes-grid .mural-coluna > .catalogo-card {
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  break-inside: auto !important;
+}
+
+/* Mantém alternativas e enunciados completos. */
+#catalogo-questoes-grid .catalogo-card,
+#catalogo-questoes-grid .catalogo-card * {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  max-height: none !important;
+}
+
+/* Responsividade sem fragmentar cards. */
+@media (max-width: 1200px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    flex-wrap: wrap !important;
+  }
+  #catalogo-questoes-grid .mural-coluna {
+    flex: 1 1 calc(50% - 14px) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    display: block !important;
+  }
+  #catalogo-questoes-grid .mural-coluna {
+    width: 100% !important;
+    margin-bottom: 14px !important;
+  }
+}
+</style>
+
+
+<style id="fase8-painel-profissional">
+/* ==========================================================
+   🔵 FASE 8 — PAINEL MAIS INTUITIVO E PROFISSIONAL
+   Esta área controla os cartões de informações da prova ativa.
+   Para mudar tamanho/espaçamento dos indicadores, altere aqui.
+   ========================================================== */
+.resumo-prova-metricas{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(130px,1fr));
+  gap:10px;
+  margin-top:14px;
+  margin-bottom:4px;
+}
+.metrica-prova{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:58px;
+  padding:10px 12px;
+  border:1px solid #334155;
+  border-radius:10px;
+  background:rgba(15,23,42,.78);
+}
+.metrica-icone{
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  border-radius:8px;
+  background:rgba(59,130,246,.15);
+  font-size:17px;
+}
+.metrica-prova div{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.metrica-prova small{
+  color:#94a3b8;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.6px;
+}
+.metrica-prova strong{
+  color:#f8fafc;
+  font-size:13px;
+  line-height:1.2;
+}
+@media(max-width:1000px){
+  .resumo-prova-metricas{grid-template-columns:repeat(2,minmax(130px,1fr));}
+}
+@media(max-width:600px){
+  .resumo-prova-metricas{grid-template-columns:1fr;}
+}
+
+/* Monitoramento: deixa progresso e tempo mais fáceis de ler. */
+#tabela-monitoramento td{
+  vertical-align:middle;
+}
+#tabela-monitoramento td:nth-last-child(3),
+#tabela-monitoramento td:nth-last-child(2){
+  font-weight:700;
+}
+</style>
+
+<style id="fase10a-auth-css">
+.sessao-professor{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 16px;padding:10px 14px;border:1px solid #334155;border-radius:10px;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:12px}
+.sessao-professor>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sessao-status{color:#4ade80;font-weight:900;font-size:10px;letter-spacing:.5px}
+.btn-sair-professor{border:0;border-radius:7px;padding:8px 13px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer}
+</style>
+
+<style id="fase10b2-layout-responsivo">
+/* ==========================================================
+   🖥️ FASE 10B.2 — LAYOUT RESPONSIVO DO PAINEL
+   Não altera Firebase nem lógica do sistema.
+   ========================================================== */
+html,body{max-width:100%;overflow-x:hidden}
+.container{width:min(100%,1440px)!important;max-width:1440px!important;padding:0 6px}
+.aba-conteudo{min-width:0!important;overflow:visible!important}
+.tabela-responsiva{
+  width:100%;max-width:100%;overflow-x:auto;overflow-y:visible;
+  -webkit-overflow-scrolling:touch;border:1px solid var(--border);
+  border-radius:9px;margin-top:12px;background:#0f172a;
+}
+.tabela-responsiva table{margin-top:0!important;min-width:1120px;width:100%}
+.tabela-responsiva th,.tabela-responsiva td{
+  height:auto!important;min-height:44px;vertical-align:middle;
+  white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.35;
+}
+.tabela-responsiva th{white-space:nowrap}
+.tabela-resultados td:nth-child(6){min-width:180px}
+.tabela-resultados td:nth-child(8){min-width:220px}
+.tabela-monitoramento td:nth-child(4){min-width:170px}
+.tabela-monitoramento td:nth-child(5){min-width:160px}
+.tabela-monitoramento td:nth-child(7){min-width:220px}
+
+/* controles ocupam o espaço disponível sem criar um bloco gigante */
+#aba-relatorios .painel-controle-topo,
+#aba-monitoramento .painel-controle-topo{
+  position:relative!important;top:auto!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(260px,auto);
+  align-items:center!important;gap:10px!important;
+}
+#aba-relatorios .grupo-controles-esquerda,
+#aba-relatorios .grupo-controles-direita,
+#aba-monitoramento .grupo-controles-esquerda,
+#aba-monitoramento .grupo-controles-direita{
+  min-width:0;display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important
+}
+#aba-relatorios .grupo-controles-direita,
+#aba-monitoramento .grupo-controles-direita{justify-content:flex-end}
+#input-busca-resultados,#input-busca-monitoramento{width:180px!important;max-width:100%}
+
+/* evita que as barras sticky cubram conteúdo quando a janela fica estreita */
+@media(max-width:1100px){
+  body{padding:10px!important}
+  .barra-acoes-topo,.nav-abas,.painel-controle-topo{position:relative!important;top:auto!important}
+  .nav-abas{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px!important}
+  .btn-aba{width:100%;min-height:46px;padding:9px 8px!important;font-size:12px!important;border-radius:8px!important}
+  #aba-relatorios .painel-controle-topo,
+  #aba-monitoramento .painel-controle-topo{grid-template-columns:1fr!important}
+  #aba-relatorios .grupo-controles-direita,
+  #aba-monitoramento .grupo-controles-direita{justify-content:flex-start}
+  .aba-conteudo{padding:14px!important}
+}
+@media(max-width:720px){
+  header h1{font-size:20px!important}
+  .sessao-professor,.barra-acoes-topo{flex-direction:column!important;align-items:stretch!important}
+  .nav-abas{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grupo-controles-esquerda,.grupo-controles-direita{width:100%}
+  #aba-relatorios button.btn-acao,#aba-monitoramento button.btn-acao{flex:1 1 130px;justify-content:center}
+  #input-busca-resultados,#input-busca-monitoramento,
+  #select-filtro-escola-relatorio{width:100%!important;min-width:0!important}
+}
+@media(max-width:460px){
+  .nav-abas{grid-template-columns:1fr!important}
+}
+</style>
+
+
+<style id="fase10b3-relatorios-compactos">
+/* ==========================================================
+   📊 FASE 10B.3 — RELATÓRIOS COMPACTOS
+   Apenas visual. Não altera Firebase nem regras.
+   ========================================================== */
+
+/* Cada resultado volta a ter altura natural/compacta. */
+.tabela-resultados tbody tr{
+  height:auto !important;
+  min-height:0 !important;
+}
+.tabela-resultados tbody td{
+  height:auto !important;
+  min-height:64px !important;
+  padding:10px 8px !important;
+  vertical-align:middle !important;
+}
+
+/* Evita que conteúdo centralizado estique a linha. */
+.tabela-resultados td{
+  line-height:1.3 !important;
+}
+.tabela-resultados td:nth-last-child(4),
+.tabela-resultados td:nth-last-child(3),
+.tabela-resultados td:nth-last-child(2){
+  text-align:center !important;
+}
+
+/* Ações: botões pequenos, em grade, sem determinar uma altura gigante. */
+.tabela-resultados td:last-child{
+  min-width:220px !important;
+  width:220px !important;
+  padding:8px !important;
+}
+.tabela-resultados td:last-child .acoes,
+.tabela-resultados td:last-child .acoes-relatorio,
+.tabela-resultados td:last-child > div{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(92px,1fr)) !important;
+  gap:6px !important;
+  align-items:center !important;
+}
+.tabela-resultados td:last-child button,
+.tabela-resultados td:last-child .btn-acao,
+.tabela-resultados td:last-child a{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:34px !important;
+  height:auto !important;
+  padding:7px 8px !important;
+  margin:0 !important;
+  font-size:11px !important;
+  line-height:1.15 !important;
+  border-radius:7px !important;
+  white-space:nowrap !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+}
+
+/* Reduz a largura mínima criada na fase responsiva anterior. */
+.tabela-responsiva .tabela-resultados{
+  min-width:980px !important;
+}
+
+/* Conteúdos longos podem quebrar linha sem aumentar exageradamente a coluna. */
+.tabela-resultados td:nth-child(6){
+  min-width:150px !important;
+}
+.tabela-resultados td:nth-child(8){
+  min-width:170px !important;
+}
+
+/* Em telas bem estreitas, ações continuam compactas. */
+@media(max-width:720px){
+  .tabela-resultados td:last-child{
+    min-width:190px !important;
+    width:190px !important;
+  }
+  .tabela-resultados td:last-child .acoes,
+  .tabela-resultados td:last-child .acoes-relatorio,
+  .tabela-resultados td:last-child > div{
+    grid-template-columns:1fr 1fr !important;
+  }
+}
+</style>
+
+
+<style id="fase10b4-profissional">
+/* 🔵 FASE 10B.4 — acabamento geral e responsivo */
+#input-busca-resultados{width:min(330px,100%)!important}
+.controle-densidade{margin:0;padding:7px 9px;background:#1e293b;border:1px solid #475569;color:#fff;border-radius:7px;font-size:11px;font-weight:700}
+.tabela-resultados[data-densidade="compacta"] td{padding:5px 6px!important;min-height:42px!important}
+.tabela-resultados[data-densidade="normal"] td{padding:8px 7px!important;min-height:54px!important}
+.tabela-resultados[data-densidade="confortavel"] td{padding:13px 9px!important;min-height:68px!important}
+.tabela-resultados .grupo-botoes-acoes{
+  display:grid!important;grid-template-columns:repeat(2,minmax(86px,1fr))!important;
+  gap:6px!important;width:100%!important;max-width:none!important;margin:0!important
+}
+.tabela-resultados .grupo-botoes-acoes .btn-acao{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;height:34px!important;min-height:34px!important;
+  padding:5px 7px!important;margin:0!important;font-size:10.5px!important;line-height:1!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+.tabela-resultados td:last-child{width:205px!important;min-width:205px!important}
+.dropdown-menu-win{max-height:min(420px,65vh);overflow-y:auto}
+#dropdown-menu-resultados button,#dropdown-menu-monitoramento button{
+  min-height:34px!important;height:auto!important;padding:8px 10px!important;font-size:11px!important;
+  display:flex!important;align-items:center!important;white-space:normal!important
+}
+@media(max-width:1100px){
+  #bloco-direita-relatorios{display:grid!important;grid-template-columns:minmax(220px,1fr) repeat(4,auto)!important;width:100%}
+  #input-busca-resultados{width:100%!important}
+}
+@media(max-width:760px){
+  #bloco-direita-relatorios{grid-template-columns:1fr 1fr!important}
+  #input-busca-resultados,#select-filtro-escola-relatorio{grid-column:1/-1}
+}
+</style>
+
+
+<style id="fase10b5-interface-dinamica">
+/* ==========================================================
+   🧩 FASE 10B.5 — INTERFACE DINÂMICA
+   ========================================================== */
+.tabela-responsiva{resize:both;overflow:auto!important;min-height:240px;max-width:100%}
+.tabela-resultados{table-layout:auto!important}
+
+/* Status limpo: sem moldura/fundo verde */
+.status-finalizado-limpo{
+  color:#4ade80;font-weight:800;font-size:11px;display:inline-flex;
+  align-items:center;gap:4px;background:transparent!important;border:0!important;
+  padding:0!important;border-radius:0!important;box-shadow:none!important
+}
+.motivo-finalizacao-limpo{margin-top:4px;color:#facc15;font-size:10px;line-height:1.25}
+
+/* Redimensionamento horizontal real pelo cabeçalho */
+.tabela-resultados th{position:relative;user-select:none}
+.col-resizer{
+  position:absolute;right:-4px;top:0;width:8px;height:100%;cursor:col-resize;
+  z-index:5;background:transparent
+}
+.col-resizer:hover{background:rgba(59,130,246,.35)}
+
+/* Redimensionamento vertical das linhas */
+.tabela-resultados tbody tr{position:relative}
+.row-resizer{
+  position:absolute;left:0;bottom:-3px;width:100%;height:7px;cursor:row-resize;
+  z-index:4;background:transparent
+}
+.row-resizer:hover{background:rgba(59,130,246,.25)}
+
+/* ações sempre centralizadas e contidas */
+.tabela-resultados .grupo-botoes-acoes{
+  display:grid!important;grid-template-columns:repeat(2,minmax(82px,1fr))!important;
+  gap:6px!important;max-width:210px!important;margin:auto!important
+}
+.tabela-resultados .grupo-botoes-acoes .btn-acao{
+  width:100%!important;height:34px!important;min-height:34px!important;padding:5px 6px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+  font-size:10.5px!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important
+}
+#bloco-esquerda-relatorios,#bloco-direita-relatorios{align-items:center!important}
+#btn-arquivar-resultados{white-space:nowrap}
+@media(max-width:900px){
+  .tabela-resultados .grupo-botoes-acoes{grid-template-columns:1fr 1fr!important}
+}
+</style>
+
+
+<style id="fase10b6-painel-dinamico">
+/* ==========================================================
+   🧭 FASE 10B.6 — PADRÃO DINÂMICO NAS OUTRAS ABAS
+   Cada bloco abaixo está comentado para facilitar futuras alterações.
+   ========================================================== */
+
+/* Tooltip: aparece quando o mouse permanece sobre um controle. */
+[data-ajuda]{position:relative}
+.tooltip-sistema{
+  position:fixed;z-index:99999;max-width:290px;padding:8px 10px;
+  border:1px solid #475569;border-radius:7px;background:#020617;color:#e2e8f0;
+  font-size:11px;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.35);
+  pointer-events:none;opacity:0;transform:translateY(3px);
+  transition:opacity .15s ease,transform .15s ease
+}
+.tooltip-sistema.visivel{opacity:1;transform:translateY(0)}
+
+/* Todos os blocos principais podem encolher sem estourar a tela. */
+#aba-escolas,#aba-ativacao,#aba-monitoramento,#aba-banco,#aba-dados{min-width:0!important}
+#aba-escolas input,#aba-escolas select,
+#aba-ativacao input,#aba-ativacao select,
+#aba-monitoramento input,#aba-monitoramento select,
+#aba-banco input,#aba-banco select,
+#aba-dados input,#aba-dados select{max-width:100%}
+
+/* Cartões/listas: grid fluido para aproveitar melhor 100% de zoom. */
+#lista-escolas,#lista-escolas-ativacao,#lista-provas-ativas,
+#lista-banco-questoes,#lista-banco-dados{
+  min-width:0;max-width:100%
+}
+
+/* Barras de ações: quebram linha sem sobrepor conteúdo. */
+#aba-escolas .painel-controle-topo,
+#aba-ativacao .painel-controle-topo,
+#aba-monitoramento .painel-controle-topo,
+#aba-banco .painel-controle-topo,
+#aba-dados .painel-controle-topo{
+  position:relative!important;top:auto!important;display:flex!important;
+  flex-wrap:wrap!important;align-items:center!important;gap:8px!important
+}
+
+/* Botões mantêm conteúdo centralizado e nunca deixam texto escapar. */
+#aba-escolas button,#aba-ativacao button,#aba-monitoramento button,
+#aba-banco button,#aba-dados button{
+  max-width:100%;height:auto;min-height:34px;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  white-space:normal;line-height:1.15
+}
+
+/* Tabelas das outras abas também recebem rolagem local quando necessário. */
+#aba-monitoramento table,#aba-dados table{width:100%;min-width:900px}
+#aba-monitoramento .tabela-responsiva,#aba-dados .tabela-responsiva{
+  max-width:100%;overflow:auto
+}
+
+/* Telas médias: navegação e controles se reorganizam automaticamente. */
+@media(max-width:1050px){
+  #aba-escolas .painel-controle-topo,
+  #aba-ativacao .painel-controle-topo,
+  #aba-monitoramento .painel-controle-topo,
+  #aba-banco .painel-controle-topo,
+  #aba-dados .painel-controle-topo{align-items:stretch!important}
+}
+
+/* Celular/janela estreita: controles importantes ocupam largura útil. */
+@media(max-width:700px){
+  #aba-escolas .btn-acao,#aba-ativacao .btn-acao,#aba-monitoramento .btn-acao,
+  #aba-banco .btn-acao,#aba-dados .btn-acao{flex:1 1 135px}
+  #aba-escolas input,#aba-ativacao input,#aba-monitoramento input,
+  #aba-banco input,#aba-dados input,
+  #aba-escolas select,#aba-ativacao select,#aba-monitoramento select,
+  #aba-banco select,#aba-dados select{width:100%!important}
+}
+</style>
+
 </head>
 <body>
 
   <div id="toast-notification">Notificação</div>
+
+  <!-- MODAL DA LIXEIRA DE QUESTÕES DO BANCO -->
+  <div id="modal-lixeira-questoes">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #f87171; font-size: 16px; display: flex; align-items: center; gap: 8px;">🗑️ Lixeira de Questões Excluídas</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalLixeiraQuestao()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Estes itens foram movidos para a lixeira. Você pode restaurá-los de volta ao catálogo oficial ou excluí-los permanentemente.</p>
+        
+        <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-acao" style="background:#22c55e;" onclick="restaurarQuestoesSelecionadasLixeira()">♻️ Restaurar Selecionadas</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirPermanentementeQuestoesLixeira()">🔥 Excluir Permanentemente</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px; text-align: center;"><input type="checkbox" id="chk-todos-lixeira-questoes" onclick="alternarTodosModalLixeiraQuestao(this.checked)"></th>
+              <th>Matéria</th>
+              <th>Enunciado da Pergunta</th>
+              <th style="text-align: center;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-lixeira-questoes">
+            <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 20px;">A lixeira de questões está vazia.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO DE QUESTÃO (MATÉRIA, ENUNCIADO E ALTERNATIVAS) -->
+  <div id="modal-editar-questao">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #60a5fa; font-size: 16px; display: flex; align-items: center; gap: 8px;">✏️ Editar Matéria, Enunciado e Alternativas</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalEditarQuestao()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="edit-id-questao">
+        <label>Matéria / Categoria:</label>
+        <input type="text" id="edit-materia-questao">
+        <label>Enunciado da Pergunta:</label>
+        <textarea id="edit-pergunta-questao" rows="3"></textarea>
+        
+        <label style="margin-top: 15px; color: #60a5fa;">Opções de Resposta e Alternativa Correta:</label>
+        <div id="edit-container-alternativas" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
+        
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" class="btn-acao" style="background:#2563eb;" onclick="adicionarNovaAlternativaEdicao()">➕ Adicionar Alternativa</button>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+          <button type="button" class="btn-acao btn-secondary" onclick="fecharModalEditarQuestao()">Cancelar</button>
+          <button type="button" class="btn-acao" style="background: #22c55e;" onclick="salvarEdicaoQuestaoModal()">💾 Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DE ALUNOS OCULTOS -->
   <div id="modal-ocultos">
@@ -233,22 +1224,30 @@
   <div class="container">
     <header>
       <h1>👨‍‍🏫 PAINEL DE CONTROLE ESCOLAR</h1>
+      <!-- 🔐 FASE 10A — sessão do professor -->
+      <div class="sessao-professor">
+        <div><span class="sessao-status" id="status-conexao-professor">● CONECTADO</span>
+        <span id="professor-email-logado" id="status-usuario-professor">Verificando usuário...</span></div>
+        <button type="button" onclick="sairPainelProfessor()" class="btn-sair-professor">🚪 Sair</button>
+      </div>
     </header>
 
     <div class="barra-acoes-topo no-print">
       <div class="status-tempo-real">
-        <span class="ponto-ativo"></span> Sincronizado com Firebase em Tempo Real...
+        <span class="ponto-ativo"></span id="status-firebase-tempo-real"> Sincronizado com Firebase em Tempo Real...
       </div>
       <button id="btn-recarregar-painel" class="btn-acao btn-secondary" onclick="location.reload()">🔄 Recarregar</button>
     </div>
 
-    <div class="nav-abas no-print">
-      <button class="btn-aba active" data-aba="aba-global">⚙️ Configurações Gerais</button>
-      <button class="btn-aba" data-aba="aba-escolas">🏫 Cadastro de Escolas</button>
-      <button class="btn-aba" data-aba="aba-ativacao">🚀 Ativação de Provas</button>
-      <button class="btn-aba" data-aba="aba-questoes">📚 Banco de Questões</button>
-      <button class="btn-aba" data-aba="aba-monitoramento">🟢 Monitoramento</button>
-      <button class="btn-aba" data-aba="aba-resultados">📊 Resultados e Relatórios</button>
+    <!-- BARRA DE ABAS COM DRAG AND DROP (ARRASTAR E SOLTAR) -->
+    <div class="nav-abas no-print" id="barra-navegacao-abas">
+      <button class="btn-aba active" data-aba="aba-global" draggable="true">⚙ Configurações Gerais</button>
+      <button class="btn-aba" data-aba="aba-escolas" draggable="true">🏫 Cadastro de Escolas</button>
+      <button class="btn-aba" data-aba="aba-ativacao" draggable="true">🚀 Ativação de Provas</button>
+      <button class="btn-aba" data-aba="aba-questoes" draggable="true">📚 Banco de Questões</button>
+      <button class="btn-aba" data-aba="aba-banco-dados" draggable="true">🗄️ Banco de Dados</button>
+      <button class="btn-aba" data-aba="aba-monitoramento" draggable="true">🟢 Monitoramento</button>
+      <button class="btn-aba" data-aba="aba-relatorios" draggable="true">📊 Resultados e Relatórios</button>
     </div>
 
     <!-- ABA 0: CONFIGURAÇÕES GERAIS -->
@@ -304,13 +1303,10 @@
 
     <!-- ABA 2: ATIVAÇÃO DE PROVAS -->
     <div id="aba-ativacao" class="aba-conteudo hidden">
-      
       <div id="bloco-prova-ativa-topo" style="background: #0f172a; border: 2px solid #3b82f6; padding: 16px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
         <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 13px; text-transform: uppercase;">🚀 Central de Ativação de Provas</div>
         <div id="detalhes-prova-ativa-painel"></div>
       </div>
-
-
       <div id="painel-resumo-escola-ativacao" class="hidden" style="background: #0f172a; border: 1px solid #3b82f6; padding: 12px; border-radius: 8px; margin-top: 12px;">
         <h3 style="color: #60a5fa; font-size: 14px; margin-bottom: 6px;">📋 Resumo das Configurações Ativas desta Unidade:</h3>
         <div id="conteudo-resumo-ativacao" style="font-size: 12px; color: #cbd5e1; line-height: 1.5;"></div>
@@ -355,7 +1351,87 @@
       </div>
     </div>
 
-    <!-- ABA 4: MONITORAMENTO -->
+    <!-- ABA 4: BANCO DE DADOS (CATÁLOGO INTERATIVO DE QUESTÕES) -->
+    <div id="aba-banco-dados" class="aba-conteudo hidden">
+      <h2>🗄️ Catálogo Interativo do Banco de Dados</h2>
+      <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 15px;">
+        Pesquise, filtre, organize, edite enunciados/alternativas e altere modos de visualização em tempo real.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+          <span style="color: #94a3b8; font-size: 12px; font-weight: bold;">TOTAL DE QUESTÕES NO CATÁLOGO</span>
+          <div id="db-total-questoes" style="font-size: 24px; font-weight: bold; color: #60a5fa; margin-top: 5px;">Carregando...</div>
+        </div>
+        <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+          <span style="color: #94a3b8; font-size: 12px; font-weight: bold;">STATUS DA CONEXÃO</span>
+          <div style="font-size: 16px; font-weight: bold; color: #4ade80; margin-top: 8px; display:flex; align-items:center; gap:6px;">
+            <span class="ponto-ativo"></span> Online / Sincronizado
+          </div>
+        </div>
+      </div>
+
+      <div class="grupo-controles-direita">
+
+        
+  <!-- Botão Classificar -->
+  <div class="dropdown-win">
+  </div>
+
+  <!-- Botão Visualizar -->
+  <div class="dropdown-win">
+  </div>
+
+  <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="carregarBancoDadosCompleto()">🔄 Atualizar</button>
+  
+  <!-- BOTÃO DA LIXEIRA -->
+  <button type="button" class="btn-acao" style="background-color: #b91c1c; color: white;" onclick="abrirModalLixeiraQuestao()">🗑️ Lixeira</button>
+</div>
+
+      <div class="painel-controle-topo no-print">
+        <div class="grupo-controles-esquerda">
+          <input type="text" id="input-busca-banco-dados" placeholder="🔍 Pesquisar no catálogo..." style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; width: 220px;" oninput="renderizarCatalogoBancoDados()">
+          <select id="select-filtro-materia-db" style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; min-width: 180px;" onchange="renderizarCatalogoBancoDados()">
+            <option value="TODAS">📚 Todas as Matérias</option>
+          </select>
+        </div>
+        <div class="grupo-controles-direita">
+          <!-- BOTÃO CLASSIFICAR COM A OPÇÃO "VER TUDO" DENTRO -->
+          <div class="dropdown-win">
+            <button type="button" id="btn-dropdown-classificar-db" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-classificar-db', 'btn-dropdown-classificar-db')">
+              🔄 Classificar <span style="font-size: 10px;">▼</span>
+            </button>
+            <div id="dropdown-menu-classificar-db" class="dropdown-menu-win">
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; font-weight:bold; border-bottom:1px solid #334155;" onclick="aplicarClassificacaoDB('nenhum')">🔄 Ver Tudo / Sem Classificação</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('materia')">📚 Matéria / Categoria</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('nome')">🔤 Enunciado (A-Z)</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('crescente')">📈 Ordem Crescente (ID)</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('decrescente')">📉 Ordem Decrescente (ID)</button>
+            </div>
+          </div>
+
+          <!-- BOTÃO VISUALIZAR CORRIGIDO -->
+          <div class="dropdown-win">
+            <button type="button" id="btn-dropdown-visualizar-db" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-visualizar-db', 'btn-dropdown-visualizar-db')">
+              ≡ Visualizar <span style="font-size: 10px;">▼</span>
+            </button>
+            <div id="dropdown-menu-visualizar-db" class="dropdown-menu-win">
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('grade')">🔲 Grade (Cards)</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('lista')">≡ Lista</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('blocos')">🗂️ Blocos</button>
+            </div>
+          </div>
+
+          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="carregarBancoDadosCompleto()">🔄 Atualizar</button>
+        </div>
+      </div>
+
+      <div id="catalogo-questoes-grid" class="catalogo-grid">
+        <div style="color: #94a3b8; text-align: center; grid-column: 1 / -1; padding: 30px;">Carregando catálogo de questões...</div>
+      </div>
+    </div>
+
+    <!-- ABA 5: MONITORAMENTO -->
     <div id="aba-monitoramento" class="aba-conteudo hidden">
       <h2>🟢 Alunos Acessando em Tempo Real</h2>
       <div class="painel-controle-topo no-print">
@@ -365,7 +1441,7 @@
           <button type="button" class="btn-acao btn-danger" onclick="excluirOnlineSelecionados()">🗑️ Excluir</button>
         </div>
         <div class="grupo-controles-direita">
-          <input type="text" id="input-busca-monitoramento" placeholder="🔍 Pesquisar..." style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:12px; width: 140px;" oninput="renderizarTabelaTempoReal()">
+          <input type="text" id="input-busca-monitoramento" placeholder="🔍 Aluno, escola, turma, matéria, nota..." style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:12px; width: 140px;" oninput="renderizarTabelaTempoReal()">
           <div class="dropdown-win">
             <button type="button" id="btn-dropdown-monitoramento" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-monitoramento', 'btn-dropdown-monitoramento')">
               🔄 Classificar <span style="font-size: 10px;">▼</span>
@@ -374,7 +1450,8 @@
           </div>
         </div>
       </div>
-      <table>
+      <div class="tabela-responsiva">
+      <table class="tabela-monitoramento">
         <thead>
           <tr>
             <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-online" onclick="selecionarTodosOnline(this.checked)"></th>
@@ -385,10 +1462,11 @@
           <tr><td colspan="10" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
         </tbody>
       </table>
+      </div>
     </div>
 
-    <!-- ABA 5: RESULTADOS -->
-    <div id="aba-resultados" class="aba-conteudo hidden">
+    <!-- ABA 6: RESULTADOS -->
+    <div id="aba-relatorios" class="aba-conteudo hidden">
       <h2>📊 Histórico de Resultados e Relatórios</h2>
       
       <div class="painel-controle-topo no-print">
@@ -396,7 +1474,7 @@
           <button type="button" class="btn-acao" onclick="selecionarTodosResultados(true)" title="Marcar todos visíveis">☑️ Marcar</button>
           <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosResultados(false)" title="Desmarcar todos">🔲 Limpar</button>
           <button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()" title="Excluir selecionados">🗑️ Excluir</button>
-          <button type="button" class="btn-acao" style="background-color: #0d9488;" onclick="ocultarAlunosSelecionados()" title="Ocultar os alunos selecionados">📁 Ocultar Conferidos</button>
+          <button type="button" id="btn-arquivar-resultados" class="btn-acao" style="background-color:#0d9488;" onclick="ocultarAlunosSelecionados()" title="Retirar os resultados selecionados da lista principal sem excluí-los">📁 Arquivar selecionados</button>
           <button type="button" class="btn-acao" style="background-color: #475569;" onclick="abrirModalOcultos()" title="Visualizar e resgatar alunos ocultados">📂 Ver Ocultos</button>
           <button type="button" class="btn-acao" style="background-color: #b91c1c;" onclick="abrirModalLixeira()" title="Abrir lixeira de excluídos">🗑️ Lixeira</button>
         </div>
@@ -415,12 +1493,14 @@
             <div id="dropdown-menu-resultados" class="dropdown-menu-win"></div>
           </div>
 
+
           <button type="button" class="btn-acao" style="background-color: #22c55e;" onclick="exportarResultadosCSV()">📥 CSV</button>
-          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="window.print()">🖨️ PDF</button>
+          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="exportarResultadosPDF()">🖨️ PDF</button>
         </div>
       </div>
 
-      <table>
+      <div class="tabela-responsiva">
+      <table class="tabela-resultados">
         <thead>
           <tr>
             <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-resultados" onclick="selecionarTodosResultados(this.checked)"></th>
@@ -431,6 +1511,7 @@
           <tr><td colspan="12" style="text-align:center;">Carregando resultados...</td></tr>
         </tbody>
       </table>
+      </div>
     </div>
 
   </div>

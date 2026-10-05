@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🔐 FASE 10C — diferencia professor (e-mail/senha) de aluno anônimo.
+    function autenticado() { return request.auth != null; }
+    function professor() {
+      return autenticado() && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+    function alunoAnonimo() {
+      return autenticado() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    // Dados necessários para a tela inicial do aluno.
+    match /escolas_cadastradas/{id} {
+      // Lista de escolas não contém gabarito nem dado sensível.
+      allow read: if true;
+      allow write: if professor();
+    }
+    match /escolas_configuracoes/{id} {
+      allow read: if autenticado();
+      allow write: if professor();
+      match /{documento=**} { allow read, write: if professor(); }
+    }
+    match /provas_ativas/{id} {
+      // Metadados de liberação precisam chegar imediatamente à tela do aluno.
+      // Respostas corretas NÃO ficam nesta coleção.
+      allow read: if true;
+      allow write: if professor();
+    }
+
+    // 🔒 Banco PRIVADO: contém a resposta correta e só o professor pode ler.
+    match /questoes/{id} { allow read, write: if professor(); }
+    match /banco_questoes/{id} { allow read, write: if professor(); }
+    match /lixeira_questoes/{id} { allow read, write: if professor(); }
+
+    // 📖 Banco PÚBLICO: criado pelo painel sem o campo "correta".
+    match /questoes_publicas/{id} {
+      allow read: if alunoAnonimo() || professor();
+      allow write: if professor();
+    }
+
+    // Monitoramento: aluno só grava documentos identificados com o próprio UID.
+    match /alunos_online/{id} {
+      allow read: if professor();
+      allow create: if alunoAnonimo() && request.resource.data.uid == request.auth.uid;
+      allow update: if alunoAnonimo()
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == request.auth.uid;
+      allow delete: if professor() || (alunoAnonimo() && resource.data.uid == request.auth.uid);
+    }
+
+    // Encerramento/reautorização é controlado pelo professor.
+    // O aluno autenticado pode apenas consultar o documento correspondente ao ID usado pela prova.
+    match /permissoes_alunos/{id} {
+      allow read: if autenticado();
+      allow create: if professor() || (alunoAnonimo()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.podeFazer == false);
+      allow update: if professor() || (alunoAnonimo()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.podeFazer == false);
+      allow delete: if professor();
+    }
+
+    // Resultado: aluno anônimo pode CRIAR somente resultado que declare seu próprio UID.
+    // Depois de criado, somente o professor pode alterar/corrigir/excluir.
+    match /avaliacoes/{id} {
+      // 10E — o professor também pode CRIAR o resultado quando encerra
+      // uma prova pelo Monitoramento. Antes, essa operação era bloqueada.
+      allow create: if professor() || (
+                    alunoAnonimo()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.pontuacao == null
+                  );
+      allow read: if professor() || (alunoAnonimo() && resource.data.uid == request.auth.uid);
+      allow update, delete: if professor();
+    }
+
+    // Compatibilidade com relatórios antigos aninhados: professor apenas.
+    match /{caminho=**}/avaliacoes/{id} {
+      allow read, update, delete: if professor();
+    }
+
+    match /configuracoes/{id} { allow read, write: if professor(); }
+
+    // Qualquer caminho não declarado permanece bloqueado.
+    match /{documento=**} { allow read, write: if false; }
+  }
+}
