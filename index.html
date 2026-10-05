@@ -280,7 +280,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    console.info("QUIZ BUILD: ALUNO-AUTOMATICO-RESULTADOS-2026-10-05");
+    console.info("QUIZ BUILD: RESULTADOS-CORRECAO-AUTOMATICA-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -860,7 +860,7 @@ ATENÇÃO:
 
     document.getElementById("ant")?.addEventListener("click", () => { if (indiceAtual > 0) { indiceAtual--; exibirQuestao(); } });
     document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
-    document.getElementById("fin")?.addEventListener("click", finalizarProva);
+    document.getElementById("fin")?.addEventListener("click", () => finalizarProva());
 
 
     // ============================================================
@@ -978,6 +978,13 @@ if (unsubscribePermissaoAluno) {
           totalQuestoes: listaQuestoes.length,
           uid: uidAlunoFirebase,
           respostas: respostasUsuario,
+          // Texto escolhido pelo próprio aluno; não contém o gabarito.
+          // Ajuda o professor a corrigir com segurança mesmo se houver bancos antigos.
+          respostasTexto: listaQuestoes.map((q, i) => {
+            const letra = String(respostasUsuario[i] || "").toUpperCase();
+            const indice = "ABCDE".indexOf(letra);
+            return indice >= 0 ? String(q.opcoes?.[indice] || "") : "";
+          }),
           questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
           tempoGastoSegundos: segundosPassados,
           tempoGastoFormatado: tempoGastoFormatado,

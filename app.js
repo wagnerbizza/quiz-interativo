@@ -1688,6 +1688,75 @@ if (window.location.pathname.includes("painel.html")) {
     }
   }
 
+  let timerResultadosRecentes = null;
+  let ultimoTimestampConsultado = inicioSessaoResultadosPainel - 5000;
+
+  async function incorporarResultadoNovoNoCache(docSnap) {
+    const recebido = {
+      idDoc: docSnap.id,
+      refPath: docSnap.ref.path,
+      ...docSnap.data()
+    };
+
+    resultadosGlobaisCache = resultadosGlobaisCache.filter(r =>
+      (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
+    );
+    resultadosGlobaisCache.unshift(recebido);
+    salvarCacheLocalRelatorios(resultadosGlobaisCache);
+
+    if (recebido.pontuacao === null && Array.isArray(recebido.questoesIds)) {
+      const acertos = await corrigirResultadoPendente(docSnap.id, recebido);
+      if (Number.isFinite(acertos)) {
+        recebido.pontuacao = acertos;
+        resultadosGlobaisCache = resultadosGlobaisCache.filter(r =>
+          (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
+        );
+        resultadosGlobaisCache.unshift(recebido);
+        salvarCacheLocalRelatorios(resultadosGlobaisCache);
+      }
+    }
+
+    if (!document.getElementById("aba-relatorios")?.classList.contains("hidden")) {
+      renderizarTabelaResultadosFiltrada();
+    }
+    atualizarStatusCacheRelatorios("🟢 Novo resultado recebido automaticamente");
+  }
+
+  async function buscarResultadosNovosComoFallback() {
+    if (!navigator.onLine ||
+        document.documentElement.dataset.modoOfflineProfessor === "1") return;
+
+    const marcoConsulta = Date.now();
+    try {
+      const consulta = query(
+        collection(db, "avaliacoes"),
+        where("timestamp", ">", ultimoTimestampConsultado)
+      );
+      const snap = await getDocs(consulta);
+      for (const docSnap of snap.docs) {
+        await incorporarResultadoNovoNoCache(docSnap);
+      }
+      // Só avança o marco depois de uma consulta bem-sucedida.
+      ultimoTimestampConsultado = marcoConsulta;
+    } catch (erro) {
+      console.warn("Fallback de novos resultados indisponível:", erro?.code || erro);
+    }
+  }
+
+  function iniciarFallbackResultadosRecentes() {
+    if (timerResultadosRecentes ||
+        document.documentElement.dataset.modoOfflineProfessor === "1") return;
+    setTimeout(buscarResultadosNovosComoFallback, 3000);
+    timerResultadosRecentes = setInterval(buscarResultadosNovosComoFallback, 20000);
+  }
+
+  function pararFallbackResultadosRecentes() {
+    if (timerResultadosRecentes) {
+      clearInterval(timerResultadosRecentes);
+      timerResultadosRecentes = null;
+    }
+  }
+
   function gerenciarLeiturasPorAba(abaId) {
     if (abaId === "aba-monitoramento") inicializarTabelaTempoReal();
     else pararListenerMonitoramento();
@@ -1700,6 +1769,7 @@ if (window.location.pathname.includes("painel.html")) {
     pararListenerMonitoramento();
     pararListenerProvasAtivas();
     pararListenerNovosResultados();
+    pararFallbackResultadosRecentes();
   });
 
   // ==========================================================
@@ -2228,7 +2298,9 @@ if (window.location.pathname.includes("painel.html")) {
 
     let html = "";
     listaLixeira.forEach(res => {
-      let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
+      let dataFormatada = res.dataEnvio?.toDate
+        ? res.dataEnvio.toDate().toLocaleString("pt-BR")
+        : (Number(res.timestamp) ? new Date(Number(res.timestamp)).toLocaleString("pt-BR") : "Data recente");
       let totalQ = res.totalQuestoes || 0;
       let acertos = res.pontuacao || 0;
       let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
@@ -3911,7 +3983,9 @@ if (window.location.pathname.includes("painel.html")) {
 
     let htmlResultados = "";
     dadosFiltrados.forEach(res => {
-      let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
+      let dataFormatada = res.dataEnvio?.toDate
+        ? res.dataEnvio.toDate().toLocaleString("pt-BR")
+        : (Number(res.timestamp) ? new Date(Number(res.timestamp)).toLocaleString("pt-BR") : "Data recente");
       let totalQ = res.totalQuestoes || 0;
       let acertos = res.pontuacao || 0;
       let erros = totalQ - acertos;
@@ -3926,7 +4000,8 @@ if (window.location.pathname.includes("painel.html")) {
           </td>
           <td>
             <span class="status-finalizado-limpo">✓ Finalizado</span>
-            ${res.motivoFinalizacao ? `<div class="motivo-finalizacao-limpo">🏁 ${res.motivoFinalizacao}</div>` : ''}
+            ${(typeof res.motivoFinalizacao === "string" && res.motivoFinalizacao.trim() && res.motivoFinalizacao !== "[object Object]")
+              ? `<div class="motivo-finalizacao-limpo">🏁 ${res.motivoFinalizacao}</div>` : ""}
           </td>
           <td>${dataFormatada}</td>
           <td><strong>${res.escola || 'N/D'}</strong></td>
@@ -4172,28 +4247,71 @@ if (window.location.pathname.includes("painel.html")) {
   // O aluno envia IDs + letras escolhidas, mas nunca recebe a chave correta.
   const correcoesEmAndamento = new Set();
   async function corrigirResultadoPendente(idResultado, res) {
-    if (!res || res.pontuacao !== null || !Array.isArray(res.questoesIds) || correcoesEmAndamento.has(idResultado)) return;
+    if (!res || res.pontuacao !== null || !Array.isArray(res.questoesIds) ||
+        correcoesEmAndamento.has(idResultado)) return;
+
     correcoesEmAndamento.add(idResultado);
     try {
       let acertos = 0;
-      for (let i=0; i<res.questoesIds.length; i++) {
+
+      for (let i = 0; i < res.questoesIds.length; i++) {
         const idQuestao = res.questoesIds[i];
         if (!idQuestao) continue;
-        const qSnap = await getDoc(doc(db,"questoes",idQuestao));
+
+        // Compatibilidade: algumas questões antigas vieram de banco_questoes.
+        let qSnap = await getDoc(doc(db, "questoes", idQuestao));
+        if (!qSnap.exists()) {
+          qSnap = await getDoc(doc(db, "banco_questoes", idQuestao));
+        }
         if (!qSnap.exists()) continue;
-        const correta = String(qSnap.data().correta || qSnap.data().resposta || qSnap.data().correto || "").trim().toUpperCase();
-        const escolhida = String(res.respostas?.[i] || "").trim().toUpperCase();
-        if (correta && escolhida === correta) acertos++;
+
+        const dadosQuestao = qSnap.data() || {};
+        const opcoesPrivadas = Array.isArray(dadosQuestao.opcoes)
+          ? dadosQuestao.opcoes
+          : (Array.isArray(dadosQuestao.alternativas) ? dadosQuestao.alternativas : []);
+
+        const corretaBruta = String(
+          dadosQuestao.correta || dadosQuestao.resposta || dadosQuestao.correto || ""
+        ).trim();
+
+        let textoCorreto = "";
+        let letraCorreta = corretaBruta.toUpperCase();
+
+        if (/^[A-E]$/.test(letraCorreta)) {
+          const idxCorreto = "ABCDE".indexOf(letraCorreta);
+          textoCorreto = String(opcoesPrivadas[idxCorreto] || "");
+        } else {
+          // Bancos antigos podem guardar o próprio texto como resposta correta.
+          textoCorreto = corretaBruta;
+        }
+
+        const letraEscolhida = String(res.respostas?.[i] || "").trim().toUpperCase();
+        const textoEscolhido = String(res.respostasTexto?.[i] || "").trim();
+
+        // Para resultados novos, texto é a comparação mais robusta.
+        if (textoEscolhido && textoCorreto) {
+          if (normalizarTexto(limparPrefixoOpcao(textoEscolhido)) ===
+              normalizarTexto(limparPrefixoOpcao(textoCorreto))) {
+            acertos++;
+          }
+        } else if (/^[A-E]$/.test(letraCorreta) && letraEscolhida === letraCorreta) {
+          // Compatibilidade com resultados anteriores que só possuem a letra.
+          if (letraEscolhida === letraCorreta) acertos++;
+        }
       }
-      await setDoc(doc(db,"avaliacoes",idResultado), {
+
+      await setDoc(doc(db, "avaliacoes", idResultado), {
         pontuacao: acertos,
         corrigidoEm: serverTimestamp(),
         corrigidoPeloPainel: true
-      }, {merge:true});
+      }, { merge: true });
+
       return acertos;
     } catch(e) {
-      console.error("FASE 10C - erro ao corrigir resultado:",e);
-    } finally { correcoesEmAndamento.delete(idResultado); }
+      console.error("Erro ao corrigir resultado pendente:", e?.code || e, e?.message || "");
+    } finally {
+      correcoesEmAndamento.delete(idResultado);
+    }
   }
 
   function inicializarTabelaTempoReal() {
@@ -5091,6 +5209,7 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
     // Começa a receber novas entregas imediatamente após validar o professor.
     // Assim não perdemos uma prova que termine enquanto o restante do painel carrega.
     iniciarListenerNovosResultados();
+    iniciarFallbackResultadosRecentes();
 
     await inicializarPainel();
   });
@@ -5239,3 +5358,5 @@ window.addEventListener("DOMContentLoaded",()=>{
 console.info("QUIZ BUILD: RESULTADOS-AUTOMATICOS-TOPO-2026-10-05");
 
 console.info("QUIZ BUILD: RESULTADOS-LISTENER-ROBUSTO-2026-10-05");
+
+console.info("QUIZ BUILD: RESULTADOS-CORRECAO-AUTOMATICA-2026-10-05");
