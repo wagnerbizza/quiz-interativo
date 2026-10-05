@@ -281,6 +281,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+    console.info("QUIZ BUILD: GITHUB-FALLBACK-TESTE-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -430,6 +431,22 @@ ATENÇÃO:
       if (unsubscribeProvaEscola) {
         unsubscribeProvaEscola();
         unsubscribeProvaEscola = null;
+      }
+
+      // TESTE SEGURO: ?origem=github força o pacote estático,
+      // sem apagar nem modificar qualquer dado no Firebase.
+      const forcarGitHub = new URLSearchParams(window.location.search).get("origem") === "github";
+      if (forcarGitHub) {
+        (async () => {
+          const pacote = await carregarProvaEstatica(escolaNome);
+          if (pacote && await aplicarProvaRecebida(escolaNome, pacote, "github")) return;
+          dadosProvaAtiva = {};
+          detalhesProvaAtiva.innerHTML =
+            `⚠️ Modo GitHub ativo, mas nenhuma prova publicada válida foi encontrada para <strong>${escolaNome}</strong>.`;
+          selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+          btnIniciarProva.disabled = true;
+        })();
+        return;
       }
 
       dadosProvaAtiva = {};
