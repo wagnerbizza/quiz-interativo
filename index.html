@@ -266,11 +266,6 @@ ATENÇÃO:
 
       <h3 style="margin-bottom: 10px; font-size: 15px; text-align: left;">Revisão das Questões:</h3>
       <div id="container-revisao-resultado" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
-          <button type="button" id="btn-sincronizar-pendentes" style="flex:1;padding:12px;cursor:pointer">☁️ Sincronizar resultados</button>
-          <button type="button" id="btn-backup-resultado" style="flex:1;padding:12px;cursor:pointer">💾 Baixar backup</button>
-        </div>
         <button type="button" id="btn-reiniciar" class="btn">🔄 Sair / Tela Inicial</button>
     </div>
   </div>
@@ -285,7 +280,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    console.info("QUIZ BUILD: FLUXO-RESULTADOS-ESTAVEL-2026-10-05");
+    console.info("QUIZ BUILD: ALUNO-AUTOMATICO-RESULTADOS-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -907,7 +902,7 @@ ATENÇÃO:
       try {
         await setDoc(doc(db, "avaliacoes", resultado.idFirebase), { ...resultado.dadosFirebase, dataEnvio: serverTimestamp() });
         marcarResultadoComoSincronizado(resultado.idLocal);
-        const avisoResultado = document.getElementById("status-envio-resultado");
+        const avisoResultado = document.getElementById("status-envio-txt");
         if (avisoResultado) {
           avisoResultado.textContent = "✅ Resultado enviado ao professor.";
         }
@@ -931,39 +926,11 @@ ATENÇÃO:
       sincronizarResultadosPendentesAutomaticamente();
     });
 
-
-    // Reenvio MANUAL e idempotente: reutiliza o mesmo ID do documento.
-    // Não apaga nenhum registro local após confirmar o envio.
-    async function sincronizarResultadosPendentes() {
-      const pendentes = lerResultadosPendentes().filter(item => !item.sincronizado);
-      const aviso = document.getElementById("status-envio-txt");
-      if (!pendentes.length) {
-        if (aviso) aviso.textContent = "Nenhum resultado pendente neste navegador.";
-        return;
-      }
-      const botao = document.getElementById("btn-sincronizar-pendentes");
-      if (botao) botao.disabled = true;
-      let enviados = 0;
-      for (const item of pendentes) {
-        if (!navigator.onLine) break;
-        if (await tentarSincronizarResultadoLocal(item)) enviados++;
-        else break; // Evita insistir e consumir leituras/escritas quando há falha.
-      }
-      if (aviso) aviso.textContent = `Sincronizados agora: ${enviados}. Pendentes neste navegador: ${lerResultadosPendentes().filter(item => !item.sincronizado).length}.`;
-      if (botao) botao.disabled = false;
-    }
-    // A exportação permite preservar a cópia mesmo se o navegador for trocado.
-    function exportarResultadosLocais() {
-      const dados = JSON.stringify({ versao: 1, exportadoEm: new Date().toISOString(), resultados: lerResultadosPendentes() }, null, 2);
-      const url = URL.createObjectURL(new Blob([dados], { type: "application/json" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `backup-resultados-aluno-${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
-    }
-    document.getElementById("btn-sincronizar-pendentes")?.addEventListener("click", sincronizarResultadosPendentes);
-    document.getElementById("btn-backup-resultado")?.addEventListener("click", exportarResultadosLocais);
+    // Enquanto esta página permanecer aberta, o sistema tenta novamente em
+    // intervalos moderados. O aluno não precisa clicar em nada.
+    setInterval(() => {
+      sincronizarResultadosPendentesAutomaticamente();
+    }, 60000);
 
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (timerInterval) clearInterval(timerInterval);
@@ -1044,9 +1011,9 @@ if (unsubscribePermissaoAluno) {
         if (!resultadoSincronizado) {
 
           console.info("Resultado aguardando sincronização futura.");
-          const avisoResultado = document.getElementById("status-envio-resultado");
+          const avisoResultado = document.getElementById("status-envio-txt");
           if (avisoResultado) {
-            avisoResultado.textContent = "⚠️ Resultado protegido neste computador — aguardando envio ao professor.";
+            avisoResultado.textContent = "✅ Avaliação concluída. Suas respostas foram registradas.";
           }
 
         }
@@ -1055,10 +1022,10 @@ if (unsubscribePermissaoAluno) {
         // não devem transformar um resultado protegido em uma mensagem de perda.
         if (resultadoSincronizado) {
           document.getElementById("nota-final-txt").textContent = "Avaliação enviada para correção segura";
-          document.getElementById("status-envio-txt").textContent = "✅ Resultado enviado ao Firebase e cópia local preservada.";
+          document.getElementById("status-envio-txt").textContent = "✅ Avaliação concluída. Suas respostas foram enviadas para correção.";
         } else {
           document.getElementById("nota-final-txt").textContent = "Avaliação concluída — resultado protegido";
-          document.getElementById("status-envio-txt").textContent = "💾 Resultado salvo neste navegador. Envio pendente: use Sincronizar resultados quando o Firebase voltar.";
+          document.getElementById("status-envio-txt").textContent = "✅ Avaliação concluída. Suas respostas foram registradas e o sistema continuará o processamento automaticamente.";
         }
         try {
           await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
@@ -1071,7 +1038,7 @@ if (unsubscribePermissaoAluno) {
 
       } catch (err) {
         document.getElementById("nota-final-txt").textContent = "Atenção ao salvamento";
-        document.getElementById("status-envio-txt").textContent = "⚠️ Não foi possível confirmar a cópia local. Não limpe os dados deste navegador.";
+        document.getElementById("status-envio-txt").textContent = "⚠️ Houve uma falha ao concluir o registro. Avise o professor antes de fechar esta tela.";
         console.error("Falha no salvamento local:", err);
       }
     }
