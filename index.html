@@ -285,7 +285,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    console.info("QUIZ BUILD: RESULTADO-LOCAL-FIRST-2026-10-05");
+    console.info("QUIZ BUILD: FLUXO-RESULTADOS-ESTAVEL-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -907,12 +907,30 @@ ATENÇÃO:
       try {
         await setDoc(doc(db, "avaliacoes", resultado.idFirebase), { ...resultado.dadosFirebase, dataEnvio: serverTimestamp() });
         marcarResultadoComoSincronizado(resultado.idLocal);
+        const avisoResultado = document.getElementById("status-envio-resultado");
+        if (avisoResultado) {
+          avisoResultado.textContent = "✅ Resultado enviado ao professor.";
+        }
         return true;
       } catch (erro) {
         console.warn("Resultado protegido localmente; Firebase indisponível:", erro?.code || erro);
         return false;
       }
     }
+
+    async function sincronizarResultadosPendentesAutomaticamente() {
+      if (!navigator.onLine) return;
+      const pendentes = lerResultadosPendentes().filter(item => !item.sincronizado);
+      for (const resultado of pendentes) {
+        await tentarSincronizarResultadoLocal(resultado);
+      }
+    }
+
+    // Quando a conexão retorna, tentamos novamente sem apagar a cópia local.
+    window.addEventListener("online", () => {
+      sincronizarResultadosPendentesAutomaticamente();
+    });
+
 
     // Reenvio MANUAL e idempotente: reutiliza o mesmo ID do documento.
     // Não apaga nenhum registro local após confirmar o envio.
@@ -1026,6 +1044,10 @@ if (unsubscribePermissaoAluno) {
         if (!resultadoSincronizado) {
 
           console.info("Resultado aguardando sincronização futura.");
+          const avisoResultado = document.getElementById("status-envio-resultado");
+          if (avisoResultado) {
+            avisoResultado.textContent = "⚠️ Resultado protegido neste computador — aguardando envio ao professor.";
+          }
 
         }
 
@@ -1067,6 +1089,9 @@ document.getElementById("tela-resultado").classList.add("hidden");
       }
       if (inputNomeAluno) inputNomeAluno.value = "";
     });
-  </script>
+  
+    // Uma tentativa leve por abertura da página; sem consultas repetitivas.
+    setTimeout(() => sincronizarResultadosPendentesAutomaticamente(), 2500);
+</script>
 </body>
 </html>
