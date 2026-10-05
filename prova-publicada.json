@@ -12,11 +12,11 @@
     "Ensino Médio Técnico"
   ],
   "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 9,
+  "quantidadeQuestoes": 10,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791214120279,
+  "expiraEmMillis": 1791244021680,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -24,54 +24,103 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791203320279",
-  "publicadoEm": "2026-10-05T12:28:40.970Z",
+  "seedReordenacao": "1791233221680",
+  "publicadoEm": "2026-10-05T20:47:01.936Z",
   "questoesPublicas": [
     {
-      "idQuestao": "GrVLW14GVkOosT7XkXXi",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 22] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "QE6rNdMxpWejc7Igut5I",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Qual função nativa do JavaScript verifica se um valor é NaN (Not-a-Number)?",
-      "opcoes": [
-        "isNaN()",
-        "checkNaN()",
-        "Number.isNaN()",
-        "verifyNaN()",
-        "isNotNumber()"
-      ]
-    },
-    {
-      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
+      "idQuestao": "tJrOdMH884qOfZjYArai",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Inteligência Artificial Transparente?",
+      "pergunta": "O que é Aprendizado de Máquina (Machine Learning)?",
       "opcoes": [
-        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
-        "Softwares cujo código-fonte está totalmente oculto dos usuários",
-        "Sistemas que funcionam apenas offline sem acesso externo",
-        "Plataformas de computação em nuvem sem suporte técnico",
-        "Redes de computadores protegidas por senhas complexas"
+        "Subcampo da IA que permite aos sistemas aprenderem com dados",
+        "Um tipo de robô físico utilizado na indústria automotiva",
+        "Um sistema operacional voltado para servidores de rede",
+        "Uma linguagem de programação baseada em blocos lógicos",
+        "Um protocolo de segurança para transferência de arquivos"
       ]
     },
     {
-      "idQuestao": "LTWVBJ1YaGNiEMCZH5qy",
+      "idQuestao": "74u8LENnDtdUnr0LnWUL",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 16] O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
+      "opcoes": [
+        "A) Dados sem rótulos descobertos automaticamente",
+        "B) Uso de dados de entrada juntamente com las respostas corretas desejadas",
+        "C) Tentativa e erro autônoma sem histórico",
+        "D) Regras fixas de lógica booleana"
+      ]
+    },
+    {
+      "idQuestao": "yuRl3aqLKjXTGpM8jpHk",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 100 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "pergunta": "Como declaramos uma variável cuja reatribuição de valor é permitida em JavaScript (ES6+)?",
       "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "let",
+        "const",
+        "constant",
+        "var-mutable"
+      ]
+    },
+    {
+      "idQuestao": "WhO4IV5nESQMw0gFgI4r",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 12 - 1790258364059]O que é uma Sprint no framework Scrum?",
+      "opcoes": [
+        "Um documento com requisitos estáticos",
+        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "Reunião final de homologação do cliente",
+        "Cargo de gestão tradicional de projetos"
+      ]
+    },
+    {
+      "idQuestao": "M35tlA9rIAV2hPRJfFMn",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que são pseudo-classes em CSS (ex: `:hover`, `:focus`, `:nth-child`)?",
+      "opcoes": [
+        "Estados especiais de um elemento selecionado para aplicar estilos condicionais",
+        "Erros de sintaxe na folha de estilos",
+        "Variáveis globais do sistema",
+        "Atalhos para comandos do terminal"
+      ]
+    },
+    {
+      "idQuestao": "yJchMVvg0tDgQ98XMptt",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML é usada para divisões genéricas ou blocos de estruturação de layout?",
+      "opcoes": [
+        "<span>",
+        "<div>",
+        "<section>",
+        "<block>",
+        "<container>"
+      ]
+    },
+    {
+      "idQuestao": "7oDPKssKhAyUF7SnjbnB",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual método JavaScript seleciona um elemento do DOM usando um seletor CSS?",
+      "opcoes": [
+        "getElementById()",
+        "querySelector()",
+        "getElementsByClassName()",
+        "selectElement()",
+        "find()"
+      ]
+    },
+    {
+      "idQuestao": "lLr1QyUxoF7H7JXuVbap",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 11 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
         "Processamento autônomo baseado em regras estáticas locais",
         "Conversão estruturada de metadados em arquivos compactados",
         "Execução direta de rotinas em camada de hardware isolada",
@@ -79,63 +128,29 @@
       ]
     },
     {
-      "idQuestao": "M4pI6xVBIx32BQmjEZYd",
+      "idQuestao": "nzCwgxrUQY7aCjrHHOg8",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a regressão logística?",
+      "pergunta": "O que é o algoritmo de Descida de Gradiente (Gradient Descent)?",
       "opcoes": [
-        "Um modelo estatístico usado para prever a probabilidade de um evento categórico (ex: sim/não, 0/1)",
-        "O cálculo de frete de entregas",
-        "A medição de velocidade de internet",
-        "A listagem de produtos em um e-commerce"
+        "Método de otimização iterativo para minimizar a função de custo do modelo",
+        "Um protocolo de comunicação para transferência de arquivos pesados",
+        "Uma técnica de indexação de banco de dados relacionais",
+        "Um método de criptografia de ponta a ponta",
+        "Uma ferramenta de compactação de imagens"
       ]
     },
     {
-      "idQuestao": "uQaUchxDs5aavHCG6sVy",
+      "idQuestao": "dpR0kismIBhVVMpzM2jV",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
+      "pergunta": "Questão oficial de nível avançado nº 7 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
       "opcoes": [
-        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
-        "Um ataque cibernético de vírus em massa",
-        "A queda de um servidor de rede",
-        "A organização de arquivos em pastas"
-      ]
-    },
-    {
-      "idQuestao": "1um9VgnUoXe2C7W7pvnm",
-      "materia": "Programacao Front-End",
-      "categoria": "Programacao Front-End",
-      "pergunta": "[Técnico 6 - 1790243768880]Qual a principal responsabilidade do CSS em páginas web?",
-      "opcoes": [
-        "Estruturar os textos semânticos",
-        "Controlar a aparência visual, layout, cores e responsividade",
-        "Processar regras de negócio no servidor",
-        "Armazenar dados em banco NoSQL"
-      ]
-    },
-    {
-      "idQuestao": "fuDtdmhurLLgExy4vNZI",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 33] O que significa o conceito de Deep Learning?",
-      "opcoes": [
-        "A) Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas",
-        "B) Processamento de planilhas eletrônicas gigantescas",
-        "C) Criptografia de ponta a ponta em redes locais",
-        "D) Compactação avançada de arquivos de vídeo"
-      ]
-    },
-    {
-      "idQuestao": "GAhiIK6EJdgROMhUj6W7",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 11] Qual a função de uma função de ativação em redes neurais?",
-      "opcoes": [
-        "A) Introduzir não-linearidade no modelo permitindo aprender padrões complexos",
-        "B) Ligar ou desligar o computador remotamente",
-        "C) Aumentar a velocidade do processador central",
-        "D) Compactar os pesos sinápticos"
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
       ]
     }
   ]
