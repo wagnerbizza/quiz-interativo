@@ -12,11 +12,11 @@
     "Ensino Médio Técnico"
   ],
   "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 9,
+  "quantidadeQuestoes": 10,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791214120279,
+  "expiraEmMillis": 1791239501002,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -24,52 +24,26 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791203320279",
-  "publicadoEm": "2026-10-05T12:28:40.970Z",
+  "seedReordenacao": "1791228701002",
+  "publicadoEm": "2026-10-05T19:31:41.290Z",
   "questoesPublicas": [
     {
-      "idQuestao": "GrVLW14GVkOosT7XkXXi",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 22] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "QE6rNdMxpWejc7Igut5I",
+      "idQuestao": "Z88uhH9uTa7Ta0VIR4vT",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Qual função nativa do JavaScript verifica se um valor é NaN (Not-a-Number)?",
+      "pergunta": "Qual tag HTML representa o maior título (cabeçalho de nível 1)?",
       "opcoes": [
-        "isNaN()",
-        "checkNaN()",
-        "Number.isNaN()",
-        "verifyNaN()",
-        "isNotNumber()"
+        "<h1>",
+        "<head>",
+        "<header>",
+        "<title>"
       ]
     },
     {
-      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Inteligência Artificial Transparente?",
-      "opcoes": [
-        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
-        "Softwares cujo código-fonte está totalmente oculto dos usuários",
-        "Sistemas que funcionam apenas offline sem acesso externo",
-        "Plataformas de computação em nuvem sem suporte técnico",
-        "Redes de computadores protegidas por senhas complexas"
-      ]
-    },
-    {
-      "idQuestao": "LTWVBJ1YaGNiEMCZH5qy",
+      "idQuestao": "P5K1dldWKF5Sby4Fd9Ry",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 100 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 30 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
       "opcoes": [
         "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
         "Processamento autônomo baseado em regras estáticas locais",
@@ -79,39 +53,28 @@
       ]
     },
     {
-      "idQuestao": "M4pI6xVBIx32BQmjEZYd",
+      "idQuestao": "9dAAEj8ojcWp9rHLGNLx",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a regressão logística?",
+      "pergunta": "O que é a visão tridimensional (3D) em robótica?",
       "opcoes": [
-        "Um modelo estatístico usado para prever a probabilidade de um evento categórico (ex: sim/não, 0/1)",
-        "O cálculo de frete de entregas",
-        "A medição de velocidade de internet",
-        "A listagem de produtos em um e-commerce"
+        "A capacidade de perceber o mundo em três dimensões utilizando sensores de profundidade e IA",
+        "O uso de óculos 3D para assistir filmes",
+        "A criação de desenhos geométricos no AutoCAD",
+        "A impressão de objetos em impressoras 3D"
       ]
     },
     {
-      "idQuestao": "uQaUchxDs5aavHCG6sVy",
+      "idQuestao": "KSZTeGcP0hGgxyEobaTU",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
+      "pergunta": "Questão oficial de nível avançado nº 68 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
       "opcoes": [
-        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
-        "Um ataque cibernético de vírus em massa",
-        "A queda de um servidor de rede",
-        "A organização de arquivos em pastas"
-      ]
-    },
-    {
-      "idQuestao": "1um9VgnUoXe2C7W7pvnm",
-      "materia": "Programacao Front-End",
-      "categoria": "Programacao Front-End",
-      "pergunta": "[Técnico 6 - 1790243768880]Qual a principal responsabilidade do CSS em páginas web?",
-      "opcoes": [
-        "Estruturar os textos semânticos",
-        "Controlar a aparência visual, layout, cores e responsividade",
-        "Processar regras de negócio no servidor",
-        "Armazenar dados em banco NoSQL"
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
       ]
     },
     {
@@ -127,15 +90,64 @@
       ]
     },
     {
-      "idQuestao": "GAhiIK6EJdgROMhUj6W7",
+      "idQuestao": "atDI3A1l1FKFhJ08V4BC",
       "materia": "Inteligencia Artificial",
       "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 11] Qual a função de uma função de ativação em redes neurais?",
+      "pergunta": "[Técnico 14] O que significa a sigla NLP?",
       "opcoes": [
-        "A) Introduzir não-linearidade no modelo permitindo aprender padrões complexos",
-        "B) Ligar ou desligar o computador remotamente",
-        "C) Aumentar a velocidade do processador central",
-        "D) Compactar os pesos sinápticos"
+        "A) Natural Language Processing",
+        "B) Network Layer Protocol",
+        "C) New Logic Programming",
+        "D) Node Link Processor"
+      ]
+    },
+    {
+      "idQuestao": "sChjWQZ0ZZPdeeYr9ROJ",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "[Técnico 6 - 1790258356903]O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "Entrega de softwares prontos via navegador",
+        "Ambiente exclusivo para programar sem gerenciar servidores",
+        "Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "y2vreOxGrgYZjj9OXWQP",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 29] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "GEHVEGZUw99TsBhIfzdy",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML5 é usada para incorporar conteúdo de vídeo?",
+      "opcoes": [
+        "<media>",
+        "<movie>",
+        "<video>",
+        "<stream>",
+        "<player>"
+      ]
+    },
+    {
+      "idQuestao": "mWxeZILchx55AILpUdZx",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 11 - 1790258363803]O que é uma Sprint no framework Scrum?",
+      "opcoes": [
+        "Um documento com requisitos estáticos",
+        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "Reunião final de homologação do cliente",
+        "Cargo de gestão tradicional de projetos"
       ]
     }
   ]
