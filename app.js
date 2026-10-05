@@ -25,7 +25,7 @@
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where 
+  getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where, orderBy, limit 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut, getIdTokenResult }
   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -1565,6 +1565,10 @@ function inicializarPaginaEscola() {
 // PASSO 8: PAINEL DO PROFESSOR (painel.html)
 // ==========================================
 if (window.location.pathname.includes("painel.html")) {
+  // Momento em que esta página do painel foi aberta.
+  // Usado para distinguir resultados novos dos registros históricos.
+  const inicioSessaoResultadosPainel = Date.now();
+
   // ==========================================================
   // 💰 FASE 10C.7 — ECONOMIA DE LEITURAS DO FIREBASE
   // ==========================================================
@@ -1601,55 +1605,78 @@ if (window.location.pathname.includes("painel.html")) {
     if (unsubscribeNovosResultadosPainel ||
         document.documentElement.dataset.modoOfflineProfessor === "1") return;
 
-    const inicioSessao = Date.now();
-
-    const consultaNovos = query(
+    // Observamos somente uma pequena janela dos resultados mais recentes.
+    // Custo inicial: no máximo 10 documentos, e depois apenas mudanças.
+    // Isso evita reler os 130+ relatórios históricos e é mais robusto que
+    // depender de uma consulta criada somente depois dos carregamentos do painel.
+    const consultaRecentes = query(
       collection(db, "avaliacoes"),
-      where("timestamp", ">=", inicioSessao)
+      orderBy("timestamp", "desc"),
+      limit(10)
     );
 
     unsubscribeNovosResultadosPainel = onSnapshot(
-      consultaNovos,
+      consultaRecentes,
       async (snapshot) => {
+        let houveResultadoNovo = false;
+
         for (const mudanca of snapshot.docChanges()) {
-          if (mudanca.type === "removed") continue; // nunca apagamos cache por este listener
+          if (mudanca.type === "removed") continue;
 
           const docSnap = mudanca.doc;
+          const dados = docSnap.data();
+          const timestamp = Number(dados.timestamp) || 0;
+
+          // Na primeira fotografia o Firebase devolve até 10 documentos antigos.
+          // Eles NÃO são reprocessados: só interessam entregas desta sessão.
+          if (timestamp < inicioSessaoResultadosPainel) continue;
+
+          houveResultadoNovo = true;
           const recebido = {
             idDoc: docSnap.id,
             refPath: docSnap.ref.path,
-            ...docSnap.data()
+            ...dados
           };
 
-          // Atualiza/insere sem duplicar e preserva todo o histórico local.
+          // Atualiza/insere sem duplicar e nunca apaga o histórico local.
           resultadosGlobaisCache =
-            resultadosGlobaisCache.filter(r => (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path);
+            resultadosGlobaisCache.filter(r =>
+              (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
+            );
           resultadosGlobaisCache.unshift(recebido);
           salvarCacheLocalRelatorios(resultadosGlobaisCache);
 
-          // Se chegou pendente de correção, o professor corrige com o banco privado.
-          // O gabarito nunca é enviado para a Área do Aluno.
+          // Correção privada do professor. O gabarito não vai para o aluno.
           if (recebido.pontuacao === null && Array.isArray(recebido.questoesIds)) {
             const acertos = await corrigirResultadoPendente(docSnap.id, recebido);
             if (Number.isFinite(acertos)) {
               recebido.pontuacao = acertos;
               resultadosGlobaisCache =
-                resultadosGlobaisCache.filter(r => (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path);
+                resultadosGlobaisCache.filter(r =>
+                  (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
+                );
               resultadosGlobaisCache.unshift(recebido);
               salvarCacheLocalRelatorios(resultadosGlobaisCache);
             }
           }
         }
 
-        // Só redesenha a tabela se a aba de relatórios estiver visível.
-        if (!document.getElementById("aba-relatorios")?.classList.contains("hidden")) {
+        if (houveResultadoNovo &&
+            !document.getElementById("aba-relatorios")?.classList.contains("hidden")) {
           renderizarTabelaResultadosFiltrada();
         }
-        atualizarStatusCacheRelatorios("🟢 Recebimento automático ativo");
+
+        atualizarStatusCacheRelatorios("🟢 Aguardando novos resultados");
       },
       (erro) => {
-        console.warn("Recebimento automático de resultados indisponível:", erro?.code || erro);
-        atualizarStatusCacheRelatorios("🟡 Recebimento automático temporariamente indisponível");
+        console.error(
+          "Recebimento automático de resultados indisponível:",
+          erro?.code || erro,
+          erro?.message || ""
+        );
+        atualizarStatusCacheRelatorios(
+          `🟡 Recebimento automático indisponível (${erro?.code || "Firebase"})`
+        );
       }
     );
   }
@@ -1808,8 +1835,7 @@ if (window.location.pathname.includes("painel.html")) {
     carregarListaEscolas();
     renderizarSeletorEscolasAtivacaoIndependente();
     inicializarTabelaResultados();
-    // Escuta somente NOVOS resultados desta sessão; não relê o histórico inteiro.
-    iniciarListenerNovosResultados();
+    // O recebimento de novos resultados já foi iniciado logo após a autenticação.
     // 10C.7: monitoramento em tempo real só inicia quando a aba for aberta.
     popularSelectMateriasQuestao();
     organizarLayoutAbaRelatorios();
@@ -5061,6 +5087,11 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
     document.body.style.visibility = "visible";
     const emailEl = document.getElementById("professor-email-logado");
     if (emailEl) emailEl.textContent = usuario.email || "Professor autenticado";
+
+    // Começa a receber novas entregas imediatamente após validar o professor.
+    // Assim não perdemos uma prova que termine enquanto o restante do painel carrega.
+    iniciarListenerNovosResultados();
+
     await inicializarPainel();
   });
 
@@ -5206,3 +5237,5 @@ window.addEventListener("DOMContentLoaded",()=>{
 });
 
 console.info("QUIZ BUILD: RESULTADOS-AUTOMATICOS-TOPO-2026-10-05");
+
+console.info("QUIZ BUILD: RESULTADOS-LISTENER-ROBUSTO-2026-10-05");
