@@ -340,10 +340,11 @@ ATENÇÃO:
 
     function limparPrefixoOpcao(opcaoStr) {
       if (!opcaoStr) return "";
-      let limpo = opcaoStr.toString().replace(/^[a-zA-Z][\)\.\-\s]+\s*/, "").trim();
-      let lower = limpo.toLowerCase();
-      if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return "";
-      return limpo;
+      // Aceita questões A-D e A-E. Remove somente o rótulo da alternativa,
+      // nunca elimina a alternativa E por causa da letra.
+      return opcaoStr.toString()
+        .replace(/^\s*(?:alternativa|opção|opcao)?\s*[A-E]\s*[\)\.\-:\s]+\s*/i, "")
+        .trim();
     }
 
     // ==========================================================
@@ -572,12 +573,7 @@ ATENÇÃO:
           
           let opcoesLimpas = opcoesBrutas
             .map(op => limparPrefixoOpcao(op))
-            .filter(op => {
-              if (!op || op === "") return false;
-              let lower = op.toLowerCase();
-              if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return false;
-              return true;
-            });
+            .filter(op => op && op.trim() !== "");
           // 🔐 FASE 10C — nenhuma chave de resposta é carregada no navegador do aluno.
           banco.push({
             idQuestao: d.idQuestao || s.id,
@@ -630,7 +626,10 @@ ATENÇÃO:
       // 🔵 FASE 7 — EMBARALHAMENTO QUE FUNCIONA TAMBÉM COM POUCAS QUESTÕES
       // Usa o seed da prova + aluno. Quando o professor clica "Reembaralhar",
       // o seed muda e a ordem muda inclusive em provas de 2 ou 3 questões.
-      const seedBase = `${dadosProvaAtiva.seedReordenacao || "0"}|${alunoAtual.id || ""}`;
+      // Cada tentativa recebe uma semente própria. Assim dois alunos — ou
+      // duas tentativas do mesmo aluno — não recebem necessariamente a mesma ordem.
+      const aleatorioTentativa = (crypto.getRandomValues(new Uint32Array(1))[0]).toString(16);
+      const seedBase = `${dadosProvaAtiva.seedReordenacao || "0"}|${alunoAtual.id || ""}|${Date.now()}|${aleatorioTentativa}`;
       function hashSimples(txt) {
         let h = 2166136261;
         for (let i = 0; i < txt.length; i++) {
@@ -655,7 +654,28 @@ ATENÇÃO:
         }
       }
 
-      listaQuestoes = unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
+      listaQuestoes = unicasArray
+        .slice(0, Math.min(qtdDesejada, unicasArray.length))
+        .map((questao, indiceQuestao) => {
+          const opcoes = Array.isArray(questao.opcoes)
+            ? questao.opcoes.filter(op => String(op || "").trim() !== "")
+            : [];
+
+          // Ordenação determinística dentro desta tentativa: a tela pode ser
+          // redesenhada quantas vezes for necessário sem trocar as alternativas.
+          const opcoesEmbaralhadas = opcoes
+            .map((texto, indiceOriginal) => ({
+              texto,
+              indiceOriginal,
+              chave: hashSimples(
+                `${seedBase}|alternativa|${questao.idQuestao || indiceQuestao}|${indiceOriginal}|${texto}`
+              )
+            }))
+            .sort((a, b) => a.chave - b.chave)
+            .map(item => item.texto);
+
+          return { ...questao, opcoes: opcoesEmbaralhadas };
+        });
 
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
       document.getElementById("tela-login").classList.add("hidden");
