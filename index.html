@@ -267,7 +267,11 @@ ATENÇÃO:
       <h3 style="margin-bottom: 10px; font-size: 15px; text-align: left;">Revisão das Questões:</h3>
       <div id="container-revisao-resultado" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
 
-      <button type="button" id="btn-reiniciar" class="btn">🔄 Sair / Tela Inicial</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+          <button type="button" id="btn-sincronizar-pendentes" style="flex:1;padding:12px;cursor:pointer">☁️ Sincronizar resultados</button>
+          <button type="button" id="btn-backup-resultado" style="flex:1;padding:12px;cursor:pointer">💾 Baixar backup</button>
+        </div>
+        <button type="button" id="btn-reiniciar" class="btn">🔄 Sair / Tela Inicial</button>
     </div>
   </div>
 
@@ -901,7 +905,7 @@ ATENÇÃO:
 
     async function tentarSincronizarResultadoLocal(resultado) {
       try {
-        await setDoc(doc(db, "avaliacoes", resultado.idFirebase), resultado.dadosFirebase);
+        await setDoc(doc(db, "avaliacoes", resultado.idFirebase), { ...resultado.dadosFirebase, dataEnvio: serverTimestamp() });
         marcarResultadoComoSincronizado(resultado.idLocal);
         return true;
       } catch (erro) {
@@ -909,6 +913,39 @@ ATENÇÃO:
         return false;
       }
     }
+
+    // Reenvio MANUAL e idempotente: reutiliza o mesmo ID do documento.
+    // Não apaga nenhum registro local após confirmar o envio.
+    async function sincronizarResultadosPendentes() {
+      const pendentes = lerResultadosPendentes().filter(item => !item.sincronizado);
+      const aviso = document.getElementById("status-envio-txt");
+      if (!pendentes.length) {
+        if (aviso) aviso.textContent = "Nenhum resultado pendente neste navegador.";
+        return;
+      }
+      const botao = document.getElementById("btn-sincronizar-pendentes");
+      if (botao) botao.disabled = true;
+      let enviados = 0;
+      for (const item of pendentes) {
+        if (!navigator.onLine) break;
+        if (await tentarSincronizarResultadoLocal(item)) enviados++;
+        else break; // Evita insistir e consumir leituras/escritas quando há falha.
+      }
+      if (aviso) aviso.textContent = `Sincronizados agora: ${enviados}. Pendentes neste navegador: ${lerResultadosPendentes().filter(item => !item.sincronizado).length}.`;
+      if (botao) botao.disabled = false;
+    }
+    // A exportação permite preservar a cópia mesmo se o navegador for trocado.
+    function exportarResultadosLocais() {
+      const dados = JSON.stringify({ versao: 1, exportadoEm: new Date().toISOString(), resultados: lerResultadosPendentes() }, null, 2);
+      const url = URL.createObjectURL(new Blob([dados], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-resultados-aluno-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+    document.getElementById("btn-sincronizar-pendentes")?.addEventListener("click", sincronizarResultadosPendentes);
+    document.getElementById("btn-backup-resultado")?.addEventListener("click", exportarResultadosLocais);
 
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (timerInterval) clearInterval(timerInterval);
@@ -929,7 +966,7 @@ if (unsubscribePermissaoAluno) {
       let seg = segundosPassados % 60;
       let tempoGastoFormatado = `${min}m ${seg}s`;
 
-      document.getElementById("nota-final-txt").textContent = "Avaliação enviada para correção segura";
+      document.getElementById("nota-final-txt").textContent = "Avaliação concluída — preparando salvamento";
       document.getElementById("detalhes-acertos-txt").textContent = `Questões: ${listaQuestoes.length} | Tempo: ${tempoGastoFormatado}`;
       document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
 
@@ -959,7 +996,7 @@ if (unsubscribePermissaoAluno) {
           questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
           tempoGastoSegundos: segundosPassados,
           tempoGastoFormatado: tempoGastoFormatado,
-          dataEnvio: serverTimestamp(),
+          dataEnvio: new Date(agora).toISOString(), // Formato compatível com armazenamento local.
           timestamp: agora,
           finalizadoPeloProfessor: encerradaPeloProfessor,
           motivoFinalizacao: motivoEncerramento || ""
@@ -992,21 +1029,28 @@ if (unsubscribePermissaoAluno) {
 
         }
 
-        // 🔐 FASE 10C — vincula o bloqueio ao UID anônimo desta sessão.
-        await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
-          podeFazer: false,
-          uid: uidAlunoFirebase
-        }, { merge: true });
-        await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
-
-        if (!encerradaPeloProfessor) {
-          document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
+        // A limpeza remota é independente do envio do resultado: falhas aqui
+        // não devem transformar um resultado protegido em uma mensagem de perda.
+        if (resultadoSincronizado) {
+          document.getElementById("nota-final-txt").textContent = "Avaliação enviada para correção segura";
+          document.getElementById("status-envio-txt").textContent = "✅ Resultado enviado ao Firebase e cópia local preservada.";
         } else {
-          document.getElementById("status-envio-txt").innerHTML =
-            `🏁 <strong>Avaliação encerrada pelo professor.</strong><br>Motivo: ${motivoEncerramento}<br>✅ Resultado salvo com sucesso.`;
+          document.getElementById("nota-final-txt").textContent = "Avaliação concluída — resultado protegido";
+          document.getElementById("status-envio-txt").textContent = "💾 Resultado salvo neste navegador. Envio pendente: use Sincronizar resultados quando o Firebase voltar.";
         }
+        try {
+          await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
+            podeFazer: false, uid: uidAlunoFirebase
+          }, { merge: true });
+          await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
+        } catch (erroLimpeza) {
+          console.warn("Não foi possível atualizar a presença online:", erroLimpeza?.code || erroLimpeza);
+        }
+
       } catch (err) {
-        document.getElementById("status-envio-txt").textContent = "⚠️ Erro ao salvar resultado online.";
+        document.getElementById("nota-final-txt").textContent = "Atenção ao salvamento";
+        document.getElementById("status-envio-txt").textContent = "⚠️ Não foi possível confirmar a cópia local. Não limpe os dados deste navegador.";
+        console.error("Falha no salvamento local:", err);
       }
     }
 
