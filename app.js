@@ -25,7 +25,7 @@
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup 
+  getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut, getIdTokenResult }
   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -55,7 +55,7 @@ let resultadosFiltradosCache = []; // 🔵 FASE 10B.4 — exatamente o que está
 let alunosOnlineCache = [];
 let questoesBancoCache = [];
 let ordemAtualMonitoramento = "inicio-desc"; // 🔧 FASE 10B.1 — aluno/prova mais recente primeiro
-let ordemAtualResultados = "nenhum";
+let ordemAtualResultados = "data-desc"; // resultados mais recentes aparecem primeiro por padrão
 let escolaAtivaSelecionadaIndependente = ""; 
 let alunosOcultosCache = new Set(JSON.parse(localStorage.getItem("alunos_ocultos_painel") || "[]")); 
 let alunosLixeiraCache = new Set(JSON.parse(localStorage.getItem("alunos_lixeira_painel") || "[]"));
@@ -1573,6 +1573,7 @@ if (window.location.pathname.includes("painel.html")) {
   // enquanto o professor está trabalhando em outra parte do painel.
   let unsubscribeMonitoramentoPainel = null;
   let unsubscribeProvasAtivasPainel = null;
+  let unsubscribeNovosResultadosPainel = null;
   let bancoQuestoesCarregadoNestaSessao = false;
 
   function pararListenerMonitoramento() {
@@ -1589,6 +1590,77 @@ if (window.location.pathname.includes("painel.html")) {
     }
   }
 
+  // ==========================================================
+  // RESULTADOS — RECEPÇÃO AUTOMÁTICA E ECONÔMICA
+  // ==========================================================
+  // O painel NÃO abre um listener para os 130+ relatórios antigos.
+  // Ele observa somente documentos criados depois que esta sessão do
+  // professor foi aberta. Assim, cada nova entrega chega ao cache local
+  // sem exigir o botão "Sincronizar relatórios" e sem reler o histórico.
+  function iniciarListenerNovosResultados() {
+    if (unsubscribeNovosResultadosPainel ||
+        document.documentElement.dataset.modoOfflineProfessor === "1") return;
+
+    const inicioSessao = Date.now();
+
+    const consultaNovos = query(
+      collection(db, "avaliacoes"),
+      where("timestamp", ">=", inicioSessao)
+    );
+
+    unsubscribeNovosResultadosPainel = onSnapshot(
+      consultaNovos,
+      async (snapshot) => {
+        for (const mudanca of snapshot.docChanges()) {
+          if (mudanca.type === "removed") continue; // nunca apagamos cache por este listener
+
+          const docSnap = mudanca.doc;
+          const recebido = {
+            idDoc: docSnap.id,
+            refPath: docSnap.ref.path,
+            ...docSnap.data()
+          };
+
+          // Atualiza/insere sem duplicar e preserva todo o histórico local.
+          resultadosGlobaisCache =
+            resultadosGlobaisCache.filter(r => (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path);
+          resultadosGlobaisCache.unshift(recebido);
+          salvarCacheLocalRelatorios(resultadosGlobaisCache);
+
+          // Se chegou pendente de correção, o professor corrige com o banco privado.
+          // O gabarito nunca é enviado para a Área do Aluno.
+          if (recebido.pontuacao === null && Array.isArray(recebido.questoesIds)) {
+            const acertos = await corrigirResultadoPendente(docSnap.id, recebido);
+            if (Number.isFinite(acertos)) {
+              recebido.pontuacao = acertos;
+              resultadosGlobaisCache =
+                resultadosGlobaisCache.filter(r => (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path);
+              resultadosGlobaisCache.unshift(recebido);
+              salvarCacheLocalRelatorios(resultadosGlobaisCache);
+            }
+          }
+        }
+
+        // Só redesenha a tabela se a aba de relatórios estiver visível.
+        if (!document.getElementById("aba-relatorios")?.classList.contains("hidden")) {
+          renderizarTabelaResultadosFiltrada();
+        }
+        atualizarStatusCacheRelatorios("🟢 Recebimento automático ativo");
+      },
+      (erro) => {
+        console.warn("Recebimento automático de resultados indisponível:", erro?.code || erro);
+        atualizarStatusCacheRelatorios("🟡 Recebimento automático temporariamente indisponível");
+      }
+    );
+  }
+
+  function pararListenerNovosResultados() {
+    if (unsubscribeNovosResultadosPainel) {
+      unsubscribeNovosResultadosPainel();
+      unsubscribeNovosResultadosPainel = null;
+    }
+  }
+
   function gerenciarLeiturasPorAba(abaId) {
     if (abaId === "aba-monitoramento") inicializarTabelaTempoReal();
     else pararListenerMonitoramento();
@@ -1600,6 +1672,7 @@ if (window.location.pathname.includes("painel.html")) {
   window.addEventListener("beforeunload", () => {
     pararListenerMonitoramento();
     pararListenerProvasAtivas();
+    pararListenerNovosResultados();
   });
 
   // ==========================================================
@@ -1735,6 +1808,8 @@ if (window.location.pathname.includes("painel.html")) {
     carregarListaEscolas();
     renderizarSeletorEscolasAtivacaoIndependente();
     inicializarTabelaResultados();
+    // Escuta somente NOVOS resultados desta sessão; não relê o histórico inteiro.
+    iniciarListenerNovosResultados();
     // 10C.7: monitoramento em tempo real só inicia quando a aba for aberta.
     popularSelectMateriasQuestao();
     organizarLayoutAbaRelatorios();
@@ -2074,7 +2149,9 @@ if (window.location.pathname.includes("painel.html")) {
 
     let html = "";
     listaOcultos.forEach(res => {
-      let dataFormatada = res.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString('pt-BR') : "Data recente";
+      let dataFormatada = res.dataEnvio?.toDate
+        ? res.dataEnvio.toDate().toLocaleString('pt-BR')
+        : (Number(res.timestamp) ? new Date(Number(res.timestamp)).toLocaleString('pt-BR') : "Data recente");
       let totalQ = res.totalQuestoes || 0;
       let acertos = res.pontuacao || 0;
       let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
@@ -3782,26 +3859,24 @@ if (window.location.pathname.includes("painel.html")) {
     resultadosFiltradosCache = [...dadosFiltrados];
     atualizarGraficosDesempenho(dadosFiltrados);
 
-    if (ordemAtualResultados !== "nenhum") {
-      dadosFiltrados.sort((a, b) => {
-        let notaA = a.totalQuestoes > 0 ? (a.pontuacao / a.totalQuestoes) * 10 : 0;
-        let notaB = b.totalQuestoes > 0 ? (b.pontuacao / b.totalQuestoes) * 10 : 0;
-        let nomeA = (a.nome || "").trim();
-        let nomeB = (b.nome || "").trim();
+    dadosFiltrados.sort((a, b) => {
+      let notaA = a.totalQuestoes > 0 ? (a.pontuacao / a.totalQuestoes) * 10 : 0;
+      let notaB = b.totalQuestoes > 0 ? (b.pontuacao / b.totalQuestoes) * 10 : 0;
+      let nomeA = (a.nome || "").trim();
+      let nomeB = (b.nome || "").trim();
 
-        switch (ordemAtualResultados) {
-          case "data-asc": return (a.timestamp || 0) - (b.timestamp || 0);
-          case "data-desc": return (b.timestamp || 0) - (a.timestamp || 0);
-          case "nome-asc": return nomeA.localeCompare(nomeB);
-          case "nome-desc": return nomeB.localeCompare(nomeA);
-          case "turma-asc": return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
-          case "escola-asc": return (a.escola || "").localeCompare(b.escola || "");
-          case "nota-desc": return notaB - notaA;
-          case "nota-asc": return notaA - notaB;
-          default: return (b.timestamp || 0) - (a.timestamp || 0);
-        }
-      });
-    }
+      switch (ordemAtualResultados || "data-desc") {
+        case "data-asc": return (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0);
+        case "nome-asc": return nomeA.localeCompare(nomeB);
+        case "nome-desc": return nomeB.localeCompare(nomeA);
+        case "turma-asc": return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
+        case "escola-asc": return (a.escola || "").localeCompare(b.escola || "");
+        case "nota-desc": return notaB - notaA;
+        case "nota-asc": return notaA - notaB;
+        case "data-desc":
+        default: return (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0);
+      }
+    });
 
     if (dadosFiltrados.length === 0) {
       corpoTabelaResultados.innerHTML = `<tr><td colspan="12" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno encontrado.</td></tr>`;
@@ -4089,6 +4164,7 @@ if (window.location.pathname.includes("painel.html")) {
         corrigidoEm: serverTimestamp(),
         corrigidoPeloPainel: true
       }, {merge:true});
+      return acertos;
     } catch(e) {
       console.error("FASE 10C - erro ao corrigir resultado:",e);
     } finally { correcoesEmAndamento.delete(idResultado); }
@@ -5128,3 +5204,5 @@ window.addEventListener("DOMContentLoaded",()=>{
   instalarAjudaContextual();
   observadorAjuda.observe(document.body,{childList:true,subtree:true});
 });
+
+console.info("QUIZ BUILD: RESULTADOS-AUTOMATICOS-TOPO-2026-10-05");
