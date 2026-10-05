@@ -805,6 +805,44 @@ let listaEscolasCache = [];
 
 
 // PUBLICAÇÃO RESILIENTE: arquivo para GitHub Pages, sem gabarito.
+function baixarArquivoProvaPublicada(pacote) {
+  // Publicação GitHub: nunca contém gabarito. O navegador apenas prepara
+  // o arquivo que o professor substituirá no projeto antes do git push.
+  const blob = new Blob([JSON.stringify(pacote, null, 2)], {type:"application/json;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "prova-publicada.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento="Avaliação encerrada pelo professor.") {
+  const pacote = {
+    versaoPacote: 1,
+    ativa: false,
+    escolaAtiva: escolaNome || "",
+    materiasAtivas: [],
+    disciplinasAtivas: [],
+    periodoAtivo: "",
+    quantidadeQuestoes: 0,
+    tempoMinimoMinutos: 0,
+    tempoLimiteMinutos: 0,
+    tempoAtivacaoMinutos: 0,
+    expiraEmMillis: Date.now(),
+    turmasAtivas: [],
+    token: "",
+    seedReordenacao: Date.now().toString(),
+    publicadoEm: new Date().toISOString(),
+    encerradoEm: new Date().toISOString(),
+    motivoEncerramento,
+    questoesPublicas: []
+  };
+  baixarArquivoProvaPublicada(pacote);
+}
+
 async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
   const materias = dadosPublicacao.materiasAtivas || [];
   let fonte = Array.isArray(questoesBancoCache) ? [...questoesBancoCache] : [];
@@ -857,12 +895,7 @@ async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
     questoesPublicas:selecionadas
   };
 
-  const blob=new Blob([JSON.stringify(pacote,null,2)],{type:"application/json;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download="prova-publicada.json";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  baixarArquivoProvaPublicada(pacote);
   return selecionadas.length;
 }
 
@@ -2869,11 +2902,34 @@ if (window.location.pathname.includes("painel.html")) {
       const escolaNome = btnEmbaralhar.dataset.escola;
       if (confirm(`🔀 Deseja reembaralhar a prova de "${escolaNome}"?`)) {
         try {
-          await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
-            seedReordenacao: Date.now().toString(),
-            atualizadoEm: serverTimestamp()
-          }, { merge: true });
-          mostrarNotificacao("✅ Questões reembaralhadas com sucesso!");
+          let dadosAtivos = null;
+          try {
+            const snap = await getDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)));
+            if (snap.exists()) dadosAtivos = snap.data();
+          } catch (erroLeitura) {
+            console.warn("Firebase indisponível ao ler configuração para reembaralhar:", erroLeitura?.code || erroLeitura);
+          }
+
+          if (!dadosAtivos) {
+            alert("⚠ Não foi possível recuperar a configuração atual da prova para gerar o novo pacote. Nenhum arquivo existente foi apagado.");
+            return;
+          }
+
+          const novaSeed = Date.now().toString();
+          const novosDados = { ...dadosAtivos, ativa:true, seedReordenacao:novaSeed, publicadoEm:new Date().toISOString() };
+
+          try {
+            await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
+              seedReordenacao: novaSeed,
+              atualizadoEm: serverTimestamp()
+            }, { merge: true });
+          } catch (erroFirebase) {
+            console.warn("Firebase indisponível ao reembaralhar:", erroFirebase?.code || erroFirebase);
+          }
+
+          const totalPacote = await gerarPacoteEstaticoAvaliacao(novosDados);
+          mostrarNotificacao("✅ Novo pacote reembaralhado gerado!");
+          alert(`🔀 Reembaralhamento preparado com ${totalPacote} questões.\n\nSubstitua prova-publicada.json no projeto e faça git push para publicar a nova versão.`);
         } catch(err) { alert("Erro ao reembaralhar: " + err.message); }
       }
     }
@@ -3293,20 +3349,33 @@ if (window.location.pathname.includes("painel.html")) {
   window.encerrarProvaAtivaAgora = async function(escolaNome) {
     if (!escolaNome) { alert("⚠ Escola não informada."); return; }
     if (confirm(`⚠️ Deseja encerrar a prova ativa de "${escolaNome}"?`)) {
-      try {
-        // 🔵 FASE 9 — o motivo é enviado aos alunos conectados em tempo real.
-        const motivoEncerramento = (prompt(
-          "Informe o motivo do encerramento da avaliação:",
-          "Avaliação encerrada pelo professor."
-        ) || "Avaliação encerrada pelo professor.").trim();
+      const motivoEncerramento = (prompt(
+        "Informe o motivo do encerramento da avaliação:",
+        "Avaliação encerrada pelo professor."
+      ) || "Avaliação encerrada pelo professor.").trim();
 
+      let firebaseEncerrado = false;
+      try {
         await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
           ativa: false,
           encerradoEm: serverTimestamp(),
-          motivoEncerramento: motivoEncerramento
+          motivoEncerramento
         }, { merge: true });
-        mostrarNotificacao(`🛑 Prova de "${escolaNome}" encerrada com sucesso!`);
-      } catch(err) { alert("Erro ao encerrar."); }
+        firebaseEncerrado = true;
+      } catch(err) {
+        console.warn("Firebase indisponível no encerramento:", err?.code || err);
+      }
+
+      // O encerramento GitHub não depende da cota do Firebase.
+      // Nada é apagado: é gerado um novo prova-publicada.json marcado como inativo.
+      gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento);
+      mostrarNotificacao(`🛑 Encerramento de "${escolaNome}" preparado.`);
+      alert(
+        `🛑 Encerramento preparado.\n\n` +
+        `${firebaseEncerrado ? "Firebase: encerrado.\n" : "Firebase: indisponível/sem cota.\n"}` +
+        `GitHub: foi gerado um prova-publicada.json INATIVO.\n\n` +
+        `Substitua o arquivo no projeto e faça git push.`
+      );
     }
   };
 
@@ -5362,3 +5431,5 @@ console.info("QUIZ BUILD: RESULTADOS-LISTENER-ROBUSTO-2026-10-05");
 console.info("QUIZ BUILD: RESULTADOS-CORRECAO-AUTOMATICA-2026-10-05");
 
 console.info("QUIZ BUILD: GITHUB-PRIORIDADE-FINAL-2026-10-05");
+
+console.info("QUIZ BUILD: ATIVACAO-GITHUB-RESILIENTE-2026-10-05");
