@@ -281,7 +281,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    console.info("QUIZ BUILD: GITHUB-PRIORIDADE-2026-10-05");
+    console.info("QUIZ BUILD: RESULTADO-LOCAL-FIRST-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -863,6 +863,53 @@ ATENÇÃO:
     document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
     document.getElementById("fin")?.addEventListener("click", finalizarProva);
 
+
+    // ============================================================
+    // PROTEÇÃO LOCAL DE RESULTADOS
+    // O resultado é guardado no navegador ANTES da tentativa de envio
+    // ao Firebase. Nada é apagado automaticamente.
+    // ============================================================
+    const CHAVE_RESULTADOS_PENDENTES = "quiz_resultados_pendentes_v1";
+
+    function lerResultadosPendentes() {
+      try {
+        const dados = JSON.parse(localStorage.getItem(CHAVE_RESULTADOS_PENDENTES) || "[]");
+        return Array.isArray(dados) ? dados : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function salvarResultadoPendenteLocal(resultado) {
+      const lista = lerResultadosPendentes();
+      const indice = lista.findIndex(item => item.idLocal === resultado.idLocal);
+      if (indice >= 0) lista[indice] = { ...lista[indice], ...resultado };
+      else lista.push(resultado);
+      localStorage.setItem(CHAVE_RESULTADOS_PENDENTES, JSON.stringify(lista));
+    }
+
+    function marcarResultadoComoSincronizado(idLocal) {
+      // Mantemos o registro local por segurança; apenas marcamos como sincronizado.
+      const lista = lerResultadosPendentes();
+      const indice = lista.findIndex(item => item.idLocal === idLocal);
+      if (indice >= 0) {
+        lista[indice].sincronizado = true;
+        lista[indice].sincronizadoEm = new Date().toISOString();
+        localStorage.setItem(CHAVE_RESULTADOS_PENDENTES, JSON.stringify(lista));
+      }
+    }
+
+    async function tentarSincronizarResultadoLocal(resultado) {
+      try {
+        await setDoc(doc(db, "avaliacoes", resultado.idFirebase), resultado.dadosFirebase);
+        marcarResultadoComoSincronizado(resultado.idLocal);
+        return true;
+      } catch (erro) {
+        console.warn("Resultado protegido localmente; Firebase indisponível:", erro?.code || erro);
+        return false;
+      }
+    }
+
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (timerInterval) clearInterval(timerInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
@@ -893,7 +940,11 @@ if (unsubscribePermissaoAluno) {
 
       try {
         const agora = Date.now();
-        await setDoc(doc(db, "avaliacoes", (9999999999999 - agora).toString()), {
+        // Primeiro protegemos o resultado no próprio dispositivo do aluno.
+
+        const idFirebaseResultado = (9999999999999 - agora).toString();
+
+        const dadosResultadoFirebase = {
           idAluno: alunoAtual.id,
           nome: alunoAtual.nome,
           turma: alunoAtual.turma,
@@ -912,7 +963,34 @@ if (unsubscribePermissaoAluno) {
           timestamp: agora,
           finalizadoPeloProfessor: encerradaPeloProfessor,
           motivoFinalizacao: motivoEncerramento || ""
-        });
+        };
+
+        const resultadoLocal = {
+
+          idLocal: `${uidAlunoFirebase || alunoAtual.id || "aluno"}_${agora}`,
+
+          idFirebase: idFirebaseResultado,
+
+          criadoEm: new Date().toISOString(),
+
+          sincronizado: false,
+
+          dadosFirebase: dadosResultadoFirebase
+
+        };
+
+        salvarResultadoPendenteLocal(resultadoLocal);
+
+
+        // Só depois tentamos o Firebase. Se falhar, a cópia local permanece.
+
+        const resultadoSincronizado = await tentarSincronizarResultadoLocal(resultadoLocal);
+
+        if (!resultadoSincronizado) {
+
+          console.info("Resultado aguardando sincronização futura.");
+
+        }
 
         // 🔐 FASE 10C — vincula o bloqueio ao UID anônimo desta sessão.
         await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
