@@ -12,11 +12,11 @@
     "Ensino Médio Técnico"
   ],
   "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 9,
+  "quantidadeQuestoes": 10,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791214120279,
+  "expiraEmMillis": 1791240696998,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -24,101 +24,14 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791203320279",
-  "publicadoEm": "2026-10-05T12:28:40.970Z",
+  "seedReordenacao": "1791229896998",
+  "publicadoEm": "2026-10-05T19:51:37.264Z",
   "questoesPublicas": [
     {
-      "idQuestao": "GrVLW14GVkOosT7XkXXi",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 22] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "QE6rNdMxpWejc7Igut5I",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Qual função nativa do JavaScript verifica se um valor é NaN (Not-a-Number)?",
-      "opcoes": [
-        "isNaN()",
-        "checkNaN()",
-        "Number.isNaN()",
-        "verifyNaN()",
-        "isNotNumber()"
-      ]
-    },
-    {
-      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Inteligência Artificial Transparente?",
-      "opcoes": [
-        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
-        "Softwares cujo código-fonte está totalmente oculto dos usuários",
-        "Sistemas que funcionam apenas offline sem acesso externo",
-        "Plataformas de computação em nuvem sem suporte técnico",
-        "Redes de computadores protegidas por senhas complexas"
-      ]
-    },
-    {
-      "idQuestao": "LTWVBJ1YaGNiEMCZH5qy",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 100 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "M4pI6xVBIx32BQmjEZYd",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a regressão logística?",
-      "opcoes": [
-        "Um modelo estatístico usado para prever a probabilidade de um evento categórico (ex: sim/não, 0/1)",
-        "O cálculo de frete de entregas",
-        "A medição de velocidade de internet",
-        "A listagem de produtos em um e-commerce"
-      ]
-    },
-    {
-      "idQuestao": "uQaUchxDs5aavHCG6sVy",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
-      "opcoes": [
-        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
-        "Um ataque cibernético de vírus em massa",
-        "A queda de um servidor de rede",
-        "A organização de arquivos em pastas"
-      ]
-    },
-    {
-      "idQuestao": "1um9VgnUoXe2C7W7pvnm",
-      "materia": "Programacao Front-End",
-      "categoria": "Programacao Front-End",
-      "pergunta": "[Técnico 6 - 1790243768880]Qual a principal responsabilidade do CSS em páginas web?",
-      "opcoes": [
-        "Estruturar os textos semânticos",
-        "Controlar a aparência visual, layout, cores e responsividade",
-        "Processar regras de negócio no servidor",
-        "Armazenar dados em banco NoSQL"
-      ]
-    },
-    {
-      "idQuestao": "fuDtdmhurLLgExy4vNZI",
+      "idQuestao": "gNYZJX3B3zqtk4fAxrE7",
       "materia": "Inteligencia Artificial",
       "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 33] O que significa o conceito de Deep Learning?",
+      "pergunta": "[Técnico 3] O que significa o conceito de Deep Learning?",
       "opcoes": [
         "A) Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas",
         "B) Processamento de planilhas eletrônicas gigantescas",
@@ -127,15 +40,113 @@
       ]
     },
     {
-      "idQuestao": "GAhiIK6EJdgROMhUj6W7",
+      "idQuestao": "AsEJF0T2pXyM8Gq0DefM",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual seletor CSS é utilizado para atingir um elemento específico através de seu ID único?",
+      "opcoes": [
+        "# (cerquilha/almofada)",
+        ". (ponto)",
+        "* (asterisco)",
+        "@ (arroba)"
+      ]
+    },
+    {
+      "idQuestao": "GdLXpk5Qzu2rAFkFH8mQ",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 3 - 1790258360061]O que é uma Sprint no framework Scrum?",
+      "opcoes": [
+        "Um documento com requisitos estáticos",
+        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "Reunião final de homologação do cliente",
+        "Cargo de gestão tradicional de projetos"
+      ]
+    },
+    {
+      "idQuestao": "rELb3n6erdKraGB2iOEf",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "[Técnico 9 - 1790258357640]O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "Entrega de softwares prontos via navegador",
+        "Ambiente exclusivo para programar sem gerenciar servidores",
+        "Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "vPjnZ1rvi1td259ppoxc",
       "materia": "Inteligencia Artificial",
       "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 11] Qual a função de uma função de ativação em redes neurais?",
+      "pergunta": "[Técnico 21] O que significa o conceito de Deep Learning?",
       "opcoes": [
-        "A) Introduzir não-linearidade no modelo permitindo aprender padrões complexos",
-        "B) Ligar ou desligar o computador remotamente",
-        "C) Aumentar a velocidade do processador central",
-        "D) Compactar os pesos sinápticos"
+        "A) Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas",
+        "B) Processamento de planilhas eletrônicas gigantescas",
+        "C) Criptografia de ponta a ponta em redes locais",
+        "D) Compactação avançada de arquivos de vídeo"
+      ]
+    },
+    {
+      "idQuestao": "iUxTi9JIOCA5s8lamYSg",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a computação em névoa (Fog Computing) ligada à IoT e IA?",
+      "opcoes": [
+        "Uma extensão da computação em nuvem mais próxima dos dispositivos geradores de dados",
+        "Um tipo de vírus que oculta arquivos",
+        "Uma falha de renderização gráfica",
+        "Um sistema de resfriamento líquido"
+      ]
+    },
+    {
+      "idQuestao": "sPW0BO8fzKkvGLwpk0YB",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 19 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "EOv6L3wYuLmgkYnTvasX",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é um sistema multiagente?",
+      "opcoes": [
+        "Um sistema computacional composto por múltiplos agentes inteligentes que interagem e cooperam entre si",
+        "Um computador com vários processadores físicos",
+        "Uma rede com vários usuários conectados",
+        "Um antivírus com múltiplos módulos de escaneamento"
+      ]
+    },
+    {
+      "idQuestao": "bRBvY5pSRfAvJNYhzdFR",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é o Pentest (Teste de Intrusão)?",
+      "opcoes": [
+        "Simulação autorizada de um ataque cibernético para avaliar a segurança de um sistema",
+        "Processo de instalação de firewalls em redes corporativas",
+        "Criptografia de dados confidenciais armazenados em nuvem",
+        "Exclusão de arquivos corrompidos em servidores web",
+        "Configuração de redes virtuais privadas (VPN)"
+      ]
+    },
+    {
+      "idQuestao": "qfsMLFn6lNGCd8wtJM1K",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que são hiperparâmetros em Machine Learning?",
+      "opcoes": [
+        "Parâmetros cujos valores são definidos antes do início do processo de aprendizado",
+        "Os erros de digitação no código",
+        "A quantidade de memória RAM instalada",
+        "O modelo da placa-mãe"
       ]
     }
   ]
