@@ -280,7 +280,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    console.info("QUIZ BUILD: RESULTADOS-CORRECAO-AUTOMATICA-2026-10-05");
+    console.info("QUIZ BUILD: RESULTADOS-RESILIENTES-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -900,15 +900,35 @@ ATENÇÃO:
 
     async function tentarSincronizarResultadoLocal(resultado) {
       try {
-        await setDoc(doc(db, "avaliacoes", resultado.idFirebase), { ...resultado.dadosFirebase, dataEnvio: serverTimestamp() });
-        marcarResultadoComoSincronizado(resultado.idLocal);
-        const avisoResultado = document.getElementById("status-envio-txt");
-        if (avisoResultado) {
-          avisoResultado.textContent = "✅ Resultado enviado ao professor.";
+        // Em uma recarga, a autenticação anônima pode receber outro UID.
+        // Sempre usamos o UID da sessão atual no envio/reenvio, preservando
+        // o identificador original apenas nos dados locais.
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
         }
+        const uidAtual = auth.currentUser?.uid || uidAlunoFirebase;
+        if (!uidAtual) throw new Error("Sessão anônima ainda não disponível.");
+
+        const payload = {
+          ...resultado.dadosFirebase,
+          uid: uidAtual,
+          dataEnvio: serverTimestamp()
+        };
+
+        // idFirebase é estável: várias tentativas sobrescrevem o MESMO documento,
+        // evitando resultados duplicados no painel do professor.
+        await setDoc(doc(db, "avaliacoes", resultado.idFirebase), payload);
+        marcarResultadoComoSincronizado(resultado.idLocal);
+
+        const avisoResultado = document.getElementById("status-envio-txt");
+        if (avisoResultado) avisoResultado.textContent = "✅ Resultado enviado ao professor.";
         return true;
       } catch (erro) {
-        console.warn("Resultado protegido localmente; Firebase indisponível:", erro?.code || erro);
+        console.warn(
+          "Resultado protegido localmente; envio pendente:",
+          erro?.code || erro,
+          erro?.message || ""
+        );
         return false;
       }
     }
@@ -930,7 +950,7 @@ ATENÇÃO:
     // intervalos moderados. O aluno não precisa clicar em nada.
     setInterval(() => {
       sincronizarResultadosPendentesAutomaticamente();
-    }, 60000);
+    }, 30000);
 
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (timerInterval) clearInterval(timerInterval);
@@ -1036,11 +1056,15 @@ if (unsubscribePermissaoAluno) {
         }
         try {
           await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
-            podeFazer: false, uid: uidAlunoFirebase
+            podeFazer: false, uid: auth.currentUser?.uid || uidAlunoFirebase
           }, { merge: true });
+        } catch (erroPermissao) {
+          console.warn("Permissão final ficará para a próxima comunicação:", erroPermissao?.code || erroPermissao);
+        }
+        try {
           await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
-        } catch (erroLimpeza) {
-          console.warn("Não foi possível atualizar a presença online:", erroLimpeza?.code || erroLimpeza);
+        } catch (erroPresenca) {
+          console.warn("Presença online não pôde ser limpa agora:", erroPresenca?.code || erroPresenca);
         }
 
       } catch (err) {
