@@ -281,7 +281,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    console.info("QUIZ BUILD: GITHUB-FALLBACK-TESTE-2026-10-05");
+    console.info("QUIZ BUILD: GITHUB-PRIORIDADE-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -423,7 +423,7 @@ ATENÇÃO:
       return true;
     }
 
-    function acompanharProvaDaEscola(escolaNome) {
+    async function acompanharProvaDaEscola(escolaNome) {
       // VERSÃO ESTÁVEL CORRIGIDA:
       // Um único listener no documento da escola. Ele recebe somente mudanças
       // daquela prova: ativação, encerramento e reembaralhamento.
@@ -431,6 +431,15 @@ ATENÇÃO:
       if (unsubscribeProvaEscola) {
         unsubscribeProvaEscola();
         unsubscribeProvaEscola = null;
+      }
+
+      // ARQUITETURA OFFLINE-FIRST / STATIC-FIRST:
+      // O pacote publicado no GitHub é a fonte principal da avaliação.
+      // Assim, abrir a prova não depende da cota do Firebase.
+      // O Firebase continua disponível para recursos complementares.
+      const pacoteGitHub = await carregarProvaEstatica(escolaNome);
+      if (pacoteGitHub && await aplicarProvaRecebida(escolaNome, pacoteGitHub, "github")) {
+        return;
       }
 
       // TESTE SEGURO: ?origem=github força o pacote estático,
