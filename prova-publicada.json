@@ -12,11 +12,11 @@
     "Ensino Médio Técnico"
   ],
   "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 10,
+  "quantidadeQuestoes": 9,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791242468209,
+  "expiraEmMillis": 1791214120279,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -24,14 +24,14 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791231668210",
-  "publicadoEm": "2026-10-05T20:21:08.849Z",
+  "seedReordenacao": "1791203320279",
+  "publicadoEm": "2026-10-05T12:28:40.970Z",
   "questoesPublicas": [
     {
-      "idQuestao": "Ej7DeIDmLElr6H32ZHJC",
+      "idQuestao": "GrVLW14GVkOosT7XkXXi",
       "materia": "Redes de computadores e seguranca da informação na nuvem",
       "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 13] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "pergunta": "[Técnico 22] O que caracteriza o modelo IaaS na computação em nuvem?",
       "opcoes": [
         "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
         "B) Entrega de softwares prontos via navegador",
@@ -40,47 +40,36 @@
       ]
     },
     {
-      "idQuestao": "C6ZILABGq1p50f8Jl6Ai",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "Qual é a principal função de um firewall em segurança da informação?",
-      "opcoes": [
-        "Acelerar a velocidade de conexão com a internet",
-        "Monitorar e filtrar o tráfego de rede com base em regras de segurança",
-        "Criptografar arquivos salvos no disco rígido local",
-        "Compactar pacotes de dados para otimizar espaço",
-        "Gerenciar endereços IP dinâmicos em redes locais"
-      ]
-    },
-    {
-      "idQuestao": "Jkw7NgoseH8Lnh07SAao",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 5] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "nBP3WzrWoLdcTQ4WVfdQ",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 5] Qual a função do protocolo HTTPS?",
-      "opcoes": [
-        "A) Garantir navegação segura e criptografada entre navegador e servidor web",
-        "B) Acelerar downloads de arquivos pesados",
-        "C) Gerenciar endereços IP dinâmicos",
-        "D) Bloquear vírus em mídias removíveis"
-      ]
-    },
-    {
-      "idQuestao": "0SbNkVefrdcjIHDnWmba",
+      "idQuestao": "QE6rNdMxpWejc7Igut5I",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 21 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "pergunta": "Qual função nativa do JavaScript verifica se um valor é NaN (Not-a-Number)?",
+      "opcoes": [
+        "isNaN()",
+        "checkNaN()",
+        "Number.isNaN()",
+        "verifyNaN()",
+        "isNotNumber()"
+      ]
+    },
+    {
+      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Inteligência Artificial Transparente?",
+      "opcoes": [
+        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
+        "Softwares cujo código-fonte está totalmente oculto dos usuários",
+        "Sistemas que funcionam apenas offline sem acesso externo",
+        "Plataformas de computação em nuvem sem suporte técnico",
+        "Redes de computadores protegidas por senhas complexas"
+      ]
+    },
+    {
+      "idQuestao": "LTWVBJ1YaGNiEMCZH5qy",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 100 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
       "opcoes": [
         "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
         "Processamento autônomo baseado em regras estáticas locais",
@@ -90,66 +79,63 @@
       ]
     },
     {
-      "idQuestao": "VcukUYAw5voGZEDEYQEo",
+      "idQuestao": "M4pI6xVBIx32BQmjEZYd",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que caracteriza o aprendizado não supervisionado?",
+      "pergunta": "O que é a regressão logística?",
       "opcoes": [
-        "O modelo busca padrões em dados que não possuem rótulos pré-definidos",
-        "O professor precisa corrigir todas as respostas manualmente",
-        "O computador não utiliza dados",
-        "O sistema desliga sozinho após o uso"
+        "Um modelo estatístico usado para prever a probabilidade de um evento categórico (ex: sim/não, 0/1)",
+        "O cálculo de frete de entregas",
+        "A medição de velocidade de internet",
+        "A listagem de produtos em um e-commerce"
       ]
     },
     {
-      "idQuestao": "BFpn2W81CvsV76ruQjXT",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 33 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "0ws2dQPMuhomnLkLSCCN",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Qual tag HTML é utilizada para criar botões clicáveis?",
-      "opcoes": [
-        "<btn>",
-        "<button>",
-        "<click>",
-        "<input type=\"submit\">",
-        "<action>"
-      ]
-    },
-    {
-      "idQuestao": "AUwEohRubJTXkUeeAILj",
+      "idQuestao": "uQaUchxDs5aavHCG6sVy",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o algoritmo k-Nearest Neighbors (KNN)?",
+      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
       "opcoes": [
-        "Um algoritmo de classificação simples baseado na proximidade dos dados no espaço vetorial",
-        "Um antivírus para redes locais",
-        "Um compactador de arquivos",
-        "Um protocolo de rede de internet"
+        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
+        "Um ataque cibernético de vírus em massa",
+        "A queda de um servidor de rede",
+        "A organização de arquivos em pastas"
       ]
     },
     {
-      "idQuestao": "1ncgwvqAytpfoNOBCuVr",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é um ataque de Brute Force distribuído?",
+      "idQuestao": "1um9VgnUoXe2C7W7pvnm",
+      "materia": "Programacao Front-End",
+      "categoria": "Programacao Front-End",
+      "pergunta": "[Técnico 6 - 1790243768880]Qual a principal responsabilidade do CSS em páginas web?",
       "opcoes": [
-        "Tentativa de adivinhação de senhas utilizando múltiplos computadores coordenados na rede",
-        "Sobrecarga de servidores web através de requisições HTTP falsas",
-        "Roubo de dados confidenciais armazenados em nuvem pública",
-        "Interceptação de comunicações entre cliente e servidor",
-        "Instalação oculta de vírus em dispositivos móveis"
+        "Estruturar os textos semânticos",
+        "Controlar a aparência visual, layout, cores e responsividade",
+        "Processar regras de negócio no servidor",
+        "Armazenar dados em banco NoSQL"
+      ]
+    },
+    {
+      "idQuestao": "fuDtdmhurLLgExy4vNZI",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 33] O que significa o conceito de Deep Learning?",
+      "opcoes": [
+        "A) Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas",
+        "B) Processamento de planilhas eletrônicas gigantescas",
+        "C) Criptografia de ponta a ponta em redes locais",
+        "D) Compactação avançada de arquivos de vídeo"
+      ]
+    },
+    {
+      "idQuestao": "GAhiIK6EJdgROMhUj6W7",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 11] Qual a função de uma função de ativação em redes neurais?",
+      "opcoes": [
+        "A) Introduzir não-linearidade no modelo permitindo aprender padrões complexos",
+        "B) Ligar ou desligar o computador remotamente",
+        "C) Aumentar a velocidade do processador central",
+        "D) Compactar os pesos sinápticos"
       ]
     }
   ]
