@@ -1,20 +1,156 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
+  "ativa": true,
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 10,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791231154064,
-  "turmasAtivas": [],
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791242468209,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791231154064",
-  "publicadoEm": "2026-10-05T20:12:34.064Z",
-  "encerradoEm": "2026-10-05T20:12:34.064Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791231668210",
+  "publicadoEm": "2026-10-05T20:21:08.849Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "Ej7DeIDmLElr6H32ZHJC",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 13] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "C6ZILABGq1p50f8Jl6Ai",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "Qual é a principal função de um firewall em segurança da informação?",
+      "opcoes": [
+        "Acelerar a velocidade de conexão com a internet",
+        "Monitorar e filtrar o tráfego de rede com base em regras de segurança",
+        "Criptografar arquivos salvos no disco rígido local",
+        "Compactar pacotes de dados para otimizar espaço",
+        "Gerenciar endereços IP dinâmicos em redes locais"
+      ]
+    },
+    {
+      "idQuestao": "Jkw7NgoseH8Lnh07SAao",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 5] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "nBP3WzrWoLdcTQ4WVfdQ",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 5] Qual a função do protocolo HTTPS?",
+      "opcoes": [
+        "A) Garantir navegação segura e criptografada entre navegador e servidor web",
+        "B) Acelerar downloads de arquivos pesados",
+        "C) Gerenciar endereços IP dinâmicos",
+        "D) Bloquear vírus em mídias removíveis"
+      ]
+    },
+    {
+      "idQuestao": "0SbNkVefrdcjIHDnWmba",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 21 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "VcukUYAw5voGZEDEYQEo",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que caracteriza o aprendizado não supervisionado?",
+      "opcoes": [
+        "O modelo busca padrões em dados que não possuem rótulos pré-definidos",
+        "O professor precisa corrigir todas as respostas manualmente",
+        "O computador não utiliza dados",
+        "O sistema desliga sozinho após o uso"
+      ]
+    },
+    {
+      "idQuestao": "BFpn2W81CvsV76ruQjXT",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 33 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "0ws2dQPMuhomnLkLSCCN",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML é utilizada para criar botões clicáveis?",
+      "opcoes": [
+        "<btn>",
+        "<button>",
+        "<click>",
+        "<input type=\"submit\">",
+        "<action>"
+      ]
+    },
+    {
+      "idQuestao": "AUwEohRubJTXkUeeAILj",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o algoritmo k-Nearest Neighbors (KNN)?",
+      "opcoes": [
+        "Um algoritmo de classificação simples baseado na proximidade dos dados no espaço vetorial",
+        "Um antivírus para redes locais",
+        "Um compactador de arquivos",
+        "Um protocolo de rede de internet"
+      ]
+    },
+    {
+      "idQuestao": "1ncgwvqAytpfoNOBCuVr",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é um ataque de Brute Force distribuído?",
+      "opcoes": [
+        "Tentativa de adivinhação de senhas utilizando múltiplos computadores coordenados na rede",
+        "Sobrecarga de servidores web através de requisições HTTP falsas",
+        "Roubo de dados confidenciais armazenados em nuvem pública",
+        "Interceptação de comunicações entre cliente e servidor",
+        "Instalação oculta de vírus em dispositivos móveis"
+      ]
+    }
+  ]
 }
