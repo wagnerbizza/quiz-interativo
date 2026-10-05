@@ -5433,3 +5433,14 @@ console.info("QUIZ BUILD: RESULTADOS-CORRECAO-AUTOMATICA-2026-10-05");
 console.info("QUIZ BUILD: GITHUB-PRIORIDADE-FINAL-2026-10-05");
 
 console.info("QUIZ BUILD: ATIVACAO-GITHUB-RESILIENTE-2026-10-05");
+
+/*
+  PUBLICAÇÃO GITHUB EM UM CLIQUE
+  ------------------------------
+  Ao Ativar/Reembaralhar/Encerrar, o navegador continua baixando
+  prova-publicada.json com segurança (sem token GitHub no site).
+  No Windows, o professor pode executar PUBLICAR-AVALIACAO.bat:
+  ele localiza o pacote mais recente em Downloads, pede confirmação,
+  substitui somente prova-publicada.json e executa git add/commit/push.
+*/
+console.info("QUIZ BUILD: PUBLICACAO-UM-CLIQUE-2026-10-05");

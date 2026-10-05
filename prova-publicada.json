@@ -12,11 +12,11 @@
     "Ensino Médio Técnico"
   ],
   "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 10,
+  "quantidadeQuestoes": 9,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791239649252,
+  "expiraEmMillis": 1791214120279,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -24,51 +24,52 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791228849252",
-  "publicadoEm": "2026-10-05T19:34:09.526Z",
+  "seedReordenacao": "1791203320279",
+  "publicadoEm": "2026-10-05T12:28:40.970Z",
   "questoesPublicas": [
     {
-      "idQuestao": "wJ7bLn6aG1MmUi2nhBAW",
+      "idQuestao": "GrVLW14GVkOosT7XkXXi",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 22] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "QE6rNdMxpWejc7Igut5I",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual função nativa do JavaScript verifica se um valor é NaN (Not-a-Number)?",
+      "opcoes": [
+        "isNaN()",
+        "checkNaN()",
+        "Number.isNaN()",
+        "verifyNaN()",
+        "isNotNumber()"
+      ]
+    },
+    {
+      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o reconhecimento de voz?",
+      "pergunta": "O que é a Inteligência Artificial Transparente?",
       "opcoes": [
-        "A capacidade da máquina de converter a fala humana em texto compreensível",
-        "A amplificação do som de caixas de som",
-        "A gravação de áudio em fita cassete",
-        "A edição de vídeos musicais"
+        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
+        "Softwares cujo código-fonte está totalmente oculto dos usuários",
+        "Sistemas que funcionam apenas offline sem acesso externo",
+        "Plataformas de computação em nuvem sem suporte técnico",
+        "Redes de computadores protegidas por senhas complexas"
       ]
     },
     {
-      "idQuestao": "606BfJiZxzVwN3S28GjD",
+      "idQuestao": "LTWVBJ1YaGNiEMCZH5qy",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "O que é o arquivo `package.json` em um projeto Node.js / Front-End moderno?",
-      "opcoes": [
-        "Um arquivo de manifesto que gerencia dependências, scripts e metadados do projeto",
-        "Um arquivo de estilos visuais",
-        "Um banco de dados local",
-        "Um documento de texto sem utilidade"
-      ]
-    },
-    {
-      "idQuestao": "dH3MwOeQFUR7E1Lwo71n",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é a virtualização em computação em nuvem?",
-      "opcoes": [
-        "Tecnologia que cria instâncias virtuais de hardware, sistemas operacionais e recursos de rede",
-        "Processo de montagem física de servidores em racks de data center",
-        "Instalação de cabos de fibra óptica em redes locais corporativas",
-        "Criptografia avançada de dados em trânsito pela internet",
-        "Exclusão permanente de arquivos antigos em discos rígidos"
-      ]
-    },
-    {
-      "idQuestao": "PK8d8eZCM1zUehzP7tcy",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 67 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 100 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
       "opcoes": [
         "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
         "Processamento autônomo baseado em regras estáticas locais",
@@ -78,79 +79,63 @@
       ]
     },
     {
-      "idQuestao": "Bl27plunMocvK9uyZy7O",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é o Spoofing de IP?",
-      "opcoes": [
-        "Falsificação do endereço IP de origem em pacotes de rede para ocultar a identidade do invasor",
-        "Criptografia avançada de dados armazenados na nuvem",
-        "Roubo de senhas de acesso a sistemas corporativos",
-        "Desligamento remoto de servidores de banco de dados",
-        "Interceptação de chamadas de voz em redes VoIP"
-      ]
-    },
-    {
-      "idQuestao": "pxi8qmfhDfeuiSkFLIuG",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "[Técnico 3 - 1790258356226]O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "Entrega de softwares prontos via navegador",
-        "Ambiente exclusivo para programar sem gerenciar servidores",
-        "Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "gAAP6XWWS1btQ5lud9OU",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é uma Rede Definida por Software (SDN)?",
-      "opcoes": [
-        "Abordagem de rede onde o controle é desacoplado do encaminhamento de dados e gerenciado programaticamente",
-        "Uso exclusivo de cabos de fibra óptica em redes locais",
-        "Criptografia de pacotes em roteadores tradicionais de hardware",
-        "Instalação de firewalls físicos em todas as pontas da rede",
-        "Substituição de endereços IP por endereços MAC dinâmicos"
-      ]
-    },
-    {
-      "idQuestao": "9Pg6KHwT3wgA0QTs3EWr",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "[Técnico 12 - 1790258358460]O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "Entrega de softwares prontos via navegador",
-        "Ambiente exclusivo para programar sem gerenciar servidores",
-        "Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "T0NvlspPqUxqytRL4dHL",
+      "idQuestao": "M4pI6xVBIx32BQmjEZYd",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "Questão oficial de nível avançado nº 34 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "pergunta": "O que é a regressão logística?",
       "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
+        "Um modelo estatístico usado para prever a probabilidade de um evento categórico (ex: sim/não, 0/1)",
+        "O cálculo de frete de entregas",
+        "A medição de velocidade de internet",
+        "A listagem de produtos em um e-commerce"
       ]
     },
     {
-      "idQuestao": "4Gy2nLI5cEgQdJCDDIhe",
+      "idQuestao": "uQaUchxDs5aavHCG6sVy",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é \"Underfitting\" em modelos preditivos?",
+      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
       "opcoes": [
-        "Quando o modelo é excessivamente simples e falha ao capturar os padrões dos dados",
-        "Quando o modelo apresenta alta precisão em qualquer cenário",
-        "Quando há duplicação de registros na base de treinamento",
-        "Quando o algoritmo utiliza muitas camadas ocultas",
-        "Quando o sistema de arquivos corrompe os dados de entrada"
+        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
+        "Um ataque cibernético de vírus em massa",
+        "A queda de um servidor de rede",
+        "A organização de arquivos em pastas"
+      ]
+    },
+    {
+      "idQuestao": "1um9VgnUoXe2C7W7pvnm",
+      "materia": "Programacao Front-End",
+      "categoria": "Programacao Front-End",
+      "pergunta": "[Técnico 6 - 1790243768880]Qual a principal responsabilidade do CSS em páginas web?",
+      "opcoes": [
+        "Estruturar os textos semânticos",
+        "Controlar a aparência visual, layout, cores e responsividade",
+        "Processar regras de negócio no servidor",
+        "Armazenar dados em banco NoSQL"
+      ]
+    },
+    {
+      "idQuestao": "fuDtdmhurLLgExy4vNZI",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 33] O que significa o conceito de Deep Learning?",
+      "opcoes": [
+        "A) Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas",
+        "B) Processamento de planilhas eletrônicas gigantescas",
+        "C) Criptografia de ponta a ponta em redes locais",
+        "D) Compactação avançada de arquivos de vídeo"
+      ]
+    },
+    {
+      "idQuestao": "GAhiIK6EJdgROMhUj6W7",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 11] Qual a função de uma função de ativação em redes neurais?",
+      "opcoes": [
+        "A) Introduzir não-linearidade no modelo permitindo aprender padrões complexos",
+        "B) Ligar ou desligar o computador remotamente",
+        "C) Aumentar a velocidade do processador central",
+        "D) Compactar os pesos sinápticos"
       ]
     }
   ]
