@@ -305,6 +305,7 @@ ATENÇÃO:
     let alunoAtual = {}, qtdQ = 10;
     let timerInterval = null, segundosPassados = 0;
     let syncOnlineInterval = null;
+    let verificacaoPacotePublicoInterval = null; // Atualiza ativação/encerramento pelo GitHub sem leituras Firestore.
 
     const selectEscola = document.getElementById("escola-aluno");
     const selectTurma = document.getElementById("turma-aluno");
@@ -406,6 +407,25 @@ ATENÇÃO:
         // GitHub não volta a aparecer pela cópia antiga ainda ativa no Firebase.
         return p;
       } catch(_){ return null; }
+    }
+
+    function mostrarProvaInativaAluno(escolaNome) {
+      dadosProvaAtiva = {};
+      detalhesProvaAtiva.innerHTML =
+        `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
+      selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+      btnIniciarProva.disabled = true;
+    }
+
+    async function conferirPacotePublicoNaEntrada() {
+      const escolaNome = selectEscola?.value || "";
+      if (!escolaNome) return;
+      // Se já está dentro da prova, o watcher específico da sessão assume.
+      if (!document.getElementById("tela-quiz")?.classList.contains("hidden")) return;
+      const pacote = await carregarProvaEstatica(escolaNome);
+      if (!pacote) return; // Falha temporária de rede não muda a tela.
+      if (await aplicarProvaRecebida(escolaNome, pacote, "github")) return;
+      mostrarProvaInativaAluno(escolaNome);
     }
 
     async function aplicarProvaRecebida(escolaNome,p,origem="firebase"){
@@ -527,6 +547,8 @@ ATENÇÃO:
       if (!usuario) return;
       uidAlunoFirebase = usuario.uid;
       await carregarEscolasAluno();
+      if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
+      verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 10000);
     });
     // A sessão anônima fica apenas na memória desta página/instância.
     // Ela não substitui o login persistente do professor.
@@ -735,6 +757,24 @@ ATENÇÃO:
         (erro) => console.warn("Controle individual temporariamente indisponível:", erro?.code || erro)
       );
 
+      // Encerramento global pelo professor: confere o pacote GitHub a cada 10 s.
+      // Não consome leituras do Firestore e também funciona quando a prova foi
+      // entregue originalmente pelo pacote publicado.
+      if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
+      verificacaoPacotePublicoInterval = setInterval(async () => {
+        try {
+          const pacote = await carregarProvaEstatica(alunoAtual.escola);
+          if (!pacote) return;
+          const expirou = Number(pacote.expiraEmMillis || 0) > 0 &&
+            Date.now() >= Number(pacote.expiraEmMillis);
+          if (pacote.ativa === false || expirou) {
+            await encerrarSessaoAluno(
+              pacote.motivoEncerramento ||
+              (expirou ? "Prazo geral da avaliação encerrado." : "Avaliação encerrada pelo professor.")
+            );
+          }
+        } catch (_) {}
+      }, 10000);
 
       exibirQuestao();
     }
@@ -967,6 +1007,10 @@ ATENÇÃO:
       finalizacaoAlunoEmAndamento = true;
       if (timerInterval) clearInterval(timerInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
+      if (verificacaoPacotePublicoInterval) {
+        clearInterval(verificacaoPacotePublicoInterval);
+        verificacaoPacotePublicoInterval = null;
+      }
 if (unsubscribePermissaoAluno) {
         unsubscribePermissaoAluno();
         unsubscribePermissaoAluno = null;
