@@ -400,8 +400,10 @@ ATENÇÃO:
         const r=await fetch(`prova-publicada.json?v=${Date.now()}`,{cache:"no-store"});
         if(!r.ok) return null;
         const p=await r.json();
-        if(!p||p.ativa===false||normalizarId(p.escolaAtiva||"")!==normalizarId(escolaNome||"")) return null;
-        if(Number(p.expiraEmMillis||0)>0&&Date.now()>=Number(p.expiraEmMillis)) return null;
+        if(!p||normalizarId(p.escolaAtiva||"")!==normalizarId(escolaNome||"")) return null;
+        // IMPORTANTE: se o pacote da escola foi encontrado, ele é a fonte oficial
+        // mesmo quando estiver INATIVO ou EXPIRADO. Assim uma prova encerrada no
+        // GitHub não volta a aparecer pela cópia antiga ainda ativa no Firebase.
         return p;
       } catch(_){ return null; }
     }
@@ -441,11 +443,21 @@ ATENÇÃO:
       (async () => {
         // GitHub/pacote publicado sempre tem prioridade para a entrega da prova.
         const pacote = await carregarProvaEstatica(escolaNome);
-        if (pacote && await aplicarProvaRecebida(escolaNome, pacote, "github")) {
+        if (pacote) {
+          if (await aplicarProvaRecebida(escolaNome, pacote, "github")) return;
+
+          // O pacote existe para esta escola, porém está inativo ou expirado.
+          // GitHub continua sendo a fonte oficial: NÃO ressuscitar pelo Firebase.
+          dadosProvaAtiva = {};
+          detalhesProvaAtiva.innerHTML =
+            `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
+          selectTurma.innerHTML =
+            `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+          btnIniciarProva.disabled = true;
           return;
         }
 
-        // Somente se o pacote publicado não estiver válido usamos Firebase como fallback.
+        // Somente se o pacote da escola NÃO puder ser obtido usamos Firebase como fallback.
         const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
         unsubscribeProvaEscola = onSnapshot(
           provaRef,
@@ -453,7 +465,23 @@ ATENÇÃO:
             // Antes de aceitar Firebase, conferimos novamente o pacote publicado.
             // Isso permite que uma publicação recém-chegada assuma a prioridade.
             const pacoteAtual = await carregarProvaEstatica(escolaNome);
-            if (pacoteAtual && await aplicarProvaRecebida(escolaNome, pacoteAtual, "github")) {
+            if (pacoteAtual) {
+              if (await aplicarProvaRecebida(escolaNome, pacoteAtual, "github")) {
+                if (unsubscribeProvaEscola) {
+                  unsubscribeProvaEscola();
+                  unsubscribeProvaEscola = null;
+                }
+                return;
+              }
+
+              // Pacote oficial encontrado, mas inativo/expirado: não aceitar
+              // um estado antigo do Firebase como se a avaliação ainda estivesse ativa.
+              dadosProvaAtiva = {};
+              detalhesProvaAtiva.innerHTML =
+                `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
+              selectTurma.innerHTML =
+                `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+              btnIniciarProva.disabled = true;
               if (unsubscribeProvaEscola) {
                 unsubscribeProvaEscola();
                 unsubscribeProvaEscola = null;
