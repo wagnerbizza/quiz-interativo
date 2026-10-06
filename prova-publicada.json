@@ -1,69 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791323345952",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791334145952,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791323428912,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791323345952",
-  "publicadoEm": "2026-10-06T21:49:06.562Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "3GZD4vQlnzRtwWeRARea",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é a redundância em arquiteturas de nuvem?",
-      "opcoes": [
-        "Duplicação de componentes críticos de infraestrutura para garantir alta disponibilidade e tolerância a falhas",
-        "Redução proposital da velocidade de rede para economizar energia",
-        "Eliminação de backups para liberar espaço de armazenamento",
-        "Utilização de um único servidor físico para todas as aplicações",
-        "Criptografia de dados utilizando chaves estáticas"
-      ]
-    },
-    {
-      "idQuestao": "unQCx6Q9jja6ZczSEi6Q",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é um Algoritmo Heurístico?",
-      "opcoes": [
-        "Abordagem prática para resolução de problemas que encontra soluções satisfatórias rapidamente",
-        "Um método matemático que garante a solução exata e ótima sempre",
-        "Um protocolo de rede para criptografia de dados confidenciais",
-        "Uma ferramenta de compactação de arquivos de imagem",
-        "Um sistema de backup automático para servidores em nuvem"
-      ]
-    },
-    {
-      "idQuestao": "C3hmlSxv0l8RZvZF9lKe",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Qual operador JavaScript representa o operador 'E' lógico (AND)?",
-      "opcoes": [
-        "&&",
-        "!"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791323428912",
+  "publicadoEm": "2026-10-06T21:50:28.912Z",
+  "encerradoEm": "2026-10-06T21:50:28.912Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
