@@ -954,9 +954,11 @@ async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
     materiasAtivas:dadosPublicacao.materiasAtivas||[],
     disciplinasAtivas:dadosPublicacao.disciplinasAtivas||[],
     periodoAtivo:dadosPublicacao.periodoAtivo||"", quantidadeQuestoes:selecionadas.length,
-    tempoMinimoMinutos:dadosPublicacao.tempoMinimoMinutos||0,
-    tempoLimiteMinutos:dadosPublicacao.tempoLimiteMinutos||0,
-    tempoAtivacaoMinutos:dadosPublicacao.tempoAtivacaoMinutos||180,
+    // TEMPOS: números explícitos + compatibilidade com nomes antigos.
+    tempoMinimoMinutos:Number(dadosPublicacao.tempoMinimoMinutos ?? dadosPublicacao.tempoMinimo ?? 0) || 0,
+    tempoLimiteMinutos:Number(dadosPublicacao.tempoLimiteMinutos ?? dadosPublicacao.tempoMaximoMinutos ?? dadosPublicacao.tempoMaximo ?? 0) || 0,
+    tempoMaximoMinutos:Number(dadosPublicacao.tempoLimiteMinutos ?? dadosPublicacao.tempoMaximoMinutos ?? dadosPublicacao.tempoMaximo ?? 0) || 0,
+    tempoAtivacaoMinutos:Number(dadosPublicacao.tempoAtivacaoMinutos ?? 180) || 180,
     expiraEmMillis:dadosPublicacao.expiraEmMillis||0, turmasAtivas:dadosPublicacao.turmasAtivas||[],
     token:dadosPublicacao.token||"", seedReordenacao:dadosPublicacao.seedReordenacao||Date.now().toString(),
     publicadoEm:new Date().toISOString(), questoesPublicas:selecionadas
@@ -3691,40 +3693,11 @@ if (window.location.pathname.includes("painel.html")) {
     }
   }
 
-  // FASE 10C.11 — cache local defensivo.
-  // Além da chave atual, procura caches antigos de relatórios existentes NESTE
-  // mesmo navegador/origem e os mescla. Isso evita que uma atualização de nome
-  // de chave faça o histórico parecer vazio. Não remove nenhuma chave antiga.
   function carregarCacheLocalRelatorios() {
     try {
-      const candidatos = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const nome = localStorage.key(i) || "";
-        if (!/quiz.*relat|relat.*cache/i.test(nome) || /_data|densidade|colwidth/i.test(nome)) continue;
-        try {
-          const valor = JSON.parse(localStorage.getItem(nome) || "null");
-          const lista = Array.isArray(valor) ? valor : (Array.isArray(valor?.resultados) ? valor.resultados : null);
-          if (lista) candidatos.push(...lista);
-        } catch (_) {}
-      }
-
-      // Garante também a leitura explícita da chave oficial atual.
-      try {
-        const oficial = JSON.parse(localStorage.getItem(CHAVE_CACHE_RELATORIOS) || "[]");
-        if (Array.isArray(oficial)) candidatos.push(...oficial);
-      } catch (_) {}
-
-      const mapa = new Map();
-      const chave = (item, i) => item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "") ||
-        item?.id || `${item?.nome || item?.aluno || item?.nomeAluno || "resultado"}|${item?.timestamp || item?.dataEnvio || item?.dataHora || item?.data || i}`;
-      candidatos.forEach((item, i) => mapa.set(chave(item, i), item));
-      const mesclados = Array.from(mapa.values());
-
-      // Só grava quando encontrou algo; jamais transforma um cache válido em vazio.
-      if (mesclados.length) {
-        localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(mesclados));
-      }
-      return mesclados;
+      const bruto = localStorage.getItem(CHAVE_CACHE_RELATORIOS);
+      const lista = bruto ? JSON.parse(bruto) : [];
+      return Array.isArray(lista) ? lista : [];
     } catch (erro) {
       console.error("Cache local de relatórios inválido:", erro);
       return [];
@@ -4173,8 +4146,8 @@ if (window.location.pathname.includes("painel.html")) {
           <td colspan="12" style="text-align:center;padding:24px;color:#fbbf24;">
             💾 Ainda não há relatórios salvos neste navegador.<br>
             <small style="color:#94a3b8;">
-              Nenhum relatório foi apagado. Este navegador/perfil ainda não possui a cópia local.<br>
-              Use “Restaurar backup” para importar uma cópia existente. Sincronize com o Firebase somente se realmente necessário.
+              Seus dados do Firebase não foram apagados. Quando a cota diária voltar,
+              clique em “Sincronizar relatórios” uma única vez para criar a cópia local.
             </small>
           </td>
         </tr>`;
