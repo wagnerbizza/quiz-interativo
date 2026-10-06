@@ -304,6 +304,7 @@ ATENÇÃO:
     let listaQuestoes = [], indiceAtual = 0, respostasUsuario = {};
     let alunoAtual = {}, qtdQ = 10;
     let timerInterval = null, segundosPassados = 0;
+    let verificacaoPublicacaoInterval = null; // Confere encerramento global pelo pacote GitHub, sem leituras extras no Firebase.
     let syncOnlineInterval = null;
 
     const selectEscola = document.getElementById("escola-aluno");
@@ -726,6 +727,37 @@ ATENÇÃO:
         (erro) => console.warn("Controle individual temporariamente indisponível:", erro?.code || erro)
       );
 
+      // Encerramento GLOBAL: GitHub é a referência pública da avaliação.
+      // A cada 15 s conferimos somente prova-publicada.json (sem gastar leituras Firestore).
+      // Se o professor encerrar a ativação, ou se o prazo geral expirar, o aluno
+      // que ainda estiver fazendo a prova é finalizado pelo fluxo normal e o
+      // resultado é preservado/enviado.
+      if (verificacaoPublicacaoInterval) clearInterval(verificacaoPublicacaoInterval);
+      const conferirPublicacaoAtiva = async () => {
+        if (finalizacaoEmAndamento || finalizacaoAlunoEmAndamento) return;
+        try {
+          const r = await fetch(`prova-publicada.json?v=${Date.now()}`, { cache:"no-store" });
+          if (!r.ok) return; // indisponibilidade temporária não encerra a prova.
+          const pacote = await r.json();
+          const mesmaEscola = normalizarTexto(pacote?.escolaAtiva || "") === normalizarTexto(alunoAtual.escola || "");
+          const mesmoId = !dadosProvaAtiva?.idAvaliacao || !pacote?.idAvaliacao ||
+            String(pacote.idAvaliacao) === String(dadosProvaAtiva.idAvaliacao);
+          if (!mesmaEscola || !mesmoId) return;
+
+          const expirou = Number(pacote?.expiraEmMillis || 0) > 0 &&
+            Date.now() >= Number(pacote.expiraEmMillis);
+          if (pacote?.ativa === false || expirou) {
+            const motivo = String(
+              pacote?.motivoEncerramento ||
+              (expirou ? "Prazo geral da avaliação encerrado automaticamente." : "Avaliação encerrada pelo professor.")
+            );
+            await encerrarSessaoAluno(motivo);
+          }
+        } catch (_) {
+          // Falha de rede não encerra a avaliação; tenta novamente no próximo ciclo.
+        }
+      };
+      verificacaoPublicacaoInterval = setInterval(conferirPublicacaoAtiva, 15000);
 
       exibirQuestao();
     }
@@ -807,7 +839,7 @@ ATENÇÃO:
           clearInterval(timerInterval);
           timerInterval = null;
           alert("⌛ O tempo máximo da avaliação terminou. A prova será finalizada automaticamente.");
-          finalizarProva();
+          finalizarProva("Tempo máximo da avaliação esgotado.", false);
         }
       }, 1000);
     }
@@ -958,6 +990,10 @@ ATENÇÃO:
       finalizacaoAlunoEmAndamento = true;
       if (timerInterval) clearInterval(timerInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
+      if (verificacaoPublicacaoInterval) {
+        clearInterval(verificacaoPublicacaoInterval);
+        verificacaoPublicacaoInterval = null;
+      }
 if (unsubscribePermissaoAluno) {
         unsubscribePermissaoAluno();
         unsubscribePermissaoAluno = null;
@@ -1011,6 +1047,7 @@ if (unsubscribePermissaoAluno) {
           // serverTimestamp não pode ser serializado no localStorage; o painel também usa timestamp.
           timestamp: agora,
           finalizadoPeloProfessor: encerradaPeloProfessor,
+          finalizadoPorTempo: motivoEncerramento === "Tempo máximo da avaliação esgotado.",
           motivoFinalizacao: motivoEncerramento || ""
         };
 
@@ -1027,7 +1064,10 @@ if (unsubscribePermissaoAluno) {
         await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
         if (!encerradaPeloProfessor) {
-          document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
+          document.getElementById("status-envio-txt").textContent =
+            motivoEncerramento === "Tempo máximo da avaliação esgotado."
+              ? "⌛ Tempo esgotado. Avaliação finalizada automaticamente e resultado salvo com sucesso. ✅"
+              : "Avaliação enviada e salva com sucesso! ✅";
         } else {
           document.getElementById("status-envio-txt").innerHTML =
             `🏁 <strong>Avaliação encerrada pelo professor.</strong><br>Motivo: ${motivoEncerramento}<br>✅ Resultado salvo com sucesso.`;
