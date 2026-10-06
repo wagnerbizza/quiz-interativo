@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791317942265",
+  "idAvaliacao": "av_1791321050736",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -15,9 +15,9 @@
   "periodoAtivo": "Manhã",
   "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
+  "tempoLimiteMinutos": 1,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791328742265,
+  "expiraEmMillis": 1791331850736,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -25,45 +25,45 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791317942265",
-  "publicadoEm": "2026-10-06T20:19:02.663Z",
+  "seedReordenacao": "1791321050736",
+  "publicadoEm": "2026-10-06T21:10:51.435Z",
   "questoesPublicas": [
     {
-      "idQuestao": "EepnwRZ2jbKj1X4hzoup",
+      "idQuestao": "gDEd5oE8oG3bHBlVvZOS",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Análise de Sentimentos?",
+      "pergunta": "O que é a interpretabilidade de modelos de IA?",
       "opcoes": [
-        "Técnica de PLN para identificar e extrair estados subjetivos e atitudes em textos",
-        "Medição da velocidade de processamento de um processador",
-        "Avaliação do consumo de energia elétrica de um data center",
-        "Criptografia de mensagens confidenciais trocadas na rede",
-        "Monitoramento de temperatura de servidores em nuvem"
+        "O grau em que um ser humano pode entender a causa de uma decisão tomada pelo modelo",
+        "A tradução de idiomas estrangeiros",
+        "A velocidade de execução de um programa",
+        "O design visual de uma interface"
       ]
     },
     {
-      "idQuestao": "EmgsaQNqmFWPiFf254aU",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que significa a sigla GAN em IA gerativa?",
-      "opcoes": [
-        "Generative Adversarial Networks (Redes Generativas Adversariais)",
-        "Global Access Network",
-        "General Artificial Node",
-        "Graphic Analytic Numeric"
-      ]
-    },
-    {
-      "idQuestao": "jDKa3EVhrs87C3iwz3du",
+      "idQuestao": "oMaNnBb8urYZvmXg0kph",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 56 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 78 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
       "opcoes": [
         "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
         "Processamento autônomo baseado em regras estáticas locais",
         "Conversão estruturada de metadados em arquivos compactados",
         "Execução direta de rotinas em camada de hardware isolada",
         "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "0oquKvDWkJ50Wl1ieCbE",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Extração de Entidades Nomeadas (NER)?",
+      "opcoes": [
+        "Tarefa de PLN que localiza e classifica entidades em texto em categorias predefinidas (pessoas, locais, etc.)",
+        "Correção ortográfica de palavras escritas incorretamente",
+        "Tradução automática de textos entre diferentes idiomas",
+        "Compactação de arquivos de áudio em formato digital",
+        "Indexação de páginas web para mecanismos de busca"
       ]
     }
   ]
