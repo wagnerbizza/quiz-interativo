@@ -3443,34 +3443,52 @@ if (window.location.pathname.includes("painel.html")) {
 
   window.encerrarProvaAtivaAgora = async function(escolaNome) {
     if (!escolaNome) { alert("⚠ Escola não informada."); return; }
-    if (confirm(`⚠️ Deseja encerrar a prova ativa de "${escolaNome}"?`)) {
-      const motivoEncerramento = (prompt(
-        "Informe o motivo do encerramento da avaliação:",
-        "Avaliação encerrada pelo professor."
-      ) || "Avaliação encerrada pelo professor.").trim();
+    if (!confirm(`⚠️ Deseja encerrar a prova ativa de "${escolaNome}"?`)) return;
 
-      let firebaseEncerrado = false;
-      try {
-        await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
-          ativa: false,
-          encerradoEm: serverTimestamp(),
-          motivoEncerramento
-        }, { merge: true });
-        firebaseEncerrado = true;
-      } catch(err) {
-        console.warn("Firebase indisponível no encerramento:", err?.code || err);
-      }
-
-      // O encerramento GitHub não depende da cota do Firebase.
-      // Nada é apagado: é gerado um novo prova-publicada.json marcado como inativo.
-      const modoPublicacaoEncerramento = await gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento);
-      mostrarNotificacao(`🛑 Encerramento de "${escolaNome}" preparado.`);
-      alert(
-        `🛑 Encerramento preparado.\n\n` +
-        `${firebaseEncerrado ? "Firebase: encerrado.\n" : "Firebase: indisponível/sem cota.\n"}` +
-        `${modoPublicacaoEncerramento==="vinculado" ? "Arquivo do projeto atualizado como INATIVO automaticamente." : "Arquivo INATIVO baixado como alternativa."}`
-      );
+    // IMPORTANTE: a permissão do arquivo precisa ser confirmada ainda no clique do usuário.
+    // Fazemos isso ANTES de prompt/Firebase para impedir que o navegador bloqueie a gravação
+    // e deixe uma avaliação antiga publicada no GitHub.
+    const vinculoOk = await garantirVinculoPublicacaoNoClique();
+    if (!vinculoOk) {
+      alert('⚠️ Encerramento cancelado. Vincule o arquivo "prova-publicada.json" do projeto para garantir que a prova seja retirada do GitHub.');
+      return;
     }
+
+    const motivoEncerramento = (prompt(
+      "Informe o motivo do encerramento da avaliação:",
+      "Avaliação encerrada pelo professor."
+    ) || "Avaliação encerrada pelo professor.").trim();
+
+    // PRIMEIRO encerra o pacote público. Assim GitHub é a referência de entrada/saída
+    // e a prova não permanece disponível caso o Firebase esteja lento ou sem cota.
+    let modoPublicacaoEncerramento = "";
+    try {
+      modoPublicacaoEncerramento = await gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento);
+    } catch (err) {
+      console.error("Falha ao tornar prova-publicada.json inativo:", err);
+      alert("⚠️ Não foi possível atualizar prova-publicada.json como INATIVO. A prova NÃO será encerrada no Firebase para evitar estados diferentes. Tente Encerrar novamente.");
+      return;
+    }
+
+    let firebaseEncerrado = false;
+    try {
+      await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
+        ativa: false,
+        encerradoEm: serverTimestamp(),
+        motivoEncerramento
+      }, { merge: true });
+      firebaseEncerrado = true;
+    } catch(err) {
+      console.warn("Firebase indisponível no encerramento:", err?.code || err);
+    }
+
+    mostrarNotificacao(`🛑 Encerramento de "${escolaNome}" preparado.`);
+    alert(
+      `🛑 Encerramento preparado.\n\n` +
+      `GitHub: arquivo do projeto marcado como INATIVO.\n` +
+      `${firebaseEncerrado ? "Firebase: encerrado.\n" : "Firebase: indisponível/sem cota.\n"}` +
+      `A sincronização automática do VS Code publicará a alteração.`
+    );
   };
 
   function popularSelectMateriasQuestao() {
