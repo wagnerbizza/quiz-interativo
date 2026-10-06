@@ -1,70 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791321050736",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791331850736,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791321888508,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791321050736",
-  "publicadoEm": "2026-10-06T21:10:51.435Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "gDEd5oE8oG3bHBlVvZOS",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a interpretabilidade de modelos de IA?",
-      "opcoes": [
-        "O grau em que um ser humano pode entender a causa de uma decisão tomada pelo modelo",
-        "A tradução de idiomas estrangeiros",
-        "A velocidade de execução de um programa",
-        "O design visual de uma interface"
-      ]
-    },
-    {
-      "idQuestao": "oMaNnBb8urYZvmXg0kph",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 78 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "0oquKvDWkJ50Wl1ieCbE",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Extração de Entidades Nomeadas (NER)?",
-      "opcoes": [
-        "Tarefa de PLN que localiza e classifica entidades em texto em categorias predefinidas (pessoas, locais, etc.)",
-        "Correção ortográfica de palavras escritas incorretamente",
-        "Tradução automática de textos entre diferentes idiomas",
-        "Compactação de arquivos de áudio em formato digital",
-        "Indexação de páginas web para mecanismos de busca"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791321888508",
+  "publicadoEm": "2026-10-06T21:24:48.508Z",
+  "encerradoEm": "2026-10-06T21:24:48.508Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
