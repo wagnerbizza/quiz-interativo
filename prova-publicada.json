@@ -1,6 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
+  "idAvaliacao": "av_1791305529038",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -16,7 +17,7 @@
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791244021680,
+  "expiraEmMillis": 1791316329038,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -24,26 +25,14 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791233394408",
-  "publicadoEm": "2026-10-05T20:49:55.036Z",
+  "seedReordenacao": "1791307760790",
+  "publicadoEm": "2026-10-06T17:29:21.451Z",
   "questoesPublicas": [
     {
-      "idQuestao": "QPefNs5DmqwDPlydwuH8",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Inteligência Artificial Forte?",
-      "opcoes": [
-        "Um conceito teórico de IA que teria a capacidade de compreender, aprender e agir como um ser humano em qualquer contexto",
-        "Uma IA com carcaça de metal resistente",
-        "Um supercomputador militar",
-        "Um sistema que nunca apresenta falhas"
-      ]
-    },
-    {
-      "idQuestao": "O7pQeRsLTv8IlfnaiaLP",
+      "idQuestao": "75x5QAxY3hQ1y8lGDzIR",
       "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
       "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-      "pergunta": "[Técnico 7 - 1790243777980]O que é uma Sprint no framework Scrum?",
+      "pergunta": "[Técnico 6 - 1790258361051]O que é uma Sprint no framework Scrum?",
       "opcoes": [
         "Um documento com requisitos estáticos",
         "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
@@ -52,105 +41,115 @@
       ]
     },
     {
-      "idQuestao": "V8opRgrXesSrZBY6PZvF",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a interpretabilidade de modelos de IA?",
-      "opcoes": [
-        "O grau em que um ser humano pode entender a causa de uma decisão tomada pelo modelo",
-        "A tradução de idiomas estrangeiros",
-        "A velocidade de execução de um programa",
-        "O design visual de uma interface"
-      ]
-    },
-    {
-      "idQuestao": "zi3TY9EwCISVIYzeqiu8",
+      "idQuestao": "kn5QFHxgU1YcGuonEHtL",
       "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
       "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é o Protocolo SNMP Traps?",
+      "pergunta": "O que é o gerenciamento de patches (Patch Management)?",
       "opcoes": [
-        "Mensagens de alerta enviadas por agentes de rede para um sistema de gerenciamento quando eventos ocorrem",
-        "Protocolo de transferência segura de arquivos na nuvem",
-        "Protocolo de roteamento de pacotes na camada de rede",
-        "Protocolo de criptografia de mensagens instantâneas",
-        "Protocolo de sincronização de relógios em servidores"
+        "Processo de aquisição, teste e instalação de atualizações de correção de falhas em softwares",
+        "Criação manual de backups em discos rígidos externos",
+        "Configuração de endereços IP dinâmicos via DHCP",
+        "Monitoramento da velocidade de conexão com a internet",
+        "Exclusão definitiva de arquivos corrompidos"
       ]
     },
     {
-      "idQuestao": "1GyPWVWomwFNfZjDoC9a",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Precisão (Precision) em classificação?",
-      "opcoes": [
-        "A proporção de verdadeiros positivos entre todas as previsões positivas feitas pelo modelo",
-        "A quantidade total de dados presentes no banco de treinamento",
-        "A velocidade com que o algoritmo executa as instruções",
-        "O número de classes diferentes que o modelo consegue prever",
-        "A porcentagem de dados descartados por ruído"
-      ]
-    },
-    {
-      "idQuestao": "P2FBhS1eABaSJ56NxtRp",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que significa o termo \"Deep Learning\" (Aprendizado Profundo)?",
-      "opcoes": [
-        "Subcampo do Machine Learning baseado em redes neurais artificiais com múltiplas camadas",
-        "Processo de exclusão permanente de dados antigos do sistema",
-        "Técnica de recuperação de arquivos após falha de energia",
-        "Criptografia de ponta a ponta em mensagens de texto",
-        "Análise estatística básica em planilhas eletrônicas"
-      ]
-    },
-    {
-      "idQuestao": "GHOicKkEsBMJ0WQC6HLB",
+      "idQuestao": "h6b5OhNcOQErpp6OjalM",
       "materia": "Inteligencia Artificial",
       "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 38] Qual é a principal função de uma rede neural artificial?",
+      "pergunta": "[Técnico 1 - 1790243763193]O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
       "opcoes": [
-        "A) Gerenciar partições físicas de disco rígido",
-        "B) Compilar códigos de baixo nível",
-        "C) Processar dados através de camadas de nós para reconhecimento de padrões",
-        "D) Imprimir relatórios em formato PDF"
+        "Dados sem rótulos descobertos automaticamente",
+        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
+        "Tentativa e erro autônoma sem histórico",
+        "Regras fixas de lógica booleana"
       ]
     },
     {
-      "idQuestao": "40g4D6xI8MkcZjc9z5lm",
+      "idQuestao": "jrkmLfOUCC49kISEAnwb",
       "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
       "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é a Escalabilidade Vertical (Scale-Up)?",
+      "pergunta": "Qual ataque cibernético engana usuários para que revelem informações confidenciais fingindo ser uma entidade confiável?",
       "opcoes": [
-        "Aumento da capacidade de um recurso existente (ex: adicionar mais RAM ou CPU a um servidor)",
-        "Adição de novos servidores à rede para dividir a carga de trabalho",
-        "Redução do consumo de energia de data centers em nuvem",
-        "Substituição de servidores físicos por containers leves",
-        "Criptografia de dados armazenados em discos locais"
+        "Phishing",
+        "Ransomware",
+        "Spyware",
+        "Adware",
+        "Malware"
       ]
     },
     {
-      "idQuestao": "QcOs6czs1wDzlDKBHLtt",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Computação Cognitiva?",
-      "opcoes": [
-        "Sistemas que simulam o processo de raciocínio humano em tarefas complexas e ambíguas",
-        "Processamento puramente matemático sem capacidade de adaptação",
-        "Execução de rotinas estáticas em computadores de baixo desempenho",
-        "Armazenamento de grandes volumes de dados em HDs externos",
-        "Transmissão de dados via cabos de rede convencionais"
-      ]
-    },
-    {
-      "idQuestao": "N5OTl46vukXJ6owF9OXD",
+      "idQuestao": "jMtxtQogXFJVpLKTrzLj",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Qual propriedade CSS define o espaçamento entre caracteres de um texto?",
+      "pergunta": "Qual a principal diferença entre LocalStorage e SessionStorage?",
       "opcoes": [
-        "line-height",
-        "letter-spacing",
-        "word-spacing",
-        "text-spacing",
-        "character-space"
+        "LocalStorage persiste mesmo após fechar o navegador, enquanto SessionStorage apaga ao fechar a aba/sessão",
+        "SessionStorage armazena mais dados que o LocalStorage",
+        "LocalStorage só funciona offline",
+        "Não há diferença técnica"
+      ]
+    },
+    {
+      "idQuestao": "GTHMDjNJZy7osQ3qCxpi",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual método JavaScript testa se pelo menos um elemento do array passa no teste implementado pela função fornecida?",
+      "opcoes": [
+        "every()",
+        "some()",
+        "filter()",
+        "find()",
+        "includes()"
+      ]
+    },
+    {
+      "idQuestao": "jgw8PGVIyiAW8IQkPeyD",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o aprendizado federado (Federated Learning)?",
+      "opcoes": [
+        "Uma técnica de aprendizado de máquina que treina um algoritmo através de múltiplos dispositivos descentralizados",
+        "A união de várias empresas de tecnologia",
+        "O compartilhamento de senhas na internet",
+        "A criação de uma rede de computadores estática"
+      ]
+    },
+    {
+      "idQuestao": "SkQPxfmb1jEKkYQGxpXe",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que são pesos (weights) em uma rede neural?",
+      "opcoes": [
+        "Parâmetros numéricos que ajustam a força da conexão entre os neurônios artificiais",
+        "O peso físico do servidor",
+        "A velocidade da placa de vídeo",
+        "O tamanho do arquivo do código"
+      ]
+    },
+    {
+      "idQuestao": "ydLs5gHNcAztWJzhEX85",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a geração de texto preditiva?",
+      "opcoes": [
+        "A capacidade do sistema de prever e completar palavras ou frases com base no contexto anterior",
+        "O corretor ortográfico básico de celular",
+        "A impressão automática de documentos",
+        "A tradução simultânea de áudio"
+      ]
+    },
+    {
+      "idQuestao": "Jzh89KZDiSz610lFY2xg",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o aprendizado semi-supervisionado?",
+      "opcoes": [
+        "Abordagem que utiliza uma pequena quantidade de dados rotulados e muitos não rotulados",
+        "Treinamento realizado sem nenhum tipo de dado ou intervenção",
+        "Sistema que utiliza apenas dados perfeitamente limpos e rotulados",
+        "Processo de exclusão de dados corrompidos por vírus",
+        "Método de validação cruzada sem divisão de bases"
       ]
     }
   ]

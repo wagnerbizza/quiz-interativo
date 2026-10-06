@@ -266,7 +266,8 @@ ATENÇÃO:
 
       <h3 style="margin-bottom: 10px; font-size: 15px; text-align: left;">Revisão das Questões:</h3>
       <div id="container-revisao-resultado" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
-        <button type="button" id="btn-reiniciar" class="btn">🔄 Sair / Tela Inicial</button>
+
+      <button type="button" id="btn-reiniciar" class="btn">🔄 Sair / Tela Inicial</button>
     </div>
   </div>
 
@@ -280,7 +281,7 @@ ATENÇÃO:
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    console.info("QUIZ BUILD: GITHUB-PRIORIDADE-FINAL-2026-10-05");
+    console.info("QUIZ BUILD: GITHUB-FALLBACK-TESTE-2026-10-05");
     const firebaseConfig = {
       apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
       authDomain: "quiz-interativo-8a98c.firebaseapp.com",
@@ -340,11 +341,10 @@ ATENÇÃO:
 
     function limparPrefixoOpcao(opcaoStr) {
       if (!opcaoStr) return "";
-      // Aceita questões A-D e A-E. Remove somente o rótulo da alternativa,
-      // nunca elimina a alternativa E por causa da letra.
-      return opcaoStr.toString()
-        .replace(/^\s*(?:alternativa|opção|opcao)?\s*[A-E]\s*[\)\.\-:\s]+\s*/i, "")
-        .trim();
+      let limpo = opcaoStr.toString().replace(/^[a-zA-Z][\)\.\-\s]+\s*/, "").trim();
+      let lower = limpo.toLowerCase();
+      if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return "";
+      return limpo;
     }
 
     // ==========================================================
@@ -423,69 +423,65 @@ ATENÇÃO:
       return true;
     }
 
-    async function acompanharProvaDaEscola(escolaNome) {
-      // VERSÃO ESTÁVEL CORRIGIDA:
-      // Um único listener no documento da escola. Ele recebe somente mudanças
-      // daquela prova: ativação, encerramento e reembaralhamento.
-      // Isso evita a demora da consulta manual e elimina o polling de 20 s.
+    function acompanharProvaDaEscola(escolaNome) {
+      // PRIORIDADE DE ENTREGA:
+      // 1) tenta primeiro o pacote prova-publicada.json do site/GitHub;
+      // 2) Firebase fica como fallback quando o pacote não existe, expirou ou está inativo.
+      // O Firebase continua sendo usado normalmente para autenticação e resultados.
       if (unsubscribeProvaEscola) {
         unsubscribeProvaEscola();
         unsubscribeProvaEscola = null;
       }
 
-      // ARQUITETURA OFFLINE-FIRST / STATIC-FIRST:
-      // O pacote publicado no GitHub é a fonte principal da avaliação.
-      // Assim, abrir a prova não depende da cota do Firebase.
-      // O Firebase continua disponível para recursos complementares.
-      // PRIORIDADE DE ENTREGA: GitHub Pages.
-      // Firebase só será consultado se o pacote estático não estiver válido.
-      const pacoteGitHub = await carregarProvaEstatica(escolaNome);
-      if (pacoteGitHub && await aplicarProvaRecebida(escolaNome, pacoteGitHub, "github")) {
-        return;
-      }
-
-      // TESTE SEGURO: ?origem=github força o pacote estático,
-      // sem apagar nem modificar qualquer dado no Firebase.
-      const forcarGitHub = new URLSearchParams(window.location.search).get("origem") === "github";
-      if (forcarGitHub) {
-        (async () => {
-          const pacote = await carregarProvaEstatica(escolaNome);
-          if (pacote && await aplicarProvaRecebida(escolaNome, pacote, "github")) return;
-          dadosProvaAtiva = {};
-          detalhesProvaAtiva.innerHTML =
-            `⚠️ Modo GitHub ativo, mas nenhuma prova publicada válida foi encontrada para <strong>${escolaNome}</strong>.`;
-          selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
-          btnIniciarProva.disabled = true;
-        })();
-        return;
-      }
-
       dadosProvaAtiva = {};
       btnIniciarProva.disabled = true;
       selectTurma.innerHTML = `<option value="" disabled selected>Aguardando prova ativa...</option>`;
-      detalhesProvaAtiva.innerHTML = `⏳ Verificando avaliação para <strong>${escolaNome}</strong>...`;
+      detalhesProvaAtiva.innerHTML = `⏳ Verificando avaliação publicada para <strong>${escolaNome}</strong>...`;
 
-      const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
-
-      unsubscribeProvaEscola = onSnapshot(
-        provaRef,
-        async (docSnap) => {
-          if(docSnap.exists() && await aplicarProvaRecebida(escolaNome,docSnap.data(),"firebase")) return;
-          const pacote=await carregarProvaEstatica(escolaNome);
-          if(pacote && await aplicarProvaRecebida(escolaNome,pacote,"github")) return;
-          dadosProvaAtiva={};
-          detalhesProvaAtiva.innerHTML=`⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
-          selectTurma.innerHTML=`<option value="" disabled selected>Nenhuma turma liberada</option>`;
-          btnIniciarProva.disabled=true;
-        },
-        async (erro) => {
-          console.warn("Firebase indisponível; usando fallback do site:",erro?.code||erro);
-          const pacote=await carregarProvaEstatica(escolaNome);
-          if(pacote && await aplicarProvaRecebida(escolaNome,pacote,"github")) return;
-          detalhesProvaAtiva.innerHTML=`⚠️ Firebase indisponível e nenhuma prova publicada foi encontrada no site.`;
-          btnIniciarProva.disabled=true;
+      (async () => {
+        // GitHub/pacote publicado sempre tem prioridade para a entrega da prova.
+        const pacote = await carregarProvaEstatica(escolaNome);
+        if (pacote && await aplicarProvaRecebida(escolaNome, pacote, "github")) {
+          return;
         }
-      );
+
+        // Somente se o pacote publicado não estiver válido usamos Firebase como fallback.
+        const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
+        unsubscribeProvaEscola = onSnapshot(
+          provaRef,
+          async (docSnap) => {
+            // Antes de aceitar Firebase, conferimos novamente o pacote publicado.
+            // Isso permite que uma publicação recém-chegada assuma a prioridade.
+            const pacoteAtual = await carregarProvaEstatica(escolaNome);
+            if (pacoteAtual && await aplicarProvaRecebida(escolaNome, pacoteAtual, "github")) {
+              if (unsubscribeProvaEscola) {
+                unsubscribeProvaEscola();
+                unsubscribeProvaEscola = null;
+              }
+              return;
+            }
+
+            if (docSnap.exists() &&
+                await aplicarProvaRecebida(escolaNome, docSnap.data(), "firebase")) return;
+
+            dadosProvaAtiva = {};
+            detalhesProvaAtiva.innerHTML =
+              `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
+            selectTurma.innerHTML =
+              `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+            btnIniciarProva.disabled = true;
+          },
+          async (erro) => {
+            console.warn("Firebase indisponível; conferindo pacote publicado:", erro?.code || erro);
+            const pacoteFallback = await carregarProvaEstatica(escolaNome);
+            if (pacoteFallback &&
+                await aplicarProvaRecebida(escolaNome, pacoteFallback, "github")) return;
+            detalhesProvaAtiva.innerHTML =
+              `⚠️ Nenhuma avaliação publicada válida foi encontrada para <strong>${escolaNome}</strong>.`;
+            btnIniciarProva.disabled = true;
+          }
+        );
+      })();
     }
 
     selectEscola?.addEventListener("change", () => acompanharProvaDaEscola(selectEscola.value));
@@ -522,8 +518,14 @@ ATENÇÃO:
         
         // Se explicitamente configurado como false (e o professor não reautorizou para true), bloqueia
         if (docPermissao.exists() && docPermissao.data().podeFazer === false) {
-          alert("❌ Registro encontrado: Esta avaliação já foi concluída e o acesso está bloqueado. Solicite liberação ao professor.");
-          return;
+          const perm = docPermissao.data() || {};
+          const avaliacaoAtual = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+          const avaliacaoBloqueada = String(perm.idAvaliacao || "");
+          // Só bloqueia a MESMA avaliação. Uma nova ativação não herda o bloqueio antigo.
+          if (avaliacaoBloqueada && avaliacaoBloqueada === avaliacaoAtual) {
+            alert("❌ Esta avaliação já foi concluída. Solicite liberação ao professor para refazê-la.");
+            return;
+          }
         }
       } catch (err) {
         console.error("Erro ao verificar permissões:", err);
@@ -575,7 +577,12 @@ ATENÇÃO:
           
           let opcoesLimpas = opcoesBrutas
             .map(op => limparPrefixoOpcao(op))
-            .filter(op => op && op.trim() !== "");
+            .filter(op => {
+              if (!op || op === "") return false;
+              let lower = op.toLowerCase();
+              if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return false;
+              return true;
+            });
           // 🔐 FASE 10C — nenhuma chave de resposta é carregada no navegador do aluno.
           banco.push({
             idQuestao: d.idQuestao || s.id,
@@ -628,10 +635,7 @@ ATENÇÃO:
       // 🔵 FASE 7 — EMBARALHAMENTO QUE FUNCIONA TAMBÉM COM POUCAS QUESTÕES
       // Usa o seed da prova + aluno. Quando o professor clica "Reembaralhar",
       // o seed muda e a ordem muda inclusive em provas de 2 ou 3 questões.
-      // Cada tentativa recebe uma semente própria. Assim dois alunos — ou
-      // duas tentativas do mesmo aluno — não recebem necessariamente a mesma ordem.
-      const aleatorioTentativa = (crypto.getRandomValues(new Uint32Array(1))[0]).toString(16);
-      const seedBase = `${dadosProvaAtiva.seedReordenacao || "0"}|${alunoAtual.id || ""}|${Date.now()}|${aleatorioTentativa}`;
+      const seedBase = `${dadosProvaAtiva.seedReordenacao || "0"}|${alunoAtual.id || ""}`;
       function hashSimples(txt) {
         let h = 2166136261;
         for (let i = 0; i < txt.length; i++) {
@@ -656,28 +660,7 @@ ATENÇÃO:
         }
       }
 
-      listaQuestoes = unicasArray
-        .slice(0, Math.min(qtdDesejada, unicasArray.length))
-        .map((questao, indiceQuestao) => {
-          const opcoes = Array.isArray(questao.opcoes)
-            ? questao.opcoes.filter(op => String(op || "").trim() !== "")
-            : [];
-
-          // Ordenação determinística dentro desta tentativa: a tela pode ser
-          // redesenhada quantas vezes for necessário sem trocar as alternativas.
-          const opcoesEmbaralhadas = opcoes
-            .map((texto, indiceOriginal) => ({
-              texto,
-              indiceOriginal,
-              chave: hashSimples(
-                `${seedBase}|alternativa|${questao.idQuestao || indiceQuestao}|${indiceOriginal}|${texto}`
-              )
-            }))
-            .sort((a, b) => a.chave - b.chave)
-            .map(item => item.texto);
-
-          return { ...questao, opcoes: opcoesEmbaralhadas };
-        });
+      listaQuestoes = unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
 
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
       document.getElementById("tela-login").classList.add("hidden");
@@ -803,6 +786,26 @@ ATENÇÃO:
 
     function iniciarSincronizacaoTempoReal() {
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
+
+      const sincronizarAgora = async () => {
+        if (!alunoAtual.id) return;
+        try {
+          await setDoc(doc(db, "alunos_online", alunoAtual.id), {
+            nome: alunoAtual.nome, turma: alunoAtual.turma, escola: alunoAtual.escola,
+            materia: alunoAtual.materia, periodo: alunoAtual.periodo,
+            questaoAtual: indiceAtual + 1, totalQuestoes: listaQuestoes.length,
+            segundosPassados, uid: uidAlunoFirebase, respostas: respostasUsuario,
+            respostasTexto: listaQuestoes.map((q,i) => {
+              const letra=String(respostasUsuario[i] || "").toUpperCase();
+              const pos="ABCDE".indexOf(letra); return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
+            }),
+            questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
+            idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
+            atualizadoEm: serverTimestamp()
+          }, { merge: true });
+        } catch(e) { console.warn("10E — progresso não sincronizado neste ciclo:", e?.code || e?.message || e); }
+      };
+      sincronizarAgora(); // aparece no Monitoramento sem esperar 10 segundos.
       syncOnlineInterval = setInterval(async () => {
         if (!alunoAtual.id) return;
         try {
@@ -819,7 +822,13 @@ ATENÇÃO:
             segundosPassados: segundosPassados,
             uid: uidAlunoFirebase,
             respostas: respostasUsuario,
+            respostasTexto: listaQuestoes.map((q,i) => {
+              const letra=String(respostasUsuario[i] || "").toUpperCase();
+              const pos="ABCDE".indexOf(letra);
+              return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
+            }),
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
+            idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
             atualizadoEm: serverTimestamp()
           }, { merge: true });
         } catch(e) {
@@ -883,98 +892,42 @@ ATENÇÃO:
     document.getElementById("ant")?.addEventListener("click", () => { if (indiceAtual > 0) { indiceAtual--; exibirQuestao(); } });
     document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
     document.getElementById("fin")?.addEventListener("click", () => finalizarProva());
-
-
-    // ============================================================
-    // PROTEÇÃO LOCAL DE RESULTADOS
-    // O resultado é guardado no navegador ANTES da tentativa de envio
-    // ao Firebase. Nada é apagado automaticamente.
-    // ============================================================
-    const CHAVE_RESULTADOS_PENDENTES = "quiz_resultados_pendentes_v1";
-
-    function lerResultadosPendentes() {
+    // FILA LOCAL: nunca perdemos uma entrega por falha momentânea de rede/Firebase.
+    const CHAVE_ENTREGAS_PENDENTES = "quiz_entregas_pendentes_v1";
+    function lerEntregasPendentes(){try{const x=JSON.parse(localStorage.getItem(CHAVE_ENTREGAS_PENDENTES)||"[]");return Array.isArray(x)?x:[];}catch(_){return [];}}
+    function salvarEntregasPendentes(x){localStorage.setItem(CHAVE_ENTREGAS_PENDENTES,JSON.stringify(Array.isArray(x)?x:[]));}
+    function guardarEntregaPendente(e){const l=lerEntregasPendentes(),i=l.findIndex(x=>x.idFirebase===e.idFirebase);const r={...e,sincronizado:false,salvoLocalmenteEm:new Date().toISOString()};if(i>=0)l[i]={...l[i],...r};else l.push(r);salvarEntregasPendentes(l);}
+    function marcarEntregaSincronizada(id){const l=lerEntregasPendentes(),i=l.findIndex(x=>x.idFirebase===id);if(i>=0){l[i].sincronizado=true;l[i].sincronizadoEm=new Date().toISOString();salvarEntregasPendentes(l);}}
+    async function garantirAuthAnonimaAtual(){if(auth.currentUser)return auth.currentUser;const c=await signInAnonymously(auth);return c.user;}
+    async function enviarEntregaProtegida(e){
+      const u=await garantirAuthAnonimaAtual(),p={...e,uid:u.uid};
+      delete p.idFirebase;delete p.sincronizado;delete p.salvoLocalmenteEm;delete p.sincronizadoEm;
+      await setDoc(doc(db,"avaliacoes",e.idFirebase),p,{merge:true});
       try {
-        const dados = JSON.parse(localStorage.getItem(CHAVE_RESULTADOS_PENDENTES) || "[]");
-        return Array.isArray(dados) ? dados : [];
-      } catch {
-        return [];
+        await setDoc(doc(db,"permissoes_alunos",e.idAluno), {
+          podeFazer:false, uid:u.uid, idAvaliacao:e.idAvaliacao || ""
+        }, {merge:true});
+        await deleteDoc(doc(db,"alunos_online",e.idAluno));
+      } catch (limpezaErr) {
+        console.warn("Resultado enviado; limpeza será concluída pelo painel do professor:", limpezaErr?.code || limpezaErr);
+      }
+      marcarEntregaSincronizada(e.idFirebase); return u;
+    }
+    async function reenviarEntregasPendentes(){
+      if(!navigator.onLine)return;
+      for(const e of lerEntregasPendentes().filter(x=>!x.sincronizado)){
+        try{await enviarEntregaProtegida(e);}catch(err){console.warn("Entrega ainda pendente:",e.idFirebase,err?.code||err);}
       }
     }
+    window.addEventListener("online",reenviarEntregasPendentes);
+    setInterval(reenviarEntregasPendentes,30000);
+    setTimeout(reenviarEntregasPendentes,2500);
 
-    function salvarResultadoPendenteLocal(resultado) {
-      const lista = lerResultadosPendentes();
-      const indice = lista.findIndex(item => item.idLocal === resultado.idLocal);
-      if (indice >= 0) lista[indice] = { ...lista[indice], ...resultado };
-      else lista.push(resultado);
-      localStorage.setItem(CHAVE_RESULTADOS_PENDENTES, JSON.stringify(lista));
-    }
 
-    function marcarResultadoComoSincronizado(idLocal) {
-      // Mantemos o registro local por segurança; apenas marcamos como sincronizado.
-      const lista = lerResultadosPendentes();
-      const indice = lista.findIndex(item => item.idLocal === idLocal);
-      if (indice >= 0) {
-        lista[indice].sincronizado = true;
-        lista[indice].sincronizadoEm = new Date().toISOString();
-        localStorage.setItem(CHAVE_RESULTADOS_PENDENTES, JSON.stringify(lista));
-      }
-    }
-
-    async function tentarSincronizarResultadoLocal(resultado) {
-      try {
-        // Em uma recarga, a autenticação anônima pode receber outro UID.
-        // Sempre usamos o UID da sessão atual no envio/reenvio, preservando
-        // o identificador original apenas nos dados locais.
-        if (!auth.currentUser) {
-          await signInAnonymously(auth);
-        }
-        const uidAtual = auth.currentUser?.uid || uidAlunoFirebase;
-        if (!uidAtual) throw new Error("Sessão anônima ainda não disponível.");
-
-        const payload = {
-          ...resultado.dadosFirebase,
-          uid: uidAtual,
-          dataEnvio: serverTimestamp()
-        };
-
-        // idFirebase é estável: várias tentativas sobrescrevem o MESMO documento,
-        // evitando resultados duplicados no painel do professor.
-        await setDoc(doc(db, "avaliacoes", resultado.idFirebase), payload);
-        marcarResultadoComoSincronizado(resultado.idLocal);
-
-        const avisoResultado = document.getElementById("status-envio-txt");
-        if (avisoResultado) avisoResultado.textContent = "✅ Resultado enviado ao professor.";
-        return true;
-      } catch (erro) {
-        console.warn(
-          "Resultado protegido localmente; envio pendente:",
-          erro?.code || erro,
-          erro?.message || ""
-        );
-        return false;
-      }
-    }
-
-    async function sincronizarResultadosPendentesAutomaticamente() {
-      if (!navigator.onLine) return;
-      const pendentes = lerResultadosPendentes().filter(item => !item.sincronizado);
-      for (const resultado of pendentes) {
-        await tentarSincronizarResultadoLocal(resultado);
-      }
-    }
-
-    // Quando a conexão retorna, tentamos novamente sem apagar a cópia local.
-    window.addEventListener("online", () => {
-      sincronizarResultadosPendentesAutomaticamente();
-    });
-
-    // Enquanto esta página permanecer aberta, o sistema tenta novamente em
-    // intervalos moderados. O aluno não precisa clicar em nada.
-    setInterval(() => {
-      sincronizarResultadosPendentesAutomaticamente();
-    }, 30000);
-
+    let finalizacaoAlunoEmAndamento = false;
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
+      if (finalizacaoAlunoEmAndamento) return;
+      finalizacaoAlunoEmAndamento = true;
       if (timerInterval) clearInterval(timerInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
 if (unsubscribePermissaoAluno) {
@@ -993,7 +946,7 @@ if (unsubscribePermissaoAluno) {
       let seg = segundosPassados % 60;
       let tempoGastoFormatado = `${min}m ${seg}s`;
 
-      document.getElementById("nota-final-txt").textContent = "Avaliação concluída — preparando salvamento";
+      document.getElementById("nota-final-txt").textContent = "Avaliação enviada para correção segura";
       document.getElementById("detalhes-acertos-txt").textContent = `Questões: ${listaQuestoes.length} | Tempo: ${tempoGastoFormatado}`;
       document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
 
@@ -1004,95 +957,57 @@ if (unsubscribePermissaoAluno) {
 
       try {
         const agora = Date.now();
-        // Primeiro protegemos o resultado no próprio dispositivo do aluno.
-
-        const idFirebaseResultado = (9999999999999 - agora).toString();
-
-        const dadosResultadoFirebase = {
+        const idFirebase = (9999999999999 - agora).toString();
+        const entregaProtegida = {
+          idFirebase,
           idAluno: alunoAtual.id,
+          idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
           nome: alunoAtual.nome,
           turma: alunoAtual.turma,
           escola: alunoAtual.escola,
           periodo: alunoAtual.periodo,
           materia: alunoAtual.materia,
-          // 🔐 FASE 10C — null indica que o painel ainda fará a correção.
           pontuacao: null,
           totalQuestoes: listaQuestoes.length,
           uid: uidAlunoFirebase,
           respostas: respostasUsuario,
-          // Texto escolhido pelo próprio aluno; não contém o gabarito.
-          // Ajuda o professor a corrigir com segurança mesmo se houver bancos antigos.
-          respostasTexto: listaQuestoes.map((q, i) => {
-            const letra = String(respostasUsuario[i] || "").toUpperCase();
-            const indice = "ABCDE".indexOf(letra);
-            return indice >= 0 ? String(q.opcoes?.[indice] || "") : "";
+          respostasTexto: listaQuestoes.map((q,i) => {
+            const letra=String(respostasUsuario[i] || "").toUpperCase();
+            const pos="ABCDE".indexOf(letra);
+            return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
           }),
           questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
+          questoesPerguntas: listaQuestoes.map(q => q.pergunta || ""),
           tempoGastoSegundos: segundosPassados,
-          tempoGastoFormatado: tempoGastoFormatado,
-          dataEnvio: new Date(agora).toISOString(), // Formato compatível com armazenamento local.
+          tempoGastoFormatado,
+          // serverTimestamp não pode ser serializado no localStorage; o painel também usa timestamp.
           timestamp: agora,
           finalizadoPeloProfessor: encerradaPeloProfessor,
           motivoFinalizacao: motivoEncerramento || ""
         };
 
-        const resultadoLocal = {
+        // Primeiro salva localmente; só depois tenta a rede.
+        guardarEntregaPendente(entregaProtegida);
+        const usuarioEnvio = await enviarEntregaProtegida(entregaProtegida);
 
-          idLocal: `${uidAlunoFirebase || alunoAtual.id || "aluno"}_${agora}`,
+        // 🔐 FASE 10C — vincula o bloqueio ao UID anônimo desta sessão.
+        await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
+          podeFazer: false,
+          uid: usuarioEnvio.uid,
+          idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || ""
+        }, { merge: true });
+        await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
-          idFirebase: idFirebaseResultado,
-
-          criadoEm: new Date().toISOString(),
-
-          sincronizado: false,
-
-          dadosFirebase: dadosResultadoFirebase
-
-        };
-
-        salvarResultadoPendenteLocal(resultadoLocal);
-
-
-        // Só depois tentamos o Firebase. Se falhar, a cópia local permanece.
-
-        const resultadoSincronizado = await tentarSincronizarResultadoLocal(resultadoLocal);
-
-        if (!resultadoSincronizado) {
-
-          console.info("Resultado aguardando sincronização futura.");
-          const avisoResultado = document.getElementById("status-envio-txt");
-          if (avisoResultado) {
-            avisoResultado.textContent = "✅ Avaliação concluída. Suas respostas foram registradas.";
-          }
-
-        }
-
-        // A limpeza remota é independente do envio do resultado: falhas aqui
-        // não devem transformar um resultado protegido em uma mensagem de perda.
-        if (resultadoSincronizado) {
-          document.getElementById("nota-final-txt").textContent = "Avaliação enviada para correção segura";
-          document.getElementById("status-envio-txt").textContent = "✅ Avaliação concluída. Suas respostas foram enviadas para correção.";
+        if (!encerradaPeloProfessor) {
+          document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
         } else {
-          document.getElementById("nota-final-txt").textContent = "Avaliação concluída — resultado protegido";
-          document.getElementById("status-envio-txt").textContent = "✅ Avaliação concluída. Suas respostas foram registradas e o sistema continuará o processamento automaticamente.";
+          document.getElementById("status-envio-txt").innerHTML =
+            `🏁 <strong>Avaliação encerrada pelo professor.</strong><br>Motivo: ${motivoEncerramento}<br>✅ Resultado salvo com sucesso.`;
         }
-        try {
-          await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
-            podeFazer: false, uid: auth.currentUser?.uid || uidAlunoFirebase
-          }, { merge: true });
-        } catch (erroPermissao) {
-          console.warn("Permissão final ficará para a próxima comunicação:", erroPermissao?.code || erroPermissao);
-        }
-        try {
-          await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
-        } catch (erroPresenca) {
-          console.warn("Presença online não pôde ser limpa agora:", erroPresenca?.code || erroPresenca);
-        }
-
       } catch (err) {
-        document.getElementById("nota-final-txt").textContent = "Atenção ao salvamento";
-        document.getElementById("status-envio-txt").textContent = "⚠️ Houve uma falha ao concluir o registro. Avise o professor antes de fechar esta tela.";
-        console.error("Falha no salvamento local:", err);
+        console.warn("Resultado protegido localmente; sincronização pendente:", err?.code || err);
+        document.getElementById("status-envio-txt").textContent =
+          "⚠️ Resultado protegido neste computador. O envio será tentado automaticamente quando a conexão permitir.";
       }
     }
 
@@ -1109,9 +1024,9 @@ document.getElementById("tela-resultado").classList.add("hidden");
       }
       if (inputNomeAluno) inputNomeAluno.value = "";
     });
-  
-    // Uma tentativa leve por abertura da página; sem consultas repetitivas.
-    setTimeout(() => sincronizarResultadosPendentesAutomaticamente(), 2500);
-</script>
+  </script>
 </body>
 </html>
+<!-- QUIZ BUILD: GITHUB-PRIORIDADE-ENTREGA-2026-10-05 -->
+
+<!-- QUIZ BUILD: FINALIZACAO-RESILIENTE-FILA-LOCAL-2026-10-05 -->

@@ -65,6 +65,22 @@ let temaAtualSistema = localStorage.getItem("tema_sistema_escolar") || "dark";
 // ==========================================
 // PASSO 4: EVENTO DE INICIALIZAÇÃO DO DOM
 // ==========================================
+
+// ========================================
+// 🛡️ GUARDA DOS BOTÕES DE PUBLICAÇÃO
+// ========================================
+// Os botões abaixo não podem agir como submit nem propagar o clique para
+// controles antigos de navegação. A captura ocorre antes dos handlers legados.
+document.addEventListener("click", (ev) => {
+  const alvo = ev.target.closest?.(
+    "#btn-publicar-prova-escola-profissional, .btn-reembaralhar-prova, .btn-testar-publicacao, .btn-encerrar-prova"
+  );
+  if (!alvo) return;
+  ev.preventDefault();
+  // Não usamos stopImmediatePropagation: o handler funcional do próprio sistema
+  // ainda precisa receber o evento. O bloqueio de navegação é reforçado abaixo.
+}, true);
+
 document.addEventListener("DOMContentLoaded", () => {
   document.body.style.opacity = "1";
   aplicarTemaSistema(temaAtualSistema);
@@ -697,12 +713,8 @@ function limparPrefixoPergunta(pergunta) {
 
 function limparPrefixoOpcao(opcaoStr) {
   if (!opcaoStr) return "";
-  let limpo = opcaoStr.toString().replace(/^[a-zA-Z][\)\.\-\s]+\s*/, "").trim();
-  let lower = limpo.toLowerCase();
-  if (lower.startsWith("alternativa e") || lower.startsWith("opção e") || lower === "alternativa e" || lower === "opção e") {
-    return "";
-  }
-  return limpo;
+  // A alternativa E é válida; removemos somente o marcador A), B., E - etc.
+  return opcaoStr.toString().replace(/^[A-Ea-e][\)\.\-\s]+\s*/, "").trim();
 }
 
 function normalizarDocumentoQuestao(d, idDoc = null) {
@@ -713,14 +725,8 @@ function normalizarDocumentoQuestao(d, idDoc = null) {
   
   let opcoesLimpas = opcoesBrutas
     .map(op => limparPrefixoOpcao(op))
-    .filter(op => {
-      if (!op || op === "") return false;
-      let lower = op.toLowerCase();
-      if (lower.startsWith("alternativa e") || lower.startsWith("opção e") || lower.includes("alternativa e padrão") || lower.includes("opção e padrão")) {
-        return false;
-      }
-      return true;
-    });
+    .filter(op => !!op)
+    .slice(0, 5);
 
   let letraOriginal = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
   let indiceOriginal = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}[letraOriginal] || 0;
@@ -734,26 +740,8 @@ function normalizarDocumentoQuestao(d, idDoc = null) {
     ehCorreta: (idx === indiceOriginal)
   }));
 
-  let bancoDistratoresFalsosSeguros = [
-    "Processamento autônomo baseado em regras estáticas locais",
-    "Conversão estruturada de metadados em arquivos compactados",
-    "Execução direta de rotinas em camada de hardware isolada",
-    "Indexação sequencial de logs e repositórios desatualizados"
-  ];
-
-  let contadorComplemento = 0;
-  while (alternativasMapeadas.length < 5) {
-    let textoComplementar = bancoDistratoresFalsosSeguros[contadorComplemento % bancoDistratoresFalsosSeguros.length];
-    contadorComplemento++;
-    alternativasMapeadas.push({
-      texto: textoComplementar,
-      ehCorreta: false
-    });
-  }
-
-  if (alternativasMapeadas.length > 5) {
-    alternativasMapeadas = alternativasMapeadas.slice(0, 5);
-  }
+  // Mantém exatamente a quantidade cadastrada (A–D ou A–E).
+  // Não cria alternativas artificiais.
 
   for (let i = alternativasMapeadas.length - 1; i > 0; i--) {
     const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
@@ -804,49 +792,139 @@ let turmasCadastradasDiretas = ["1A", "2A", "3A", "1B", "2B", "3B"];
 let listaEscolasCache = [];
 
 
-// PUBLICAÇÃO RESILIENTE: arquivo para GitHub Pages, sem gabarito.
-function baixarArquivoProvaPublicada(pacote) {
-  // Publicação GitHub: nunca contém gabarito. O navegador apenas prepara
-  // o arquivo que o professor substituirá no projeto antes do git push.
-  const blob = new Blob([JSON.stringify(pacote, null, 2)], {type:"application/json;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "prova-publicada.json";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+// PUBLICAÇÃO AUTOMÁTICA SEGURA
+// O professor vincula UMA VEZ o prova-publicada.json existente na pasta do projeto.
+// O navegador grava diretamente nesse arquivo, sem GitHub token e sem acumular Downloads.
+// Se o navegador não permitir o acesso, o sistema mantém o download tradicional como fallback.
+const DB_PUBLICACAO_LOCAL = "quiz_publicacao_local_v1";
+const STORE_PUBLICACAO_LOCAL = "handles";
+const CHAVE_ARQUIVO_PUBLICACAO = "prova-publicada";
+
+function abrirDbPublicacaoLocal() {
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_PUBLICACAO_LOCAL,1);
+    req.onupgradeneeded=()=>req.result.createObjectStore(STORE_PUBLICACAO_LOCAL);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function salvarHandlePublicacao(handle) {
+  const dbLocal=await abrirDbPublicacaoLocal();
+  return new Promise((resolve,reject)=>{
+    const tx=dbLocal.transaction(STORE_PUBLICACAO_LOCAL,"readwrite");
+    tx.objectStore(STORE_PUBLICACAO_LOCAL).put(handle,CHAVE_ARQUIVO_PUBLICACAO);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  });
+}
+async function obterHandlePublicacao() {
+  try {
+    const dbLocal=await abrirDbPublicacaoLocal();
+    return await new Promise((resolve,reject)=>{
+      const req=dbLocal.transaction(STORE_PUBLICACAO_LOCAL,"readonly")
+        .objectStore(STORE_PUBLICACAO_LOCAL).get(CHAVE_ARQUIVO_PUBLICACAO);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error);
+    });
+  } catch (_) { return null; }
+}
+async function atualizarStatusVinculoPublicacao() {
+  const el=document.getElementById("status-vinculo-publicacao");
+  if (!el) return;
+  const h=await obterHandlePublicacao();
+  el.textContent=h ? `✅ Vinculado: ${h.name}` : "⚠ Ainda não vinculado";
+  el.style.color=h ? "#22c55e" : "#f59e0b";
+}
+window.vincularArquivoPublicacao = async function() {
+  if (!window.showOpenFilePicker) {
+    alert("Este navegador não permite vincular o arquivo diretamente. Use Chrome ou Edge atualizado.");
+    return false;
+  }
+  try {
+    const [handle]=await window.showOpenFilePicker({
+      multiple:false,
+      types:[{description:"Arquivo JSON da avaliação",accept:{"application/json":[".json"]}}]
+    });
+    if (!handle || handle.name!=="prova-publicada.json") {
+      alert('Selecione exatamente o arquivo "prova-publicada.json" que está na pasta principal do projeto.');
+      return false;
+    }
+    const perm=await handle.requestPermission({mode:"readwrite"});
+    if (perm!=="granted") {
+      alert("A permissão de gravação não foi concedida.");
+      return false;
+    }
+    await salvarHandlePublicacao(handle);
+    await atualizarStatusVinculoPublicacao();
+    alert("✅ Arquivo vinculado.\n\nA partir de agora Ativar, Reembaralhar e Encerrar podem atualizar este mesmo arquivo sem acumular cópias em Downloads.");
+    return true;
+  } catch(err) {
+    if (err?.name!=="AbortError") alert("Não foi possível vincular o arquivo: "+(err?.message||err));
+    return false;
+  }
+};
+
+
+// GESTO DIRETO DO USUÁRIO:
+// O navegador só permite abrir o seletor de arquivo enquanto ainda estamos
+// dentro do clique original. Por isso este preparo acontece ANTES de Firebase/await.
+async function garantirVinculoPublicacaoNoClique() {
+  let handle=await obterHandlePublicacao();
+  if (handle) {
+    try {
+      const perm=await handle.queryPermission({mode:"readwrite"});
+      if (perm==="granted") return true;
+      // requestPermission também deve ocorrer no gesto do usuário.
+      const novaPerm=await handle.requestPermission({mode:"readwrite"});
+      if (novaPerm==="granted") return true;
+    } catch(_) {}
+  }
+  return await window.vincularArquivoPublicacao();
 }
 
-function gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento="Avaliação encerrada pelo professor.") {
+async function escreverPacoteNoArquivoVinculado(pacote) {
+  const handle=await obterHandlePublicacao();
+  if (!handle) return false;
+  try {
+    let perm=await handle.queryPermission({mode:"readwrite"});
+    if (perm!=="granted") perm=await handle.requestPermission({mode:"readwrite"});
+    if (perm!=="granted") return false;
+    const gravador=await handle.createWritable();
+    await gravador.write(JSON.stringify(pacote,null,2));
+    await gravador.close();
+    return true;
+  } catch(err) {
+    console.warn("Arquivo vinculado indisponível:",err);
+    return false;
+  }
+}
+
+async function baixarArquivoProvaPublicada(pacote) {
+  // Nunca abre seletor aqui: esta função normalmente roda após awaits.
+  // O vínculo precisa ter sido garantido no clique original.
+  if (await escreverPacoteNoArquivoVinculado(pacote)) {
+    mostrarNotificacao("✅ prova-publicada.json atualizado no projeto.");
+    return "vinculado";
+  }
+  throw new Error('O prova-publicada.json não está vinculado. Clique novamente na ação e selecione o arquivo quando solicitado.');
+}
+
+async function gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento="Avaliação encerrada pelo professor.") {
   const pacote = {
-    versaoPacote: 1,
-    ativa: false,
-    escolaAtiva: escolaNome || "",
-    materiasAtivas: [],
-    disciplinasAtivas: [],
-    periodoAtivo: "",
-    quantidadeQuestoes: 0,
-    tempoMinimoMinutos: 0,
-    tempoLimiteMinutos: 0,
-    tempoAtivacaoMinutos: 0,
-    expiraEmMillis: Date.now(),
-    turmasAtivas: [],
-    token: "",
-    seedReordenacao: Date.now().toString(),
-    publicadoEm: new Date().toISOString(),
-    encerradoEm: new Date().toISOString(),
-    motivoEncerramento,
-    questoesPublicas: []
+    versaoPacote: 1, ativa: false, idAvaliacao: "", escolaAtiva: escolaNome || "",
+    materiasAtivas: [], disciplinasAtivas: [], periodoAtivo: "",
+    quantidadeQuestoes: 0, tempoMinimoMinutos: 0, tempoLimiteMinutos: 0,
+    tempoAtivacaoMinutos: 0, expiraEmMillis: Date.now(), turmasAtivas: [],
+    token: "", seedReordenacao: Date.now().toString(),
+    publicadoEm: new Date().toISOString(), encerradoEm: new Date().toISOString(),
+    motivoEncerramento, questoesPublicas: []
   };
-  baixarArquivoProvaPublicada(pacote);
+  return await baixarArquivoProvaPublicada(pacote);
 }
 
 async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
   const materias = dadosPublicacao.materiasAtivas || [];
   let fonte = Array.isArray(questoesBancoCache) ? [...questoesBancoCache] : [];
-
   if (!fonte.length) {
     try {
       const snap = await getDocs(collection(db, "questoes_publicas"));
@@ -855,48 +933,36 @@ async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
       throw new Error("As questões ainda não estão carregadas neste computador. Abra o Banco de Dados com conexão antes de preparar a prova offline.");
     }
   }
-
   const candidatas = fonte.filter(q => {
     const cat = q.materia || q.categoria || "";
     return !materias.length || materias.some(m => normalizarTexto(cat).includes(normalizarTexto(m)));
   }).map(q => ({
-    idQuestao:q.idDoc || q.idQuestao || q.id || "",
-    materia:q.materia || q.categoria || "",
-    categoria:q.categoria || q.materia || "",
-    pergunta:q.pergunta || "",
-    opcoes:Array.isArray(q.opcoes) ? q.opcoes : []
+    idQuestao:q.idDoc || q.idQuestao || q.id || q.questaoId || "",
+    materia:q.materia || q.categoria || "", categoria:q.categoria || q.materia || "",
+    pergunta:q.pergunta || "", opcoes:Array.isArray(q.opcoes) ? q.opcoes : []
   }));
-
   for (let i=candidatas.length-1;i>0;i--) {
     const n=crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;
-    const j=Math.floor(n*(i+1));
-    [candidatas[i],candidatas[j]]=[candidatas[j],candidatas[i]];
+    const j=Math.floor(n*(i+1)); [candidatas[i],candidatas[j]]=[candidatas[j],candidatas[i]];
   }
-
   const qtd=Math.max(1,parseInt(dadosPublicacao.quantidadeQuestoes)||10);
   const selecionadas=candidatas.slice(0,qtd);
   if (!selecionadas.length) throw new Error("Nenhuma questão compatível foi encontrada.");
-
   const pacote={
-    versaoPacote:1, ativa:true,
+    versaoPacote:1, ativa:true, idAvaliacao:dadosPublicacao.idAvaliacao || "",
     escolaAtiva:dadosPublicacao.escolaAtiva,
     materiasAtivas:dadosPublicacao.materiasAtivas||[],
     disciplinasAtivas:dadosPublicacao.disciplinasAtivas||[],
-    periodoAtivo:dadosPublicacao.periodoAtivo||"",
-    quantidadeQuestoes:selecionadas.length,
+    periodoAtivo:dadosPublicacao.periodoAtivo||"", quantidadeQuestoes:selecionadas.length,
     tempoMinimoMinutos:dadosPublicacao.tempoMinimoMinutos||0,
     tempoLimiteMinutos:dadosPublicacao.tempoLimiteMinutos||0,
     tempoAtivacaoMinutos:dadosPublicacao.tempoAtivacaoMinutos||180,
-    expiraEmMillis:dadosPublicacao.expiraEmMillis||0,
-    turmasAtivas:dadosPublicacao.turmasAtivas||[],
-    token:dadosPublicacao.token||"",
-    seedReordenacao:dadosPublicacao.seedReordenacao||Date.now().toString(),
-    publicadoEm:new Date().toISOString(),
-    questoesPublicas:selecionadas
+    expiraEmMillis:dadosPublicacao.expiraEmMillis||0, turmasAtivas:dadosPublicacao.turmasAtivas||[],
+    token:dadosPublicacao.token||"", seedReordenacao:dadosPublicacao.seedReordenacao||Date.now().toString(),
+    publicadoEm:new Date().toISOString(), questoesPublicas:selecionadas
   };
-
-  baixarArquivoProvaPublicada(pacote);
-  return selecionadas.length;
+  const modo=await baixarArquivoProvaPublicada(pacote);
+  return {total:selecionadas.length,modo};
 }
 
 async function carregarEscolasCache() {
@@ -1678,6 +1744,7 @@ if (window.location.pathname.includes("painel.html")) {
             );
           resultadosGlobaisCache.unshift(recebido);
           salvarCacheLocalRelatorios(resultadosGlobaisCache);
+          await limparMonitoramentoAposResultado(recebido);
 
           // Correção privada do professor. O gabarito não vai para o aluno.
           if (recebido.pontuacao === null && Array.isArray(recebido.questoesIds)) {
@@ -1736,6 +1803,7 @@ if (window.location.pathname.includes("painel.html")) {
     );
     resultadosGlobaisCache.unshift(recebido);
     salvarCacheLocalRelatorios(resultadosGlobaisCache);
+    await limparMonitoramentoAposResultado(recebido);
 
     if (recebido.pontuacao === null && Array.isArray(recebido.questoesIds)) {
       const acertos = await corrigirResultadoPendente(docSnap.id, recebido);
@@ -2686,6 +2754,11 @@ if (window.location.pathname.includes("painel.html")) {
             </div>
           </div>
 
+          <div style="margin:10px 0;padding:10px;border:1px solid #334155;border-radius:8px;">
+            <button type="button" onclick="vincularArquivoPublicacao()" style="background:#0ea5e9;color:white;border:none;padding:8px 12px;border-radius:7px;font-weight:bold;cursor:pointer;">🔗 Vincular publicação automática</button>
+            <span id="status-vinculo-publicacao" style="margin-left:8px;font-size:12px;">Verificando vínculo...</span>
+            <div style="font-size:11px;color:#94a3b8;margin-top:5px;">Faça isto uma única vez e selecione o prova-publicada.json da pasta principal do projeto.</div>
+          </div>
           <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px;">
             <button type="button" id="btn-publicar-prova-escola-profissional" style="background: #22c55e; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);">🚀 Confirmar e Publicar Avaliação para os Alunos</button>
           </div>
@@ -2714,9 +2787,12 @@ if (window.location.pathname.includes("painel.html")) {
       painelDinamico.addEventListener("change", atualizarPreviewDinamicoAtivacao);
       painelDinamico.addEventListener("input", atualizarPreviewDinamicoAtivacao);
       atualizarPreviewDinamicoAtivacao();
+      atualizarStatusVinculoPublicacao();
 
       document.getElementById("btn-publicar-prova-escola-profissional")?.addEventListener("click", async (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
+        e.stopPropagation();
+        if (history.replaceState) history.replaceState(null, "", "#ativacao"); 
         const materiasSelecionadas = Array.from(painelDinamico.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
         const disciplinasSelecionadas = Array.from(painelDinamico.querySelectorAll(".chk-disciplina-ativacao:checked")).map(c => c.value);
         const periodoEscolhido = painelDinamico.querySelector("#select-periodo-ativacao")?.value || "Geral";
@@ -2739,7 +2815,10 @@ if (window.location.pathname.includes("painel.html")) {
         let timestampAgendamento = agendamentoData ? new Date(agendamentoData).getTime() : 0;
 
         try {
+          // Identificador estável desta ATIVAÇÃO. Reembaralhar não cria uma nova tentativa.
+          const idAvaliacao = `av_${Date.now()}`;
           const dadosPublicacao = {
+            idAvaliacao,
             escolaAtiva: escolaNome,
             materiasAtivas: materiasSelecionadas,
             disciplinasAtivas: disciplinasSelecionadas,
@@ -2770,13 +2849,13 @@ if (window.location.pathname.includes("painel.html")) {
             console.warn("Firebase indisponível na ativação:",erroFirebase?.code||erroFirebase);
           }
 
-          const totalPacote=await gerarPacoteEstaticoAvaliacao(dadosPublicacao);
+          const pubLocal=await gerarPacoteEstaticoAvaliacao(dadosPublicacao);
           animarBotaoSucesso(e.target);
           alert(
             `✅ Avaliação preparada para "${escolaNome}".\n\n`+
             `${firebasePublicado?"Firebase: publicado.":"Firebase: indisponível/sem cota."}\n`+
-            `GitHub: prova-publicada.json gerado com ${totalPacote} questões.\n\n`+
-            `Substitua prova-publicada.json no projeto e envie ao GitHub.`
+            `Pacote: ${pubLocal.total} questões.\n`+
+            `${pubLocal.modo==="vinculado" ? "Publicação local: arquivo do projeto atualizado automaticamente." : "Publicação local: arquivo baixado como alternativa."}`
           );
         } catch (err) {
           console.error("10D.3 — publicação interrompida:", err);
@@ -2863,7 +2942,7 @@ if (window.location.pathname.includes("painel.html")) {
                 ⚠️ <strong>Prova ainda ativa.</strong> ${Number(dados.expiraEmMillis||0)>0 ? `Encerramento automático: ${new Date(Number(dados.expiraEmMillis)).toLocaleString("pt-BR")}` : `Sem encerramento automático configurado.`} Use <strong>Encerrar</strong> se quiser fechá-la antes.
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-                <a href="index.html" target="_blank" style="background:#22c55e;color:white;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;">👁️ Testar</a>
+                <a href="https://wagnerbizza.github.io/quiz-interativo/" target="_blank" rel="noopener" style="background:#22c55e;color:white;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;" title="Abre exatamente a versão publicada que os alunos usam">👁️ Testar publicação</a>
                 <button type="button" onclick="gerarCopiaProvaAtivaPDF('${escolaEsc}')" style="background:#0284c7;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">📄 Cópia</button>
                 <button type="button" class="btn-reembaralhar-escola" data-escola="${dados.escolaAtiva}" style="background:#8b5cf6;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🔀 Reembaralhar</button>
                 <button type="button" onclick="encerrarProvaAtivaAgora('${escolaEsc}')" style="background:#ef4444;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🛑 Encerrar</button>
@@ -2899,6 +2978,13 @@ if (window.location.pathname.includes("painel.html")) {
   document.addEventListener("click", async (e) => {
     const btnEmbaralhar = e.target.closest(".btn-reembaralhar-escola");
     if (btnEmbaralhar) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (history.replaceState) history.replaceState(null, "", "#ativacao");
+      // IMPORTANTE: vínculo/permissão antes de qualquer operação assíncrona.
+      // Isso mantém o "user gesture" exigido pelo Chrome/Edge.
+      const vinculoOk = await garantirVinculoPublicacaoNoClique();
+      if (!vinculoOk) return;
       const escolaNome = btnEmbaralhar.dataset.escola;
       if (confirm(`🔀 Deseja reembaralhar a prova de "${escolaNome}"?`)) {
         try {
@@ -2915,8 +3001,16 @@ if (window.location.pathname.includes("painel.html")) {
             return;
           }
 
+          const pacoteAnterior = await (async()=>{ try {
+            const h=await obterHandlePublicacao(); if(!h) return null;
+            return JSON.parse(await (await h.getFile()).text());
+          } catch(_) { return null; }})();
           const novaSeed = Date.now().toString();
-          const novosDados = { ...dadosAtivos, ativa:true, seedReordenacao:novaSeed, publicadoEm:new Date().toISOString() };
+          const novosDados = {
+            ...dadosAtivos,
+            idAvaliacao: dadosAtivos.idAvaliacao || pacoteAnterior?.idAvaliacao || `av_${Date.now()}`,
+            ativa:true, seedReordenacao:novaSeed, publicadoEm:new Date().toISOString()
+          };
 
           try {
             await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
@@ -2927,9 +3021,10 @@ if (window.location.pathname.includes("painel.html")) {
             console.warn("Firebase indisponível ao reembaralhar:", erroFirebase?.code || erroFirebase);
           }
 
-          const totalPacote = await gerarPacoteEstaticoAvaliacao(novosDados);
-          mostrarNotificacao("✅ Novo pacote reembaralhado gerado!");
-          alert(`🔀 Reembaralhamento preparado com ${totalPacote} questões.\n\nSubstitua prova-publicada.json no projeto e faça git push para publicar a nova versão.`);
+          const pubLocal = await gerarPacoteEstaticoAvaliacao(novosDados);
+          if (history.replaceState) history.replaceState(null, "", "#ativacao");
+          mostrarNotificacao("✅ Reembaralhamento concluído e arquivo do projeto atualizado.");
+          alert(`✅ Reembaralhamento concluído com ${pubLocal.total} questões.\n\nO prova-publicada.json foi atualizado. Aguarde a mensagem "QUIZ: GitHub atualizado." no terminal do VS Code.`);
         } catch(err) { alert("Erro ao reembaralhar: " + err.message); }
       }
     }
@@ -3368,13 +3463,12 @@ if (window.location.pathname.includes("painel.html")) {
 
       // O encerramento GitHub não depende da cota do Firebase.
       // Nada é apagado: é gerado um novo prova-publicada.json marcado como inativo.
-      gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento);
+      const modoPublicacaoEncerramento = await gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento);
       mostrarNotificacao(`🛑 Encerramento de "${escolaNome}" preparado.`);
       alert(
         `🛑 Encerramento preparado.\n\n` +
         `${firebaseEncerrado ? "Firebase: encerrado.\n" : "Firebase: indisponível/sem cota.\n"}` +
-        `GitHub: foi gerado um prova-publicada.json INATIVO.\n\n` +
-        `Substitua o arquivo no projeto e faça git push.`
+        `${modoPublicacaoEncerramento==="vinculado" ? "Arquivo do projeto atualizado como INATIVO automaticamente." : "Arquivo INATIVO baixado como alternativa."}`
       );
     }
   };
@@ -3558,7 +3652,19 @@ if (window.location.pathname.includes("painel.html")) {
 
   function salvarCacheLocalRelatorios(lista) {
     try {
-      localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(lista || []));
+      // Proteção: novas entregas são mescladas ao histórico existente.
+      const entrada = Array.isArray(lista) ? lista : [];
+      let existente = [];
+      try {
+        const p = JSON.parse(localStorage.getItem(CHAVE_CACHE_RELATORIOS) || "[]");
+        existente = Array.isArray(p) ? p : [];
+      } catch (_) {}
+      const mapa = new Map();
+      const chave = (item,i) => item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "") ||
+        item?.id || `${item?.nome || item?.aluno || "resultado"}|${item?.timestamp || item?.dataEnvio || i}`;
+      existente.forEach((item,i)=>mapa.set(chave(item,i),item));
+      entrada.forEach((item,i)=>mapa.set(chave(item,i),item));
+      localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(Array.from(mapa.values())));
       localStorage.setItem(CHAVE_CACHE_RELATORIOS_DATA, new Date().toISOString());
       return true;
     } catch (erro) {
@@ -3617,9 +3723,9 @@ if (window.location.pathname.includes("painel.html")) {
         🔄 Sincronizar relatórios
       </button>
       <button id="btn-backup-relatorios-local" type="button" class="btn-acao btn-secondary"
-        title="Baixa uma cópia JSON dos relatórios já salvos neste navegador. Não consome leituras do Firebase.">
-        💾 Backup local
-      </button>
+        title="Salva uma cópia JSON datada dos relatórios.">💾 Backup local</button>
+      <button id="btn-vincular-backup-local" type="button" class="btn-acao btn-secondary"
+        title="Vincula backup-local/relatorios. Nenhum arquivo é apagado automaticamente.">🔗 Pasta backup</button>
       <button id="btn-restaurar-backup-local" type="button" class="btn-acao btn-secondary"
         title="Restaura um backup JSON somente neste navegador. Não altera o Firebase.">
         📥 Restaurar backup
@@ -3633,7 +3739,16 @@ if (window.location.pathname.includes("painel.html")) {
 
     document.getElementById("btn-diagnostico-auth")?.addEventListener("click", diagnosticarAutenticacaoProfessor);
     document.getElementById("btn-sincronizar-relatorios")?.addEventListener("click", sincronizarRelatoriosSobDemanda);
-    document.getElementById("btn-backup-relatorios-local")?.addEventListener("click", exportarBackupLocalRelatorios);
+    document.getElementById("btn-backup-relatorios-local")?.addEventListener("click", async (evento) => {
+      evento.preventDefault(); evento.stopPropagation();
+      await exportarBackupLocalRelatorios();
+      history.replaceState(null, "", "#relatorios");
+    });
+    document.getElementById("btn-vincular-backup-local")?.addEventListener("click", async (evento) => {
+      evento.preventDefault(); evento.stopPropagation();
+      await vincularPastaBackupRelatorios();
+      history.replaceState(null, "", "#relatorios");
+    });
 
     const seletorBackup = document.getElementById("arquivo-backup-relatorios");
     document.getElementById("btn-restaurar-backup-local")?.addEventListener("click", () => {
@@ -3789,34 +3904,79 @@ if (window.location.pathname.includes("painel.html")) {
     leitor.readAsText(arquivo, "utf-8");
   }
 
-  function exportarBackupLocalRelatorios() {
-    const lista = carregarCacheLocalRelatorios();
-    if (!lista.length) {
-      alert("Ainda não há relatórios salvos localmente para gerar o backup.");
-      return;
+  const DB_BACKUP_LOCAL = "quiz_backup_local_handles_v1";
+  const STORE_BACKUP_LOCAL = "handles";
+  const CHAVE_PASTA_BACKUP_RELATORIOS = "pasta-relatorios";
+
+  function abrirDbBackupLocal() {
+    return new Promise((resolve,reject)=>{
+      const req=indexedDB.open(DB_BACKUP_LOCAL,1);
+      req.onupgradeneeded=()=>req.result.createObjectStore(STORE_BACKUP_LOCAL);
+      req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error);
+    });
+  }
+  async function salvarHandlePastaBackup(handle) {
+    const dbLocal=await abrirDbBackupLocal();
+    return new Promise((resolve,reject)=>{
+      const tx=dbLocal.transaction(STORE_BACKUP_LOCAL,"readwrite");
+      tx.objectStore(STORE_BACKUP_LOCAL).put(handle,CHAVE_PASTA_BACKUP_RELATORIOS);
+      tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error);
+    });
+  }
+  async function obterHandlePastaBackup() {
+    try {
+      const dbLocal=await abrirDbBackupLocal();
+      return await new Promise((resolve,reject)=>{
+        const req=dbLocal.transaction(STORE_BACKUP_LOCAL,"readonly").objectStore(STORE_BACKUP_LOCAL).get(CHAVE_PASTA_BACKUP_RELATORIOS);
+        req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
+      });
+    } catch (_) { return null; }
+  }
+  async function vincularPastaBackupRelatorios() {
+    if (!window.showDirectoryPicker) { alert("Navegador sem vínculo direto de pasta. O backup por download continua disponível."); return false; }
+    try {
+      const handle=await window.showDirectoryPicker({mode:"readwrite"});
+      const perm=await handle.requestPermission({mode:"readwrite"});
+      if (perm!=="granted") return false;
+      await salvarHandlePastaBackup(handle);
+      alert(`✅ Pasta vinculada: ${handle.name}`);
+      return true;
+    } catch(err) { if(err?.name!=="AbortError") alert("Não foi possível vincular: "+(err?.message||err)); return false; }
+  }
+  function nomeArquivoBackupRelatorios() {
+    const d=new Date(),p=n=>String(n).padStart(2,"0");
+    return `backup-relatorios-${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.json`;
+  }
+  async function exportarBackupLocalRelatorios() {
+    const lista=Array.isArray(resultadosGlobaisCache)?resultadosGlobaisCache:carregarCacheLocalRelatorios();
+    if(!lista.length){alert("Ainda não há relatórios no cache local.");return;}
+    const conteudo=JSON.stringify({versaoBackup:2,tipo:"quiz-relatorios-backup-local",criadoEm:new Date().toISOString(),total:lista.length,resultados:lista},null,2);
+    const nome=nomeArquivoBackupRelatorios();
+    const pasta=await obterHandlePastaBackup();
+    if(pasta){
+      try{
+        let perm=await pasta.queryPermission({mode:"readwrite"});
+        if(perm!=="granted") perm=await pasta.requestPermission({mode:"readwrite"});
+        if(perm==="granted"){
+          let nomeFinal=nome,n=1;
+          while(true){try{await pasta.getFileHandle(nomeFinal);nomeFinal=nome.replace(".json",`-${n++}.json`);}catch(_){break;}}
+          const arq=await pasta.getFileHandle(nomeFinal,{create:true}),w=await arq.createWritable();
+          await w.write(conteudo);await w.close();
+          alert(`✅ Backup concluído.\n\nArquivo: ${nomeFinal}\nRelatórios salvos: ${lista.length}\n\nNenhum backup anterior foi apagado.`);
+          const status=document.getElementById("status-cache-relatorios");
+          if(status) status.textContent=`💾 Backup concluído: ${nomeFinal} · ${lista.length} relatório(s)`;
+          return;
+        }
+      }catch(e){console.warn("Pasta de backup indisponível; usando download.",e);}
     }
-    const pacote = {
-      geradoEm: new Date().toISOString(),
-      versao: "10C.4",
-      quantidade: lista.length,
-      resultados: lista
-    };
-    const blob = new Blob([JSON.stringify(pacote, null, 2)], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `backup-relatorios-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if(window.showDirectoryPicker && confirm(`Há ${lista.length} relatório(s).\n\nDeseja selecionar agora a pasta backup-local/relatorios do projeto?`)){
+      if(await vincularPastaBackupRelatorios()) return exportarBackupLocalRelatorios();
+    }
+    const blob=new Blob([conteudo],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
   }
 
-  // ==========================================================
-  // 🛡️ FASE 10C.4 — SINCRONIZAÇÃO SEGURA EM ETAPAS
-  // ==========================================================
-  // Primeiro recupera /avaliacoes (resultados atuais) e salva no cache.
-  // Só depois tenta o histórico aninhado. Se o histórico falhar, os
-  // resultados atuais já recuperados continuam visíveis e preservados.
-  // Nenhuma operação de exclusão/migração é executada aqui.
+
   async function sincronizarRelatoriosSobDemanda() {
     if (document.documentElement.dataset.modoOfflineProfessor === "1") {
       alert("📴 O painel está em modo offline. Saia e entre novamente com internet para sincronizar.");
@@ -4315,6 +4475,30 @@ if (window.location.pathname.includes("painel.html")) {
   // 🔐 FASE 10C — corrige resultados pendentes usando SOMENTE o banco privado do professor.
   // O aluno envia IDs + letras escolhidas, mas nunca recebe a chave correta.
   const correcoesEmAndamento = new Set();
+  function normalizarRespostaParaCorrecao(valor) {
+    return (valor ?? "").toString().normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/^[A-Ea-e][\)\.\-\:\s]+\s*/, "")
+      .replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  // Ao receber um resultado confirmado, o professor também limpa o monitoramento.
+  // Isso resolve entradas "fantasma" caso o navegador do aluno tenha perdido a sessão
+  // antes de conseguir apagar seu próprio registro online.
+  async function limparMonitoramentoAposResultado(res) {
+    const idAluno = String(res?.idAluno || "").trim();
+    if (!idAluno) return;
+    try {
+      await deleteDoc(doc(db, "alunos_online", idAluno));
+      alunosOnlineCache = alunosOnlineCache.filter(a => a.idDoc !== idAluno);
+      if (!document.getElementById("aba-monitoramento")?.classList.contains("hidden")) {
+        renderizarTabelaTempoReal();
+      }
+    } catch (e) {
+      console.warn("Limpeza do monitoramento pendente:", e?.code || e);
+    }
+  }
+
   async function corrigirResultadoPendente(idResultado, res) {
     if (!res || res.pontuacao !== null || !Array.isArray(res.questoesIds) ||
         correcoesEmAndamento.has(idResultado)) return;
@@ -4322,6 +4506,7 @@ if (window.location.pathname.includes("painel.html")) {
     correcoesEmAndamento.add(idResultado);
     try {
       let acertos = 0;
+      let questoesResolvidas = 0;
 
       for (let i = 0; i < res.questoesIds.length; i++) {
         const idQuestao = res.questoesIds[i];
@@ -4333,6 +4518,8 @@ if (window.location.pathname.includes("painel.html")) {
           qSnap = await getDoc(doc(db, "banco_questoes", idQuestao));
         }
         if (!qSnap.exists()) continue;
+
+        questoesResolvidas++;
 
         const dadosQuestao = qSnap.data() || {};
         const opcoesPrivadas = Array.isArray(dadosQuestao.opcoes)
@@ -4359,8 +4546,8 @@ if (window.location.pathname.includes("painel.html")) {
 
         // Para resultados novos, texto é a comparação mais robusta.
         if (textoEscolhido && textoCorreto) {
-          if (normalizarTexto(limparPrefixoOpcao(textoEscolhido)) ===
-              normalizarTexto(limparPrefixoOpcao(textoCorreto))) {
+          if (normalizarRespostaParaCorrecao(textoEscolhido) ===
+              normalizarRespostaParaCorrecao(textoCorreto)) {
             acertos++;
           }
         } else if (/^[A-E]$/.test(letraCorreta) && letraEscolhida === letraCorreta) {
@@ -4369,10 +4556,24 @@ if (window.location.pathname.includes("painel.html")) {
         }
       }
 
+      // Só grava nota quando todas as questões foram identificadas.
+      const totalEsperado = res.questoesIds.length;
+      if (totalEsperado === 0 || questoesResolvidas !== totalEsperado) {
+        console.warn(`Correção pendente: ${questoesResolvidas}/${totalEsperado} questões localizadas.`, idResultado);
+        await setDoc(doc(db, "avaliacoes", idResultado), {
+          correcaoPendente:true, questoesResolvidasCorrecao:questoesResolvidas,
+          totalQuestoesCorrecao:totalEsperado
+        }, {merge:true});
+        return;
+      }
+
       await setDoc(doc(db, "avaliacoes", idResultado), {
         pontuacao: acertos,
         corrigidoEm: serverTimestamp(),
-        corrigidoPeloPainel: true
+        corrigidoPeloPainel: true,
+        correcaoPendente:false,
+        questoesResolvidasCorrecao:questoesResolvidas,
+        totalQuestoesCorrecao:totalEsperado
       }, { merge: true });
 
       return acertos;
@@ -4509,7 +4710,9 @@ if (window.location.pathname.includes("painel.html")) {
         const agora = Date.now();
         let segundos = alunoObj ? (alunoObj.segundosPassados || 0) : 0;
         let totalQ = alunoObj?.totalQuestoes || 10;
-        let pontuacaoAtual = alunoObj?.pontuacao || 0;
+        // A nota é corrigida pelo mesmo mecanismo privado dos envios normais.
+        // Nunca fabricamos nota zero quando ainda não houve correção.
+        let pontuacaoAtual = null;
         let escolaDestino = alunoObj?.escola || escolaAtivaSelecionadaIndependente || "Escola";
 
         // 🔵 FASE 6B — RESULTADO NO MESMO LOCAL DA FINALIZAÇÃO NORMAL
@@ -4525,6 +4728,9 @@ if (window.location.pathname.includes("painel.html")) {
           materia: alunoObj?.materia || "Geral",
           pontuacao: pontuacaoAtual,
           totalQuestoes: totalQ,
+          respostas: alunoObj?.respostas || {},
+          respostasTexto: Array.isArray(alunoObj?.respostasTexto) ? alunoObj.respostasTexto : [],
+          questoesIds: Array.isArray(alunoObj?.questoesIds) ? alunoObj.questoesIds : [],
           tempoGastoSegundos: segundos,
           tempoGastoFormatado: `${Math.floor(segundos/60)}m ${segundos%60}s`,
           dataEnvio: serverTimestamp(),
@@ -4534,6 +4740,8 @@ if (window.location.pathname.includes("painel.html")) {
         };
 
         await setDoc(doc(db, "avaliacoes", idResultado), dadosResultado);
+        const acertosProfessor = await corrigirResultadoPendente(idResultado, dadosResultado);
+        if (Number.isFinite(acertosProfessor)) dadosResultado.pontuacao = acertosProfessor;
 
         // Atualiza a tabela imediatamente, sem depender do pequeno atraso
         // do listener em tempo real antes de trocar de aba.
@@ -5275,8 +5483,9 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
     const emailEl = document.getElementById("professor-email-logado");
     if (emailEl) emailEl.textContent = usuario.email || "Professor autenticado";
 
-    // Começa a receber novas entregas imediatamente após validar o professor.
-    // Assim não perdemos uma prova que termine enquanto o restante do painel carrega.
+    // Carrega o histórico local ANTES do listener para nunca substituí-lo
+    // por uma lista contendo apenas os resultados recentes.
+    resultadosGlobaisCache = carregarCacheLocalRelatorios();
     iniciarListenerNovosResultados();
     iniciarFallbackResultadosRecentes();
 
@@ -5444,3 +5653,46 @@ console.info("QUIZ BUILD: ATIVACAO-GITHUB-RESILIENTE-2026-10-05");
   substitui somente prova-publicada.json e executa git add/commit/push.
 */
 console.info("QUIZ BUILD: PUBLICACAO-UM-CLIQUE-2026-10-05");
+
+/*
+  PUBLICAÇÃO PELO VS CODE
+  O projeto inclui .vscode/tasks.json. Isso evita arquivos .BAT/.PS1,
+  que podem ser bloqueados pelo Controle Inteligente de Aplicativos do Windows.
+  A tarefa usa o terminal integrado do VS Code e o Git já autenticado.
+*/
+console.info("QUIZ BUILD: PUBLICACAO-VSCODE-2026-10-05");
+
+console.info("QUIZ BUILD: VSCODE-DOWNLOADS-AUTOMATICO-2026-10-05");
+
+console.info("QUIZ BUILD: VSCODE-CAMINHO-SEGURO-2026-10-05");
+
+/*
+  FLUXO DE PUBLICAÇÃO LIMPO
+  - Apenas prova-publicada.json permanece no projeto.
+  - Downloads intermediários não são apagados automaticamente.
+  - Existe tarefa separada de limpeza, sempre com confirmação do professor.
+*/
+console.info("QUIZ BUILD: PUBLICACAO-LIMPA-2026-10-05");
+
+/*
+  ATALHO DE PUBLICAÇÃO
+  A tarefa "Publicar avaliação no GitHub" é o build padrão do VS Code.
+  Com o projeto aberto, Ctrl+Shift+B executa diretamente a publicação.
+  Nenhuma credencial GitHub é colocada no site.
+*/
+console.info("QUIZ BUILD: PUBLICACAO-ATALHO-VSCODE-2026-10-05");
+
+/*
+  PROTEÇÃO DA PUBLICAÇÃO
+  Ctrl+Shift+B só executa Git quando existe prova-publicada*.json em Downloads.
+  Sem pacote novo, a tarefa encerra antes de copiar, adicionar, commitar ou enviar.
+*/
+console.info("QUIZ BUILD: PUBLICACAO-SEGURA-SEM-PACOTE-2026-10-05");
+
+console.info("QUIZ BUILD: PUBLICACAO-AUTOMATICA-LOCAL-2026-10-05");
+
+console.info("QUIZ BUILD: RELATORIOS-PRESERVADOS-CORRECAO-SEGURA-2026-10-05");
+
+console.info("QUIZ BUILD: BACKUP-LOCAL-SEGURO-2026-10-05");
+
+console.info("QUIZ BUILD: CORRECAO-INTEGRADA-BACKUP-NOTAS-2026-10-05");
