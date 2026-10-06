@@ -1,21 +1,71 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791322708530",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791322223002,
-  "turmasAtivas": [],
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791333508530,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791322223002",
-  "publicadoEm": "2026-10-06T21:30:23.002Z",
-  "encerradoEm": "2026-10-06T21:30:23.002Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791322708530",
+  "publicadoEm": "2026-10-06T21:38:29.187Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "vvatSdOPrNEBneFkPkoY",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o Regularização (L1 e L2) em Machine Learning?",
+      "opcoes": [
+        "Técnicas para evitar o overfitting penalizando pesos muito grandes no modelo",
+        "Métodos para acelerar o download de arquivos pesados",
+        "Protocolos de segurança para acesso remoto via SSH",
+        "Ferramentas para organizar pastas no sistema operacional",
+        "Sistemas de resfriamento líquido para servidores"
+      ]
+    },
+    {
+      "idQuestao": "WakSW8sf8Hon1ITtSX39",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 91 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "KkJhZULjUAIGOAqQ4gwl",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a tradução automática estatística e neural?",
+      "opcoes": [
+        "O uso de modelos computacionais para traduzir textos de um idioma para outro automaticamente",
+        "A cópia de arquivos entre pen drives",
+        "A conversão de arquivos de Word para PDF",
+        "A digitação manual de documentos"
+      ]
+    }
+  ]
 }
