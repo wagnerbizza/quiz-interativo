@@ -1,158 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791305529038",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 10,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791316329038,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791312109956,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791310979823",
-  "publicadoEm": "2026-10-06T18:23:00.398Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "GdZje7fMMJljcQU4itD4",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é o protocolo BGP (Border Gateway Protocol)?",
-      "opcoes": [
-        "Protocolo de roteamento essencial que gerencia como os pacotes são trocados entre diferentes redes na internet",
-        "Protocolo de segurança para criptografia de páginas web",
-        "Protocolo de transferência de arquivos entre servidores FTP",
-        "Protocolo de obtenção de endereços IP locais",
-        "Protocolo de monitoramento de temperatura de servidores"
-      ]
-    },
-    {
-      "idQuestao": "JRS1bBpKYzPO3grP8JBP",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 8] O que caracteriza o Aprendizado por Reforço?",
-      "opcoes": [
-        "A) O agente aprende tomando ações e recebendo recompensas ou punições no ambiente",
-        "B) O sistema lê livros didáticos automaticamente",
-        "C) O usuário corrige manualmente cada linha de código gerada",
-        "D) Ocorre apenas em bancos de dados relacionais"
-      ]
-    },
-    {
-      "idQuestao": "uQaUchxDs5aavHCG6sVy",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
-      "opcoes": [
-        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
-        "Um ataque cibernético de vírus em massa",
-        "A queda de um servidor de rede",
-        "A organização de arquivos em pastas"
-      ]
-    },
-    {
-      "idQuestao": "y7Pijd2UN992517mCjOQ",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 36] O que é a ética em Inteligência Artificial?",
-      "opcoes": [
-        "A) Estudo e diretrizes para garantir que sistemas de IA sejam justos, seguros, transparentes e sem viés discriminatório",
-        "B) Regras de vestimenta para programadores",
-        "C) Direitos autorais de códigos abertos",
-        "D) Licenciamento de softwares comerciais"
-      ]
-    },
-    {
-      "idQuestao": "Ph2yefvXlTM5Hvl7I5dt",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que são Redes Neurais Convolucionais (CNNs)?",
-      "opcoes": [
-        "Redes especializadas no processamento de dados em grade, como imagens e vídeos",
-        "Redes voltadas exclusivamente para a tradução de textos longos",
-        "Algoritmos de ordenação rápida de vetores multidimensionais",
-        "Protocolos de criptografia avançada baseados em blocos",
-        "Sistemas de banco de dados relacionais distribuídos"
-      ]
-    },
-    {
-      "idQuestao": "w3SCSTCjZ0WkT13FFlRz",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "Questão oficial de nível avançado nº 25 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "zi3TY9EwCISVIYzeqiu8",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é o Protocolo SNMP Traps?",
-      "opcoes": [
-        "Mensagens de alerta enviadas por agentes de rede para um sistema de gerenciamento quando eventos ocorrem",
-        "Protocolo de transferência segura de arquivos na nuvem",
-        "Protocolo de roteamento de pacotes na camada de rede",
-        "Protocolo de criptografia de mensagens instantâneas",
-        "Protocolo de sincronização de relógios em servidores"
-      ]
-    },
-    {
-      "idQuestao": "oaTo92FmtOYyArDJDiNQ",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 41] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "uWFHrHPgi5ix5YKC5XFt",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 50 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "YV7sZ7Zapb75yTmGu2eX",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Qual método JavaScript executa uma função repetidamente em intervalos de tempo regulares?",
-      "opcoes": [
-        "setTimeout()",
-        "setInterval()",
-        "setTime()",
-        "repeatInterval()",
-        "delay()"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791312109956",
+  "publicadoEm": "2026-10-06T18:41:49.956Z",
+  "encerradoEm": "2026-10-06T18:41:49.956Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
