@@ -1,69 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791313470301",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791324270301,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791315402183,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791313470301",
-  "publicadoEm": "2026-10-06T19:04:31.029Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "ufBVjlq3CPLw0x8GYupA",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "[Técnico 10 - 1790243773015]O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "Entrega de softwares prontos via navegador",
-        "Ambiente exclusivo para programar sem gerenciar servidores",
-        "Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "6uyaT5Zc4h4IixQgvQH7",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "Questão oficial de nível avançado nº 61 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "gNbgJN17KOjT4NEdKExK",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é um agente inteligente em IA?",
-      "opcoes": [
-        "Um sistema autônomo que percebe seu ambiente através de sensores e age sobre ele através de atuadores",
-        "Um espião cibernético",
-        "Um técnico de suporte técnico",
-        "Um antivírus corporativo"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791315402183",
+  "publicadoEm": "2026-10-06T19:36:42.183Z",
+  "encerradoEm": "2026-10-06T19:36:42.183Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
