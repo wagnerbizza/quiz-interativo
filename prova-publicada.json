@@ -1,21 +1,70 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791321910071",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791321888508,
-  "turmasAtivas": [],
+  "tempoLimiteMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791332710071,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791321888508",
-  "publicadoEm": "2026-10-06T21:24:48.508Z",
-  "encerradoEm": "2026-10-06T21:24:48.508Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791321910071",
+  "publicadoEm": "2026-10-06T21:25:10.346Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "F5rh9PoLYQ4jcYVgwOY8",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 2] Qual é a principal função de uma rede neural artificial?",
+      "opcoes": [
+        "A) Gerenciar partições físicas de disco rígido",
+        "B) Compilar códigos de baixo nível",
+        "C) Processar dados através de camadas de nós para reconhecimento de padrões",
+        "D) Imprimir relatórios em formato PDF"
+      ]
+    },
+    {
+      "idQuestao": "3xyWCCa4JG7Diar3pg8H",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 27 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Inteligência Artificial Transparente?",
+      "opcoes": [
+        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
+        "Softwares cujo código-fonte está totalmente oculto dos usuários",
+        "Sistemas que funcionam apenas offline sem acesso externo",
+        "Plataformas de computação em nuvem sem suporte técnico",
+        "Redes de computadores protegidas por senhas complexas"
+      ]
+    }
+  ]
 }
