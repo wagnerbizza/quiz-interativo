@@ -4140,6 +4140,54 @@ if (window.location.pathname.includes("painel.html")) {
     if (resultadosGlobaisCache.length > 0) {
       renderizarTabelaResultadosFiltrada();
       atualizarStatusCacheRelatorios("🟡 Exibindo cópia local");
+
+      // FASE 10C.10 — atualização automática incremental e econômica.
+      // Escuta somente resultados posteriores ao mais novo já salvo neste
+      // navegador. Não relê os 155 relatórios nem substitui o histórico.
+      const ultimoTimestampLocal = resultadosGlobaisCache.reduce((maior, item) => {
+        const n = Number(item?.timestamp || 0);
+        return Number.isFinite(n) && n > maior ? n : maior;
+      }, 0);
+
+      if (ultimoTimestampLocal > 0) {
+        const consultaNovos = query(
+          collection(db, "avaliacoes"),
+          where("timestamp", ">", ultimoTimestampLocal)
+        );
+
+        onSnapshot(consultaNovos, (snapshot) => {
+          if (snapshot.empty) return;
+
+          const mapa = new Map();
+          resultadosGlobaisCache.forEach((item, i) => {
+            const chave = item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "") ||
+              item?.id || `${item?.nome || "resultado"}|${item?.timestamp || i}`;
+            mapa.set(chave, item);
+          });
+
+          let adicionados = 0;
+          snapshot.docChanges().forEach((mudanca) => {
+            if (mudanca.type !== "added" && mudanca.type !== "modified") return;
+            const docSnap = mudanca.doc;
+            const item = { idDoc: docSnap.id, refPath: docSnap.ref.path, ...docSnap.data() };
+            const chave = item.refPath || `avaliacoes/${item.idDoc}`;
+            if (!mapa.has(chave)) adicionados++;
+            mapa.set(chave, item);
+          });
+
+          resultadosGlobaisCache = Array.from(mapa.values());
+          salvarCacheLocalRelatorios(resultadosGlobaisCache);
+          renderizarTabelaResultadosFiltrada();
+          atualizarStatusCacheRelatorios(
+            adicionados > 0
+              ? `🟢 ${adicionados} novo(s) resultado(s) recebido(s) automaticamente`
+              : "🟢 Resultado atualizado automaticamente"
+          );
+        }, (erro) => {
+          console.warn("Atualização incremental de relatórios indisponível:", erro?.code || erro);
+          atualizarStatusCacheRelatorios("🟡 Cópia local preservada; atualização automática temporariamente indisponível");
+        });
+      }
     } else {
       corpoTabelaResultados.innerHTML = `
         <tr>
