@@ -1,21 +1,70 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791317942265",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791315402183,
-  "turmasAtivas": [],
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791328742265,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791315402183",
-  "publicadoEm": "2026-10-06T19:36:42.183Z",
-  "encerradoEm": "2026-10-06T19:36:42.183Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791317942265",
+  "publicadoEm": "2026-10-06T20:19:02.663Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "EepnwRZ2jbKj1X4hzoup",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Análise de Sentimentos?",
+      "opcoes": [
+        "Técnica de PLN para identificar e extrair estados subjetivos e atitudes em textos",
+        "Medição da velocidade de processamento de um processador",
+        "Avaliação do consumo de energia elétrica de um data center",
+        "Criptografia de mensagens confidenciais trocadas na rede",
+        "Monitoramento de temperatura de servidores em nuvem"
+      ]
+    },
+    {
+      "idQuestao": "EmgsaQNqmFWPiFf254aU",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que significa a sigla GAN em IA gerativa?",
+      "opcoes": [
+        "Generative Adversarial Networks (Redes Generativas Adversariais)",
+        "Global Access Network",
+        "General Artificial Node",
+        "Graphic Analytic Numeric"
+      ]
+    },
+    {
+      "idQuestao": "jDKa3EVhrs87C3iwz3du",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 56 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    }
+  ]
 }
