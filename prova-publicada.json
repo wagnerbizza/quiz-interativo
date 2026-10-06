@@ -25,131 +25,133 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791307760790",
-  "publicadoEm": "2026-10-06T17:29:21.451Z",
+  "seedReordenacao": "1791310979823",
+  "publicadoEm": "2026-10-06T18:23:00.398Z",
   "questoesPublicas": [
     {
-      "idQuestao": "75x5QAxY3hQ1y8lGDzIR",
-      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-      "pergunta": "[Técnico 6 - 1790258361051]O que é uma Sprint no framework Scrum?",
-      "opcoes": [
-        "Um documento com requisitos estáticos",
-        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
-        "Reunião final de homologação do cliente",
-        "Cargo de gestão tradicional de projetos"
-      ]
-    },
-    {
-      "idQuestao": "kn5QFHxgU1YcGuonEHtL",
+      "idQuestao": "GdZje7fMMJljcQU4itD4",
       "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
       "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é o gerenciamento de patches (Patch Management)?",
+      "pergunta": "O que é o protocolo BGP (Border Gateway Protocol)?",
       "opcoes": [
-        "Processo de aquisição, teste e instalação de atualizações de correção de falhas em softwares",
-        "Criação manual de backups em discos rígidos externos",
-        "Configuração de endereços IP dinâmicos via DHCP",
-        "Monitoramento da velocidade de conexão com a internet",
-        "Exclusão definitiva de arquivos corrompidos"
+        "Protocolo de roteamento essencial que gerencia como os pacotes são trocados entre diferentes redes na internet",
+        "Protocolo de segurança para criptografia de páginas web",
+        "Protocolo de transferência de arquivos entre servidores FTP",
+        "Protocolo de obtenção de endereços IP locais",
+        "Protocolo de monitoramento de temperatura de servidores"
       ]
     },
     {
-      "idQuestao": "h6b5OhNcOQErpp6OjalM",
+      "idQuestao": "JRS1bBpKYzPO3grP8JBP",
       "materia": "Inteligencia Artificial",
       "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 1 - 1790243763193]O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
+      "pergunta": "[Técnico 8] O que caracteriza o Aprendizado por Reforço?",
       "opcoes": [
-        "Dados sem rótulos descobertos automaticamente",
-        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
-        "Tentativa e erro autônoma sem histórico",
-        "Regras fixas de lógica booleana"
+        "A) O agente aprende tomando ações e recebendo recompensas ou punições no ambiente",
+        "B) O sistema lê livros didáticos automaticamente",
+        "C) O usuário corrige manualmente cada linha de código gerada",
+        "D) Ocorre apenas em bancos de dados relacionais"
       ]
     },
     {
-      "idQuestao": "jrkmLfOUCC49kISEAnwb",
+      "idQuestao": "uQaUchxDs5aavHCG6sVy",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a inteligência de enxame (Swarm Intelligence)?",
+      "opcoes": [
+        "O comportamento coletivo de sistemas descentralizados e auto-organizados (inspirado em abelhas ou formigas)",
+        "Um ataque cibernético de vírus em massa",
+        "A queda de um servidor de rede",
+        "A organização de arquivos em pastas"
+      ]
+    },
+    {
+      "idQuestao": "y7Pijd2UN992517mCjOQ",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 36] O que é a ética em Inteligência Artificial?",
+      "opcoes": [
+        "A) Estudo e diretrizes para garantir que sistemas de IA sejam justos, seguros, transparentes e sem viés discriminatório",
+        "B) Regras de vestimenta para programadores",
+        "C) Direitos autorais de códigos abertos",
+        "D) Licenciamento de softwares comerciais"
+      ]
+    },
+    {
+      "idQuestao": "Ph2yefvXlTM5Hvl7I5dt",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que são Redes Neurais Convolucionais (CNNs)?",
+      "opcoes": [
+        "Redes especializadas no processamento de dados em grade, como imagens e vídeos",
+        "Redes voltadas exclusivamente para a tradução de textos longos",
+        "Algoritmos de ordenação rápida de vetores multidimensionais",
+        "Protocolos de criptografia avançada baseados em blocos",
+        "Sistemas de banco de dados relacionais distribuídos"
+      ]
+    },
+    {
+      "idQuestao": "w3SCSTCjZ0WkT13FFlRz",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 25 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "zi3TY9EwCISVIYzeqiu8",
       "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
       "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "Qual ataque cibernético engana usuários para que revelem informações confidenciais fingindo ser uma entidade confiável?",
+      "pergunta": "O que é o Protocolo SNMP Traps?",
       "opcoes": [
-        "Phishing",
-        "Ransomware",
-        "Spyware",
-        "Adware",
-        "Malware"
+        "Mensagens de alerta enviadas por agentes de rede para um sistema de gerenciamento quando eventos ocorrem",
+        "Protocolo de transferência segura de arquivos na nuvem",
+        "Protocolo de roteamento de pacotes na camada de rede",
+        "Protocolo de criptografia de mensagens instantâneas",
+        "Protocolo de sincronização de relógios em servidores"
       ]
     },
     {
-      "idQuestao": "jMtxtQogXFJVpLKTrzLj",
+      "idQuestao": "oaTo92FmtOYyArDJDiNQ",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 41] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "uWFHrHPgi5ix5YKC5XFt",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Qual a principal diferença entre LocalStorage e SessionStorage?",
+      "pergunta": "Questão oficial de nível avançado nº 50 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
       "opcoes": [
-        "LocalStorage persiste mesmo após fechar o navegador, enquanto SessionStorage apaga ao fechar a aba/sessão",
-        "SessionStorage armazena mais dados que o LocalStorage",
-        "LocalStorage só funciona offline",
-        "Não há diferença técnica"
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
       ]
     },
     {
-      "idQuestao": "GTHMDjNJZy7osQ3qCxpi",
+      "idQuestao": "YV7sZ7Zapb75yTmGu2eX",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Qual método JavaScript testa se pelo menos um elemento do array passa no teste implementado pela função fornecida?",
+      "pergunta": "Qual método JavaScript executa uma função repetidamente em intervalos de tempo regulares?",
       "opcoes": [
-        "every()",
-        "some()",
-        "filter()",
-        "find()",
-        "includes()"
-      ]
-    },
-    {
-      "idQuestao": "jgw8PGVIyiAW8IQkPeyD",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o aprendizado federado (Federated Learning)?",
-      "opcoes": [
-        "Uma técnica de aprendizado de máquina que treina um algoritmo através de múltiplos dispositivos descentralizados",
-        "A união de várias empresas de tecnologia",
-        "O compartilhamento de senhas na internet",
-        "A criação de uma rede de computadores estática"
-      ]
-    },
-    {
-      "idQuestao": "SkQPxfmb1jEKkYQGxpXe",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que são pesos (weights) em uma rede neural?",
-      "opcoes": [
-        "Parâmetros numéricos que ajustam a força da conexão entre os neurônios artificiais",
-        "O peso físico do servidor",
-        "A velocidade da placa de vídeo",
-        "O tamanho do arquivo do código"
-      ]
-    },
-    {
-      "idQuestao": "ydLs5gHNcAztWJzhEX85",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a geração de texto preditiva?",
-      "opcoes": [
-        "A capacidade do sistema de prever e completar palavras ou frases com base no contexto anterior",
-        "O corretor ortográfico básico de celular",
-        "A impressão automática de documentos",
-        "A tradução simultânea de áudio"
-      ]
-    },
-    {
-      "idQuestao": "Jzh89KZDiSz610lFY2xg",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o aprendizado semi-supervisionado?",
-      "opcoes": [
-        "Abordagem que utiliza uma pequena quantidade de dados rotulados e muitos não rotulados",
-        "Treinamento realizado sem nenhum tipo de dado ou intervenção",
-        "Sistema que utiliza apenas dados perfeitamente limpos e rotulados",
-        "Processo de exclusão de dados corrompidos por vírus",
-        "Método de validação cruzada sem divisão de bases"
+        "setTimeout()",
+        "setInterval()",
+        "setTime()",
+        "repeatInterval()",
+        "delay()"
       ]
     }
   ]
