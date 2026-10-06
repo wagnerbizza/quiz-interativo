@@ -1664,6 +1664,25 @@ function inicializarPaginaEscola() {
 // PASSO 8: PAINEL DO PROFESSOR (painel.html)
 // ==========================================
 if (window.location.pathname.includes("painel.html")) {
+  // ==========================================================
+  // 🧭 PAINEL CANÔNICO — evita dois históricos locais separados
+  // ==========================================================
+  // localStorage pertence à origem do site. Portanto 127.0.0.1 e
+  // GitHub Pages mantêm caches diferentes. No uso normal do professor,
+  // redirecionamos o painel local para o painel oficial para que exista
+  // uma única cópia local de trabalho. Para manutenção técnica, use
+  // ?local=1 explicitamente e o redirecionamento não será feito.
+  const hostPainel = window.location.hostname;
+  const painelLocal = hostPainel === "127.0.0.1" || hostPainel === "localhost";
+  const permitirPainelLocal = new URLSearchParams(window.location.search).get("local") === "1";
+  if (painelLocal && !permitirPainelLocal) {
+    const destino = new URL("https://wagnerbizza.github.io/quiz-interativo/painel.html");
+    const params = new URLSearchParams(window.location.search);
+    params.delete("local");
+    destino.search = params.toString();
+    destino.hash = window.location.hash;
+    window.location.replace(destino.toString());
+  }
   // Momento em que esta página do painel foi aberta.
   // Usado para distinguir resultados novos dos registros históricos.
   const inicioSessaoResultadosPainel = Date.now();

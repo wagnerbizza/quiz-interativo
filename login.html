@@ -16,6 +16,15 @@ button:disabled{opacity:.6}.msg{display:none;margin-top:14px;padding:10px;border
 <button id="btn-login">🔑 Entrar no Painel</button>
 <button id="btn-entrar-offline" type="button" style="display:none;background:#475569;">📴 Entrar em modo offline</button><div id="mensagem" class="msg"></div></form></main>
 <script type="module">
+// 🧭 LOGIN CANÔNICO — o painel oficial usa sempre a mesma origem.
+// Isso evita separar cache de relatórios entre 127.0.0.1 e GitHub Pages.
+// Para manutenção técnica local, acrescente ?local=1 à URL.
+const hostLogin = window.location.hostname;
+const loginLocal = hostLogin === "127.0.0.1" || hostLogin === "localhost";
+const permitirLoginLocal = new URLSearchParams(window.location.search).get("local") === "1";
+if (loginLocal && !permitirLoginLocal) {
+  window.location.replace("https://wagnerbizza.github.io/quiz-interativo/login.html");
+}
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,getIdTokenResult} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 const firebaseConfig={apiKey:"AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",authDomain:"quiz-interativo-8a98c.firebaseapp.com",databaseURL:"https://quiz-interativo-8a98c-default-rtdb.firebaseio.com",projectId:"quiz-interativo-8a98c",storageBucket:"quiz-interativo-8a98c.firebasestorage.app",messagingSenderId:"948601017774",appId:"1:948601017774:web:bd0e038611ff6d2148643f"};
