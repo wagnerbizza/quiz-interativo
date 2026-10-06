@@ -1664,25 +1664,6 @@ function inicializarPaginaEscola() {
 // PASSO 8: PAINEL DO PROFESSOR (painel.html)
 // ==========================================
 if (window.location.pathname.includes("painel.html")) {
-  // ==========================================================
-  // 🧭 PAINEL CANÔNICO — evita dois históricos locais separados
-  // ==========================================================
-  // localStorage pertence à origem do site. Portanto 127.0.0.1 e
-  // GitHub Pages mantêm caches diferentes. No uso normal do professor,
-  // redirecionamos o painel local para o painel oficial para que exista
-  // uma única cópia local de trabalho. Para manutenção técnica, use
-  // ?local=1 explicitamente e o redirecionamento não será feito.
-  const hostPainel = window.location.hostname;
-  const painelLocal = hostPainel === "127.0.0.1" || hostPainel === "localhost";
-  const permitirPainelLocal = new URLSearchParams(window.location.search).get("local") === "1";
-  if (painelLocal && !permitirPainelLocal) {
-    const destino = new URL("https://wagnerbizza.github.io/quiz-interativo/painel.html");
-    const params = new URLSearchParams(window.location.search);
-    params.delete("local");
-    destino.search = params.toString();
-    destino.hash = window.location.hash;
-    window.location.replace(destino.toString());
-  }
   // Momento em que esta página do painel foi aberta.
   // Usado para distinguir resultados novos dos registros históricos.
   const inicioSessaoResultadosPainel = Date.now();
@@ -3710,11 +3691,40 @@ if (window.location.pathname.includes("painel.html")) {
     }
   }
 
+  // FASE 10C.11 — cache local defensivo.
+  // Além da chave atual, procura caches antigos de relatórios existentes NESTE
+  // mesmo navegador/origem e os mescla. Isso evita que uma atualização de nome
+  // de chave faça o histórico parecer vazio. Não remove nenhuma chave antiga.
   function carregarCacheLocalRelatorios() {
     try {
-      const bruto = localStorage.getItem(CHAVE_CACHE_RELATORIOS);
-      const lista = bruto ? JSON.parse(bruto) : [];
-      return Array.isArray(lista) ? lista : [];
+      const candidatos = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const nome = localStorage.key(i) || "";
+        if (!/quiz.*relat|relat.*cache/i.test(nome) || /_data|densidade|colwidth/i.test(nome)) continue;
+        try {
+          const valor = JSON.parse(localStorage.getItem(nome) || "null");
+          const lista = Array.isArray(valor) ? valor : (Array.isArray(valor?.resultados) ? valor.resultados : null);
+          if (lista) candidatos.push(...lista);
+        } catch (_) {}
+      }
+
+      // Garante também a leitura explícita da chave oficial atual.
+      try {
+        const oficial = JSON.parse(localStorage.getItem(CHAVE_CACHE_RELATORIOS) || "[]");
+        if (Array.isArray(oficial)) candidatos.push(...oficial);
+      } catch (_) {}
+
+      const mapa = new Map();
+      const chave = (item, i) => item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "") ||
+        item?.id || `${item?.nome || item?.aluno || item?.nomeAluno || "resultado"}|${item?.timestamp || item?.dataEnvio || item?.dataHora || item?.data || i}`;
+      candidatos.forEach((item, i) => mapa.set(chave(item, i), item));
+      const mesclados = Array.from(mapa.values());
+
+      // Só grava quando encontrou algo; jamais transforma um cache válido em vazio.
+      if (mesclados.length) {
+        localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(mesclados));
+      }
+      return mesclados;
     } catch (erro) {
       console.error("Cache local de relatórios inválido:", erro);
       return [];
@@ -4163,8 +4173,8 @@ if (window.location.pathname.includes("painel.html")) {
           <td colspan="12" style="text-align:center;padding:24px;color:#fbbf24;">
             💾 Ainda não há relatórios salvos neste navegador.<br>
             <small style="color:#94a3b8;">
-              Seus dados do Firebase não foram apagados. Quando a cota diária voltar,
-              clique em “Sincronizar relatórios” uma única vez para criar a cópia local.
+              Nenhum relatório foi apagado. Este navegador/perfil ainda não possui a cópia local.<br>
+              Use “Restaurar backup” para importar uma cópia existente. Sincronize com o Firebase somente se realmente necessário.
             </small>
           </td>
         </tr>`;
