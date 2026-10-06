@@ -1,21 +1,71 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791323866271",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791323428912,
-  "turmasAtivas": [],
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791334666271,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791323428912",
-  "publicadoEm": "2026-10-06T21:50:28.912Z",
-  "encerradoEm": "2026-10-06T21:50:28.912Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791323866271",
+  "publicadoEm": "2026-10-06T21:57:46.948Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "BqNKukVSU1xvDfZRqsJw",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 39 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "S9VKpXNuJhLyv5mc7QCO",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Revocação (Recall ou Sensibilidade)?",
+      "opcoes": [
+        "A proporção de verdadeiros positivos identificados em relação a todas as amostras positivas reais",
+        "A capacidade do modelo de memorizar textos longos",
+        "O tempo necessário para reiniciar o servidor de IA",
+        "A taxa de erro cometida durante o processo de teste",
+        "O volume de dados consumido durante o treinamento"
+      ]
+    },
+    {
+      "idQuestao": "LEqS4rmU7hTLPSyb9DUW",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a interpretabilidade pós-hoc?",
+      "opcoes": [
+        "Métodos aplicados após o treinamento de um modelo complexo para explicar suas previsões",
+        "A correção de erros após o programa travar",
+        "A formatação de um computador após o uso",
+        "A criação de relatórios impressos"
+      ]
+    }
+  ]
 }
