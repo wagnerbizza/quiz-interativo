@@ -210,8 +210,11 @@ ATENÇÃO:
         </div>
         <div class="grupo-form" id="grupo-token-acesso" style="display:none;">
           <label for="token-aluno">🔐 Código de Acesso da Avaliação:</label>
-          <input type="password" id="token-aluno" placeholder="Digite o código fornecido pelo professor..." autocomplete="off">
-          <small style="display:block;margin-top:6px;color:var(--text-muted);">O código é fornecido pelo professor e libera somente a avaliação publicada.</small>
+          <div style="position:relative;">
+            <input type="password" id="token-aluno" placeholder="Digite o código fornecido pelo professor..." autocomplete="off" style="padding-right:52px;width:100%;box-sizing:border-box;">
+            <button type="button" id="btn-ver-token-aluno" title="Mostrar ou ocultar o código digitado" aria-label="Mostrar código" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:20px;padding:6px;">👁️</button>
+          </div>
+          <small style="display:block;margin-top:6px;color:var(--text-muted);">O código será conferido quando você clicar em “Iniciar Avaliação”.</small>
         </div>
         <div class="grupo-form">
           <label for="nome-aluno">Nome Completo:</label>
@@ -338,6 +341,7 @@ ATENÇÃO:
     const btnIniciarProva = document.getElementById("btn-iniciar-prova");
     const inputTokenAluno = document.getElementById("token-aluno");
     const grupoTokenAcesso = document.getElementById("grupo-token-acesso");
+    const btnVerTokenAluno = document.getElementById("btn-ver-token-aluno");
 
     function limparPrefixoPergunta(pergunta) {
       if (!pergunta) return "";
@@ -499,7 +503,8 @@ ATENÇÃO:
         <div class="linha-detalhe"><span class="icone">📡</span><div class="conteudo-texto"><strong>Origem:</strong> ${origem==="github"?"GitHub / pacote publicado":"Firebase"}</div></div>`;
       if (grupoTokenAcesso) grupoTokenAcesso.style.display = (p.token&&String(p.token).trim()) ? "block" : "none";
       if (inputTokenAluno) {
-        inputTokenAluno.value = "";
+        // A verificação automática ocorre a cada 5 s, mas não pode apagar
+        // o código enquanto o aluno está digitando.
         inputTokenAluno.required = !!(p.token&&String(p.token).trim());
       }
       selectTurma.innerHTML=`<option value="" disabled selected>Selecione sua turma...</option>`;
@@ -613,6 +618,15 @@ ATENÇÃO:
         console.error("Falha na autenticação anônima:", erro);
         detalhesProvaAtiva.innerHTML = "⚠️ Não foi possível iniciar uma sessão segura. Atualize a página.";
       });
+
+    // Olho para o aluno conferir o código digitado antes de iniciar.
+    btnVerTokenAluno?.addEventListener("click", () => {
+      const mostrando = inputTokenAluno.type === "text";
+      inputTokenAluno.type = mostrando ? "password" : "text";
+      btnVerTokenAluno.textContent = mostrando ? "👁️" : "🙈";
+      btnVerTokenAluno.setAttribute("aria-label", mostrando ? "Mostrar código" : "Ocultar código");
+      inputTokenAluno.focus();
+    });
 
     document.getElementById("form-login")?.addEventListener("submit", async (e) => {
       e.preventDefault();
