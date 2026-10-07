@@ -91,6 +91,13 @@ async function validarSessaoProfessorAntesDoPainel() {
   });
 }
 
+// IMPORTANTE: este await fica antes de listeners e leituras do Firestore.
+// Assim, o painel não tenta ler dados privados antes de confirmar o professor.
+const sessaoProfessorValida = await validarSessaoProfessorAntesDoPainel();
+if (!sessaoProfessorValida) {
+  throw new Error("Sessão de professor não validada; redirecionando para o login.");
+}
+
 // ==========================================
 // PASSO 3: VARIÁVEIS DE ESTADO E CACHE GLOBAL
 // ==========================================
@@ -108,8 +115,7 @@ let temaAtualSistema = localStorage.getItem("tema_sistema_escolar") || "dark";
 // ==========================================
 // PASSO 4: EVENTO DE INICIALIZAÇÃO DO DOM
 // ==========================================
-document.addEventListener("DOMContentLoaded", async () => {
-  if (!(await validarSessaoProfessorAntesDoPainel())) return;
+document.addEventListener("DOMContentLoaded", () => {
   document.body.style.opacity = "1";
   aplicarTemaSistema(temaAtualSistema);
   garantirBancoCompleto100Questoes();
