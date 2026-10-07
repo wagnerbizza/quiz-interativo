@@ -1371,6 +1371,100 @@ body.tema-claro-ativo .marca-agua-sistema { opacity:.22; color:#334155; }
 }
 </style>
 
+
+<style id="ajuste-banco-grade-v4">
+/* ============================================================
+   BANCO DE DADOS V4 — GRADE SEQUENCIAL E LEGÍVEL
+   SOMENTE VISUAL:
+   - preenche esquerda -> centro -> direita;
+   - mantém cards confortáveis;
+   - impede "Correta" e botões de quebrarem;
+   - não altera Firebase, dados, filtros, edição ou exclusão.
+   ============================================================ */
+
+/* O contêiner principal passa a controlar a grade inteira. */
+#catalogo-questoes-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+/* Os agrupadores antigos deixam de criar colunas independentes.
+   Assim todos os cards entram na mesma sequência da grade. */
+#catalogo-questoes-grid > .mural-questoes-estavel,
+#catalogo-questoes-grid .mural-questoes-estavel,
+#catalogo-questoes-grid .mural-coluna {
+  display: contents !important;
+}
+
+/* Card de questão */
+#catalogo-questoes-grid .catalogo-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 15px !important;
+  box-sizing: border-box !important;
+  border-radius: 12px !important;
+  font-size: 13.5px !important;
+  line-height: 1.38 !important;
+  overflow: visible !important;
+}
+
+/* Enunciado e alternativas com leitura confortável */
+#catalogo-questoes-grid .catalogo-card p,
+#catalogo-questoes-grid .catalogo-card li,
+#catalogo-questoes-grid .catalogo-card label,
+#catalogo-questoes-grid .catalogo-card span {
+  line-height: 1.38 !important;
+}
+#catalogo-questoes-grid .catalogo-card [class*="enunciado"] {
+  font-size: 14px !important;
+}
+
+/* Cabeçalho do card: permite a matéria ocupar espaço sem esmagar botões. */
+#catalogo-questoes-grid .catalogo-card > :first-child {
+  gap: 8px !important;
+}
+
+/* Editar / Excluir */
+#catalogo-questoes-grid .catalogo-card button {
+  min-width: 76px !important;
+  min-height: 34px !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+}
+
+/* Etiquetas curtas, inclusive "Correta", não quebram. */
+#catalogo-questoes-grid .catalogo-card .correta,
+#catalogo-questoes-grid .catalogo-card [class*="correta"],
+#catalogo-questoes-grid .catalogo-card [class*="badge"] {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  min-width: max-content !important;
+}
+
+/* Responsividade */
+@media (max-width: 1350px) {
+  #catalogo-questoes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 800px) {
+  #catalogo-questoes-grid {
+    grid-template-columns: 1fr !important;
+  }
+  #catalogo-questoes-grid .catalogo-card {
+    font-size: 14px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
