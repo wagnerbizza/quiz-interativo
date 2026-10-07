@@ -1694,6 +1694,17 @@ function fecharDemoProfessor(){
   overlayDemoProfessor.setAttribute("aria-hidden","true");
   destaqueDemoProfessor.style.display="none";
 }
+
+/* AJUSTE MANUAL 15 — DESTINO AO CONCLUIR/PULAR A DEMONSTRAÇÃO
+   Concluir ou Pular: fecha o tutorial e retorna à Home/Painel (Configurações Gerais).
+   Fechar: apenas fecha o tutorial e mantém a aba atual para o professor continuar trabalhando. */
+function voltarHomeAposDemoProfessor(){
+  fecharDemoProfessor();
+  const botaoHome=localizarAbaDemo("aba-global");
+  if(botaoHome) botaoHome.click();
+  history.replaceState(null,"",window.location.pathname+window.location.search);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
   passoDemoProfessor=0; renderDemoProfessor();
@@ -1702,9 +1713,9 @@ btnDemoProfessor?.addEventListener("click",()=>{
 });
 document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
   if(passoDemoProfessor<passosDemoProfessor.length-1){passoDemoProfessor++;renderDemoProfessor();}
-  else fecharDemoProfessor();
+  else voltarHomeAposDemoProfessor();
 });
-document.getElementById("demo-prof-pular")?.addEventListener("click",fecharDemoProfessor);
+document.getElementById("demo-prof-pular")?.addEventListener("click",voltarHomeAposDemoProfessor);
 document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemoProfessor);
 window.addEventListener("resize",()=>{
   if(overlayDemoProfessor.classList.contains("ativo")){
