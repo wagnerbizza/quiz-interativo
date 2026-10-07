@@ -307,6 +307,65 @@ ATENÇÃO:
     }
   }
 
+
+  /* ============================================================
+     [AJUSTE MANUAL 01] TELA DO ALUNO EM 100% DE ZOOM
+     Para mudar depois:
+     - max-width controla a largura máxima.
+     - gap controla o espaço entre informações.
+     - padding controla o espaço interno.
+     - altere apenas estes valores; não mexa nos IDs dos campos.
+     ============================================================ */
+  @media (min-width: 900px) {
+    #tela-login { padding: 4px 12px !important; }
+    #tela-login > div {
+      max-width: min(94vw, 1280px) !important;
+      margin: 4px auto !important;
+      padding: 12px 18px 14px !important;
+    }
+    #tela-login h1 {
+      font-size: clamp(1.55rem,1.9vw,1.9rem) !important;
+      margin: 2px 0 10px !important;
+    }
+    #detalhes-prova-ativa {
+      padding: 10px 14px !important;
+      margin-bottom: 10px !important;
+      line-height: 1.25 !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      column-gap: 24px !important;
+      row-gap: 3px !important;
+    }
+    #detalhes-prova-ativa > div:first-child {
+      grid-column: 1 / -1 !important;
+      margin-bottom: 3px !important;
+    }
+    #tela-login .grupo-form, #tela-login .form-group { margin-bottom: 7px !important; }
+    #tela-login label { margin-bottom: 3px !important; }
+    #tela-login input, #tela-login select { min-height: 38px !important; height: 38px !important; }
+    #tela-login small { margin-top: 2px !important; }
+    #btn-iniciar-prova { min-height: 40px !important; height: 40px !important; margin-top: 2px !important; }
+  }
+
+  /* [AJUSTE MANUAL 02] BOTÃO E JANELA DA DEMONSTRAÇÃO */
+  .demo-ajuda-btn{
+    position:fixed;right:18px;bottom:18px;z-index:9000;border:1px solid #3b82f6;
+    background:#17243a;color:#dbeafe;border-radius:10px;padding:9px 13px;cursor:pointer;
+    font-weight:800;box-shadow:0 8px 25px #0006;
+  }
+  .demo-ajuda-btn:hover{background:#1e3a5f;color:#fff}
+  .demo-overlay{position:fixed;inset:0;background:#000a;z-index:9998;display:none}
+  .demo-overlay.ativo{display:block}
+  .demo-caixa{
+    position:fixed;z-index:9999;left:50%;bottom:28px;transform:translateX(-50%);
+    width:min(92vw,720px);background:#111c2f;border:1px solid #60a5fa;border-radius:14px;
+    padding:18px;color:#eef6ff;box-shadow:0 18px 55px #000b;
+  }
+  .demo-caixa h3{margin:0 0 8px;color:#60a5fa}
+  .demo-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .demo-acoes button{min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #46617f;cursor:pointer}
+  .demo-proximo{background:#2563eb;color:white}.demo-pular{background:#374151;color:white}.demo-fechar{background:#7f1d1d;color:white}
+
 </style>
 
 </head>
@@ -1347,7 +1406,57 @@ if (unsubscribePermissaoAluno) {
     }
 
     document.getElementById("btn-reiniciar")?.addEventListener("click", voltarTelaInicialAluno);
-  </script>
+  
+    /* ============================================================
+       [AJUSTE MANUAL 03] DEMONSTRAÇÃO DO ALUNO
+       true  = botão de demonstração disponível
+       false = botão oculto/desativado
+       Os textos podem ser alterados livremente na lista abaixo.
+       ============================================================ */
+    const DEMO_ALUNO_ATIVA = true;
+    const passosDemoAluno = [
+      "<strong>1. Avaliação ativa:</strong> confira escola, matérias e turmas antes de começar.",
+      "<strong>2. Código:</strong> digite o código informado pelo professor. O olho mostra ou oculta o que foi digitado.",
+      "<strong>3. Identificação:</strong> preencha seu nome e escolha somente a sua turma.",
+      "<strong>4. Iniciar:</strong> o código é validado ao clicar em “Iniciar Avaliação”. Código incorreto não abre a prova.",
+      "<strong>5. Durante a prova:</strong> acompanhe questões respondidas e o tempo restante. Ao atingir o limite, a avaliação é encerrada automaticamente."
+    ];
+    let passoDemoAluno = 0;
+    const btnDemoAluno=document.getElementById("btn-demo-aluno");
+    const overlayDemoAluno=document.getElementById("demo-overlay-aluno");
+    const textoDemoAluno=document.getElementById("demo-texto-aluno");
+    function renderDemoAluno(){
+      textoDemoAluno.innerHTML=passosDemoAluno[passoDemoAluno];
+      document.getElementById("demo-proximo-aluno").textContent =
+        passoDemoAluno===passosDemoAluno.length-1 ? "Concluir" : "Próximo";
+    }
+    function fecharDemoAluno(){overlayDemoAluno.classList.remove("ativo");overlayDemoAluno.setAttribute("aria-hidden","true");}
+    if(!DEMO_ALUNO_ATIVA) btnDemoAluno.style.display="none";
+    btnDemoAluno?.addEventListener("click",()=>{passoDemoAluno=0;renderDemoAluno();overlayDemoAluno.classList.add("ativo");overlayDemoAluno.setAttribute("aria-hidden","false");});
+    document.getElementById("demo-proximo-aluno")?.addEventListener("click",()=>{if(passoDemoAluno<passosDemoAluno.length-1){passoDemoAluno++;renderDemoAluno();}else fecharDemoAluno();});
+    document.getElementById("demo-pular-aluno")?.addEventListener("click",fecharDemoAluno);
+    document.getElementById("demo-fechar-aluno")?.addEventListener("click",fecharDemoAluno);
+
+</script>
+
+<!-- ============================================================
+     DEMONSTRAÇÃO GUIADA DO ALUNO
+     Para desativar manualmente no futuro, mude DEMO_ALUNO_ATIVA para false
+     no bloco JavaScript abaixo. O aluno também pode fechar/pular quando quiser.
+     ============================================================ -->
+<button type="button" id="btn-demo-aluno" class="demo-ajuda-btn" title="Abrir demonstração desta tela">❔ Demonstração</button>
+<div id="demo-overlay-aluno" class="demo-overlay" aria-hidden="true">
+  <div class="demo-caixa" role="dialog" aria-modal="true" aria-labelledby="demo-titulo-aluno">
+    <h3 id="demo-titulo-aluno">Demonstração da Área do Aluno</h3>
+    <div id="demo-texto-aluno"></div>
+    <div class="demo-acoes">
+      <button type="button" class="demo-pular" id="demo-pular-aluno">Pular demonstração</button>
+      <button type="button" class="demo-proximo" id="demo-proximo-aluno">Próximo</button>
+      <button type="button" class="demo-fechar" id="demo-fechar-aluno">Fechar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 <!-- QUIZ BUILD: GITHUB-PRIORIDADE-ENTREGA-2026-10-05 -->

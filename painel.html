@@ -1148,6 +1148,18 @@ html,body{max-width:100%;overflow-x:hidden}
     .toolbar, .acoes, .controls, .controles { flex-wrap: wrap !important; }
   }
 
+
+  /* ============================================================
+     [AJUSTE MANUAL 10] DEMONSTRAÇÃO DO PAINEL DO PROFESSOR
+     Esta camada é somente ajuda visual; não altera Firebase nem dados.
+     ============================================================ */
+  .demo-prof-btn{position:fixed;right:18px;bottom:18px;z-index:9000;border:1px solid #3b82f6;background:#17243a;color:#dbeafe;border-radius:10px;padding:9px 13px;cursor:pointer;font-weight:800;box-shadow:0 8px 25px #0006}
+  .demo-prof-btn:hover{background:#1e3a5f;color:#fff}
+  .demo-prof-overlay{position:fixed;inset:0;background:#000a;z-index:9998;display:none}
+  .demo-prof-overlay.ativo{display:block}
+  .demo-prof-caixa{position:fixed;z-index:9999;left:50%;bottom:28px;transform:translateX(-50%);width:min(92vw,760px);background:#111c2f;border:1px solid #60a5fa;border-radius:14px;padding:18px;color:#eef6ff;box-shadow:0 18px 55px #000b}
+  .demo-prof-caixa h3{margin:0 0 8px;color:#60a5fa}.demo-prof-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.demo-prof-acoes button{min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #46617f;cursor:pointer}
+
 </style>
 
 </head>
@@ -1576,5 +1588,45 @@ html,body{max-width:100%;overflow-x:hidden}
   
 
   <script type="module" src="app.js"></script>
+
+<!-- Demonstração guiada do professor: pode ser aberta/fechada sem alterar dados. -->
+<button type="button" id="btn-demo-prof" class="demo-prof-btn" title="Abrir demonstração do painel">❔ Demonstração</button>
+<div id="demo-prof-overlay" class="demo-prof-overlay" aria-hidden="true">
+ <div class="demo-prof-caixa" role="dialog" aria-modal="true">
+  <h3>Demonstração do Painel do Professor</h3>
+  <div id="demo-prof-texto"></div>
+  <div class="demo-prof-acoes">
+   <button type="button" id="demo-prof-pular">Pular demonstração</button>
+   <button type="button" id="demo-prof-proximo">Próximo</button>
+   <button type="button" id="demo-prof-fechar">Fechar</button>
+  </div>
+ </div>
+</div>
+<script>
+/* ============================================================
+   [AJUSTE MANUAL 11] DEMONSTRAÇÃO DO PROFESSOR
+   Mude para false para ocultar o botão sem apagar o código.
+   Edite os textos abaixo para atualizar o roteiro.
+   ============================================================ */
+const DEMO_PROFESSOR_ATIVA = true;
+const passosDemoProfessor = [
+ "<strong>1. Cadastro de Escolas:</strong> configure as unidades escolares usadas pelo sistema.",
+ "<strong>2. Ativação de Provas:</strong> escolha escola, matérias, turmas, quantidade, tempos e código de acesso; depois publique.",
+ "<strong>3. Banco de Questões:</strong> mantenha perguntas e alternativas. O gabarito permanece na área privada.",
+ "<strong>4. Banco de Dados:</strong> consulte os dados administrativos e estruturas disponíveis.",
+ "<strong>5. Monitoramento:</strong> acompanhe alunos enquanto realizam a avaliação e encerre a prova quando necessário.",
+ "<strong>6. Resultados e Relatórios:</strong> consulte histórico, notas, tempos, backups e exportações."
+];
+let passoDemoProfessor=0;
+const btnDemoProfessor=document.getElementById("btn-demo-prof"), overlayDemoProfessor=document.getElementById("demo-prof-overlay"), textoDemoProfessor=document.getElementById("demo-prof-texto");
+function renderDemoProfessor(){textoDemoProfessor.innerHTML=passosDemoProfessor[passoDemoProfessor];document.getElementById("demo-prof-proximo").textContent=passoDemoProfessor===passosDemoProfessor.length-1?"Concluir":"Próximo";}
+function fecharDemoProfessor(){overlayDemoProfessor.classList.remove("ativo");overlayDemoProfessor.setAttribute("aria-hidden","true");}
+if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
+btnDemoProfessor?.addEventListener("click",()=>{passoDemoProfessor=0;renderDemoProfessor();overlayDemoProfessor.classList.add("ativo");overlayDemoProfessor.setAttribute("aria-hidden","false");});
+document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{if(passoDemoProfessor<passosDemoProfessor.length-1){passoDemoProfessor++;renderDemoProfessor();}else fecharDemoProfessor();});
+document.getElementById("demo-prof-pular")?.addEventListener("click",fecharDemoProfessor);
+document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemoProfessor);
+</script>
+
 </body>
 </html>
