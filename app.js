@@ -5,6 +5,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { 
   getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged, signOut, getIdTokenResult
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ==========================================
 // PASSO 2: CONFIGURAÇÃO DE CREDENCIAIS E CONEXÃO
@@ -21,6 +24,72 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// ============================================================
+// RESTAURAÇÃO DA SESSÃO DO PROFESSOR
+// Não altera dados. Apenas garante que as leituras privadas só
+// comecem depois de o Firebase confirmar login por senha.
+// ============================================================
+const authProfessor = getAuth(app);
+const CHAVE_PROFESSOR_OFFLINE_AUTH = "quiz_professor_offline_v10c9";
+
+function atualizarCabecalhoProfessorAuth(usuario, conectado = true) {
+  const status = document.getElementById("status-conexao-professor");
+  const email = document.getElementById("professor-email-logado");
+  if (status) status.textContent = conectado ? "● CONECTADO" : "● MODO OFFLINE";
+  if (email) email.textContent = usuario?.email || "Professor autorizado";
+}
+
+window.sairPainelProfessor = async function() {
+  try { await signOut(authProfessor); }
+  catch (erro) { console.warn("Falha ao sair online:", erro?.code || erro); }
+  finally { window.location.replace("login.html"); }
+};
+
+async function validarSessaoProfessorAntesDoPainel() {
+  const modoOffline = new URLSearchParams(location.search).get("modo") === "offline";
+  if (modoOffline) {
+    try {
+      const salvo = JSON.parse(localStorage.getItem(CHAVE_PROFESSOR_OFFLINE_AUTH) || "null");
+      if (salvo?.email && salvo?.uid) {
+        atualizarCabecalhoProfessorAuth({email: salvo.email}, false);
+        return true;
+      }
+    } catch (_) {}
+    window.location.replace("login.html");
+    return false;
+  }
+
+  return await new Promise(resolve => {
+    const cancelar = onAuthStateChanged(authProfessor, async usuario => {
+      cancelar();
+      if (!usuario) {
+        window.location.replace("login.html");
+        resolve(false);
+        return;
+      }
+      try {
+        const token = await getIdTokenResult(usuario, true);
+        const provedor = token?.signInProvider || token?.claims?.firebase?.sign_in_provider || "";
+        if (provedor !== "password") {
+          await signOut(authProfessor).catch(()=>{});
+          window.location.replace("login.html");
+          resolve(false);
+          return;
+        }
+        localStorage.setItem(CHAVE_PROFESSOR_OFFLINE_AUTH, JSON.stringify({
+          email: usuario.email, uid: usuario.uid, validadoEm: Date.now()
+        }));
+        atualizarCabecalhoProfessorAuth(usuario, true);
+        resolve(true);
+      } catch (erro) {
+        console.error("Falha ao validar sessão do professor:", erro);
+        window.location.replace("login.html");
+        resolve(false);
+      }
+    });
+  });
+}
 
 // ==========================================
 // PASSO 3: VARIÁVEIS DE ESTADO E CACHE GLOBAL
@@ -39,7 +108,8 @@ let temaAtualSistema = localStorage.getItem("tema_sistema_escolar") || "dark";
 // ==========================================
 // PASSO 4: EVENTO DE INICIALIZAÇÃO DO DOM
 // ==========================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  if (!(await validarSessaoProfessorAntesDoPainel())) return;
   document.body.style.opacity = "1";
   aplicarTemaSistema(temaAtualSistema);
   garantirBancoCompleto100Questoes();
@@ -656,8 +726,23 @@ function normalizarDocumentoQuestao(d, idDoc = null) {
     ehCorreta: (idx === indiceOriginal)
   }));
 
-  // V8 — preserva exatamente as alternativas cadastradas.
-  // Não cria distratores artificiais para completar cinco opções.
+  let bancoDistratoresFalsosSeguros = [
+    "Processamento autônomo baseado em regras estáticas locais",
+    "Conversão estruturada de metadados em arquivos compactados",
+    "Execução direta de rotinas em camada de hardware isolada",
+    "Indexação sequencial de logs e repositórios desatualizados"
+  ];
+
+  let contadorComplemento = 0;
+  while (alternativasMapeadas.length < 5) {
+    let textoComplementar = bancoDistratoresFalsosSeguros[contadorComplemento % bancoDistratoresFalsosSeguros.length];
+    contadorComplemento++;
+    alternativasMapeadas.push({
+      texto: textoComplementar,
+      ehCorreta: false
+    });
+  }
+
   if (alternativasMapeadas.length > 5) {
     alternativasMapeadas = alternativasMapeadas.slice(0, 5);
   }
@@ -2590,20 +2675,16 @@ if (window.location.pathname.includes("painel.html")) {
       <head>
         <title>Avaliação Oficial - ${escola}</title>
         <style>
-          @page { size: A4 portrait; margin: 12mm 14mm; }
-          * { box-sizing: border-box; }
-          body { font-family: "Segoe UI", Arial, sans-serif; padding: 0; margin: 0; color: #111827; line-height: 1.35; font-size: 10.5pt; }
-          .cabecalho { border-bottom: 1.5px solid #1f3b64; padding-bottom: 8px; margin-bottom: 12px; }
-          .cabecalho h2 { margin: 0 0 8px; font-size: 15pt; color: #17365d; }
-          .cabecalho p { margin: 3px 0; font-size: 9.5pt; }
-          .questao { margin-bottom: 11px; page-break-inside: avoid; border-bottom: 1px solid #d7dee8; padding-bottom: 8px; }
-          .questao p.enunciado { font-size: 10.5pt; font-weight: 700; margin: 0 0 5px; color: #111827; }
-          .opcoes { margin-left: 10px; font-size: 9.5pt; }
-          .opcoes div { margin-bottom: 2px; }
-          .gabarito { margin-top: 16px; border-top: 1.5px dashed #64748b; padding-top: 10px; page-break-before: auto; }
-          .gabarito h3 { margin: 0 0 7px; font-size: 11pt; color: #17365d; }
-          .gabarito ul { list-style-type: none; padding: 0; margin: 0; columns: 2; column-gap: 24px; }
-          .gabarito li { padding: 3px 0; border-bottom: 1px solid #e5e7eb; font-size: 9pt; break-inside: avoid; }
+          body { font-family: Arial, sans-serif; padding: 30px; color: #000; line-height: 1.6; }
+          .cabecalho { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
+          .questao { margin-bottom: 30px; page-break-inside: avoid; border-bottom: 1px solid #ccc; padding-bottom: 15px; }
+          .questao p.enunciado { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #000; }
+          .opcoes { margin-left: 20px; font-size: 14px; }
+          .opcoes div { margin-bottom: 6px; }
+          .gabarito { margin-top: 50px; border-top: 2px dashed #000; padding-top: 25px; page-break-before: always; }
+          .gabarito h3 { margin-bottom: 15px; font-size: 18px; }
+          .gabarito ul { list-style-type: none; padding: 0; }
+          .gabarito li { padding: 6px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
         </style>
       </head>
       <body>
@@ -3236,66 +3317,46 @@ if (window.location.pathname.includes("painel.html")) {
   };
 
   window.gerarBoletimIndividual = function(nome, turma, escola, nota, materia) {
-    const data = new Date().toLocaleDateString("pt-BR");
-    let win = window.open("", "_blank");
+    let win = window.open('', '_blank');
     win.document.write(`
-      <html><head><title>Boletim - ${nome}</title>
-      <style>
-        @page{size:A4 portrait;margin:16mm}
-        *{box-sizing:border-box}
-        body{font-family:"Segoe UI",Arial,sans-serif;color:#172033;margin:0;font-size:11pt}
-        .folha{border:1px solid #cbd5e1;border-radius:10px;padding:22px}
-        .topo{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1d4f91;padding-bottom:12px;margin-bottom:18px}
-        h1{font-size:19pt;color:#17365d;margin:0 0 4px}.sub{color:#64748b;font-size:9.5pt}
-        .escola{font-weight:700;text-align:right;max-width:45%}
-        .dados{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin:18px 0}
-        .campo{border-bottom:1px solid #d7dee8;padding:7px 0}.rot{font-size:8.5pt;color:#64748b;text-transform:uppercase;font-weight:700}
-        .nota{margin:22px 0;padding:18px;border-radius:10px;background:#f1f5f9;text-align:center}
-        .nota strong{font-size:28pt;color:#1d4f91}
-        .assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:65px;text-align:center;font-size:9.5pt}
-        .linha{border-top:1px solid #475569;padding-top:6px}
-        .rodape{margin-top:35px;text-align:center;color:#94a3b8;font-size:8pt}
-      </style></head><body><div class="folha">
-        <div class="topo"><div><h1>Boletim de Avaliação</h1><div class="sub">Registro individual de desempenho</div></div><div class="escola">${escola}</div></div>
-        <div class="dados">
-          <div class="campo"><div class="rot">Aluno(a)</div>${nome}</div>
-          <div class="campo"><div class="rot">Turma</div>${turma}</div>
-          <div class="campo"><div class="rot">Componente / Matéria</div>${materia}</div>
-          <div class="campo"><div class="rot">Data de emissão</div>${data}</div>
+      <html>
+      <head><title>Boletim - ${nome}</title></head>
+      <body style="font-family: Arial; padding: 30px; text-align: center; border: 5px solid #1e293b; margin: 20px;">
+        <h1>📜 BOLETIM DE AVALIAÇÃO ESCOLAR</h1>
+        <h3>${escola}</h3>
+        <hr style="margin: 20px 0;">
+        <p style="text-align: left; font-size: 16px;"><strong>Aluno(a):</strong> ${nome}</p>
+        <p style="text-align: left; font-size: 16px;"><strong>Turma:</strong> ${turma} | <strong>Matéria:</strong> ${materia}</p>
+        <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <h2>Nota Final: <span style="color: #2563eb;">${nota} / 10.0</span></h2>
         </div>
-        <div class="nota"><div class="rot">Nota final</div><strong>${nota}</strong><span> / 10,0</span></div>
-        <div class="assinaturas"><div class="linha">Professor(a) / Responsável</div><div class="linha">Coordenação Pedagógica</div></div>
-        <div class="rodape">Sistema de Avaliações • © 2026 WagnerBIZZA</div>
-      </div></body></html>`);
-    win.document.close(); win.print();
+        <p style="margin-top: 60px;">___________________________________________________<br>Assinatura da Coordenação Pedagógica</p>
+      </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
   };
 
   window.gerarCertificadoIndividual = function(nome, escola, nota) {
-    const data = new Date().toLocaleDateString("pt-BR");
-    let win = window.open("", "_blank");
+    let win = window.open('', '_blank');
     win.document.write(`
-      <html><head><title>Certificado - ${nome}</title>
-      <style>
-        @page{size:A4 landscape;margin:14mm}
-        *{box-sizing:border-box}
-        body{font-family:"Segoe UI",Arial,sans-serif;color:#172033;margin:0}
-        .cert{height:175mm;border:2px solid #1d4f91;padding:9mm;position:relative}
-        .interno{height:100%;border:1px solid #b9c8da;padding:14mm 18mm;text-align:center;display:flex;flex-direction:column;justify-content:center}
-        .selo{width:52px;height:52px;border-radius:50%;background:#1d4f91;color:white;display:grid;place-items:center;margin:0 auto 12px;font-weight:800;font-size:20px}
-        h1{font-size:27pt;letter-spacing:1px;color:#17365d;margin:0 0 8px}
-        .sub{font-size:11pt;color:#64748b;text-transform:uppercase;letter-spacing:1.4px}
-        .texto{font-size:14pt;line-height:1.7;margin:18px auto;max-width:850px}
-        .nome{font-size:24pt;font-weight:700;color:#17365d;border-bottom:1px solid #8ba4c3;padding:0 25px 5px;display:inline-block}
-        .assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin:35px auto 0;max-width:700px;font-size:10pt}
-        .linha{border-top:1px solid #475569;padding-top:6px}
-        .rodape{position:absolute;left:0;right:0;bottom:5mm;text-align:center;color:#94a3b8;font-size:8pt}
-      </style></head><body><div class="cert"><div class="interno">
-        <div class="selo">✓</div><div class="sub">Sistema de Avaliações</div><h1>Certificado de Conclusão</h1>
-        <div class="texto">Certificamos que<br><span class="nome">${nome}</span><br>concluiu a avaliação aplicada pela instituição <strong>${escola}</strong>, obtendo nota <strong>${nota}</strong>.</div>
-        <div class="assinaturas"><div class="linha">Direção Escolar</div><div class="linha">Coordenação Pedagógica</div></div>
-        <div class="rodape">Emitido em ${data} • © 2026 WagnerBIZZA</div>
-      </div></div></body></html>`);
-    win.document.close(); win.print();
+      <html>
+      <head><title>Certificado - ${nome}</title></head>
+      <body style="font-family: Georgia, serif; padding: 40px; text-align: center; border: 10px double #b45309; margin: 20px; background: #fffbeb;">
+        <h1 style="color: #b45309; font-size: 32px;">CERTIFICADO DE CONCLUSÃO</h1>
+        <p style="font-size: 18px; margin-top: 20px;">Certificamos para os devidos fins que</p>
+        <h2 style="font-size: 28px; color: #1e293b; border-bottom: 2px solid #b45309; display: inline-block; padding: 0 20px; margin: 15px 0;">${nome}</h2>
+        <p style="font-size: 18px; line-height: 1.6;">concluiu com êxito a avaliação oficial aplicada pela instituição <strong>${escola}</strong>, alcançando média <strong>${nota}</strong>.</p>
+        <div style="margin-top: 80px; display: flex; justify-content: space-around;">
+          <div>________________________________________<br>Direção Escolar</div>
+          <div>________________________________________<br>Coordenação</div>
+        </div>
+      </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
   };
 
   function atualizarGraficosDesempenho(lista) {
