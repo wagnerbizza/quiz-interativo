@@ -1157,7 +1157,7 @@ html,body{max-width:100%;overflow-x:hidden}
   .demo-prof-btn:hover{background:#1e3a5f;color:#fff}
   .demo-prof-overlay{position:fixed;inset:0;background:#000a;z-index:9998;display:none}
   .demo-prof-overlay.ativo{display:block}
-  .demo-prof-caixa{position:fixed;z-index:9999;left:50%;bottom:28px;transform:translateX(-50%);width:min(92vw,760px);background:#111c2f;border:1px solid #60a5fa;border-radius:14px;padding:18px;color:#eef6ff;box-shadow:0 18px 55px #000b}
+  .demo-prof-caixa{position:fixed;z-index:10001;left:50%;bottom:28px;transform:translateX(-50%);width:min(92vw,760px);background:#111c2f;border:1px solid #60a5fa;border-radius:14px;padding:18px;color:#eef6ff;box-shadow:0 18px 55px #000b}
   .demo-prof-caixa h3{margin:0 0 8px;color:#60a5fa}.demo-prof-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.demo-prof-acoes button{min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #46617f;cursor:pointer}
 
 
@@ -1175,6 +1175,15 @@ html,body{max-width:100%;overflow-x:hidden}
     pointer-events: none;
     transition: all .28s ease;
     display: none;
+  }
+  .demo-prof-alvo-ativo {
+    position: relative !important;
+    z-index: 10000 !important;
+    outline: 4px solid #60a5fa !important;
+    outline-offset: 6px !important;
+    box-shadow: 0 0 0 10px rgba(96,165,250,.18), 0 0 42px rgba(96,165,250,.75) !important;
+    border-radius: 12px !important;
+    pointer-events: none !important;
   }
   .demo-prof-legenda {
     color:#bcd7ff;
@@ -1641,66 +1650,66 @@ html,body{max-width:100%;overflow-x:hidden}
    ============================================================ */
 const DEMO_PROFESSOR_ATIVA = true;
 const passosDemoProfessor = [
- {titulo:"1. Cadastro de Escolas", texto:"Cadastre e revise as unidades escolares. Esta área define as escolas que poderão ser usadas nas avaliações.", seletor:'[href="#escolas"], [data-section="escolas"]', hash:"#escolas"},
- {titulo:"2. Ativação de Provas", texto:"Escolha escola, matérias, turmas, quantidade de questões, tempos e código de acesso. A demonstração não publica nenhuma avaliação.", seletor:'[href="#ativacao"], [data-section="ativacao"]', hash:"#ativacao"},
- {titulo:"3. Banco de Questões", texto:"Consulte e organize perguntas e alternativas. O gabarito deve continuar protegido na área privada.", seletor:'[href="#questoes"], [data-section="questoes"]', hash:"#questoes"},
- {titulo:"4. Banco de Dados", texto:"Use esta área para consultar as estruturas e informações administrativas disponíveis no sistema.", seletor:'[href="#banco"], [data-section="banco"], [href="#dados"]', hash:"#banco"},
- {titulo:"5. Monitoramento", texto:"Acompanhe alunos em atividade, progresso, tempo e encerramento. A demonstração apenas destaca a área; não encerra provas.", seletor:'[href="#monitoramento"], [data-section="monitoramento"]', hash:"#monitoramento"},
- {titulo:"6. Resultados e Relatórios", texto:"Consulte histórico, notas, tempos, filtros, backups e exportações. Evite sincronizações repetidas sem necessidade.", seletor:'[href="#relatorios"], [data-section="relatorios"]', hash:"#relatorios"}
+ {titulo:"1. Cadastro de Escolas", texto:"Cadastre e revise as unidades escolares. Esta área define as escolas que poderão ser usadas nas avaliações.", aba:"aba-escolas", hash:"#escolas"},
+ {titulo:"2. Ativação de Provas", texto:"Escolha escola, matérias, turmas, quantidade de questões, tempos e código de acesso. A demonstração não publica nenhuma avaliação.", aba:"aba-ativacao", hash:"#ativacao"},
+ {titulo:"3. Banco de Questões", texto:"Consulte e organize perguntas e alternativas. O gabarito deve continuar protegido na área privada.", aba:"aba-questoes", hash:"#questoes"},
+ {titulo:"4. Banco de Dados", texto:"Use esta área para consultar as estruturas e informações administrativas disponíveis no sistema.", aba:"aba-banco-dados", hash:"#banco"},
+ {titulo:"5. Monitoramento", texto:"Acompanhe alunos em atividade, progresso, tempo e encerramento. A demonstração apenas destaca a área; não encerra provas.", aba:"aba-monitoramento", hash:"#monitoramento"},
+ {titulo:"6. Resultados e Relatórios", texto:"Consulte histórico, notas, tempos, filtros, backups e exportações. Evite sincronizações repetidas sem necessidade.", aba:"aba-relatorios", hash:"#relatorios"}
 ];
 let passoDemoProfessor=0;
+let alvoDemoProfessorAtual=null;
 const btnDemoProfessor=document.getElementById("btn-demo-prof");
 const overlayDemoProfessor=document.getElementById("demo-prof-overlay");
 const textoDemoProfessor=document.getElementById("demo-prof-texto");
 const destaqueDemoProfessor=document.getElementById("demo-prof-destaque");
 
-function localizarElementoDemo(seletor){
-  if(!seletor) return null;
-  try { return document.querySelector(seletor); } catch(e) { return null; }
+/* [AJUSTE MANUAL 14] A demonstração usa data-aba, exatamente como a barra real. */
+function abrirAbaDaDemonstracao(idAba, hash){
+  const botao=document.querySelector('.btn-aba[data-aba="'+idAba+'"]');
+  if(botao){
+    botao.click(); // usa o mecanismo normal do painel; não é botão operacional
+  } else {
+    document.querySelectorAll('.aba-conteudo').forEach(el=>el.classList.add('hidden'));
+    document.getElementById(idAba)?.classList.remove('hidden');
+  }
+  if(hash && location.hash!==hash) history.replaceState(null,"",hash);
 }
-function posicionarDestaqueDemo(el){
-  if(!el){ destaqueDemoProfessor.style.display="none"; return; }
-  const r=el.getBoundingClientRect();
-  destaqueDemoProfessor.style.display="block";
-  destaqueDemoProfessor.style.left=(r.left-6)+"px";
-  destaqueDemoProfessor.style.top=(r.top-6)+"px";
-  destaqueDemoProfessor.style.width=(r.width+12)+"px";
-  destaqueDemoProfessor.style.height=(r.height+12)+"px";
+function limparAlvoDemoProfessor(){
+  if(alvoDemoProfessorAtual) alvoDemoProfessorAtual.classList.remove('demo-prof-alvo-ativo');
+  alvoDemoProfessorAtual=null;
+  destaqueDemoProfessor.style.display="none";
+}
+function destacarConteudoDemo(idAba){
+  limparAlvoDemoProfessor();
+  const alvo=document.getElementById(idAba);
+  if(!alvo) return;
+  alvoDemoProfessorAtual=alvo;
+  alvo.classList.add('demo-prof-alvo-ativo');
+  alvo.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function renderDemoProfessor(){
   const passo=passosDemoProfessor[passoDemoProfessor];
   textoDemoProfessor.innerHTML="<strong>"+passo.titulo+":</strong> "+passo.texto+
-    '<div class="demo-prof-legenda">A área indicada em azul é a parte do sistema explicada neste passo.</div>';
+    '<div class="demo-prof-legenda">A área contornada em azul é a tela explicada neste passo.</div>';
   document.getElementById("demo-prof-proximo").textContent =
     passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Próximo";
 
-  /* Apenas navega pela interface. Nunca aciona Publicar, Excluir,
-     Sincronizar, Encerrar ou qualquer botão operacional. */
-  if(passo.hash && location.hash!==passo.hash){
-    const aba=localizarElementoDemo(passo.seletor);
-    if(aba && typeof aba.click==="function") aba.click();
-    else location.hash=passo.hash;
-  }
-  setTimeout(()=>{
-    const alvo=localizarElementoDemo(passo.seletor);
-    if(alvo){
-      alvo.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});
-      setTimeout(()=>posicionarDestaqueDemo(alvo),260);
-    } else {
-      destaqueDemoProfessor.style.display="none";
-    }
-  },120);
+  /* Troca a aba de verdade e só depois destaca o conteúdo dela. */
+  abrirAbaDaDemonstracao(passo.aba, passo.hash);
+  setTimeout(()=>destacarConteudoDemo(passo.aba),180);
 }
 function fecharDemoProfessor(){
+  limparAlvoDemoProfessor();
   overlayDemoProfessor.classList.remove("ativo");
   overlayDemoProfessor.setAttribute("aria-hidden","true");
-  destaqueDemoProfessor.style.display="none";
 }
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
-  passoDemoProfessor=0; renderDemoProfessor();
+  passoDemoProfessor=0;
   overlayDemoProfessor.classList.add("ativo");
   overlayDemoProfessor.setAttribute("aria-hidden","false");
+  renderDemoProfessor();
 });
 document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
   if(passoDemoProfessor<passosDemoProfessor.length-1){passoDemoProfessor++;renderDemoProfessor();}
@@ -1708,11 +1717,7 @@ document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
 });
 document.getElementById("demo-prof-pular")?.addEventListener("click",fecharDemoProfessor);
 document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemoProfessor);
-window.addEventListener("resize",()=>{
-  if(overlayDemoProfessor.classList.contains("ativo")){
-    posicionarDestaqueDemo(localizarElementoDemo(passosDemoProfessor[passoDemoProfessor].seletor));
-  }
-});
+window.addEventListener("resize",()=>{});
 </script>
 
 </body>
