@@ -1,69 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791381159600",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791391959600,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
-  "token": "4321",
-  "seedReordenacao": "1791381159600",
-  "publicadoEm": "2026-10-07T13:52:40.328Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "aCVvy96kGa8wQsuWQfd9",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o reconhecimento de padrões?",
-      "opcoes": [
-        "A identificação automática de regularidades ou tendências em dados usando algoritmos",
-        "A costura automatizada de roupas",
-        "A pintura de paredes por robôs",
-        "O design de interfaces gráficas"
-      ]
-    },
-    {
-      "idQuestao": "crRhcBy8Ej2ObFWWjNEo",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 45] O que é criptografia simétrica?",
-      "opcoes": [
-        "A) Uso da mesma chave secreta tanto para criptografar quanto para descriptografar os dados",
-        "B) Uso de duas chaves diferentes",
-        "C) Criptografia sem uso de senhas",
-        "D) Dados abertos sem proteção"
-      ]
-    },
-    {
-      "idQuestao": "fYDLCwi6U8ZOfzgbCgP5",
-      "materia": "Programacao Front-End",
-      "categoria": "Programacao Front-End",
-      "pergunta": "[Técnico 10 - 1790243769720]Qual a principal responsabilidade do CSS em páginas web?",
-      "opcoes": [
-        "Estruturar os textos semânticos",
-        "Controlar a aparência visual, layout, cores e responsividade",
-        "Processar regras de negócio no servidor",
-        "Armazenar dados em banco NoSQL"
-      ]
-    }
-  ]
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791381234848,
+  "turmasAtivas": [],
+  "token": "",
+  "seedReordenacao": "1791381234848",
+  "publicadoEm": "2026-10-07T13:53:54.848Z",
+  "encerradoEm": "2026-10-07T13:53:54.848Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
