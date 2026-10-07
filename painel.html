@@ -1294,6 +1294,83 @@ body.tema-claro-ativo .marca-agua-sistema { opacity:.22; color:#334155; }
 }
 </style>
 
+
+<style id="ajuste-painel-organizado-v3">
+/* ============================================================
+   AJUSTE VISUAL V3 — DEMONSTRAÇÃO + BANCO DE DADOS
+   SOMENTE VISUAL. Não altera Firebase, questões ou relatórios.
+   ============================================================ */
+
+/* DEMONSTRAÇÃO:
+   A caixa fica na parte inferior, preservando o cabeçalho e as abas. */
+.demo-prof-caixa {
+  top: auto !important;
+  bottom: 72px !important;
+  right: 22px !important;
+  left: auto !important;
+  width: min(92vw, 540px) !important;
+  max-height: min(42vh, 390px) !important;
+  overflow: auto !important;
+  padding: 14px 16px !important;
+}
+.demo-prof-caixa h3 { font-size: 18px !important; }
+.demo-prof-acoes { margin-top: 10px !important; }
+
+/* BANCO DE DADOS:
+   Transforma o mural irregular em uma grade alinhada.
+   Cada linha acompanha a altura do maior card daquela linha. */
+#catalogo-questoes-grid .mural-questoes-estavel {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+#catalogo-questoes-grid .mural-coluna {
+  display: contents !important;
+}
+#catalogo-questoes-grid .mural-coluna > .catalogo-card {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+}
+#catalogo-questoes-grid .catalogo-card {
+  padding: 14px !important;
+  border-radius: 12px !important;
+}
+#catalogo-questoes-grid .catalogo-card button {
+  min-width: 72px !important;
+  white-space: nowrap !important;
+  line-height: 1.15 !important;
+}
+#catalogo-questoes-grid .catalogo-card [class*="acoes"],
+#catalogo-questoes-grid .catalogo-card [class*="action"] {
+  gap: 7px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Mais leitura em notebooks: duas colunas antes de ficar apertado. */
+@media (max-width: 1350px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 780px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    grid-template-columns: 1fr !important;
+  }
+  .demo-prof-caixa {
+    right: 10px !important;
+    left: 10px !important;
+    width: auto !important;
+    bottom: 68px !important;
+    max-height: 45vh !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
