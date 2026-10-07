@@ -366,6 +366,54 @@ ATENÇÃO:
   .demo-acoes button{min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #46617f;cursor:pointer}
   .demo-proximo{background:#2563eb;color:white}.demo-pular{background:#374151;color:white}.demo-fechar{background:#7f1d1d;color:white}
 
+
+  /* ============================================================
+     [AJUSTE MANUAL 04] ACABAMENTO FINAL DA ENTRADA EM 100%
+     Objetivo: manter o botão "Iniciar Avaliação" inteiro na tela
+     em monitores 1920x1080 sem reduzir a legibilidade.
+     Para ajustar manualmente depois:
+       - padding-top/bottom: aproxima ou afasta todo o conteúdo.
+       - margin-bottom: muda somente o espaço entre blocos.
+       - min-height/height: muda a altura dos campos/botão.
+     Não altere IDs dos elementos.
+     ============================================================ */
+  @media (min-width: 900px) and (min-height: 760px) {
+    #tela-login { padding-top: 2px !important; padding-bottom: 2px !important; }
+    #tela-login > div {
+      margin-top: 2px !important;
+      margin-bottom: 2px !important;
+      padding-top: 8px !important;
+      padding-bottom: 9px !important;
+    }
+    #tela-login h1 { margin-top: 0 !important; margin-bottom: 7px !important; }
+    #detalhes-prova-ativa {
+      margin-bottom: 7px !important;
+      padding-top: 8px !important;
+      padding-bottom: 8px !important;
+    }
+    #tela-login .grupo-form,
+    #tela-login .form-group { margin-bottom: 5px !important; }
+    #tela-login label { margin-bottom: 2px !important; }
+    #tela-login input,
+    #tela-login select { min-height: 36px !important; height: 36px !important; }
+    #tela-login small { margin-top: 1px !important; margin-bottom: 1px !important; }
+    #btn-iniciar-prova {
+      min-height: 39px !important;
+      height: 39px !important;
+      margin-top: 1px !important;
+      margin-bottom: 0 !important;
+    }
+  }
+
+  /* Em telas mais baixas, compacta um pouco mais sem diminuir a fonte. */
+  @media (min-width: 900px) and (max-height: 759px) {
+    #tela-login > div { margin: 0 auto !important; padding-top: 5px !important; padding-bottom: 6px !important; }
+    #tela-login h1 { margin: 0 0 5px !important; }
+    #detalhes-prova-ativa { margin-bottom: 5px !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+    #tela-login .grupo-form,
+    #tela-login .form-group { margin-bottom: 4px !important; }
+  }
+
 </style>
 
 </head>
