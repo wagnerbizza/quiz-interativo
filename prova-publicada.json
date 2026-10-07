@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791376066733",
+  "idAvaliacao": "av_1791377419394",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -18,52 +18,54 @@
   "tempoLimiteMinutos": 1,
   "tempoMaximoMinutos": 1,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791386866733,
+  "expiraEmMillis": 1791388219394,
   "turmasAtivas": [
     "2A",
     "3B",
     "2I",
     "3D"
   ],
-  "token": "",
-  "seedReordenacao": "1791376066733",
-  "publicadoEm": "2026-10-07T12:27:47.514Z",
+  "token": "4321",
+  "seedReordenacao": "1791377419394",
+  "publicadoEm": "2026-10-07T12:50:20.031Z",
   "questoesPublicas": [
     {
-      "idQuestao": "CThmRNfXLCZS2TyGjgNz",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é uma Nuvem Híbrida?",
+      "idQuestao": "54hdOuqdkMoTeMagDxCB",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 69 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
       "opcoes": [
-        "Combinação de infraestruturas de nuvem pública e privada que permitem o compartilhamento de dados e aplicativos",
-        "Rede de computadores interligada exclusivamente por cabos submarinos",
-        "Sistema operacional voltado para supercomputadores quânticos",
-        "Servidor físico isolado de qualquer conexão com a internet",
-        "Arquitetura de rede que utiliza apenas protocolos sem fio"
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
       ]
     },
     {
-      "idQuestao": "3xZugYBV63ssGDF0J8zn",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 3 - 1790243764487]O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
+      "idQuestao": "ErEdk81iR8ZxM59iQ7rY",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual método JavaScript retorna o primeiro elemento que satisfaz a função de teste fornecida?",
       "opcoes": [
-        "Dados sem rótulos descobertos automaticamente",
-        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
-        "Tentativa e erro autônoma sem histórico",
-        "Regras fixas de lógica booleana"
+        "filter()",
+        "find()",
+        "search()",
+        "locate()",
+        "index()"
       ]
     },
     {
-      "idQuestao": "3UrrnUtQ6HoF9OKpGM2M",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 8] O que é um ataque de Phishing?",
+      "idQuestao": "GG48w2yt7KNJRplyUDVT",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 55 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
       "opcoes": [
-        "A) Tentativa fraudulenta de obter informações confidenciais fingindo ser entidade confiável",
-        "B) Invasão direta de roteadores por força bruta",
-        "C) Queda de servidores por tráfego excessivo",
-        "D) Roubo físico de servidores"
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
       ]
     }
   ]
