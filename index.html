@@ -369,11 +369,19 @@ ATENÇÃO:
   /* [AJUSTE MANUAL 05] DESTAQUE GUIADO DA DEMONSTRAÇÃO DO ALUNO
      Altere apenas espessura/cor abaixo se quiser mudar o contorno no futuro. */
   .demo-aluno-destaque{
-    position:relative !important;z-index:9999 !important;
     outline:3px solid #60a5fa !important;outline-offset:4px !important;
-    border-radius:10px !important;box-shadow:0 0 0 5px #60a5fa22,0 0 22px #60a5fa66 !important;
+    border-radius:10px !important;
   }
-  .demo-caixa.demo-aluno-caixa{top:18px;right:18px;left:auto;bottom:auto;transform:none;width:min(90vw,620px);}
+  /* O retângulo abaixo fica acima da máscara e acompanha o elemento real.
+     Isso evita o problema de z-index causado pelos painéis/containers da página. */
+  .demo-aluno-foco{
+    position:fixed;display:none;z-index:10001;pointer-events:none;
+    border:3px solid #60a5fa;border-radius:12px;
+    box-shadow:0 0 0 4px #60a5fa2b,0 0 24px #60a5fa99;
+    transition:top .18s ease,left .18s ease,width .18s ease,height .18s ease;
+  }
+  .demo-aluno-foco.ativo{display:block;}
+  .demo-caixa.demo-aluno-caixa{top:18px;right:18px;left:auto;bottom:auto;transform:none;width:min(90vw,620px);z-index:10002;}
 
 
   /* ============================================================
@@ -1489,9 +1497,27 @@ if (unsubscribePermissaoAluno) {
     const textoDemoAluno=document.getElementById("demo-texto-aluno");
     const caixaDemoAluno=overlayDemoAluno?.querySelector(".demo-caixa");
 
+    // [AJUSTE MANUAL 06] Foco visual independente da estrutura da página.
+    // Não altere a lógica da prova aqui. Este bloco serve somente para a demonstração.
+    const focoDemoAluno=document.createElement("div");
+    focoDemoAluno.className="demo-aluno-foco";
+    focoDemoAluno.setAttribute("aria-hidden","true");
+    document.body.appendChild(focoDemoAluno);
+
+    function posicionarFocoDemoAluno(){
+      if(!alvoDemoAlunoAtual || !overlayDemoAluno?.classList.contains("ativo")) return;
+      const r=alvoDemoAlunoAtual.getBoundingClientRect();
+      const margem=7;
+      focoDemoAluno.style.left=`${Math.max(4,r.left-margem)}px`;
+      focoDemoAluno.style.top=`${Math.max(4,r.top-margem)}px`;
+      focoDemoAluno.style.width=`${Math.max(20,r.width+margem*2)}px`;
+      focoDemoAluno.style.height=`${Math.max(20,r.height+margem*2)}px`;
+      focoDemoAluno.classList.add("ativo");
+    }
     function limparDestaqueDemoAluno(){
       alvoDemoAlunoAtual?.classList.remove("demo-aluno-destaque");
       alvoDemoAlunoAtual=null;
+      focoDemoAluno.classList.remove("ativo");
     }
     function renderDemoAluno(){
       limparDestaqueDemoAluno();
@@ -1503,8 +1529,14 @@ if (unsubscribePermissaoAluno) {
       if(alvoDemoAlunoAtual){
         alvoDemoAlunoAtual.classList.add("demo-aluno-destaque");
         alvoDemoAlunoAtual.scrollIntoView({behavior:"smooth",block:"center"});
+        // Aguarda a rolagem começar/terminar e reposiciona o foco.
+        requestAnimationFrame(posicionarFocoDemoAluno);
+        setTimeout(posicionarFocoDemoAluno,220);
+        setTimeout(posicionarFocoDemoAluno,520);
       }
     }
+    window.addEventListener("scroll",posicionarFocoDemoAluno,{passive:true});
+    window.addEventListener("resize",posicionarFocoDemoAluno);
     function fecharDemoAluno(permanecer=true){
       limparDestaqueDemoAluno();
       overlayDemoAluno.classList.remove("ativo");
