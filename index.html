@@ -473,7 +473,7 @@ ATENÇÃO:
         const opcao = Array.from(selectEscola.options || []).find(
           o => normalizarId(o.value || "") === normalizarId(escolaAtiva)
         );
-        if (opcao) selectEscola.value = opcao.value;
+        if (opcao && selectEscola.value !== opcao.value) selectEscola.value = opcao.value;
       }
 
       await aplicarProvaRecebida(escolaAtiva, pacote, "github");
@@ -507,8 +507,18 @@ ATENÇÃO:
         // o código enquanto o aluno está digitando.
         inputTokenAluno.required = !!(p.token&&String(p.token).trim());
       }
-      selectTurma.innerHTML=`<option value="" disabled selected>Selecione sua turma...</option>`;
-      turmas.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;selectTurma.appendChild(o);});
+      // A conferência automática ocorre a cada 5 segundos. Não reconstruímos
+      // o seletor se as turmas continuam iguais, pois isso apagaria a escolha.
+      const turmaAnterior = selectTurma.value || "";
+      const assinaturaAtual = Array.from(selectTurma.options).slice(1).map(o=>String(o.value)).join("|");
+      const assinaturaNova = turmas.map(String).join("|");
+      if (assinaturaAtual !== assinaturaNova) {
+        selectTurma.innerHTML=`<option value="" disabled selected>Selecione sua turma...</option>`;
+        turmas.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;selectTurma.appendChild(o);});
+      }
+      if (turmaAnterior && turmas.map(String).includes(String(turmaAnterior))) {
+        selectTurma.value = turmaAnterior;
+      }
       btnIniciarProva.disabled=!turmas.length;
       return true;
     }
