@@ -467,6 +467,45 @@ ATENÇÃO:
 }
 </style>
 
+\n<style id="ajuste-visual-aluno-2026">\n/* ============================================================\n   AJUSTE VISUAL FINAL — ÁREA DO ALUNO\n   O QUE FAZ: melhora leitura e aproveitamento da tela em 100%.\n   NÃO ALTERA: respostas, tempo, tentativa, correção ou envio.\n   ============================================================ */\nhtml { font-size: 14px; }\nbody { padding: 10px !important; line-height: 1.4; }\n.container { max-width: 720px !important; padding: 20px 22px !important; border-radius: 12px !important; }\nh1 { font-size: clamp(22px,2.4vw,28px) !important; margin-bottom: 12px !important; }\nh2 { font-size: clamp(18px,2vw,23px) !important; margin-bottom: 10px !important; }\n.grupo-form { margin-bottom: 11px !important; gap: 4px !important; }\nlabel { font-size: 12.5px !important; }\ninput, select { padding: 9px 11px !important; min-height: 40px !important; font-size: 13.5px !important; }\n.btn, button { min-height: 40px !important; padding: 9px 12px !important; font-size: 13.5px !important; }\n#detalhes-prova-ativa { padding: 12px 14px !important; }\n#tela-quiz, #tela-resultado { padding: 8px 10px !important; }\n#tela-quiz > div, #tela-resultado > div { max-width:min(95vw,1180px) !important; padding:14px 16px !important; margin:6px auto !important; }\n.quiz-header, .status-grid, .info-grid { gap:7px !important; }\n.alternativa, .opcao, .option, .answer-option { min-height:42px !important; padding:9px 12px !important; font-size:13.5px !important; line-height:1.35 !important; }\n#revisao-respostas, .revisao-respostas { max-height:210px !important; overflow:auto !important; }\n/* Marca d'água propositalmente quase imperceptível. */\n.marca-agua-sistema { position:fixed; left:10px; bottom:6px; z-index:650; pointer-events:none; user-select:none; font-size:8px; letter-spacing:.08em; opacity:.16; color:var(--text-muted); text-transform:uppercase; }\n@media (max-width:620px){ body{padding:6px!important}.container{padding:15px!important} h1{font-size:21px!important}.marca-agua-sistema{font-size:7px;left:6px;bottom:4px} }\n</style>\n
+<style id="ajuste-visual-compacto-aluno-v2">
+/* ============================================================
+   VISUAL: ÁREA DO ALUNO MAIS COMPACTA E LEGÍVEL
+   NÃO ALTERA: prova, correção, tempo, tentativa ou sincronização.
+   ============================================================ */
+@media (min-width: 800px) {
+  body { font-size: 14px !important; }
+  h1 { font-size: clamp(24px, 2.2vw, 31px) !important; margin: 9px 0 !important; }
+  h2 { font-size: clamp(20px, 1.8vw, 25px) !important; margin: 8px 0 !important; }
+  h3 { font-size: 18px !important; }
+  button, .btn { min-height: 38px !important; padding: 8px 14px !important; font-size: 13.5px !important; }
+  input, select { min-height: 40px !important; padding: 8px 11px !important; font-size: 14px !important; }
+  label { font-size: 13.5px !important; }
+  #tela-quiz, #tela-resultado { padding: 7px 10px !important; }
+  .questao, .question, .question-card { margin-bottom: 10px !important; padding: 14px !important; }
+  .alternativa, .option, .answer-option { min-height: 42px !important; padding: 9px 12px !important; }
+}
+@media (max-width: 799px) {
+  body { font-size: 14px !important; }
+  button, .btn { min-height: 42px !important; }
+}
+
+/* Marca discreta do autor — visível nos modos Dia e Noite. */
+#marca-wagnerbizza {
+  position: fixed;
+  left: 10px;
+  bottom: 7px;
+  z-index: 2147483000;
+  font: 500 10px/1.2 Arial, sans-serif;
+  letter-spacing: .35px;
+  opacity: .20;
+  color: currentColor;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+</style>
+
 </head>
 <body>
 
@@ -1718,6 +1757,10 @@ if (unsubscribePermissaoAluno) {
   </div>
 </div>
 
+
+
+
+<div id="marca-wagnerbizza" aria-hidden="true">© 2026 WagnerBIZZA</div>
 </body>
 </html>
 <!-- QUIZ BUILD: GITHUB-PRIORIDADE-ENTREGA-2026-10-05 -->

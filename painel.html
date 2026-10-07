@@ -1184,6 +1184,80 @@ html,body{max-width:100%;overflow-x:hidden}
 
 </style>
 
+\n<style id="ajuste-visual-compacto-2026">\n/* ============================================================\n   AJUSTE VISUAL FINAL — PAINEL DO PROFESSOR\n   O QUE FAZ: reduz espaços/fontes e amplia a área útil em 100%.\n   NÃO ALTERA: Firebase, publicação, relatórios ou monitoramento.\n   ============================================================ */\nhtml { font-size: 14px; }\nbody { padding: 8px 10px 24px !important; line-height: 1.35; }\n.container { width: min(100%, 1560px) !important; max-width: 1560px !important; }\nheader { margin-bottom: 8px !important; }\nheader h1 { font-size: clamp(22px,2vw,29px) !important; margin: 8px 0 !important; }\n.btn-nav-icone, button.btn-acao, .btn-aba { font-size: 12.5px !important; min-height: 38px !important; padding: 7px 12px !important; }\n.barra-navegacao-global { min-height: 0 !important; padding: 8px 12px !important; margin-bottom: 8px !important; }\n.abas-navegacao { gap: 6px !important; margin-bottom: 8px !important; padding-top: 3px !important; }\n.btn-aba { border-radius: 7px 7px 0 0 !important; }\n.aba-conteudo { gap: 12px !important; padding-top: 10px !important; }\n.aba-conteudo > h2, .aba-conteudo h2 { font-size: clamp(19px,1.7vw,24px) !important; margin: 8px 0 10px !important; }\n.aba-conteudo h3 { font-size: 17px !important; margin: 8px 0 !important; }\ninput[type="text"], input[type="number"], input[type="datetime-local"], input[type="email"], input[type="password"], select, textarea {\n  font-size: 12.5px !important; padding: 7px 10px !important; min-height: 36px !important; margin-top: 3px !important;\n}\nlabel, .texto-ajuda, small { font-size: 12px !important; }\ntable { font-size: 12px !important; margin-top: 8px !important; }\nth, td { padding: 7px 8px !important; line-height: 1.3 !important; }\n.tabela-responsiva { margin-top: 8px !important; }\n.painel-controles, .controles, .acoes-tabela { gap: 7px !important; padding: 8px !important; }\n.tooltip-sistema { font-size: 11px !important; max-width: 270px !important; }\n/* Modo claro: melhora contraste de controles sem mudar a lógica do tema. */\nbody.tema-claro-ativo input, body.tema-claro-ativo select, body.tema-claro-ativo textarea { background:#fff !important; color:#0f172a !important; border-color:#94a3b8 !important; }\nbody.tema-claro-ativo table, body.tema-claro-ativo td { color:#0f172a; }\n/* Marca d'água discreta, padrão de identificação do sistema. */\n.marca-agua-sistema { position:fixed; left:12px; bottom:7px; z-index:650; pointer-events:none; user-select:none; font-size:9px; letter-spacing:.08em; opacity:.18; color:var(--text); text-transform:uppercase; }\nbody.tema-claro-ativo .marca-agua-sistema { opacity:.22; color:#334155; }\n@media (max-width:900px){ html{font-size:13px} body{padding:6px 7px 22px!important} .btn-nav-icone,button.btn-acao,.btn-aba{font-size:12px!important;padding:6px 9px!important} header h1{font-size:22px!important} }\n@media (max-width:620px){ .marca-agua-sistema{font-size:8px;left:7px;bottom:5px}.abas-navegacao{overflow-x:auto!important;flex-wrap:nowrap!important}.btn-aba{flex:0 0 auto!important} }\n</style>\n
+<style id="ajuste-visual-compacto-v2">
+/* ============================================================
+   VISUAL: COMPACTAÇÃO DO PAINEL DO PROFESSOR
+   O QUE FAZ: reduz espaços, títulos, botões, abas e formulários.
+   NÃO ALTERA: Firebase, relatórios, monitoramento ou publicação.
+   ============================================================ */
+@media (min-width: 900px) {
+  body { font-size: 14px !important; }
+  .container, main, .main-container { max-width: 1600px !important; }
+  h1 { font-size: clamp(25px, 2vw, 31px) !important; margin: 10px 0 !important; }
+  h2 { font-size: clamp(20px, 1.6vw, 25px) !important; margin: 8px 0 !important; }
+  h3 { font-size: 18px !important; margin: 7px 0 !important; }
+
+  button, .btn, input, select, textarea {
+    font-size: 13px !important;
+  }
+  button, .btn {
+    min-height: 36px !important;
+    padding: 7px 13px !important;
+  }
+  input, select {
+    min-height: 38px !important;
+    padding: 7px 11px !important;
+  }
+  textarea { padding: 8px 11px !important; }
+
+  nav, header, .topbar, .toolbar, .status-bar, .status-card,
+  .card, .panel, .section, .box {
+    --compact-gap: 10px;
+  }
+
+  .tabs, .tab-buttons, .nav-tabs {
+    gap: 8px !important;
+  }
+  .tabs button, .tab-buttons button, .nav-tabs button,
+  [role="tab"] {
+    min-height: 42px !important;
+    padding: 8px 13px !important;
+    font-size: 13px !important;
+  }
+
+  table { font-size: 12.5px !important; }
+  th, td { padding: 7px 9px !important; }
+  label { font-size: 13px !important; }
+
+  /* reduz grandes vazios verticais sem alterar a estrutura */
+  section { margin-top: 10px !important; margin-bottom: 10px !important; }
+}
+@media (max-width: 899px) {
+  body { font-size: 14px !important; }
+  button, .btn { min-height: 40px !important; }
+}
+
+/* ============================================================
+   MARCA D'ÁGUA DO AUTOR
+   Para alterar no futuro, procure por: WagnerBIZZA
+   pointer-events:none garante que ela nunca bloqueie cliques.
+   ============================================================ */
+#marca-wagnerbizza {
+  position: fixed;
+  left: 12px;
+  bottom: 8px;
+  z-index: 2147483000;
+  font: 500 10px/1.2 Arial, sans-serif;
+  letter-spacing: .35px;
+  opacity: .20;
+  color: currentColor;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+</style>
+
 </head>
 <body>
 
@@ -1734,5 +1808,9 @@ window.addEventListener("resize",()=>{
 });
 </script>
 
+
+
+
+<div id="marca-wagnerbizza" aria-hidden="true">© 2026 WagnerBIZZA</div>
 </body>
 </html>
