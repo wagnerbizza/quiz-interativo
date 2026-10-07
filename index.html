@@ -645,7 +645,7 @@ ATENÇÃO:
     btnVerTokenAluno?.addEventListener("click", () => {
       const mostrando = inputTokenAluno.type === "text";
       inputTokenAluno.type = mostrando ? "password" : "text";
-      btnVerTokenAluno.textContent = mostrando ? "👁️" : "🙈";
+      btnVerTokenAluno.textContent = mostrando ? "👁️" : "◉";
       btnVerTokenAluno.setAttribute("aria-label", mostrando ? "Mostrar código" : "Ocultar código");
       inputTokenAluno.focus();
     });
