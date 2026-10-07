@@ -1569,6 +1569,106 @@ button {
 }
 </style>
 
+
+<style id="visual-institucional-v7">
+/* ============================================================
+   VISUAL INSTITUCIONAL V7 — TESTE
+   Inspirado em painéis educacionais modernos, sem copiar
+   identidade visual de terceiros.
+
+   SOMENTE APARÊNCIA:
+   não altera Firebase, autenticação, publicação, banco,
+   relatórios, monitoramento ou sincronização.
+   ============================================================ */
+
+:root {
+  --ui-radius: 10px;
+  --ui-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+
+/* Tipografia mais limpa e administrativa */
+body {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+/* Título principal: remove visual lúdico mesmo se emoji antigo
+   ainda existir no texto do HTML. */
+h1 {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+  font-size: 25px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.3px !important;
+}
+
+/* Cartões e painéis */
+.card, .panel, .box, section,
+.status-bar, .status-card {
+  border-radius: var(--ui-radius) !important;
+}
+
+/* Botões: mais sóbrios */
+button, .btn {
+  border-radius: 8px !important;
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+/* Campos */
+input, select, textarea {
+  border-radius: 8px !important;
+  font-family: inherit !important;
+}
+
+/* Abas principais com aparência de navegação administrativa */
+.tabs, .tab-buttons, .nav-tabs {
+  gap: 6px !important;
+}
+.tabs button, .tab-buttons button, .nav-tabs button, [role="tab"] {
+  border-radius: 8px 8px 4px 4px !important;
+  font-weight: 650 !important;
+}
+
+/* Tabelas mais limpas */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+th {
+  font-weight: 700 !important;
+  letter-spacing: .1px !important;
+}
+
+/* Cabeçalho superior: visual mais discreto */
+body > .container > div:first-child,
+.top-nav, .topbar {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+/* A marca do autor permanece discreta */
+#marca-wagnerbizza {
+  opacity: .28 !important;
+  font-size: 10.5px !important;
+  font-family: "Segoe UI", Arial, sans-serif !important;
+}
+
+/* Modo claro: cartões suaves e contraste administrativo.
+   Só usa seletores genéricos já existentes; não altera estrutura. */
+body.light-mode .card,
+body.light-mode .panel,
+body.light-mode .box,
+body.light-mode section {
+  box-shadow: var(--ui-shadow);
+}
+
+/* Em telas menores, mantém conforto */
+@media (max-width: 800px) {
+  h1 { font-size: 22px !important; }
+}
+</style>
+
 </head>
 <body>
 
