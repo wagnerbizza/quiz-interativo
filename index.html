@@ -314,6 +314,7 @@ ATENÇÃO:
     let timerInterval = null, segundosPassados = 0;
     let syncOnlineInterval = null;
     let verificacaoPacotePublicoInterval = null; // Atualiza ativação/encerramento pelo GitHub sem leituras Firestore.
+    let idPacoteAplicadoNaEntrada = ""; // Evita reconstruir o formulário a cada 5 segundos.
 
     const selectEscola = document.getElementById("escola-aluno");
     const selectTurma = document.getElementById("turma-aluno");
@@ -422,6 +423,7 @@ ATENÇÃO:
 
     function mostrarProvaInativaAluno(escolaNome) {
       dadosProvaAtiva = {};
+      idPacoteAplicadoNaEntrada = "";
       detalhesProvaAtiva.innerHTML =
         `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
       selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
@@ -455,6 +457,7 @@ ATENÇÃO:
 
       if (pacote.ativa === false || expirada || !String(pacote.escolaAtiva || "").trim()) {
         dadosProvaAtiva = {};
+        idPacoteAplicadoNaEntrada = "";
         detalhesProvaAtiva.innerHTML =
           `<div style="font-size:18px;font-weight:900;color:#f87171;margin-bottom:6px;">🔴 NENHUMA AVALIAÇÃO ATIVA</div>
            <div>Nenhuma escola possui avaliação publicada neste momento.</div>`;
@@ -507,18 +510,27 @@ ATENÇÃO:
         // o código enquanto o aluno está digitando.
         inputTokenAluno.required = !!(p.token&&String(p.token).trim());
       }
-      // A conferência automática ocorre a cada 5 segundos. Não reconstruímos
-      // o seletor se as turmas continuam iguais, pois isso apagaria a escolha.
-      const turmaAnterior = selectTurma.value || "";
-      const assinaturaAtual = Array.from(selectTurma.options).slice(1).map(o=>String(o.value)).join("|");
-      const assinaturaNova = turmas.map(String).join("|");
-      if (assinaturaAtual !== assinaturaNova) {
+      // A cada 5 segundos apenas confirmamos se a MESMA prova continua ativa.
+      // O formulário só é montado quando muda a avaliação publicada.
+      const idPacoteAtual = String(p.idAvaliacao || p.publicadoEm || p.seedReordenacao || "");
+      const mudouAvaliacao = idPacoteAplicadoNaEntrada !== idPacoteAtual;
+
+      if (mudouAvaliacao) {
+        const turmaAnterior = selectTurma.value || "";
         selectTurma.innerHTML=`<option value="" disabled selected>Selecione sua turma...</option>`;
-        turmas.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;selectTurma.appendChild(o);});
+        turmas.forEach(t=>{
+          const o=document.createElement("option");
+          o.value=String(t);
+          o.textContent=String(t);
+          selectTurma.appendChild(o);
+        });
+        if (turmaAnterior && turmas.map(String).includes(String(turmaAnterior))) {
+          selectTurma.value = turmaAnterior;
+        }
+        idPacoteAplicadoNaEntrada = idPacoteAtual;
       }
-      if (turmaAnterior && turmas.map(String).includes(String(turmaAnterior))) {
-        selectTurma.value = turmaAnterior;
-      }
+      // Se é a mesma avaliação, NÃO toca no select: mantém exatamente a turma
+      // que o aluno escolheu, mesmo após várias verificações de 5 segundos.
       btnIniciarProva.disabled=!turmas.length;
       return true;
     }
