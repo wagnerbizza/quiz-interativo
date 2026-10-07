@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791323866271",
+  "idAvaliacao": "av_1791376066733",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -18,7 +18,7 @@
   "tempoLimiteMinutos": 1,
   "tempoMaximoMinutos": 1,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791334666271,
+  "expiraEmMillis": 1791386866733,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -26,45 +26,44 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791323866271",
-  "publicadoEm": "2026-10-06T21:57:46.948Z",
+  "seedReordenacao": "1791376066733",
+  "publicadoEm": "2026-10-07T12:27:47.514Z",
   "questoesPublicas": [
     {
-      "idQuestao": "BqNKukVSU1xvDfZRqsJw",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 39 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "idQuestao": "CThmRNfXLCZS2TyGjgNz",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é uma Nuvem Híbrida?",
       "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
+        "Combinação de infraestruturas de nuvem pública e privada que permitem o compartilhamento de dados e aplicativos",
+        "Rede de computadores interligada exclusivamente por cabos submarinos",
+        "Sistema operacional voltado para supercomputadores quânticos",
+        "Servidor físico isolado de qualquer conexão com a internet",
+        "Arquitetura de rede que utiliza apenas protocolos sem fio"
       ]
     },
     {
-      "idQuestao": "S9VKpXNuJhLyv5mc7QCO",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Revocação (Recall ou Sensibilidade)?",
+      "idQuestao": "3xZugYBV63ssGDF0J8zn",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 3 - 1790243764487]O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
       "opcoes": [
-        "A proporção de verdadeiros positivos identificados em relação a todas as amostras positivas reais",
-        "A capacidade do modelo de memorizar textos longos",
-        "O tempo necessário para reiniciar o servidor de IA",
-        "A taxa de erro cometida durante o processo de teste",
-        "O volume de dados consumido durante o treinamento"
+        "Dados sem rótulos descobertos automaticamente",
+        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
+        "Tentativa e erro autônoma sem histórico",
+        "Regras fixas de lógica booleana"
       ]
     },
     {
-      "idQuestao": "LEqS4rmU7hTLPSyb9DUW",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a interpretabilidade pós-hoc?",
+      "idQuestao": "3UrrnUtQ6HoF9OKpGM2M",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 8] O que é um ataque de Phishing?",
       "opcoes": [
-        "Métodos aplicados após o treinamento de um modelo complexo para explicar suas previsões",
-        "A correção de erros após o programa travar",
-        "A formatação de um computador após o uso",
-        "A criação de relatórios impressos"
+        "A) Tentativa fraudulenta de obter informações confidenciais fingindo ser entidade confiável",
+        "B) Invasão direta de roteadores por força bruta",
+        "C) Queda de servidores por tráfego excessivo",
+        "D) Roubo físico de servidores"
       ]
     }
   ]
