@@ -548,7 +548,7 @@ ATENÇÃO:
       uidAlunoFirebase = usuario.uid;
       await carregarEscolasAluno();
       if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
-      verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 10000);
+      verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 5000);
     });
     // A sessão anônima fica apenas na memória desta página/instância.
     // Ela não substitui o login persistente do professor.
@@ -774,7 +774,7 @@ ATENÇÃO:
             );
           }
         } catch (_) {}
-      }, 10000);
+      }, 5000);
 
       exibirQuestao();
     }
@@ -1002,6 +1002,8 @@ ATENÇÃO:
 
 
     let finalizacaoAlunoEmAndamento = false;
+    let retornoTelaInicialTimeout = null; // Evita deixar o resultado do aluno exposto em computador compartilhado.
+
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (finalizacaoAlunoEmAndamento) return;
       finalizacaoAlunoEmAndamento = true;
@@ -1090,21 +1092,37 @@ if (unsubscribePermissaoAluno) {
         document.getElementById("status-envio-txt").textContent =
           "⚠️ Resultado protegido neste computador. O envio será tentado automaticamente quando a conexão permitir.";
       }
+
+      // A confirmação fica visível por 15 segundos e depois volta sozinha.
+      // O botão "Sair / Tela Inicial" continua funcionando imediatamente.
+      if (retornoTelaInicialTimeout) clearTimeout(retornoTelaInicialTimeout);
+      retornoTelaInicialTimeout = setTimeout(voltarTelaInicialAluno, 15000);
     }
 
-    document.getElementById("btn-reiniciar")?.addEventListener("click", () => {
+    function voltarTelaInicialAluno() {
+      if (retornoTelaInicialTimeout) {
+        clearTimeout(retornoTelaInicialTimeout);
+        retornoTelaInicialTimeout = null;
+      }
       respostasUsuario = {};
       indiceAtual = 0;
       listaQuestoes = [];
       alunoAtual = {};
-document.getElementById("tela-resultado").classList.add("hidden");
+      finalizacaoAlunoEmAndamento = false;
+      document.getElementById("tela-resultado").classList.add("hidden");
       document.getElementById("tela-login").classList.remove("hidden");
       if (btnIniciarProva) {
-        btnIniciarProva.disabled = false;
+        btnIniciarProva.disabled = true;
         btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
       }
       if (inputNomeAluno) inputNomeAluno.value = "";
-    });
+
+      // Ao voltar, confere imediatamente o pacote público.
+      // Se a prova já encerrou, a tela inicial mostra que não há avaliação ativa.
+      conferirPacotePublicoNaEntrada();
+    }
+
+    document.getElementById("btn-reiniciar")?.addEventListener("click", voltarTelaInicialAluno);
   </script>
 </body>
 </html>
