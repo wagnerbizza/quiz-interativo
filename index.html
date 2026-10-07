@@ -1174,6 +1174,56 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
 
       listaQuestoes = unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
 
+      // ============================================================
+      // V8 — EMBARALHAMENTO REAL DAS ALTERNATIVAS
+      // O QUE FAZ:
+      // Cada questão recebe uma ordem própria de alternativas usando
+      // seed da prova + aluno + ID da questão.
+      //
+      // SEGURANÇA DA CORREÇÃO:
+      // O aluno continua enviando também respostasTexto. Portanto a
+      // correção privada identifica o conteúdo escolhido, e não depende
+      // da letra original A/B/C/D/E do banco.
+      //
+      // POUCAS QUESTÕES:
+      // Funciona igualmente com provas de 2 ou 3 questões.
+      // ============================================================
+      function embaralharDeterministicoV8(lista, chave) {
+        const original = Array.isArray(lista) ? [...lista] : [];
+        if (original.length < 2) return original;
+
+        let estado = hashSimples(chave) || 1;
+        const proximo = () => {
+          estado ^= estado << 13;
+          estado ^= estado >>> 17;
+          estado ^= estado << 5;
+          return (estado >>> 0) / 4294967296;
+        };
+
+        const saida = [...original];
+        for (let i = saida.length - 1; i > 0; i--) {
+          const j = Math.floor(proximo() * (i + 1));
+          [saida[i], saida[j]] = [saida[j], saida[i]];
+        }
+
+        // Se por acaso o sorteio produzir exatamente a ordem original,
+        // força uma rotação. Assim "embaralhar" nunca vira "não mudou".
+        const igualOriginal = saida.every((v, i) => v === original[i]);
+        if (igualOriginal && saida.length > 1) {
+          const giro = 1 + (hashSimples(chave + "|giro") % (saida.length - 1));
+          return saida.slice(giro).concat(saida.slice(0, giro));
+        }
+        return saida;
+      }
+
+      listaQuestoes = listaQuestoes.map((q, indiceQ) => ({
+        ...q,
+        opcoes: embaralharDeterministicoV8(
+          q.opcoes,
+          `${seedBase}|ALT|${q.idQuestao || q.pergunta || indiceQ}`
+        )
+      }));
+
       // Registra a tentativa assim que a prova realmente conseguiu carregar.
       // 1) trava local imediatamente; 2) tenta gravar a trava central no Firebase.
       // Se a internet falhar, a prova continua e a trava local ainda protege este PC.
