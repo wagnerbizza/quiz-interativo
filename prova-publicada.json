@@ -1,72 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791377419394",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791388219394,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
-  "token": "4321",
-  "seedReordenacao": "1791377419394",
-  "publicadoEm": "2026-10-07T12:50:20.031Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "54hdOuqdkMoTeMagDxCB",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "Questão oficial de nível avançado nº 69 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "ErEdk81iR8ZxM59iQ7rY",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Qual método JavaScript retorna o primeiro elemento que satisfaz a função de teste fornecida?",
-      "opcoes": [
-        "filter()",
-        "find()",
-        "search()",
-        "locate()",
-        "index()"
-      ]
-    },
-    {
-      "idQuestao": "GG48w2yt7KNJRplyUDVT",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 55 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    }
-  ]
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791380486707,
+  "turmasAtivas": [],
+  "token": "",
+  "seedReordenacao": "1791380486707",
+  "publicadoEm": "2026-10-07T13:41:26.707Z",
+  "encerradoEm": "2026-10-07T13:41:26.707Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
