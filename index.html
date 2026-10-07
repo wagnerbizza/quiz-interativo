@@ -1810,9 +1810,7 @@ if (unsubscribePermissaoAluno) {
       else fecharDemoAluno(false);
     });
     document.getElementById("demo-pular-aluno")?.addEventListener("click",()=>fecharDemoAluno(false));
-    // V8.1 — qualquer forma de encerrar a demonstração retorna para a Home do aluno.
-    // Isso não inicia prova, não consome tentativa e não gera resultado.
-    document.getElementById("demo-fechar-aluno")?.addEventListener("click",()=>fecharDemoAluno(false));
+    document.getElementById("demo-fechar-aluno")?.addEventListener("click",()=>fecharDemoAluno(true));
 
 </script>
 
