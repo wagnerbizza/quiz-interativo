@@ -455,9 +455,13 @@ ATENÇÃO:
         Number(pacote.expiraEmMillis || 0) > 0 &&
         Date.now() >= Number(pacote.expiraEmMillis || 0);
 
-      if (pacote.ativa === false || expirada || !String(pacote.escolaAtiva || "").trim()) {
+      // O pacote público é a fonte de verdade para ativação/encerramento.
+      // "ativa:false" deve derrubar imediatamente a liberação mostrada ao aluno.
+      const estaInativa = pacote.ativa === false || pacote.ativa === "false";
+      if (estaInativa || expirada || !String(pacote.escolaAtiva || "").trim()) {
         dadosProvaAtiva = {};
         idPacoteAplicadoNaEntrada = "";
+        if (selectEscola) selectEscola.disabled = false;
         detalhesProvaAtiva.innerHTML =
           `<div style="font-size:18px;font-weight:900;color:#f87171;margin-bottom:6px;">🔴 NENHUMA AVALIAÇÃO ATIVA</div>
            <div>Nenhuma escola possui avaliação publicada neste momento.</div>`;
