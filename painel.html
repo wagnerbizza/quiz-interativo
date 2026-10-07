@@ -1701,30 +1701,20 @@ function fecharDemoProfessor(){
 function voltarHomeAposDemoProfessor(){
   fecharDemoProfessor();
 
-  /* AJUSTE MANUAL 16 — RETORNO FORÇADO À HOME DO PAINEL
-     Não depende da posição/ordem visual das abas. Primeiro tenta usar o
-     mesmo botão da aba Configurações Gerais. Depois garante diretamente
-     que somente a Home fique ativa, mesmo se as abas tiverem sido
-     reorganizadas pelo usuário. */
-  const botaoHome=localizarAbaDemo("aba-global");
-  if(botaoHome) botaoHome.click();
+  /* AJUSTE MANUAL 17 — RETORNO REAL À HOME APÓS CONCLUIR/PULAR
+     A Home/Painel é um link real para painel.html criado pelo app.js.
+     Alterar somente o hash não troca a tela interna já aberta. Por isso,
+     ao concluir ou pular a demonstração fazemos uma navegação real para
+     painel.html. Isso recarrega o painel no estado inicial, exatamente
+     como o botão "Home / Painel" do topo.
 
-  document.querySelectorAll(".btn-aba").forEach(btn=>btn.classList.remove("active"));
-  document.querySelectorAll(".aba-conteudo").forEach(aba=>{
-    aba.classList.remove("active");
-    aba.style.display="none";
-  });
-
-  if(botaoHome) botaoHome.classList.add("active");
-  const conteudoHome=document.getElementById("aba-global");
-  if(conteudoHome){
-    conteudoHome.classList.add("active");
-    conteudoHome.style.display="block";
-  }
-
-  history.replaceState(null,"",window.location.pathname+window.location.search);
-  window.scrollTo({top:0,behavior:"auto"});
+     PARA ALTERAR MANUALMENTE NO FUTURO:
+     - destino atual: "painel.html"
+     - se a página inicial mudar de nome, altere apenas a linha abaixo.
+     - o botão "Fechar" NÃO usa esta função; ele continua na aba atual. */
+  window.location.assign("painel.html");
 }
+
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
   passoDemoProfessor=0; renderDemoProfessor();
