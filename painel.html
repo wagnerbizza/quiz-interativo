@@ -1705,14 +1705,14 @@ function voltarHomeAposDemoProfessor(){
      A Home/Painel é um link real para painel.html criado pelo app.js.
      Alterar somente o hash não troca a tela interna já aberta. Por isso,
      ao concluir ou pular a demonstração fazemos uma navegação real para
-     painel.html. Isso recarrega o painel no estado inicial, exatamente
+     painel.html#escolas. Isso recarrega o painel na primeira área funcional visível, exatamente
      como o botão "Home / Painel" do topo.
 
      PARA ALTERAR MANUALMENTE NO FUTURO:
-     - destino atual: "painel.html"
+     - destino atual: "painel.html#escolas"
      - se a página inicial mudar de nome, altere apenas a linha abaixo.
      - o botão "Fechar" NÃO usa esta função; ele continua na aba atual. */
-  window.location.assign("painel.html");
+  window.location.assign("painel.html#escolas");
 }
 
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
