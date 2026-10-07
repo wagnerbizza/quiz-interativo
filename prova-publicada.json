@@ -1,21 +1,71 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791392482901",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791392356637,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791392356637",
-  "publicadoEm": "2026-10-07T16:59:16.637Z",
-  "encerradoEm": "2026-10-07T16:59:16.637Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791403282901,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791392482901",
+  "publicadoEm": "2026-10-07T17:01:23.582Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "oTDQeHVhWzuuMgR5xXhM",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual propriedade CSS define o comportamento de elementos que transbordam seus limites?",
+      "opcoes": [
+        "overflow",
+        "clip",
+        "scrollbar",
+        "visibility",
+        "contain"
+      ]
+    },
+    {
+      "idQuestao": "RtshJuFwzKO7uZYBat5R",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 45 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "EAGvI5HTPZ6SFyMVayGJ",
+      "materia": "Programacao Front-End",
+      "categoria": "Programacao Front-End",
+      "pergunta": "[Técnico 12 - 1790243770201]Qual a principal responsabilidade do CSS em páginas web?",
+      "opcoes": [
+        "Estruturar os textos semânticos",
+        "Controlar a aparência visual, layout, cores e responsividade",
+        "Processar regras de negócio no servidor",
+        "Armazenar dados em banco NoSQL"
+      ]
+    }
+  ]
 }
