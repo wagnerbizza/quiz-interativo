@@ -1184,7 +1184,43 @@ html,body{max-width:100%;overflow-x:hidden}
 
 </style>
 
-\n<style id="ajuste-visual-compacto-2026">\n/* ============================================================\n   AJUSTE VISUAL FINAL — PAINEL DO PROFESSOR\n   O QUE FAZ: reduz espaços/fontes e amplia a área útil em 100%.\n   NÃO ALTERA: Firebase, publicação, relatórios ou monitoramento.\n   ============================================================ */\nhtml { font-size: 14px; }\nbody { padding: 8px 10px 24px !important; line-height: 1.35; }\n.container { width: min(100%, 1560px) !important; max-width: 1560px !important; }\nheader { margin-bottom: 8px !important; }\nheader h1 { font-size: clamp(22px,2vw,29px) !important; margin: 8px 0 !important; }\n.btn-nav-icone, button.btn-acao, .btn-aba { font-size: 12.5px !important; min-height: 38px !important; padding: 7px 12px !important; }\n.barra-navegacao-global { min-height: 0 !important; padding: 8px 12px !important; margin-bottom: 8px !important; }\n.abas-navegacao { gap: 6px !important; margin-bottom: 8px !important; padding-top: 3px !important; }\n.btn-aba { border-radius: 7px 7px 0 0 !important; }\n.aba-conteudo { gap: 12px !important; padding-top: 10px !important; }\n.aba-conteudo > h2, .aba-conteudo h2 { font-size: clamp(19px,1.7vw,24px) !important; margin: 8px 0 10px !important; }\n.aba-conteudo h3 { font-size: 17px !important; margin: 8px 0 !important; }\ninput[type="text"], input[type="number"], input[type="datetime-local"], input[type="email"], input[type="password"], select, textarea {\n  font-size: 12.5px !important; padding: 7px 10px !important; min-height: 36px !important; margin-top: 3px !important;\n}\nlabel, .texto-ajuda, small { font-size: 12px !important; }\ntable { font-size: 12px !important; margin-top: 8px !important; }\nth, td { padding: 7px 8px !important; line-height: 1.3 !important; }\n.tabela-responsiva { margin-top: 8px !important; }\n.painel-controles, .controles, .acoes-tabela { gap: 7px !important; padding: 8px !important; }\n.tooltip-sistema { font-size: 11px !important; max-width: 270px !important; }\n/* Modo claro: melhora contraste de controles sem mudar a lógica do tema. */\nbody.tema-claro-ativo input, body.tema-claro-ativo select, body.tema-claro-ativo textarea { background:#fff !important; color:#0f172a !important; border-color:#94a3b8 !important; }\nbody.tema-claro-ativo table, body.tema-claro-ativo td { color:#0f172a; }\n/* Marca d'água discreta, padrão de identificação do sistema. */\n.marca-agua-sistema { position:fixed; left:12px; bottom:7px; z-index:650; pointer-events:none; user-select:none; font-size:9px; letter-spacing:.08em; opacity:.18; color:var(--text); text-transform:uppercase; }\nbody.tema-claro-ativo .marca-agua-sistema { opacity:.22; color:#334155; }\n@media (max-width:900px){ html{font-size:13px} body{padding:6px 7px 22px!important} .btn-nav-icone,button.btn-acao,.btn-aba{font-size:12px!important;padding:6px 9px!important} header h1{font-size:22px!important} }\n@media (max-width:620px){ .marca-agua-sistema{font-size:8px;left:7px;bottom:5px}.abas-navegacao{overflow-x:auto!important;flex-wrap:nowrap!important}.btn-aba{flex:0 0 auto!important} }\n</style>\n
+
+<style id="ajuste-visual-compacto-2026">
+/* ============================================================
+   AJUSTE VISUAL FINAL — PAINEL DO PROFESSOR
+   O QUE FAZ: reduz espaços/fontes e amplia a área útil em 100%.
+   NÃO ALTERA: Firebase, publicação, relatórios ou monitoramento.
+   ============================================================ */
+html { font-size: 14px; }
+body { padding: 8px 10px 24px !important; line-height: 1.35; }
+.container { width: min(100%, 1560px) !important; max-width: 1560px !important; }
+header { margin-bottom: 8px !important; }
+header h1 { font-size: clamp(22px,2vw,29px) !important; margin: 8px 0 !important; }
+.btn-nav-icone, button.btn-acao, .btn-aba { font-size: 12.5px !important; min-height: 38px !important; padding: 7px 12px !important; }
+.barra-navegacao-global { min-height: 0 !important; padding: 8px 12px !important; margin-bottom: 8px !important; }
+.abas-navegacao { gap: 6px !important; margin-bottom: 8px !important; padding-top: 3px !important; }
+.btn-aba { border-radius: 7px 7px 0 0 !important; }
+.aba-conteudo { gap: 12px !important; padding-top: 10px !important; }
+.aba-conteudo > h2, .aba-conteudo h2 { font-size: clamp(19px,1.7vw,24px) !important; margin: 8px 0 10px !important; }
+.aba-conteudo h3 { font-size: 17px !important; margin: 8px 0 !important; }
+input[type="text"], input[type="number"], input[type="datetime-local"], input[type="email"], input[type="password"], select, textarea {
+  font-size: 12.5px !important; padding: 7px 10px !important; min-height: 36px !important; margin-top: 3px !important;
+}
+label, .texto-ajuda, small { font-size: 12px !important; }
+table { font-size: 12px !important; margin-top: 8px !important; }
+th, td { padding: 7px 8px !important; line-height: 1.3 !important; }
+.tabela-responsiva { margin-top: 8px !important; }
+.painel-controles, .controles, .acoes-tabela { gap: 7px !important; padding: 8px !important; }
+.tooltip-sistema { font-size: 11px !important; max-width: 270px !important; }
+/* Modo claro: melhora contraste de controles sem mudar a lógica do tema. */
+body.tema-claro-ativo input, body.tema-claro-ativo select, body.tema-claro-ativo textarea { background:#fff !important; color:#0f172a !important; border-color:#94a3b8 !important; }
+body.tema-claro-ativo table, body.tema-claro-ativo td { color:#0f172a; }
+/* Marca d'água discreta, padrão de identificação do sistema. */
+.marca-agua-sistema { position:fixed; left:12px; bottom:7px; z-index:650; pointer-events:none; user-select:none; font-size:9px; letter-spacing:.08em; opacity:.18; color:var(--text); text-transform:uppercase; }
+body.tema-claro-ativo .marca-agua-sistema { opacity:.22; color:#334155; }
+@media (max-width:900px){ html{font-size:13px} body{padding:6px 7px 22px!important} .btn-nav-icone,button.btn-acao,.btn-aba{font-size:12px!important;padding:6px 9px!important} header h1{font-size:22px!important} }
+@media (max-width:620px){ .marca-agua-sistema{font-size:8px;left:7px;bottom:5px}.abas-navegacao{overflow-x:auto!important;flex-wrap:nowrap!important}.btn-aba{flex:0 0 auto!important} }
+</style>\n
 <style id="ajuste-visual-compacto-v2">
 /* ============================================================
    VISUAL: COMPACTAÇÃO DO PAINEL DO PROFESSOR
