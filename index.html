@@ -241,6 +241,72 @@ ATENÇÃO:
 #opcoes-container .opcao-btn{border-left:3px solid #475569!important;font-size:14px!important;line-height:1.45!important;text-align:left!important;padding:14px 16px!important}
 #opcoes-container .opcao-btn:hover{border-left-color:#3b82f6!important;background:rgba(59,130,246,.08)!important}
 #opcoes-container .opcao-btn.selecionada{border-left-color:#22c55e!important;background:rgba(34,197,94,.12)!important}
+
+  /* ============================================================
+     TELA INICIAL DO ALUNO — compacta em 100% de zoom
+     Somente layout: não altera ativação, token, timer ou envio.
+     ============================================================ */
+  @media (min-width: 900px) {
+    #tela-login {
+      padding: 10px 14px !important;
+    }
+    #tela-login > div {
+      max-width: min(92vw, 1180px) !important;
+      margin: 8px auto !important;
+      padding-top: 18px !important;
+      padding-bottom: 18px !important;
+    }
+    #tela-login h1 {
+      font-size: clamp(1.65rem, 2.1vw, 2rem) !important;
+      margin-top: 4px !important;
+      margin-bottom: 16px !important;
+    }
+    #detalhes-prova-ativa {
+      padding: 13px 16px !important;
+      margin-bottom: 14px !important;
+      line-height: 1.35 !important;
+    }
+    #detalhes-prova-ativa > div:first-child {
+      margin-bottom: 7px !important;
+    }
+    #tela-login .grupo-form,
+    #tela-login .form-group {
+      margin-bottom: 10px !important;
+    }
+    #tela-login label {
+      margin-bottom: 5px !important;
+      line-height: 1.15 !important;
+    }
+    #tela-login input,
+    #tela-login select {
+      min-height: 42px !important;
+      height: 42px !important;
+      padding-top: 8px !important;
+      padding-bottom: 8px !important;
+    }
+    #tela-login small {
+      margin-top: 4px !important;
+      line-height: 1.2 !important;
+    }
+    #tela-login button[type="submit"],
+    #btn-iniciar-prova {
+      min-height: 44px !important;
+      height: 44px !important;
+      margin-top: 4px !important;
+    }
+    #btn-ver-token-aluno {
+      min-height: 32px !important;
+      height: 32px !important;
+      width: 38px !important;
+      color: #9ec5ff !important;
+    }
+    #btn-ver-token-aluno svg {
+      width: 21px !important;
+      height: 21px !important;
+      stroke: currentColor !important;
+    }
+  }
+
 </style>
 
 </head>
