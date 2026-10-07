@@ -426,15 +426,53 @@ ATENÇÃO:
       if (inputTokenAluno) inputTokenAluno.value = "";
     }
 
+    // Lê o pacote público sem exigir que o aluno escolha uma escola primeiro.
+    // Assim a própria página identifica qual escola está com avaliação ativa.
+    async function carregarPacotePublicoBruto() {
+      try {
+        const r = await fetch(`prova-publicada.json?v=${Date.now()}`, { cache: "no-store" });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch (_) {
+        return null;
+      }
+    }
+
     async function conferirPacotePublicoNaEntrada() {
-      const escolaNome = selectEscola?.value || "";
-      if (!escolaNome) return;
       // Se já está dentro da prova, o watcher específico da sessão assume.
       if (!document.getElementById("tela-quiz")?.classList.contains("hidden")) return;
-      const pacote = await carregarProvaEstatica(escolaNome);
-      if (!pacote) return; // Falha temporária de rede não muda a tela.
-      if (await aplicarProvaRecebida(escolaNome, pacote, "github")) return;
-      mostrarProvaInativaAluno(escolaNome);
+
+      const pacote = await carregarPacotePublicoBruto();
+      if (!pacote) return; // Falha temporária de rede não apaga um estado válido da tela.
+
+      const expirada =
+        Number(pacote.expiraEmMillis || 0) > 0 &&
+        Date.now() >= Number(pacote.expiraEmMillis || 0);
+
+      if (pacote.ativa === false || expirada || !String(pacote.escolaAtiva || "").trim()) {
+        dadosProvaAtiva = {};
+        detalhesProvaAtiva.innerHTML =
+          `<div style="font-size:18px;font-weight:900;color:#f87171;margin-bottom:6px;">🔴 NENHUMA AVALIAÇÃO ATIVA</div>
+           <div>Nenhuma escola possui avaliação publicada neste momento.</div>`;
+        selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+        btnIniciarProva.disabled = true;
+        if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";
+        if (inputTokenAluno) inputTokenAluno.value = "";
+        return;
+      }
+
+      const escolaAtiva = String(pacote.escolaAtiva).trim();
+
+      // Seleciona automaticamente a escola publicada, quando ela já estiver
+      // cadastrada no seletor. O aluno ainda enxerga claramente qual escola é.
+      if (selectEscola) {
+        const opcao = Array.from(selectEscola.options || []).find(
+          o => normalizarId(o.value || "") === normalizarId(escolaAtiva)
+        );
+        if (opcao) selectEscola.value = opcao.value;
+      }
+
+      await aplicarProvaRecebida(escolaAtiva, pacote, "github");
     }
 
     async function aplicarProvaRecebida(escolaNome,p,origem="firebase"){
@@ -563,6 +601,7 @@ ATENÇÃO:
       if (!usuario) return;
       uidAlunoFirebase = usuario.uid;
       await carregarEscolasAluno();
+      await conferirPacotePublicoNaEntrada();
       if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
       verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 5000);
     });
