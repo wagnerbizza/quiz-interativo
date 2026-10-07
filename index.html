@@ -433,6 +433,40 @@ ATENÇÃO:
 
 </style>
 
+
+<style id="ajuste-compacto-prova-resultado">
+/* ============================================================
+   [AJUSTE MANUAL 04] PROVA E RESULTADO MAIS COMPACTOS
+   Objetivo: mostrar mais conteúdo em 100% de zoom sem cortar.
+   Para ajustar depois, altere apenas max-width, padding e font-size.
+   NÃO altere IDs nem funções JavaScript desta seção.
+   ============================================================ */
+@media (min-width: 900px) {
+  #tela-quiz, #tela-resultado { padding: 8px 12px !important; }
+  #tela-quiz > div, #tela-resultado > div {
+    max-width: min(94vw, 1260px) !important;
+    margin: 6px auto !important;
+    padding: 16px 18px !important;
+  }
+  #tela-quiz h1, #tela-resultado h1 { margin-bottom: 12px !important; }
+  #tela-quiz .info-box, #tela-resultado .info-box {
+    padding: 12px 14px !important; margin-bottom: 12px !important;
+  }
+  .painel-tempo-aluno { margin: 6px 0 7px !important; gap: 7px !important; }
+  .info-prova-aluno { min-height: 46px !important; padding: 7px 9px !important; }
+  #pergunta-txt { font-size: 16px !important; line-height: 1.35 !important; }
+  #opcoes-container { gap: 7px !important; margin: 8px 0 !important; }
+  #opcoes-container .opcao-btn {
+    min-height: 44px !important; padding: 10px 14px !important;
+    font-size: 13.5px !important; margin-bottom: 0 !important;
+  }
+  #container-revisao-resultado {
+    max-height: 220px !important; margin-bottom: 10px !important;
+  }
+  .item-revisao { padding: 9px 11px !important; margin-bottom: 7px !important; }
+}
+</style>
+
 </head>
 <body>
 
@@ -909,6 +943,15 @@ ATENÇÃO:
       // 🟢 Agora o ID inclui ESCOLA + NOME + TURMA, evitando conflito entre escolas.
       const idAlunoGerado = `${normalizarId(escolaVal)}__${normalizarId(nomeVal)}__${normalizarId(turmaVal)}`;
 
+      const avaliacaoAtual = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+
+      // Primeiro confere a trava deste navegador. Isso impede repetir a mesma
+      // avaliação apenas acrescentando ponto, espaço ou hífen ao nome.
+      if (tentativaBloqueadaLocalmente(idAlunoGerado, avaliacaoAtual)) {
+        alert("❌ Esta avaliação já foi iniciada/concluída por este aluno neste computador. Solicite liberação ao professor para refazê-la.");
+        return;
+      }
+
       // VERIFICAÇÃO INTELIGENTE DE PERMISSÃO: Respeita a reautorização do professor
       try {
         const docPermissao = await getDoc(doc(db, "permissoes_alunos", idAlunoGerado));
@@ -916,7 +959,6 @@ ATENÇÃO:
         // Se explicitamente configurado como false (e o professor não reautorizou para true), bloqueia
         if (docPermissao.exists() && docPermissao.data().podeFazer === false) {
           const perm = docPermissao.data() || {};
-          const avaliacaoAtual = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
           const avaliacaoBloqueada = String(perm.idAvaliacao || "");
           // Só bloqueia a MESMA avaliação. Uma nova ativação não herda o bloqueio antigo.
           if (avaliacaoBloqueada && avaliacaoBloqueada === avaliacaoAtual) {
@@ -1067,6 +1109,24 @@ ATENÇÃO:
       }
 
       listaQuestoes = unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
+
+      // Registra a tentativa assim que a prova realmente conseguiu carregar.
+      // 1) trava local imediatamente; 2) tenta gravar a trava central no Firebase.
+      // Se a internet falhar, a prova continua e a trava local ainda protege este PC.
+      const avaliacaoEmUso = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+      bloquearTentativaLocalmente(alunoAtual.id, avaliacaoEmUso);
+      try {
+        const usuarioTentativa = await garantirAuthAnonimaAtual();
+        await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
+          podeFazer: false,
+          uid: usuarioTentativa.uid,
+          idAvaliacao: avaliacaoEmUso,
+          tentativaIniciada: true,
+          tentativaIniciadaEm: Date.now()
+        }, { merge: true });
+      } catch (erroTrava) {
+        console.warn("Trava central temporariamente indisponível; trava local mantida:", erroTrava?.code || erroTrava);
+      }
 
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
       document.getElementById("tela-login").classList.add("hidden");
@@ -1317,6 +1377,34 @@ ATENÇÃO:
     document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
     document.getElementById("fin")?.addEventListener("click", () => finalizarProva());
     // FILA LOCAL: nunca perdemos uma entrega por falha momentânea de rede/Firebase.
+    // ==========================================================
+    // [AJUSTE MANUAL 05] BLOQUEIO DE NOVA TENTATIVA
+    // A identidade usa escola + nome normalizado + turma.
+    // Pontos, espaços, acentos, hífens e diferenças de maiúsculas
+    // não criam um "novo aluno". Ex.: JOÃO SILVA e JOÃO SILVA.
+    // geram o mesmo ID. Não altere normalizarId() sem revisar app.js.
+    // Além do Firebase, mantemos uma trava local para funcionar mesmo
+    // quando a rede/cota estiver temporariamente indisponível.
+    // ==========================================================
+    const CHAVE_TENTATIVAS_BLOQUEADAS = "quiz_tentativas_bloqueadas_v1";
+    function chaveTentativaAtual(idAluno, idAvaliacao) {
+      return `${String(idAvaliacao || "")}::${String(idAluno || "")}`;
+    }
+    function lerTentativasBloqueadas() {
+      try {
+        const dados = JSON.parse(localStorage.getItem(CHAVE_TENTATIVAS_BLOQUEADAS) || "{}");
+        return dados && typeof dados === "object" && !Array.isArray(dados) ? dados : {};
+      } catch (_) { return {}; }
+    }
+    function tentativaBloqueadaLocalmente(idAluno, idAvaliacao) {
+      return !!lerTentativasBloqueadas()[chaveTentativaAtual(idAluno, idAvaliacao)];
+    }
+    function bloquearTentativaLocalmente(idAluno, idAvaliacao) {
+      const dados = lerTentativasBloqueadas();
+      dados[chaveTentativaAtual(idAluno, idAvaliacao)] = { bloqueadaEm: new Date().toISOString() };
+      localStorage.setItem(CHAVE_TENTATIVAS_BLOQUEADAS, JSON.stringify(dados));
+    }
+
     const CHAVE_ENTREGAS_PENDENTES = "quiz_entregas_pendentes_v1";
     function lerEntregasPendentes(){try{const x=JSON.parse(localStorage.getItem(CHAVE_ENTREGAS_PENDENTES)||"[]");return Array.isArray(x)?x:[];}catch(_){return [];}}
     function salvarEntregasPendentes(x){localStorage.setItem(CHAVE_ENTREGAS_PENDENTES,JSON.stringify(Array.isArray(x)?x:[]));}
