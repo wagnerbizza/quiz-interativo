@@ -1090,6 +1090,64 @@ html,body{max-width:100%;overflow-x:hidden}
   #aba-escolas select,#aba-ativacao select,#aba-monitoramento select,
   #aba-banco select,#aba-dados select{width:100%!important}
 }
+
+  /* ============================================================
+     RESPONSIVIDADE GERAL DO PAINEL — 100% de zoom
+     Preserva funções, IDs, tabelas e eventos existentes.
+     ============================================================ */
+  html { font-size: 14px; }
+  body { overflow-x: hidden !important; }
+  .container, .painel-container, main, .main-container, #app {
+    width: min(96vw, 1500px) !important;
+    max-width: 1500px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+  }
+  h1 { font-size: clamp(1.55rem, 2.3vw, 2.25rem) !important; line-height: 1.15 !important; }
+  h2 { font-size: clamp(1.15rem, 1.8vw, 1.55rem) !important; }
+  button, input, select, textarea { box-sizing: border-box; }
+  button { min-height: 36px; }
+  .tabs, .abas, .nav-tabs, .tab-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .tabs button, .abas button, .nav-tabs button, .tab-buttons button {
+    flex: 1 1 170px !important;
+    white-space: normal !important;
+  }
+  .card, .panel, .painel, .secao, section {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .table-container, .tabela-container, .table-wrapper, .resultado-tabela,
+  .monitoramento-tabela, .banco-tabela {
+    max-width: 100% !important;
+    overflow: auto !important;
+  }
+  table {
+    max-width: 100% !important;
+    font-size: .92rem !important;
+  }
+  th, td {
+    padding: 8px 9px !important;
+    vertical-align: middle !important;
+  }
+  input[type="text"], input[type="number"], input[type="password"],
+  input[type="email"], input[type="datetime-local"], select, textarea {
+    max-width: 100% !important;
+  }
+  @media (max-width: 1100px) {
+    html { font-size: 13px; }
+    .container, .painel-container, main, .main-container, #app { width: 98vw !important; }
+    th, td { padding: 7px !important; }
+  }
+  @media (max-width: 760px) {
+    .tabs button, .abas button, .nav-tabs button, .tab-buttons button { flex: 1 1 45% !important; }
+    .toolbar, .acoes, .controls, .controles { flex-wrap: wrap !important; }
+  }
+
 </style>
 
 </head>

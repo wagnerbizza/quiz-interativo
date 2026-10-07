@@ -140,7 +140,58 @@ ATENÇÃO:
     }
     .item-revisao.correta { border-color: var(--success); }
     .item-revisao.incorreta { border-color: var(--danger); }
-  </style>
+  
+  /* ============================================================
+     RESPONSIVIDADE GERAL — uso confortável em 100% de zoom
+     Mantém a lógica da avaliação intacta; altera somente layout.
+     ============================================================ */
+  html { font-size: 15px; }
+  body { overflow-x: hidden; }
+  .container, .card, .login-container, .quiz-container, #tela-login > div,
+  #tela-quiz > div, #tela-resultado > div {
+    max-width: min(96vw, 1100px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  #tela-login, #tela-quiz, #tela-resultado {
+    padding: 18px 14px !important;
+    align-items: flex-start !important;
+  }
+  #tela-login > div, #tela-resultado > div { margin: 22px auto !important; }
+  #tela-quiz > div { margin: 8px auto !important; }
+  h1 { font-size: clamp(1.55rem, 2.5vw, 2.2rem) !important; line-height: 1.15 !important; }
+  h2 { font-size: clamp(1.2rem, 2vw, 1.65rem) !important; }
+  input, select, button, textarea { min-height: 44px; box-sizing: border-box; }
+  .grupo-form { margin-bottom: 14px !important; }
+  .linha-detalhe { align-items: flex-start !important; }
+  #detalhes-prova-ativa { padding: 18px !important; }
+  .alternativa, .opcao, .option, .answer-option { min-height: 50px !important; padding: 14px 16px !important; }
+  .quiz-header, .status-grid, .info-grid { gap: 10px !important; }
+  table { max-width: 100%; }
+  @media (max-width: 900px) {
+    html { font-size: 14px; }
+    #tela-login, #tela-quiz, #tela-resultado { padding: 10px !important; }
+    .quiz-header, .status-grid, .info-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+  }
+  @media (max-width: 620px) {
+    .quiz-header, .status-grid, .info-grid { grid-template-columns: 1fr !important; }
+    button { width: 100%; }
+  }
+
+  /* Ícone de visualização: claro e sincronizado com o tema escuro. */
+  #btn-ver-token-aluno {
+    color: #9ec5ff !important;
+    opacity: 1 !important;
+  }
+  #btn-ver-token-aluno:hover,
+  #btn-ver-token-aluno:focus-visible {
+    color: #ffffff !important;
+  }
+  #btn-ver-token-aluno svg {
+    stroke: currentColor !important;
+  }
+
+</style>
 
 <style id="fase8b-aluno-profissional">
 /* 🔵 FASE 8B — painel de tempo/progresso da tela do aluno */
