@@ -212,7 +212,7 @@ ATENÇÃO:
           <label for="token-aluno">🔐 Código de Acesso da Avaliação:</label>
           <div style="position:relative;">
             <input type="password" id="token-aluno" placeholder="Digite o código fornecido pelo professor..." autocomplete="off" style="padding-right:52px;width:100%;box-sizing:border-box;">
-            <button type="button" id="btn-ver-token-aluno" title="Mostrar ou ocultar o código digitado" aria-label="Mostrar código" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:20px;padding:6px;">👁️</button>
+            <button type="button" id="btn-ver-token-aluno" title="Mostrar ou ocultar o código digitado" aria-label="Mostrar código" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:20px;padding:6px;"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
           <small style="display:block;margin-top:6px;color:var(--text-muted);">O código será conferido quando você clicar em “Iniciar Avaliação”.</small>
         </div>
@@ -645,7 +645,9 @@ ATENÇÃO:
     btnVerTokenAluno?.addEventListener("click", () => {
       const mostrando = inputTokenAluno.type === "text";
       inputTokenAluno.type = mostrando ? "password" : "text";
-      btnVerTokenAluno.textContent = mostrando ? "👁️" : "◉";
+      btnVerTokenAluno.innerHTML = mostrando
+        ? `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>`
+        : `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a17.7 17.7 0 0 1-2.1 3.2"/><path d="M6.6 6.6C3.7 8.6 2 12 2 12s3.5 8 10 8a10.7 10.7 0 0 0 4.1-.8"/></svg>`;
       btnVerTokenAluno.setAttribute("aria-label", mostrando ? "Mostrar código" : "Ocultar código");
       inputTokenAluno.focus();
     });
