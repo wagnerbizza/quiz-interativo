@@ -354,7 +354,7 @@ ATENÇÃO:
     font-weight:800;box-shadow:0 8px 25px #0006;
   }
   .demo-ajuda-btn:hover{background:#1e3a5f;color:#fff}
-  .demo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9998;display:none}
+  .demo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.30);z-index:9998;display:none}
   .demo-overlay.ativo{display:block}
   .demo-caixa{
     position:fixed;z-index:9999;left:50%;bottom:28px;transform:translateX(-50%);
@@ -381,7 +381,7 @@ ATENÇÃO:
     transition:top .18s ease,left .18s ease,width .18s ease,height .18s ease;
   }
   .demo-aluno-foco.ativo{display:block;}
-  .demo-caixa.demo-aluno-caixa{top:18px;right:18px;left:auto;bottom:auto;transform:none;width:min(90vw,620px);z-index:10002;}
+  .demo-caixa.demo-aluno-caixa{top:18px;right:18px;left:auto;bottom:auto;transform:none;width:min(90vw,620px);z-index:10002;display:none;}
 
 
   /* ============================================================
@@ -1529,11 +1529,22 @@ if (unsubscribePermissaoAluno) {
       const espacoAcima=r.top-margemTela;
       const espacoAbaixo=window.innerHeight-r.bottom-margemTela;
       let top;
-      if(espacoAbaixo >= alturaCaixa+folga){
+
+      // No primeiro passo o painel é grande. Mantemos a caixa no topo e
+      // deslocamos o painel para começar abaixo dela, evitando qualquer cruzamento.
+      if(passoDemoAluno===0){
+        top=margemTela;
+        const topoSeguro=alturaCaixa+folga+margemTela;
+        if(r.top < topoSeguro-4){
+          window.scrollBy({top:r.top-topoSeguro,behavior:"smooth"});
+        }
+      }else if(espacoAbaixo >= alturaCaixa+folga){
         top=r.bottom+folga;
       }else if(espacoAcima >= alturaCaixa+folga){
         top=r.top-alturaCaixa-folga;
       }else{
+        // Sem espaço suficiente: fixa a caixa no topo; o contorno continua
+        // independente e nunca passa por cima da caixa.
         top=margemTela;
       }
       let left=Math.min(window.innerWidth-larguraCaixa-margemTela, Math.max(margemTela, r.left+(r.width-larguraCaixa)/2));
@@ -1571,18 +1582,25 @@ if (unsubscribePermissaoAluno) {
       limparDestaqueDemoAluno();
       overlayDemoAluno.classList.remove("ativo");
       overlayDemoAluno.setAttribute("aria-hidden","true");
+      if(caixaDemoAluno) caixaDemoAluno.style.display="none";
       if(!permanecer){
         // Concluir/Pular volta ao início SEM iniciar prova, consumir tentativa ou gerar resultado.
         voltarTelaInicialAluno();
         window.scrollTo({top:0,behavior:"smooth"});
       }
     }
-    if(caixaDemoAluno) caixaDemoAluno.classList.add("demo-aluno-caixa");
+    // [AJUSTE MANUAL 08] A caixa é movida para o <body> para ficar em uma camada
+    // acima do contorno azul. Isso impede a linha do destaque de atravessar o texto.
+    if(caixaDemoAluno){
+      caixaDemoAluno.classList.add("demo-aluno-caixa");
+      document.body.appendChild(caixaDemoAluno);
+    }
     if(!DEMO_ALUNO_ATIVA) btnDemoAluno.style.display="none";
     btnDemoAluno?.addEventListener("click",()=>{
       passoDemoAluno=0;
       overlayDemoAluno.classList.add("ativo");
       overlayDemoAluno.setAttribute("aria-hidden","false");
+      if(caixaDemoAluno) caixaDemoAluno.style.display="block";
       renderDemoAluno();
     });
     document.getElementById("demo-proximo-aluno")?.addEventListener("click",()=>{
