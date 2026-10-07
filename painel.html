@@ -1465,6 +1465,73 @@ body.tema-claro-ativo .marca-agua-sistema { opacity:.22; color:#334155; }
 }
 </style>
 
+
+<style id="correcao-modos-visualizacao-v5">
+/* ============================================================
+   CORREÇÃO V5 — MODOS DE VISUALIZAÇÃO DO BANCO DE DADOS
+
+   CAUSA CORRIGIDA:
+   A regra visual da Grade V4 estava mais forte e mantinha
+   3 colunas mesmo quando o botão "Lista" adicionava modo-lista.
+
+   NÃO ALTERA:
+   Firebase, banco, filtros, edição, exclusão ou questões.
+   ============================================================ */
+
+/* GRADE: três colunas sequenciais */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+/* LISTA: uma questão por linha, usando toda a largura */
+#catalogo-questoes-grid.catalogo-grid.modo-lista {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+#catalogo-questoes-grid.catalogo-grid.modo-lista > .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-lista .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-lista .mural-coluna {
+  display: contents !important;
+}
+#catalogo-questoes-grid.catalogo-grid.modo-lista .catalogo-card {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+/* BLOCOS: cards menores para visão geral rápida */
+#catalogo-questoes-grid.catalogo-grid.modo-blocos {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+#catalogo-questoes-grid.catalogo-grid.modo-blocos > .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-blocos .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-blocos .mural-coluna {
+  display: contents !important;
+}
+
+/* Responsividade somente para a Grade normal */
+@media (max-width: 1350px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 800px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos),
+  #catalogo-questoes-grid.catalogo-grid.modo-blocos {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
