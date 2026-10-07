@@ -208,6 +208,11 @@ ATENÇÃO:
             <option value="" disabled selected>Carregando escolas...</option>
           </select>
         </div>
+        <div class="grupo-form" id="grupo-token-acesso" style="display:none;">
+          <label for="token-aluno">🔐 Código de Acesso da Avaliação:</label>
+          <input type="password" id="token-aluno" placeholder="Digite o código fornecido pelo professor..." autocomplete="off">
+          <small style="display:block;margin-top:6px;color:var(--text-muted);">O código é fornecido pelo professor e libera somente a avaliação publicada.</small>
+        </div>
         <div class="grupo-form">
           <label for="nome-aluno">Nome Completo:</label>
           <input type="text" id="nome-aluno" placeholder="Digite seu nome completo..." required>
@@ -331,6 +336,8 @@ ATENÇÃO:
     }
     const detalhesProvaAtiva = document.getElementById("detalhes-prova-ativa");
     const btnIniciarProva = document.getElementById("btn-iniciar-prova");
+    const inputTokenAluno = document.getElementById("token-aluno");
+    const grupoTokenAcesso = document.getElementById("grupo-token-acesso");
 
     function limparPrefixoPergunta(pergunta) {
       if (!pergunta) return "";
@@ -415,6 +422,8 @@ ATENÇÃO:
         `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
       selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
       btnIniciarProva.disabled = true;
+      if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";
+      if (inputTokenAluno) inputTokenAluno.value = "";
     }
 
     async function conferirPacotePublicoNaEntrada() {
@@ -444,10 +453,17 @@ ATENÇÃO:
       qtdQ=parseInt(p.quantidadeQuestoes)||10;
       const turmas=p.turmasAtivas||[];
       detalhesProvaAtiva.innerHTML=`
-        <div class="linha-detalhe"><span class="icone">🏫</span><div class="conteudo-texto"><strong>Escola:</strong> ${p.escolaAtiva||escolaNome}</div></div>
+        <div style="font-size:18px;font-weight:900;color:#4ade80;margin-bottom:10px;">🟢 AVALIAÇÃO ATIVA</div>
+        <div class="linha-detalhe"><span class="icone">🏫</span><div class="conteudo-texto"><strong>Escola com avaliação liberada:</strong> ${p.escolaAtiva||escolaNome}</div></div>
         <div class="linha-detalhe"><span class="icone">📚</span><div class="conteudo-texto"><strong>Matéria(s):</strong> ${(p.materiasAtivas||[]).join(", ")||"Geral"}</div></div>
-        <div class="linha-detalhe"><span class="icone">🟢</span><div class="conteudo-texto"><strong style="color:#4ade80;">AVALIAÇÃO ATIVA — entrada liberada.</strong></div></div>
+        <div class="linha-detalhe"><span class="icone">🎓</span><div class="conteudo-texto"><strong>Turmas:</strong> ${(p.turmasAtivas||[]).join(", ")||"Nenhuma"}</div></div>
+        <div class="linha-detalhe"><span class="icone">🔐</span><div class="conteudo-texto"><strong>Acesso:</strong> ${p.token&&String(p.token).trim()?"código obrigatório fornecido pelo professor":"sem código de acesso"}</div></div>
         <div class="linha-detalhe"><span class="icone">📡</span><div class="conteudo-texto"><strong>Origem:</strong> ${origem==="github"?"GitHub / pacote publicado":"Firebase"}</div></div>`;
+      if (grupoTokenAcesso) grupoTokenAcesso.style.display = (p.token&&String(p.token).trim()) ? "block" : "none";
+      if (inputTokenAluno) {
+        inputTokenAluno.value = "";
+        inputTokenAluno.required = !!(p.token&&String(p.token).trim());
+      }
       selectTurma.innerHTML=`<option value="" disabled selected>Selecione sua turma...</option>`;
       turmas.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;selectTurma.appendChild(o);});
       btnIniciarProva.disabled=!turmas.length;
@@ -590,10 +606,19 @@ ATENÇÃO:
         console.error("Erro ao verificar permissões:", err);
       }
 
-      if (dadosProvaAtiva.token && dadosProvaAtiva.token.trim() !== "") {
-        let tokenInput = prompt("🔒 Digite o token/senha fornecido pelo professor para acessar a prova:");
-        if (tokenInput !== dadosProvaAtiva.token) {
-          alert("❌ Token incorreto! Acesso negado.");
+      if (dadosProvaAtiva.token && String(dadosProvaAtiva.token).trim() !== "") {
+        const tokenInput = String(inputTokenAluno?.value || "").trim();
+        if (!tokenInput) {
+          alert("🔐 Digite o código de acesso fornecido pelo professor.");
+          inputTokenAluno?.focus();
+          return;
+        }
+        if (tokenInput !== String(dadosProvaAtiva.token).trim()) {
+          alert("❌ Código de acesso incorreto. A avaliação não foi iniciada.");
+          if (inputTokenAluno) {
+            inputTokenAluno.value = "";
+            inputTokenAluno.focus();
+          }
           return;
         }
       }
@@ -1116,6 +1141,7 @@ if (unsubscribePermissaoAluno) {
         btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
       }
       if (inputNomeAluno) inputNomeAluno.value = "";
+      if (inputTokenAluno) inputTokenAluno.value = "";
 
       // Ao voltar, confere imediatamente o pacote público.
       // Se a prova já encerrou, a tela inicial mostra que não há avaliação ativa.
