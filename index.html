@@ -354,7 +354,7 @@ ATENÇÃO:
     font-weight:800;box-shadow:0 8px 25px #0006;
   }
   .demo-ajuda-btn:hover{background:#1e3a5f;color:#fff}
-  .demo-overlay{position:fixed;inset:0;background:#000a;z-index:9998;display:none}
+  .demo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9998;display:none}
   .demo-overlay.ativo{display:block}
   .demo-caixa{
     position:fixed;z-index:9999;left:50%;bottom:28px;transform:translateX(-50%);
@@ -1513,6 +1513,35 @@ if (unsubscribePermissaoAluno) {
       focoDemoAluno.style.width=`${Math.max(20,r.width+margem*2)}px`;
       focoDemoAluno.style.height=`${Math.max(20,r.height+margem*2)}px`;
       focoDemoAluno.classList.add("ativo");
+      posicionarCaixaDemoAluno();
+    }
+
+    // [AJUSTE MANUAL 07] POSIÇÃO INTELIGENTE DA CAIXA DA DEMONSTRAÇÃO
+    // A caixa procura espaço acima ou abaixo do item destacado para não cobri-lo.
+    // Se quiser aumentar a distância entre a caixa e o destaque, altere apenas `folga`.
+    function posicionarCaixaDemoAluno(){
+      if(!caixaDemoAluno || !alvoDemoAlunoAtual) return;
+      const r=alvoDemoAlunoAtual.getBoundingClientRect();
+      const folga=18;
+      const margemTela=16;
+      const alturaCaixa=caixaDemoAluno.offsetHeight || 190;
+      const larguraCaixa=caixaDemoAluno.offsetWidth || Math.min(window.innerWidth*.90,620);
+      const espacoAcima=r.top-margemTela;
+      const espacoAbaixo=window.innerHeight-r.bottom-margemTela;
+      let top;
+      if(espacoAbaixo >= alturaCaixa+folga){
+        top=r.bottom+folga;
+      }else if(espacoAcima >= alturaCaixa+folga){
+        top=r.top-alturaCaixa-folga;
+      }else{
+        top=margemTela;
+      }
+      let left=Math.min(window.innerWidth-larguraCaixa-margemTela, Math.max(margemTela, r.left+(r.width-larguraCaixa)/2));
+      caixaDemoAluno.style.top=`${Math.max(margemTela,top)}px`;
+      caixaDemoAluno.style.left=`${Math.max(margemTela,left)}px`;
+      caixaDemoAluno.style.right='auto';
+      caixaDemoAluno.style.bottom='auto';
+      caixaDemoAluno.style.transform='none';
     }
     function limparDestaqueDemoAluno(){
       alvoDemoAlunoAtual?.classList.remove("demo-aluno-destaque");
@@ -1533,6 +1562,7 @@ if (unsubscribePermissaoAluno) {
         requestAnimationFrame(posicionarFocoDemoAluno);
         setTimeout(posicionarFocoDemoAluno,220);
         setTimeout(posicionarFocoDemoAluno,520);
+        setTimeout(posicionarCaixaDemoAluno,700);
       }
     }
     window.addEventListener("scroll",posicionarFocoDemoAluno,{passive:true});
