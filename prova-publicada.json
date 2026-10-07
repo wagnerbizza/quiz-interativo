@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791392482901",
+  "idAvaliacao": "av_1791405244952",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -18,7 +18,7 @@
   "tempoLimiteMinutos": 1,
   "tempoMaximoMinutos": 1,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791403282901,
+  "expiraEmMillis": 1791416044952,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -26,45 +26,43 @@
     "3D"
   ],
   "token": "4321",
-  "seedReordenacao": "1791392482901",
-  "publicadoEm": "2026-10-07T17:01:23.582Z",
+  "seedReordenacao": "1791405244952",
+  "publicadoEm": "2026-10-07T20:34:05.554Z",
   "questoesPublicas": [
     {
-      "idQuestao": "oTDQeHVhWzuuMgR5xXhM",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Qual propriedade CSS define o comportamento de elementos que transbordam seus limites?",
+      "idQuestao": "I1GK3VqZPGyWtYh2CSmS",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 11 - 1790243779929]O que é uma Sprint no framework Scrum?",
       "opcoes": [
-        "overflow",
-        "clip",
-        "scrollbar",
-        "visibility",
-        "contain"
+        "Um documento com requisitos estáticos",
+        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "Reunião final de homologação do cliente",
+        "Cargo de gestão tradicional de projetos"
       ]
     },
     {
-      "idQuestao": "RtshJuFwzKO7uZYBat5R",
+      "idQuestao": "Lm0cTvDmeVgXoFUm3ptg",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 45 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "pergunta": "Em qual tag HTML costumamos inserir os metadados, links de estilo e o título da página?",
       "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
+        "<head>",
+        "<body>",
+        "<footer>",
+        "<section>"
       ]
     },
     {
-      "idQuestao": "EAGvI5HTPZ6SFyMVayGJ",
-      "materia": "Programacao Front-End",
-      "categoria": "Programacao Front-End",
-      "pergunta": "[Técnico 12 - 1790243770201]Qual a principal responsabilidade do CSS em páginas web?",
+      "idQuestao": "l7KOOaTHanwFVAgLLUll",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 4] O que é uma Sprint no framework Scrum?",
       "opcoes": [
-        "Estruturar os textos semânticos",
-        "Controlar a aparência visual, layout, cores e responsividade",
-        "Processar regras de negócio no servidor",
-        "Armazenar dados em banco NoSQL"
+        "A) Um documento com requisitos estáticos",
+        "B) Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "C) Reunião final de homologação do cliente",
+        "D) Cargo de gestão tradicional de projetos"
       ]
     }
   ]
