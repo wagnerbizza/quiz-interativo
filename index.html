@@ -366,6 +366,15 @@ ATENÇÃO:
   .demo-acoes button{min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #46617f;cursor:pointer}
   .demo-proximo{background:#2563eb;color:white}.demo-pular{background:#374151;color:white}.demo-fechar{background:#7f1d1d;color:white}
 
+  /* [AJUSTE MANUAL 05] DESTAQUE GUIADO DA DEMONSTRAÇÃO DO ALUNO
+     Altere apenas espessura/cor abaixo se quiser mudar o contorno no futuro. */
+  .demo-aluno-destaque{
+    position:relative !important;z-index:9999 !important;
+    outline:3px solid #60a5fa !important;outline-offset:4px !important;
+    border-radius:10px !important;box-shadow:0 0 0 5px #60a5fa22,0 0 22px #60a5fa66 !important;
+  }
+  .demo-caixa.demo-aluno-caixa{top:18px;right:18px;left:auto;bottom:auto;transform:none;width:min(90vw,620px);}
+
 
   /* ============================================================
      [AJUSTE MANUAL 04] ACABAMENTO FINAL DA ENTRADA EM 100%
@@ -1462,28 +1471,64 @@ if (unsubscribePermissaoAluno) {
        Os textos podem ser alterados livremente na lista abaixo.
        ============================================================ */
     const DEMO_ALUNO_ATIVA = true;
+
+    // Cada passo aponta para um elemento REAL da tela.
+    // Para mudar a ordem futuramente, altere somente esta lista.
     const passosDemoAluno = [
-      "<strong>1. Avaliação ativa:</strong> confira escola, matérias e turmas antes de começar.",
-      "<strong>2. Código:</strong> digite o código informado pelo professor. O olho mostra ou oculta o que foi digitado.",
-      "<strong>3. Identificação:</strong> preencha seu nome e escolha somente a sua turma.",
-      "<strong>4. Iniciar:</strong> o código é validado ao clicar em “Iniciar Avaliação”. Código incorreto não abre a prova.",
-      "<strong>5. Durante a prova:</strong> acompanhe questões respondidas e o tempo restante. Ao atingir o limite, a avaliação é encerrada automaticamente."
+      { alvo: "#detalhes-prova-ativa", texto: "<strong>1. Avaliação ativa:</strong> confira qual escola está com avaliação liberada, as matérias e as turmas autorizadas." },
+      { alvo: "#escola-aluno", texto: "<strong>2. Escola:</strong> confirme a unidade escolar indicada pelo professor." },
+      { alvo: "#grupo-token-acesso", texto: "<strong>3. Código:</strong> digite o código fornecido pelo professor. O olho mostra ou oculta o código digitado." },
+      { alvo: "#nome-aluno", texto: "<strong>4. Nome:</strong> digite seu nome completo para identificar corretamente o resultado." },
+      { alvo: "#turma-aluno", texto: "<strong>5. Turma:</strong> selecione somente a sua turma entre as turmas liberadas para esta avaliação." },
+      { alvo: "#btn-iniciar-prova", texto: "<strong>6. Iniciar Avaliação:</strong> ao clicar aqui, o sistema confere os dados e o código. A demonstração não inicia nem registra nenhuma tentativa." }
     ];
     let passoDemoAluno = 0;
+    let alvoDemoAlunoAtual = null;
     const btnDemoAluno=document.getElementById("btn-demo-aluno");
     const overlayDemoAluno=document.getElementById("demo-overlay-aluno");
     const textoDemoAluno=document.getElementById("demo-texto-aluno");
+    const caixaDemoAluno=overlayDemoAluno?.querySelector(".demo-caixa");
+
+    function limparDestaqueDemoAluno(){
+      alvoDemoAlunoAtual?.classList.remove("demo-aluno-destaque");
+      alvoDemoAlunoAtual=null;
+    }
     function renderDemoAluno(){
-      textoDemoAluno.innerHTML=passosDemoAluno[passoDemoAluno];
+      limparDestaqueDemoAluno();
+      const passo=passosDemoAluno[passoDemoAluno];
+      textoDemoAluno.innerHTML=passo.texto;
       document.getElementById("demo-proximo-aluno").textContent =
         passoDemoAluno===passosDemoAluno.length-1 ? "Concluir" : "Próximo";
+      alvoDemoAlunoAtual=document.querySelector(passo.alvo);
+      if(alvoDemoAlunoAtual){
+        alvoDemoAlunoAtual.classList.add("demo-aluno-destaque");
+        alvoDemoAlunoAtual.scrollIntoView({behavior:"smooth",block:"center"});
+      }
     }
-    function fecharDemoAluno(){overlayDemoAluno.classList.remove("ativo");overlayDemoAluno.setAttribute("aria-hidden","true");}
+    function fecharDemoAluno(permanecer=true){
+      limparDestaqueDemoAluno();
+      overlayDemoAluno.classList.remove("ativo");
+      overlayDemoAluno.setAttribute("aria-hidden","true");
+      if(!permanecer){
+        // Concluir/Pular volta ao início SEM iniciar prova, consumir tentativa ou gerar resultado.
+        voltarTelaInicialAluno();
+        window.scrollTo({top:0,behavior:"smooth"});
+      }
+    }
+    if(caixaDemoAluno) caixaDemoAluno.classList.add("demo-aluno-caixa");
     if(!DEMO_ALUNO_ATIVA) btnDemoAluno.style.display="none";
-    btnDemoAluno?.addEventListener("click",()=>{passoDemoAluno=0;renderDemoAluno();overlayDemoAluno.classList.add("ativo");overlayDemoAluno.setAttribute("aria-hidden","false");});
-    document.getElementById("demo-proximo-aluno")?.addEventListener("click",()=>{if(passoDemoAluno<passosDemoAluno.length-1){passoDemoAluno++;renderDemoAluno();}else fecharDemoAluno();});
-    document.getElementById("demo-pular-aluno")?.addEventListener("click",fecharDemoAluno);
-    document.getElementById("demo-fechar-aluno")?.addEventListener("click",fecharDemoAluno);
+    btnDemoAluno?.addEventListener("click",()=>{
+      passoDemoAluno=0;
+      overlayDemoAluno.classList.add("ativo");
+      overlayDemoAluno.setAttribute("aria-hidden","false");
+      renderDemoAluno();
+    });
+    document.getElementById("demo-proximo-aluno")?.addEventListener("click",()=>{
+      if(passoDemoAluno<passosDemoAluno.length-1){passoDemoAluno++;renderDemoAluno();}
+      else fecharDemoAluno(false);
+    });
+    document.getElementById("demo-pular-aluno")?.addEventListener("click",()=>fecharDemoAluno(false));
+    document.getElementById("demo-fechar-aluno")?.addEventListener("click",()=>fecharDemoAluno(true));
 
 </script>
 
