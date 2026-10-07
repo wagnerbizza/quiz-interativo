@@ -1700,10 +1700,30 @@ function fecharDemoProfessor(){
    Fechar: apenas fecha o tutorial e mantém a aba atual para o professor continuar trabalhando. */
 function voltarHomeAposDemoProfessor(){
   fecharDemoProfessor();
+
+  /* AJUSTE MANUAL 16 — RETORNO FORÇADO À HOME DO PAINEL
+     Não depende da posição/ordem visual das abas. Primeiro tenta usar o
+     mesmo botão da aba Configurações Gerais. Depois garante diretamente
+     que somente a Home fique ativa, mesmo se as abas tiverem sido
+     reorganizadas pelo usuário. */
   const botaoHome=localizarAbaDemo("aba-global");
   if(botaoHome) botaoHome.click();
+
+  document.querySelectorAll(".btn-aba").forEach(btn=>btn.classList.remove("active"));
+  document.querySelectorAll(".aba-conteudo").forEach(aba=>{
+    aba.classList.remove("active");
+    aba.style.display="none";
+  });
+
+  if(botaoHome) botaoHome.classList.add("active");
+  const conteudoHome=document.getElementById("aba-global");
+  if(conteudoHome){
+    conteudoHome.classList.add("active");
+    conteudoHome.style.display="block";
+  }
+
   history.replaceState(null,"",window.location.pathname+window.location.search);
-  window.scrollTo({top:0,behavior:"smooth"});
+  window.scrollTo({top:0,behavior:"auto"});
 }
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
