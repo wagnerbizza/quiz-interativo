@@ -734,49 +734,10 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
             acompanharProvaDaEscola(selectEscola.value);
           }
         }
-        // SEGURANÇA V8.2: guarda somente nomes/IDs das escolas neste navegador.
-        // Não apaga nem substitui dados do Firebase.
-        try {
-          localStorage.setItem("quiz_escolas_cache_v1", JSON.stringify(escolas));
-        } catch (_) {}
       } catch (err) {
-        console.warn("Firebase indisponível ao carregar escolas; usando fallback seguro:", err?.code || err);
-
-        // 1) Primeiro tenta a última lista válida já carregada neste navegador.
-        let escolasFallback = [];
-        try {
-          const cache = JSON.parse(localStorage.getItem("quiz_escolas_cache_v1") || "[]");
-          if (Array.isArray(cache)) escolasFallback = cache;
-        } catch (_) {}
-
-        // 2) Se este navegador ainda não tiver cache, usa a escola do pacote público.
-        if (!escolasFallback.length) {
-          try {
-            const r = await fetch(`prova-publicada.json?v=${Date.now()}`, { cache: "no-store" });
-            if (r.ok) {
-              const p = await r.json();
-              const nomePacote = String(p?.escolaAtiva || "").trim();
-              if (nomePacote) escolasFallback = [{ id: normalizarId(nomePacote), nome: nomePacote }];
-            }
-          } catch (_) {}
-        }
-
-        selectEscola.innerHTML = `<option value="" disabled selected>Selecione sua escola...</option>`;
-        escolasFallback
-          .sort((a,b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"))
-          .forEach(e => {
-            const opt = document.createElement("option");
-            opt.value = e.nome || e.id;
-            opt.textContent = e.nome || e.id;
-            selectEscola.appendChild(opt);
-          });
-
-        if (!escolasFallback.length) {
-          selectEscola.innerHTML = `<option value="" disabled selected>Escolas temporariamente indisponíveis</option>`;
-          detalhesProvaAtiva.innerHTML = `⚠️ Não foi possível carregar a lista de escolas agora. Atualize a página quando a conexão estiver disponível.`;
-        } else {
-          detalhesProvaAtiva.innerHTML = `ℹ️ Lista de escolas recuperada com segurança. Selecione sua escola para continuar.`;
-        }
+        console.error("Erro ao carregar escolas:", err);
+        selectEscola.innerHTML = `<option value="" disabled selected>Erro ao carregar escolas</option>`;
+        detalhesProvaAtiva.innerHTML = `⚠️ Não foi possível carregar as escolas. Verifique a conexão/permissões do Firebase.`;
       }
     }
 
@@ -1212,36 +1173,6 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       }
 
       listaQuestoes = unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
-
-      // V8.2 — EMBARALHA TAMBÉM AS ALTERNATIVAS.
-      // A correção continua usando o texto selecionado, não a letra original.
-      function embaralharAlternativasSeguro(lista, chave) {
-        const original = Array.isArray(lista) ? [...lista] : [];
-        if (original.length < 2) return original;
-        let estado = hashSimples(chave) || 1;
-        const rnd = () => {
-          estado ^= estado << 13; estado ^= estado >>> 17; estado ^= estado << 5;
-          return (estado >>> 0) / 4294967296;
-        };
-        const saida = [...original];
-        for (let i = saida.length - 1; i > 0; i--) {
-          const j = Math.floor(rnd() * (i + 1));
-          [saida[i], saida[j]] = [saida[j], saida[i]];
-        }
-        // Com poucas opções, evita que "embaralhar" mantenha exatamente a ordem original.
-        if (saida.every((v,i) => v === original[i])) {
-          return saida.slice(1).concat(saida[0]);
-        }
-        return saida;
-      }
-
-      listaQuestoes = listaQuestoes.map((q, i) => ({
-        ...q,
-        opcoes: embaralharAlternativasSeguro(
-          q.opcoes,
-          `${seedBase}|alternativas|${q.idQuestao || q.pergunta || i}`
-        )
-      }));
 
       // Registra a tentativa assim que a prova realmente conseguiu carregar.
       // 1) trava local imediatamente; 2) tenta gravar a trava central no Firebase.
@@ -1829,8 +1760,7 @@ if (unsubscribePermissaoAluno) {
       else fecharDemoAluno(false);
     });
     document.getElementById("demo-pular-aluno")?.addEventListener("click",()=>fecharDemoAluno(false));
-    // V8.2 — Fechar a demonstração também retorna à Home.
-    document.getElementById("demo-fechar-aluno")?.addEventListener("click",()=>fecharDemoAluno(false));
+    document.getElementById("demo-fechar-aluno")?.addEventListener("click",()=>fecharDemoAluno(true));
 
 </script>
 
