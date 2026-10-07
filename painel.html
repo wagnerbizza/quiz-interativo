@@ -1157,7 +1157,7 @@ html,body{max-width:100%;overflow-x:hidden}
   .demo-prof-btn:hover{background:#1e3a5f;color:#fff}
   .demo-prof-overlay{position:fixed;inset:0;background:#000a;z-index:9998;display:none}
   .demo-prof-overlay.ativo{display:block}
-  .demo-prof-caixa{position:fixed;z-index:10001;left:50%;bottom:28px;transform:translateX(-50%);width:min(92vw,760px);background:#111c2f;border:1px solid #60a5fa;border-radius:14px;padding:18px;color:#eef6ff;box-shadow:0 18px 55px #000b}
+  .demo-prof-caixa{position:fixed;z-index:10002;right:22px;top:22px;left:auto;bottom:auto;transform:none;width:min(92vw,520px);max-height:calc(100vh - 44px);overflow:auto;background:#111c2f;border:1px solid #60a5fa;border-radius:14px;padding:16px;color:#eef6ff;box-shadow:0 18px 55px #000b}
   .demo-prof-caixa h3{margin:0 0 8px;color:#60a5fa}.demo-prof-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.demo-prof-acoes button{min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #46617f;cursor:pointer}
 
 
@@ -1168,22 +1168,13 @@ html,body{max-width:100%;overflow-x:hidden}
      ============================================================ */
   .demo-prof-destaque {
     position: fixed;
-    z-index: 9999;
-    border: 3px solid #60a5fa;
+    z-index: 10001;
+    border: 2px solid #60a5fa;
     border-radius: 12px;
-    box-shadow: 0 0 0 5px rgba(96,165,250,.18), 0 0 28px rgba(96,165,250,.65);
+    box-shadow: 0 0 0 3px rgba(96,165,250,.14), 0 0 14px rgba(96,165,250,.55);
     pointer-events: none;
     transition: all .28s ease;
     display: none;
-  }
-  .demo-prof-alvo-ativo {
-    position: relative !important;
-    z-index: 10000 !important;
-    outline: 4px solid #60a5fa !important;
-    outline-offset: 6px !important;
-    box-shadow: 0 0 0 10px rgba(96,165,250,.18), 0 0 42px rgba(96,165,250,.75) !important;
-    border-radius: 12px !important;
-    pointer-events: none !important;
   }
   .demo-prof-legenda {
     color:#bcd7ff;
@@ -1658,58 +1649,56 @@ const passosDemoProfessor = [
  {titulo:"6. Resultados e Relatórios", texto:"Consulte histórico, notas, tempos, filtros, backups e exportações. Evite sincronizações repetidas sem necessidade.", aba:"aba-relatorios", hash:"#relatorios"}
 ];
 let passoDemoProfessor=0;
-let alvoDemoProfessorAtual=null;
 const btnDemoProfessor=document.getElementById("btn-demo-prof");
 const overlayDemoProfessor=document.getElementById("demo-prof-overlay");
 const textoDemoProfessor=document.getElementById("demo-prof-texto");
 const destaqueDemoProfessor=document.getElementById("demo-prof-destaque");
 
-/* [AJUSTE MANUAL 14] A demonstração usa data-aba, exatamente como a barra real. */
-function abrirAbaDaDemonstracao(idAba, hash){
-  const botao=document.querySelector('.btn-aba[data-aba="'+idAba+'"]');
-  if(botao){
-    botao.click(); // usa o mecanismo normal do painel; não é botão operacional
-  } else {
-    document.querySelectorAll('.aba-conteudo').forEach(el=>el.classList.add('hidden'));
-    document.getElementById(idAba)?.classList.remove('hidden');
-  }
-  if(hash && location.hash!==hash) history.replaceState(null,"",hash);
+function localizarAbaDemo(idAba){
+  return document.querySelector('.btn-aba[data-aba="'+idAba+'"]');
 }
-function limparAlvoDemoProfessor(){
-  if(alvoDemoProfessorAtual) alvoDemoProfessorAtual.classList.remove('demo-prof-alvo-ativo');
-  alvoDemoProfessorAtual=null;
-  destaqueDemoProfessor.style.display="none";
-}
-function destacarConteudoDemo(idAba){
-  limparAlvoDemoProfessor();
-  const alvo=document.getElementById(idAba);
-  if(!alvo) return;
-  alvoDemoProfessorAtual=alvo;
-  alvo.classList.add('demo-prof-alvo-ativo');
-  alvo.scrollIntoView({behavior:"smooth",block:"start"});
+function posicionarDestaqueDemo(el){
+  if(!el){ destaqueDemoProfessor.style.display="none"; return; }
+  const r=el.getBoundingClientRect();
+  const margem=4;
+  destaqueDemoProfessor.style.display="block";
+  destaqueDemoProfessor.style.left=(r.left-margem)+"px";
+  destaqueDemoProfessor.style.top=(r.top-margem)+"px";
+  destaqueDemoProfessor.style.width=(r.width+margem*2)+"px";
+  destaqueDemoProfessor.style.height=(r.height+margem*2)+"px";
 }
 function renderDemoProfessor(){
   const passo=passosDemoProfessor[passoDemoProfessor];
   textoDemoProfessor.innerHTML="<strong>"+passo.titulo+":</strong> "+passo.texto+
-    '<div class="demo-prof-legenda">A área contornada em azul é a tela explicada neste passo.</div>';
+    '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>';
   document.getElementById("demo-prof-proximo").textContent =
     passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Próximo";
 
-  /* Troca a aba de verdade e só depois destaca o conteúdo dela. */
-  abrirAbaDaDemonstracao(passo.aba, passo.hash);
-  setTimeout(()=>destacarConteudoDemo(passo.aba),180);
+  /* AJUSTE MANUAL 14 — NAVEGAÇÃO REAL DA DEMONSTRAÇÃO
+     Usa o MESMO botão de aba do painel. Não clica em Publicar, Excluir,
+     Sincronizar, Encerrar ou qualquer outro comando operacional. */
+  const botaoAba=localizarAbaDemo(passo.aba);
+  if(botaoAba && !botaoAba.classList.contains("active")) botaoAba.click();
+  if(passo.hash) history.replaceState(null,"",passo.hash);
+
+  setTimeout(()=>{
+    const botao=localizarAbaDemo(passo.aba);
+    if(botao){
+      botao.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+      setTimeout(()=>posicionarDestaqueDemo(botao),220);
+    } else destaqueDemoProfessor.style.display="none";
+  },120);
 }
 function fecharDemoProfessor(){
-  limparAlvoDemoProfessor();
   overlayDemoProfessor.classList.remove("ativo");
   overlayDemoProfessor.setAttribute("aria-hidden","true");
+  destaqueDemoProfessor.style.display="none";
 }
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
-  passoDemoProfessor=0;
+  passoDemoProfessor=0; renderDemoProfessor();
   overlayDemoProfessor.classList.add("ativo");
   overlayDemoProfessor.setAttribute("aria-hidden","false");
-  renderDemoProfessor();
 });
 document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
   if(passoDemoProfessor<passosDemoProfessor.length-1){passoDemoProfessor++;renderDemoProfessor();}
@@ -1717,7 +1706,11 @@ document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
 });
 document.getElementById("demo-prof-pular")?.addEventListener("click",fecharDemoProfessor);
 document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemoProfessor);
-window.addEventListener("resize",()=>{});
+window.addEventListener("resize",()=>{
+  if(overlayDemoProfessor.classList.contains("ativo")){
+    posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba));
+  }
+});
 </script>
 
 </body>
