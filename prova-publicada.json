@@ -1,21 +1,71 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791466730123",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791466560474,
-  "turmasAtivas": [],
+  "tempoLimiteMinutos": 5,
+  "tempoMaximoMinutos": 5,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791477530123,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791466560474",
-  "publicadoEm": "2026-10-08T13:36:00.474Z",
-  "encerradoEm": "2026-10-08T13:36:00.474Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791466730123",
+  "publicadoEm": "2026-10-08T13:38:50.725Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "dCL0N4v3NBqXIYXEGrlV",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 100 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "fMCNfYYLbH1hdMN34cIR",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 8] O que é uma Sprint no framework Scrum?",
+      "opcoes": [
+        "A) Um documento com requisitos estáticos",
+        "B) Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "C) Reunião final de homologação do cliente",
+        "D) Cargo de gestão tradicional de projetos"
+      ]
+    },
+    {
+      "idQuestao": "j7cpeV7FJnE30U1DyRIP",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é a Máscara de Sub-rede (Subnet Mask)?",
+      "opcoes": [
+        "Número de 32 bits que separa o endereço IP em parte de rede e parte de host",
+        "Chave de segurança utilizada para autenticação em redes Wi-Fi",
+        "Endereço físico exclusivo gravado na placa de rede",
+        "Porta de comunicação utilizada pelo protocolo HTTP",
+        "Protocolo de roteamento dinâmico em redes WAN"
+      ]
+    }
+  ]
 }
