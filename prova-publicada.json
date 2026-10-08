@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791462225676",
+  "idAvaliacao": "av_1791456186578",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -18,7 +18,7 @@
   "tempoLimiteMinutos": 1,
   "tempoMaximoMinutos": 1,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791473025676,
+  "expiraEmMillis": 1791466986578,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -26,43 +26,43 @@
     "3D"
   ],
   "token": "",
-  "seedReordenacao": "1791462225676",
-  "publicadoEm": "2026-10-08T12:23:46.540Z",
+  "seedReordenacao": "1791456186578",
+  "publicadoEm": "2026-10-08T10:43:06.840Z",
   "questoesPublicas": [
     {
-      "idQuestao": "N1laOp7hR0CUqxidJeNd",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 34] O que é a porta padrão utilizada pelo protocolo HTTP?",
+      "idQuestao": "Jax47Guw0laxNGUsWWUz",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "[Técnico 7 - 1790243772390]O que caracteriza o modelo IaaS na computação em nuvem?",
       "opcoes": [
-        "A) Porta 80",
-        "B) Porta 443",
-        "C) Porta 3306",
-        "D) Porta 53"
+        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "Entrega de softwares prontos via navegador",
+        "Ambiente exclusivo para programar sem gerenciar servidores",
+        "Armazenamento local em HDs físicos"
       ]
     },
     {
-      "idQuestao": "kxrVr9F8RthTvZnRttwZ",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 19] O que é o Gradient Descent (Gradiente Descendente)?",
+      "idQuestao": "Ax1UBvL1hPjgSqE6iA82",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a IA explicável (Explainable AI - XAI)?",
       "opcoes": [
-        "A) Um algoritmo de otimização iterativo usado para minimizar a função de custo do modelo",
-        "B) Um método para medir a velocidade de download",
-        "C) Um protocolo de roteamento dinâmico",
-        "D) Uma ferramenta de limpeza de cache"
+        "Métodos e técnicas que permitem que os resultados dos humanos compreendam as decisões da IA",
+        "Uma IA que fala em voz alta",
+        "Um manual de instruções impresso",
+        "O código-fonte aberto de um programa"
       ]
     },
     {
-      "idQuestao": "SN1A0qrQU9jFZoe8VkNR",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 15] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "idQuestao": "EFw4x00Oq33qjxchAQEr",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual é a utilidade dos algoritmos de recomendação (como na Netflix ou Spotify)?",
       "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
+        "Sugerir conteúdos com base nas preferências e histórico do usuário",
+        "Apagar músicas antigas do aparelho",
+        "Aumentar o volume do som automaticamente",
+        "Bloquear o acesso à internet"
       ]
     }
   ]

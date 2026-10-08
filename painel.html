@@ -2125,14 +2125,26 @@ body.light-mode section {
    IMPORTANTE: a demonstração NÃO clica em botões de ação.
    ============================================================ */
 const DEMO_PROFESSOR_ATIVA = true;
-const passosDemoProfessor = [
- {titulo:"1. Cadastro de Escolas", texto:"Cadastre e revise as unidades escolares. Esta área define as escolas que poderão ser usadas nas avaliações.", aba:"aba-escolas", hash:"#escolas"},
- {titulo:"2. Ativação de Provas", texto:"Escolha escola, matérias, turmas, quantidade de questões, tempos e código de acesso. A demonstração não publica nenhuma avaliação.", aba:"aba-ativacao", hash:"#ativacao"},
- {titulo:"3. Monitoramento", texto:"Acompanhe alunos em atividade, progresso, tempo e encerramento. A demonstração apenas destaca a área; não encerra provas.", aba:"aba-monitoramento", hash:"#monitoramento"},
- {titulo:"4. Banco de Questões", texto:"Consulte e organize perguntas e alternativas. O gabarito deve continuar protegido na área privada.", aba:"aba-questoes", hash:"#questoes"},
- {titulo:"5. Banco de Dados", texto:"Use esta área para consultar as estruturas e informações administrativas disponíveis no sistema.", aba:"aba-banco-dados", hash:"#banco"},
- {titulo:"6. Resultados e Relatórios", texto:"Consulte histórico, notas, tempos, filtros, backups e exportações. Evite sincronizações repetidas sem necessidade.", aba:"aba-relatorios", hash:"#relatorios"}
-];
+/* A sequência é reconstruída conforme a ordem REAL das abas na tela.
+   Inclui Configurações Gerais; nenhuma aba é pulada após arrastar. */
+const descricoesDemoProfessor = {
+ "aba-global":"Configurações Gerais e Home do painel.",
+ "aba-escolas":"Cadastre e revise as unidades escolares disponíveis nas avaliações.",
+ "aba-ativacao":"Escolha escola, matérias, turmas, questões, tempos e código de acesso. Nada é publicado pela demonstração.",
+ "aba-questoes":"Consulte e organize questões e alternativas sem modificar o gabarito.",
+ "aba-banco-dados":"Consulte as estruturas e informações administrativas do banco de dados.",
+ "aba-monitoramento":"Acompanhe o progresso dos alunos sem encerrar avaliações.",
+ "aba-relatorios":"Consulte histórico, notas, tempos, filtros, backups e exportações."
+};
+let passosDemoProfessor=[];
+function atualizarPassosDemoProfessor(){
+  const atual=passosDemoProfessor[passoDemoProfessor]?.aba;
+  passosDemoProfessor=Array.from(document.querySelectorAll('.abas-navegacao .btn-aba'))
+    .filter(btn=>descricoesDemoProfessor[btn.dataset.aba])
+    .map((btn,i)=>({titulo:(i+1)+'. '+btn.textContent.trim(),texto:descricoesDemoProfessor[btn.dataset.aba],aba:btn.dataset.aba}));
+  const pos=passosDemoProfessor.findIndex(p=>p.aba===atual);
+  if(pos>=0) passoDemoProfessor=pos;
+}
 let passoDemoProfessor=0;
 const btnDemoProfessor=document.getElementById("btn-demo-prof");
 const overlayDemoProfessor=document.getElementById("demo-prof-overlay");
@@ -2154,6 +2166,7 @@ function posicionarDestaqueDemo(el){
 }
 function renderDemoProfessor(){
   const passo=passosDemoProfessor[passoDemoProfessor];
+  if(!passo) return;
   textoDemoProfessor.innerHTML="<strong>"+passo.titulo+":</strong> "+passo.texto+
     '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>';
   document.getElementById("demo-prof-proximo").textContent =
@@ -2165,7 +2178,7 @@ function renderDemoProfessor(){
   const botaoAba=localizarAbaDemo(passo.aba);
   /* A sequência depende do ID lógico, nunca da posição visual das abas. */
   if(botaoAba && !botaoAba.classList.contains("active")) botaoAba.click();
-  if(passo.hash) history.replaceState(null,"",passo.hash);
+  /* O próprio clique na aba atualiza o hash e o conteúdo. */
 
   setTimeout(()=>{
     const botao=localizarAbaDemo(passo.aba);
@@ -2198,12 +2211,15 @@ function voltarHomeAposDemoProfessor(){
      - destino atual: "painel.html#escolas"
      - se a página inicial mudar de nome, altere apenas a linha abaixo.
      - o botão "Fechar" NÃO usa esta função; ele continua na aba atual. */
-  window.location.assign("painel.html#escolas");
+  const home=localizarAbaDemo("aba-global");
+  if(home) home.click();
+  else window.location.hash="#global";
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
-  passoDemoProfessor=0; renderDemoProfessor();
+  passoDemoProfessor=0; atualizarPassosDemoProfessor(); renderDemoProfessor();
   overlayDemoProfessor.classList.add("ativo");
   overlayDemoProfessor.setAttribute("aria-hidden","false");
 });
@@ -2217,13 +2233,15 @@ document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemo
 const abasDemoContainer=document.querySelector('.btn-aba[data-aba="aba-escolas"]')?.parentElement;
 if(abasDemoContainer){
   const observarOrdemDemo=new MutationObserver(()=>{
-    if(overlayDemoProfessor.classList.contains("ativo"))
+    if(overlayDemoProfessor.classList.contains("ativo")){
+      atualizarPassosDemoProfessor();
       requestAnimationFrame(()=>posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba)));
+    }
   });
   observarOrdemDemo.observe(abasDemoContainer,{childList:true});
 }
 window.addEventListener("resize",()=>{
-  if(overlayDemoProfessor.classList.contains("ativo")){
+  if(overlayDemoProfessor.classList.contains("ativo") && passosDemoProfessor.length){
     posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba));
   }
 });
@@ -2239,5 +2257,11 @@ window.addEventListener("resize",()=>{
 .demo-prof-caixa{background:#182940 !important;border:2px solid #93c5fd !important;color:#fff !important;}
 </style>
 <div id="marca-wagnerbizza" aria-hidden="true">© 2026 WagnerBIZZA</div>
+<style id="ajuste-demo-professor-sequencia-20261008">
+/* Janela integralmente visível, inclusive em telas pequenas e zoom 100%. */
+.demo-prof-caixa{box-sizing:border-box!important;max-height:min(48dvh,390px)!important;bottom:12px!important;right:12px!important;width:min(440px,calc(100vw - 24px))!important;overflow-y:auto!important;}
+.demo-prof-caixa .demo-prof-acoes{position:sticky;bottom:0;background:#182940;padding:8px 0;}
+@media(max-width:700px){.demo-prof-caixa{left:12px!important;right:12px!important;width:auto!important;max-height:45dvh!important;}}
+</style>
 </body>
 </html>

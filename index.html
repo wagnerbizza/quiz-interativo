@@ -1685,26 +1685,12 @@ if (unsubscribePermissaoAluno) {
     // Se quiser aumentar a distância entre a caixa e o destaque, altere apenas `folga`.
     function posicionarCaixaDemoAluno(){
       if(!caixaDemoAluno || !alvoDemoAlunoAtual) return;
-      const margem=14;
-      /* Em telas largas, o formulário libera uma coluna lateral exclusiva
-         para a janela da demonstração. Ela não cobre campos ou botões. */
-      if(window.innerWidth>=1000){
-        caixaDemoAluno.style.position='fixed';
-        caixaDemoAluno.style.top='22px';
-        caixaDemoAluno.style.right='16px';
-        caixaDemoAluno.style.left='auto';
-        caixaDemoAluno.style.bottom='auto';
-        caixaDemoAluno.style.width='min(340px, 29vw)';
-        caixaDemoAluno.style.transform='none';
-        return;
-      }
-      /* Em telas pequenas, a janela fica fixa no rodapé, enquanto o item
-         destacado recebe espaço para rolagem e permanece visível. */
+      // A caixa fica em faixa reservada no rodapé, nunca sobre os campos.
       caixaDemoAluno.style.position='fixed';
       caixaDemoAluno.style.top='auto';
-      caixaDemoAluno.style.bottom=margem+'px';
-      caixaDemoAluno.style.left=margem+'px';
-      caixaDemoAluno.style.right=margem+'px';
+      caixaDemoAluno.style.bottom='12px';
+      caixaDemoAluno.style.left='12px';
+      caixaDemoAluno.style.right='12px';
       caixaDemoAluno.style.width='auto';
       caixaDemoAluno.style.transform='none';
     }
@@ -1722,7 +1708,7 @@ if (unsubscribePermissaoAluno) {
       alvoDemoAlunoAtual=document.querySelector(passo.alvo);
       if(alvoDemoAlunoAtual){
         alvoDemoAlunoAtual.classList.add("demo-aluno-destaque");
-        alvoDemoAlunoAtual.scrollIntoView({behavior:"smooth",block:"start"});
+        alvoDemoAlunoAtual.scrollIntoView({behavior:"smooth",block:"center"});
         // Aguarda a rolagem começar/terminar e reposiciona o foco.
         requestAnimationFrame(posicionarFocoDemoAluno);
         setTimeout(posicionarFocoDemoAluno,220);
@@ -1790,6 +1776,19 @@ if (unsubscribePermissaoAluno) {
 
 
 <div id="marca-wagnerbizza" aria-hidden="true">© 2026 WagnerBIZZA</div>
+<style id="ajuste-demo-aluno-sem-cobrir-20261008">
+/* Reserva espaço real para o tutorial, sem ocultar dados do aluno. */
+body.demo-aluno-aberta #tela-login{padding-right:0!important;padding-bottom:clamp(220px,36dvh,330px)!important;}
+body.demo-aluno-aberta #tela-login > div{max-width:100%!important;}
+body.demo-aluno-aberta .demo-caixa.demo-aluno-caixa{
+ box-sizing:border-box!important;left:12px!important;right:12px!important;bottom:12px!important;
+ top:auto!important;width:auto!important;max-width:640px!important;margin:0 auto!important;
+ max-height:min(34dvh,260px)!important;overflow-y:auto!important;transform:none!important;
+}
+body.demo-aluno-aberta #tela-login input,body.demo-aluno-aberta #tela-login select,
+body.demo-aluno-aberta #detalhes-prova-ativa{scroll-margin-bottom:clamp(220px,36dvh,330px);}
+.demo-aluno-caixa .demo-acoes{position:sticky;bottom:0;background:#111c2f;padding:8px 0;}
+</style>
 </body>
 </html>
 <!-- QUIZ BUILD: GITHUB-PRIORIDADE-ENTREGA-2026-10-05 -->
