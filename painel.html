@@ -1695,6 +1695,23 @@ body.light-mode #aba-relatorios .tabela-resultados tbody td :is(span,div,p,stron
   color:inherit;
 }
 </style>
+<style id="ajuste-contraste-banco-tema-claro-20261008">
+/* Corrige somente a leitura do catálogo no tema claro. Os cartões
+   continuam escuros e as cores do gabarito/botões são preservadas. */
+body.tema-claro-ativo #catalogo-questoes-grid .catalogo-card,
+body.light-mode #catalogo-questoes-grid .catalogo-card {
+  color:#f1f5f9 !important;
+}
+body.tema-claro-ativo #catalogo-questoes-grid .catalogo-card :is(p,li,div,span,small,strong):not([style*="color"]):not([class*="correta"]):not([class*="badge"]),
+body.light-mode #catalogo-questoes-grid .catalogo-card :is(p,li,div,span,small,strong):not([style*="color"]):not([class*="correta"]):not([class*="badge"]) {
+  color:#f1f5f9 !important;
+}
+/* A descrição externa usa fundo claro e precisa de letras escuras. */
+body.tema-claro-ativo #aba-banco-dados > p,
+body.light-mode #aba-banco-dados > p {
+  color:#475569 !important;
+}
+</style>
 </head>
 <body>
 
