@@ -1,21 +1,157 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791464464916",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 10,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791463795930,
-  "turmasAtivas": [],
+  "tempoMaximoMinutos": 0,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791475264916,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791463795930",
-  "publicadoEm": "2026-10-08T12:49:55.930Z",
-  "encerradoEm": "2026-10-08T12:49:55.930Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791464464916",
+  "publicadoEm": "2026-10-08T13:01:05.577Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "96hhkZjaJ8otptjTHgz8",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 12] O que é o endereço IP (Internet Protocol)?",
+      "opcoes": [
+        "A) Identificador numérico exclusivo atribuído a cada dispositivo conectado a uma rede",
+        "B) Nome de usuário na rede",
+        "C) Senha de acesso ao roteador",
+        "D) Código de barras do computador"
+      ]
+    },
+    {
+      "idQuestao": "SO6aUEYwckmM8ITRcCRV",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a robótica de reabilitação?",
+      "opcoes": [
+        "O uso de robôs e IA para auxiliar na recuperação motora de pacientes",
+        "A formatação de computadores antigos",
+        "O conserto de placas de circuito impresso",
+        "A limpeza de salas de servidores"
+      ]
+    },
+    {
+      "idQuestao": "mpn1cb6OIGLtr0O6J2r6",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a desinformação gerada por IA (Deepfakes)?",
+      "opcoes": [
+        "Mídia sintética onde uma pessoa em uma imagem ou vídeo é substituída pela likeness de outra",
+        "Vídeos sem som gerados por erro",
+        "Fotos em preto e branco antigas",
+        "Códigos de computador corrompidos"
+      ]
+    },
+    {
+      "idQuestao": "eVGLPswuCRk1myd5EcEv",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é o Edge Computing (Computação de Borda)?",
+      "opcoes": [
+        "Processamento de dados próximo à fonte de geração, reduzindo latência e uso de largura de banda",
+        "Processamento centralizado em supercomputadores distantes na nuvem",
+        "Armazenamento de arquivos em servidores físicos desligados",
+        "Criptografia de dados armazenados em HDs externos locais",
+        "Transmissão de dados via cabos de cobre de baixa velocidade"
+      ]
+    },
+    {
+      "idQuestao": "nMwuSM35kgNgDFrBboVf",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 50] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "jWAMKgmBBTrsUjbJ6E3e",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "Qual a função de um Hypervisor (VMM - Virtual Machine Monitor)?",
+      "opcoes": [
+        "Criar e gerenciar máquinas virtuais, alocando recursos de hardware físico",
+        "Monitorar o tráfego de rede para detectar invasões maliciosas",
+        "Criptografar arquivos confidenciais salvos na nuvem",
+        "Gerenciar o envio de e-mails corporativos via SMTP",
+        "Atualizar o sistema operacional de servidores remotos"
+      ]
+    },
+    {
+      "idQuestao": "YGIR7SOgfJQExtOukPkN",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o aprendizado ativo (Active Learning)?",
+      "opcoes": [
+        "Um caso especial de aprendizado de máquina onde o algoritmo pode consultar interativamente um usuário",
+        "Um programa de exercícios físicos para programadores",
+        "Um antivírus que roda em segundo plano",
+        "A atualização automática do Windows"
+      ]
+    },
+    {
+      "idQuestao": "UrkR4QASOGJrR4s4CIqm",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que significa a sigla HTML no desenvolvimento web?",
+      "opcoes": [
+        "HyperText Markup Language",
+        "Hyper Transfer Modern Link",
+        "High Transfer Machine Language",
+        "Hyper Tool Multi Language"
+      ]
+    },
+    {
+      "idQuestao": "JbZYf6xQVgHefZiYhk4X",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 7 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "oUiRmifTec9WuSBNOEqB",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 22 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    }
+  ]
 }
