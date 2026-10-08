@@ -2138,12 +2138,10 @@ const descricoesDemoProfessor = {
 };
 let passosDemoProfessor=[];
 function atualizarPassosDemoProfessor(){
-  const atual=passosDemoProfessor[passoDemoProfessor]?.aba;
   passosDemoProfessor=Array.from(document.querySelectorAll('.abas-navegacao .btn-aba'))
     .filter(btn=>descricoesDemoProfessor[btn.dataset.aba])
     .map((btn,i)=>({titulo:(i+1)+'. '+btn.textContent.trim(),texto:descricoesDemoProfessor[btn.dataset.aba],aba:btn.dataset.aba}));
-  const pos=passosDemoProfessor.findIndex(p=>p.aba===atual);
-  if(pos>=0) passoDemoProfessor=pos;
+  /* Sequência congelada ao iniciar: mudanças de DOM não pulam passos. */
 }
 let passoDemoProfessor=0;
 const btnDemoProfessor=document.getElementById("btn-demo-prof");
@@ -2177,7 +2175,7 @@ function renderDemoProfessor(){
      Sincronizar, Encerrar ou qualquer outro comando operacional. */
   const botaoAba=localizarAbaDemo(passo.aba);
   /* A sequência depende do ID lógico, nunca da posição visual das abas. */
-  if(botaoAba && !botaoAba.classList.contains("active")) botaoAba.click();
+  if(botaoAba) botaoAba.click();
   /* O próprio clique na aba atualiza o hash e o conteúdo. */
 
   setTimeout(()=>{
@@ -2214,14 +2212,16 @@ function voltarHomeAposDemoProfessor(){
   const home=localizarAbaDemo("aba-global");
   if(home) home.click();
   else window.location.hash="#global";
+  passoDemoProfessor=0;
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
-  passoDemoProfessor=0; atualizarPassosDemoProfessor(); renderDemoProfessor();
+  passoDemoProfessor=0; atualizarPassosDemoProfessor();
   overlayDemoProfessor.classList.add("ativo");
   overlayDemoProfessor.setAttribute("aria-hidden","false");
+  renderDemoProfessor();
 });
 document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
   if(passoDemoProfessor<passosDemoProfessor.length-1){passoDemoProfessor++;renderDemoProfessor();}
@@ -2234,8 +2234,9 @@ const abasDemoContainer=document.querySelector('.btn-aba[data-aba="aba-escolas"]
 if(abasDemoContainer){
   const observarOrdemDemo=new MutationObserver(()=>{
     if(overlayDemoProfessor.classList.contains("ativo")){
-      atualizarPassosDemoProfessor();
-      requestAnimationFrame(()=>posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba)));
+      /* Apenas reposiciona o destaque; não recalcula a sequência em andamento. */
+      const passo=passosDemoProfessor[passoDemoProfessor];
+      if(passo) requestAnimationFrame(()=>posicionarDestaqueDemo(localizarAbaDemo(passo.aba)));
     }
   });
   observarOrdemDemo.observe(abasDemoContainer,{childList:true});

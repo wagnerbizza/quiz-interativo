@@ -1689,6 +1689,7 @@ if (unsubscribePermissaoAluno) {
       caixaDemoAluno.style.position='fixed';
       caixaDemoAluno.style.top='auto';
       caixaDemoAluno.style.bottom='12px';
+      caixaDemoAluno.style.maxHeight='min(34dvh,260px)';
       caixaDemoAluno.style.left='12px';
       caixaDemoAluno.style.right='12px';
       caixaDemoAluno.style.width='auto';
@@ -1708,7 +1709,14 @@ if (unsubscribePermissaoAluno) {
       alvoDemoAlunoAtual=document.querySelector(passo.alvo);
       if(alvoDemoAlunoAtual){
         alvoDemoAlunoAtual.classList.add("demo-aluno-destaque");
-        alvoDemoAlunoAtual.scrollIntoView({behavior:"smooth",block:"center"});
+        /* Mantém o campo acima da caixa fixa inferior, inclusive em zoom 100%. */
+        const alturaCaixa=caixaDemoAluno?.getBoundingClientRect().height || 220;
+        const limite=Math.max(100,window.innerHeight-alturaCaixa-35);
+        const ret=alvoDemoAlunoAtual.getBoundingClientRect();
+        if(ret.bottom>limite || ret.top<12){
+          const destino=window.scrollY+ret.top-Math.max(16,(limite-ret.height)/2);
+          window.scrollTo({top:Math.max(0,destino),behavior:"smooth"});
+        }
         // Aguarda a rolagem começar/terminar e reposiciona o foco.
         requestAnimationFrame(posicionarFocoDemoAluno);
         setTimeout(posicionarFocoDemoAluno,220);
