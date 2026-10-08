@@ -2183,7 +2183,13 @@ function renderDemoProfessor(){
     if(!overlayDemoProfessor.classList.contains("ativo") || passosDemoProfessor[passoDemoProfessor]?.aba!==idPassoAtual) return;
     const botao=localizarAbaDemo(idPassoAtual);
     if(botao){
-      botao.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+      /* Role somente a faixa das abas, nunca a página inteira. */
+      const faixa=botao.closest('.abas-navegacao') || botao.parentElement;
+      if(faixa && faixa.scrollWidth>faixa.clientWidth){
+        const pos=botao.offsetLeft-faixa.offsetLeft-(faixa.clientWidth-botao.offsetWidth)/2;
+        faixa.scrollTo({left:Math.max(0,pos),behavior:'instant'});
+      }
+      window.scrollTo({left:0,top:0,behavior:'instant'});
       setTimeout(()=>{
         if(overlayDemoProfessor.classList.contains("ativo") && passosDemoProfessor[passoDemoProfessor]?.aba===idPassoAtual) posicionarDestaqueDemo(botao);
       },220);
@@ -2227,7 +2233,15 @@ function voltarHomeAposDemoProfessor(){
   fecharDemoProfessor();
   passoDemoProfessor=0;
   mostrarAbaSomenteDemoProfessor('aba-escolas');
-  window.scrollTo({top:0,behavior:'smooth'});
+  /* Restaura a faixa de abas e a rolagem horizontal da janela. */
+  const abaHome=localizarAbaDemo('aba-escolas');
+  const faixa=abaHome?.closest('.abas-navegacao') || abaHome?.parentElement;
+  if(faixa) faixa.scrollLeft=0;
+  document.documentElement.scrollLeft=0;
+  document.body.scrollLeft=0;
+  window.scrollTo({left:0,top:0,behavior:'instant'});
+  /* Uma renderização atrasada não pode deixar o painel deslocado. */
+  requestAnimationFrame(()=>window.scrollTo({left:0,top:0,behavior:'instant'}));
 }
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
