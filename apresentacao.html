@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<!--
+  QUIZ INTERATIVO - APRESENTACAO INDEPENDENTE
+  MANUTENCAO:
+  - Tema inicial: atributo data-theme="dark" na tag html.
+  - Alternancia dia/noite: botao #themeToggle e script no final.
+  - Cores escuras: variaveis CSS em :root; cores claras: html[data-theme="light"].
+  - Fontes: body, .hero h1, .section-title, .lead e regras @media.
+  - Conteudo: secoes #inicio, #recursos, #como-funciona e #acessos.
+  - Links: login.html (professor) e index.html (aluno).
+  - Este arquivo nao altera o painel, o aluno ou o Firebase.
+-->
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1730">
+<meta name="description" content="Conheça o Quiz Interativo: avaliações digitais para professores e alunos.">
+<title>Conheça o Quiz Interativo</title>
+<style>
+:root,html[data-theme="dark"]{color-scheme:dark;--bg:#081226;--panel:#112343;--line:#2c4369;--txt:#edf5ff;--muted:#b7c7df;--accent:#62dfbe;--blue:#7eb5ff;--glow:#1c3c67;--card-top:#152a49;--card-bottom:#101f38;--step-bg:#122440;--secondary-bg:#1c3459;--secondary-text:#fff;--visual-border:#45648d;--visual-top:#1c3558;--visual-bottom:#101d36;--window-bg:#0b1830;--window-line:#456184;--mock-bg:#182c4b;--mock-text:#d3e1f4;--pill-bg:#164b49;--pill-border:#327b71;--pill-text:#a8f6d9;--progress-bg:#263e5e;--dot:#6682a4;--focus:#ffd56d}
+/* TEMA CLARO: altere estas cores sem afetar o tema escuro. */
+html[data-theme="light"]{color-scheme:light;--bg:#f5f8fe;--panel:#fff;--line:#cbd8e9;--txt:#16263f;--muted:#465c78;--accent:#087b63;--blue:#185dba;--glow:#dbeafa;--card-top:#fff;--card-bottom:#f3f7fc;--step-bg:#fff;--secondary-bg:#e7f0fc;--secondary-text:#17345d;--visual-border:#a9bdd6;--visual-top:#e6effb;--visual-bottom:#d6e4f5;--window-bg:#fff;--window-line:#cbd8e9;--mock-bg:#e9f1fa;--mock-text:#263d5b;--pill-bg:#d7f4e8;--pill-border:#87cbb3;--pill-text:#165b47;--progress-bg:#d3dfef;--dot:#7893b4;--focus:#a85a00}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 85% 0%,var(--glow) 0%,transparent 45%),var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;line-height:1.6}
+a{color:inherit}a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+.wrap{max-width:1120px;margin:auto;padding:0 24px}.top{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 0}.brand{font-size:1.1rem;font-weight:800;letter-spacing:.2px;text-decoration:none}.brand span{color:var(--accent)}.topnav{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.topnav a{font-size:.92rem;text-decoration:none;color:var(--muted)}.topnav a:hover{color:var(--txt)}
+/* CONTROLE DIA/NOITE: botao visivel, rotulo acessivel e tamanho confortavel. */
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--txt);font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.theme-toggle:hover{border-color:var(--accent)}.theme-toggle:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.top-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hero{padding:88px 0 80px;display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:center}.eyebrow{color:var(--accent);font-weight:800;letter-spacing:.13em;text-transform:uppercase;font-size:.76rem}.hero h1{font-size:clamp(2.2rem,5vw,4.4rem);line-height:1.09;letter-spacing:-.045em;margin:16px 0 22px}.hero h1 span{color:var(--accent)}.lead{font-size:1.14rem;color:var(--muted);max-width:600px}.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:49px;padding:12px 20px;border-radius:12px;font-weight:750;text-decoration:none;border:1px solid var(--line);transition:transform .15s,background .15s}.btn:hover{transform:translateY(-2px)}.btn.primary{background:var(--accent);color:#062331;border-color:var(--accent)}.btn.secondary{background:var(--secondary-bg);color:var(--secondary-text)}.btn.ghost{background:transparent}
+.visual{border:1px solid var(--visual-border);border-radius:24px;padding:22px;background:linear-gradient(140deg,var(--visual-top),var(--visual-bottom));box-shadow:0 25px 80px #0005}.window{border:1px solid var(--window-line);border-radius:16px;background:var(--window-bg);overflow:hidden}.dots{padding:13px;border-bottom:1px solid var(--line);display:flex;gap:6px}.dots i{display:block;width:9px;height:9px;border-radius:50%;background:var(--dot)}.screen{padding:22px}.screen h3{margin:0 0 16px}.mockrow{display:flex;align-items:center;justify-content:space-between;padding:12px;margin:9px 0;background:var(--mock-bg);border-radius:10px;gap:10px}.mockrow span{color:var(--mock-text)}.pill{padding:4px 10px;background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--pill-text);border-radius:50px;font-size:.75rem}.progress{height:9px;background:var(--progress-bg);border-radius:99px;overflow:hidden;margin-top:20px}.progress div{width:72%;height:100%;background:var(--accent)}.hint{color:var(--muted);font-size:.82rem;margin-top:12px}
+section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-height:1.2;margin:10px 0}.section-sub{color:var(--muted);max-width:740px;margin:0 0 30px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:linear-gradient(155deg,var(--card-top),var(--card-bottom));border:1px solid var(--line);border-radius:18px;padding:25px}.card .ico{font-size:1.7rem}.card h3{margin:13px 0 8px}.card p{color:var(--muted);margin:0}.steps{counter-reset:step;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.step{padding:25px;border-left:3px solid var(--accent);background:var(--step-bg);border-radius:0 14px 14px 0}.step:before{counter-increment:step;content:"0" counter(step);color:var(--accent);font-weight:800;font-size:1.35rem}.step h3{margin:12px 0 6px}.step p{color:var(--muted);margin:0}.access{display:grid;grid-template-columns:1fr 1fr;gap:18px}.access .card{display:flex;flex-direction:column;align-items:flex-start}.access .card .btn{margin-top:auto}.access .card p{margin-bottom:24px}.note{color:var(--muted);font-size:.92rem;margin-top:22px}.foot{border-top:1px solid var(--line);padding:25px 0;color:var(--muted);font-size:.9rem}.foot .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:800px){.hero{grid-template-columns:1fr;padding:52px 0}.grid,.steps{grid-template-columns:1fr 1fr}.visual{max-width:560px}.topnav{gap:10px}}@media(max-width:560px){.top{align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:space-between}.topnav{gap:10px}.topnav a{font-size:.87rem}.theme-toggle{font-size:.9rem}.grid,.steps,.access{grid-template-columns:1fr}.wrap{padding:0 18px}.hero{gap:26px}.actions .btn{width:100%}section{padding:48px 0}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+</style>
+</head>
+<body>
+<!-- CABEÇALHO: nome do projeto e links de navegação interna. -->
+<header class="wrap top">
+<a class="brand" href="#inicio">◆ Quiz <span>Interativo</span></a>
+<div class="top-actions"><nav class="topnav" aria-label="Navegação principal"><a href="#recursos">Recursos</a><a href="#como-funciona">Como funciona</a><a href="#acessos">Acessar sistema</a></nav>
+<!-- BOTAO DE TEMA: o texto e atualizado automaticamente pelo script no fim do arquivo. -->
+<button id="themeToggle" class="theme-toggle" type="button" aria-label="Ativar modo claro" aria-pressed="false">☀️ Modo claro</button></div>
+</header>
+<main>
+<div class="wrap">
+<div class="hero" id="inicio">
+<div><div class="eyebrow">Tecnologia a favor da aprendizagem</div><h1>Avaliações digitais, <span>mais interativas.</span></h1><p class="lead">Conheça o Quiz Interativo, um ambiente para organizar avaliações, acompanhar a participação dos estudantes e consultar resultados de forma prática.</p>
+<div class="actions"><a class="btn primary" href="#acessos">Começar agora →</a><a class="btn secondary" href="#recursos">Conhecer recursos</a></div></div>
+<div class="visual" aria-label="Ilustração conceitual do sistema de avaliações"><div class="window"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="screen"><h3>Visão geral da avaliação</h3><div class="mockrow"><span>Questões e alternativas</span><span class="pill">Organizadas</span></div><div class="mockrow"><span>Acompanhamento</span><span class="pill">Professor</span></div><div class="mockrow"><span>Resultados</span><span class="pill">Relatórios</span></div><div class="progress"><div></div></div><p class="hint">Imagem ilustrativa — não representa dados reais de alunos.</p></div></div></div>
+</div>
+</div>
+<section id="recursos"><div class="wrap"><div class="eyebrow">Conheça o sistema</div><h2 class="section-title">Ferramentas para cada etapa</h2><p class="section-sub">Da elaboração da avaliação à consulta dos resultados, o Quiz Interativo reúne recursos para apoiar o trabalho pedagógico.</p><div class="grid">
+<article class="card"><div class="ico" aria-hidden="true">📝</div><h3>Questões e avaliações</h3><p>Organize perguntas com alternativas e prepare atividades para suas turmas.</p></article>
+<article class="card"><div class="ico" aria-hidden="true">🔀</div><h3>Embaralhamento</h3><p>Apresente questões e alternativas em ordens diferentes durante a avaliação.</p></article>
+<article class="card"><div class="ico" aria-hidden="true">⏱️</div><h3>Acompanhamento</h3><p>Acompanhe o andamento das avaliações pelo painel do professor.</p></article>
+<article class="card"><div class="ico" aria-hidden="true">📊</div><h3>Resultados e relatórios</h3><p>Consulte o desempenho registrado e os dados das avaliações realizadas.</p></article>
+<article class="card"><div class="ico" aria-hidden="true">🎓</div><h3>Experiência do aluno</h3><p>Uma interface dedicada para responder às questões e concluir a atividade.</p></article>
+<article class="card"><div class="ico" aria-hidden="true">🖥️</div><h3>Acesso pelo navegador</h3><p>Abra as páginas do sistema pelo link disponibilizado pela escola ou professor.</p></article>
+</div></div></section>
+<section id="como-funciona"><div class="wrap"><div class="eyebrow">Simples de entender</div><h2 class="section-title">Como funciona</h2><p class="section-sub">Um fluxo resumido para apresentar o sistema a professores e estudantes.</p><div class="steps"><div class="step"><h3>O professor prepara</h3><p>Organiza questões, configura e disponibiliza a avaliação.</p></div><div class="step"><h3>O aluno responde</h3><p>Acessa o ambiente do aluno e realiza a atividade.</p></div><div class="step"><h3>O professor acompanha</h3><p>Consulta o andamento e os resultados no painel.</p></div></div></div></section>
+<section id="acessos"><div class="wrap"><div class="eyebrow">Entrar no Quiz Interativo</div><h2 class="section-title">Escolha seu acesso</h2><p class="section-sub">Esta apresentação é independente. Os botões abaixo levam às páginas já existentes do projeto.</p><div class="access">
+<div class="card"><div class="ico" aria-hidden="true">👨‍🏫</div><h3>Área do professor</h3><p>Entre com sua conta para acessar o painel de gestão das avaliações.</p><a class="btn primary" href="login.html">Entrar como professor →</a></div>
+<div class="card"><div class="ico" aria-hidden="true">🎒</div><h3>Área do aluno</h3><p>Acesse a página destinada à realização das avaliações.</p><a class="btn secondary" href="index.html">Entrar como aluno →</a></div>
+</div><p class="note">A disponibilidade de avaliações depende da ativação realizada pelo professor. Esta página não ativa, altera ou encerra provas.</p></div></section>
+</main>
+<footer class="foot"><div class="wrap"><span>Quiz Interativo · Página de apresentação</span><a href="#inicio">Voltar ao início ↑</a></div></footer>
+<!-- TEMA: inicia sempre no modo escuro. O botao alterna para claro durante a visita.
+     Ao atualizar a pagina, retorna ao escuro. Para mudar, consulte apply('dark') abaixo. -->
+<script>
+(function(){
+  'use strict';
+  const root=document.documentElement;
+  const button=document.getElementById('themeToggle');
+  function apply(theme){
+    const light=theme==='light';
+    root.setAttribute('data-theme',light?'light':'dark');
+    button.textContent=light?'🌙 Modo escuro':'☀️ Modo claro';
+    button.setAttribute('aria-label',light?'Ativar modo escuro':'Ativar modo claro');
+    button.setAttribute('aria-pressed',String(light));
+    document.querySelector('meta[name="theme-color"]').setAttribute('content',light?'#f5f8fe':'#081226');
+  }
+  apply('dark'); // TEMA INICIAL: sempre escuro.
+  button.addEventListener('click',function(){
+    const next=root.getAttribute('data-theme')==='light'?'dark':'light';
+    apply(next);
+  });
+})();
+</script>
+</body>
+</html>
