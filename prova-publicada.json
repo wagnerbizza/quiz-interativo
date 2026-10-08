@@ -1,70 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791465130190",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791475930190,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791465314421,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791465130190",
-  "publicadoEm": "2026-10-08T13:12:11.222Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "E2zLNRMwGy9rJOUnNcF5",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "Questão oficial de nível avançado nº 5 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "txSPSONyNiJh3TlP3dqE",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a ética de dados (Data Ethics)?",
-      "opcoes": [
-        "O ramo da ética que avalia o armazenamento, proteção e uso responsável de dados pessoais",
-        "As regras de formatação de código em Python",
-        "O preço de venda de softwares de segurança",
-        "A velocidade de download na internet"
-      ]
-    },
-    {
-      "idQuestao": "iUxTi9JIOCA5s8lamYSg",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a computação em névoa (Fog Computing) ligada à IoT e IA?",
-      "opcoes": [
-        "Uma extensão da computação em nuvem mais próxima dos dispositivos geradores de dados",
-        "Um tipo de vírus que oculta arquivos",
-        "Uma falha de renderização gráfica",
-        "Um sistema de resfriamento líquido"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791465314421",
+  "publicadoEm": "2026-10-08T13:15:14.421Z",
+  "encerradoEm": "2026-10-08T13:15:14.421Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
