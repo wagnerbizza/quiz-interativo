@@ -2138,9 +2138,9 @@ const descricoesDemoProfessor = {
 };
 let passosDemoProfessor=[];
 function atualizarPassosDemoProfessor(){
-  /* Ordem lógica fixa: arrastar botões não altera o roteiro da demonstração. */
-  const ordem=["aba-global","aba-escolas","aba-ativacao","aba-monitoramento","aba-questoes","aba-banco-dados","aba-relatorios"];
-  passosDemoProfessor=ordem.filter(id=>descricoesDemoProfessor[id] && localizarAbaDemo(id))
+  /* Roteiro imutável: não depende da ordem dos botões arrastáveis. */
+  const ordem=["aba-global","aba-escolas","aba-ativacao","aba-monitoramento","aba-relatorios","aba-questoes","aba-banco-dados"];
+  passosDemoProfessor=ordem.filter(id=>Boolean(descricoesDemoProfessor[id] && localizarAbaDemo(id)))
     .map((id,i)=>({titulo:(i+1)+'. '+localizarAbaDemo(id).textContent.trim(),texto:descricoesDemoProfessor[id],aba:id}));
 }
 let passoDemoProfessor=0;
@@ -2178,17 +2178,21 @@ function renderDemoProfessor(){
   /* A sequência depende do ID lógico, nunca da posição visual das abas. */
   if(botaoAba){
     botaoAba.click();
-    /* A navegação real não pode encerrar a demonstração em andamento. */
+    /* Mantém a etapa fixa mesmo após reordenar abas. */
     overlayDemoProfessor.classList.add("ativo");
     overlayDemoProfessor.setAttribute("aria-hidden","false");
   }
   /* O próprio clique na aba atualiza o hash e o conteúdo. */
 
+  const idPassoAtual=passo.aba;
   setTimeout(()=>{
-    const botao=localizarAbaDemo(passo.aba);
+    if(!overlayDemoProfessor.classList.contains("ativo") || passosDemoProfessor[passoDemoProfessor]?.aba!==idPassoAtual) return;
+    const botao=localizarAbaDemo(idPassoAtual);
     if(botao){
       botao.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
-      setTimeout(()=>posicionarDestaqueDemo(botao),220);
+      setTimeout(()=>{
+        if(overlayDemoProfessor.classList.contains("ativo") && passosDemoProfessor[passoDemoProfessor]?.aba===idPassoAtual) posicionarDestaqueDemo(botao);
+      },220);
     } else destaqueDemoProfessor.style.display="none";
   },120);
 }
@@ -2202,26 +2206,22 @@ function fecharDemoProfessor(){
    Concluir ou Pular: fecha o tutorial e retorna à Home/Painel (Configurações Gerais).
    Fechar: apenas fecha o tutorial e mantém a aba atual para o professor continuar trabalhando. */
 function voltarHomeAposDemoProfessor(){
+  /* Volta à Home sem recarregar a página e sem interferir nas provas. */
   fecharDemoProfessor();
-
-  /* AJUSTE MANUAL 17 — RETORNO REAL À HOME APÓS CONCLUIR/PULAR
-     A Home/Painel é um link real para painel.html criado pelo app.js.
-     Alterar somente o hash não troca a tela interna já aberta. Por isso,
-     ao concluir ou pular a demonstração fazemos uma navegação real para
-     painel.html#escolas. Isso recarrega o painel na primeira área funcional visível, exatamente
-     como o botão "Home / Painel" do topo.
-
-     PARA ALTERAR MANUALMENTE NO FUTURO:
-     - destino atual: "painel.html#escolas"
-     - se a página inicial mudar de nome, altere apenas a linha abaixo.
-     - o botão "Fechar" NÃO usa esta função; ele continua na aba atual. */
-  const home=localizarAbaDemo("aba-global");
-  if(home) home.click();
-  else window.location.hash="#global";
   passoDemoProfessor=0;
+  const home=localizarAbaDemo("aba-global");
+  if(home){
+    home.click();
+    /* Fallback visual caso outro manipulador não ative a aba. */
+    document.querySelectorAll('.btn-aba[data-aba]').forEach(b=>b.classList.toggle('active',b===home));
+    document.querySelectorAll('.aba-conteudo').forEach(el=>{
+      const ativa=el.id==='aba-global';
+      el.classList.toggle('hidden',!ativa);
+      if(ativa) el.style.display='';
+    });
+  }
   window.scrollTo({top:0,behavior:"smooth"});
 }
-
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
   passoDemoProfessor=0; atualizarPassosDemoProfessor();
@@ -2234,7 +2234,7 @@ document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
   else voltarHomeAposDemoProfessor();
 });
 document.getElementById("demo-prof-pular")?.addEventListener("click",voltarHomeAposDemoProfessor);
-document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemoProfessor);
+document.getElementById("demo-prof-fechar")?.addEventListener("click",voltarHomeAposDemoProfessor);
 /* Atualiza o contorno após rearranjo manual de abas, sem avançar etapas. */
 const abasDemoContainer=document.querySelector('.btn-aba[data-aba="aba-escolas"]')?.parentElement;
 if(abasDemoContainer){
