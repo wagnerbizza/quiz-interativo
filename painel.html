@@ -1680,6 +1680,21 @@ body.light-mode section {
   display: none !important;
 }
 </style>
+<style id="ajuste-contraste-relatorios-tema-claro-20261008">
+/* Mantém a tabela escura também no tema claro, com texto legível.
+   Escopo: somente células de resultados; não afeta gabaritos ou dados. */
+body.tema-claro-ativo #aba-relatorios .tabela-resultados tbody td,
+body.light-mode #aba-relatorios .tabela-resultados tbody td {
+  background-color:#0f172a !important;
+  color:#f1f5f9 !important;
+}
+/* Textos comuns dentro das células acompanham o contraste. Preserva
+   indicadores coloridos de status, notas e botões. */
+body.tema-claro-ativo #aba-relatorios .tabela-resultados tbody td :is(span,div,p,strong,small):not([style*="color"]):not([class*="status"]),
+body.light-mode #aba-relatorios .tabela-resultados tbody td :is(span,div,p,strong,small):not([style*="color"]):not([class*="status"]) {
+  color:inherit;
+}
+</style>
 </head>
 <body>
 
@@ -1811,7 +1826,7 @@ body.light-mode section {
 
   <div class="container">
     <header>
-      <h1>PAINEL DE CONTROLE ESCOLAR</h1>
+      <h1>👨‍‍🏫 PAINEL DE CONTROLE ESCOLAR</h1>
       <!-- 🔐 FASE 10A — sessão do professor -->
       <div class="sessao-professor">
         <div><span class="sessao-status" id="status-conexao-professor">● CONECTADO</span>
@@ -1865,7 +1880,7 @@ body.light-mode section {
 
     <!-- ABA 1: CADASTRO DE ESCOLAS -->
     <div id="aba-escolas" class="aba-conteudo hidden">
-      <h2>Cadastro de Unidades Escolares</h2>
+      <h2>🏫 Cadastro de Unidades Escolares</h2>
       <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
         <input type="hidden" id="input-escola-id-editando" value="">
         <label>Nome da Escola:</label>
