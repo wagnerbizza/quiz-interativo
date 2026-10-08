@@ -1,21 +1,70 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791462103805",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791460872489,
-  "turmasAtivas": [],
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791472903805,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791460872489",
-  "publicadoEm": "2026-10-08T12:01:12.489Z",
-  "encerradoEm": "2026-10-08T12:01:12.489Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791462103805",
+  "publicadoEm": "2026-10-08T12:21:44.530Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "B4yeHWRL3KLdOrwemwbe",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 30] O que são pesos sinápticos em uma rede neural?",
+      "opcoes": [
+        "A) Parâmetros numéricos ajustados durante o treinamento que determinam a força da conexão entre neurônios",
+        "B) O peso físico dos servidores em gramas",
+        "C) A carga da bateria do dispositivo",
+        "D) O tamanho do arquivo de código"
+      ]
+    },
+    {
+      "idQuestao": "ZO1ctIb8n5nhspiLLpl8",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 98 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "BEDob9zWDzebCJMi0eSO",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o reconhecimento facial por IA?",
+      "opcoes": [
+        "A tecnologia que identifica ou verifica uma pessoa através de uma imagem digital do rosto",
+        "O escaneamento de impressões digitais em papel",
+        "A medição da temperatura corporal",
+        "O bloqueio de tela por senha numérica"
+      ]
+    }
+  ]
 }
