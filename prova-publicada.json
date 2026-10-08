@@ -1,21 +1,95 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791496895812",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 5,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791495807801,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791495807801",
-  "publicadoEm": "2026-10-08T21:43:27.801Z",
-  "encerradoEm": "2026-10-08T21:43:27.801Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 3,
+  "tempoMaximoMinutos": 3,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791507695812,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791496895812",
+  "publicadoEm": "2026-10-08T22:01:36.869Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "ctimOjgNf1eJkW5SoskL",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 14] O que é um ataque de Negação de Serviço (DDoS)?",
+      "opcoes": [
+        "A) Sobrecarga intencional de um sistema com tráfego massivo para derrubá-lo",
+        "B) Roubo de senhas por e-mail falso",
+        "C) Invasão de firewalls corporativos",
+        "D) Apagamento remoto de arquivos"
+      ]
+    },
+    {
+      "idQuestao": "mvfBeEeDIwpDGys2sIbq",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 13 - 1790258350341]O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
+      "opcoes": [
+        "Dados sem rótulos descobertos automaticamente",
+        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
+        "Tentativa e erro autônoma sem histórico",
+        "Regras fixas de lógica booleana"
+      ]
+    },
+    {
+      "idQuestao": "cRU3tetRRtoaKIayWGf3",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é um endereço IP versão 4 (IPv4)?",
+      "opcoes": [
+        "Endereço numérico de 32 bits dividido em quatro octetos",
+        "Endereço alfanumérico de 128 bits baseado em hexadecimal",
+        "Protocolo exclusivo para redes sem fio de curto alcance",
+        "Chave de segurança utilizada em criptografia SSL/TLS",
+        "Identificador físico gravado na placa de rede (MAC Address)"
+      ]
+    },
+    {
+      "idQuestao": "UGyoSSjSaNdIGLXDQMQ3",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual propriedade do CSS define o espaçamento interno de um elemento (entre o conteúdo e a borda)?",
+      "opcoes": [
+        "padding",
+        "margin",
+        "border-spacing",
+        "spacing"
+      ]
+    },
+    {
+      "idQuestao": "wCJcdvIqlcCJJ2H3ziRW",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é o provisionamento automatizado em nuvem?",
+      "opcoes": [
+        "Criação e configuração automática de recursos de TI através de scripts e ferramentas de software",
+        "Instalação manual de sistemas operacionais em computadores físicos",
+        "Configuração de cabos de rede em escritórios corporativos",
+        "Exclusão de arquivos antigos por administradores de sistema",
+        "Envio de relatórios semanais de consumo de energia"
+      ]
+    }
+  ]
 }
