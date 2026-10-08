@@ -1,69 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791456186578",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791466986578,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791460872489,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791456186578",
-  "publicadoEm": "2026-10-08T10:43:06.840Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "Jax47Guw0laxNGUsWWUz",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "[Técnico 7 - 1790243772390]O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "Entrega de softwares prontos via navegador",
-        "Ambiente exclusivo para programar sem gerenciar servidores",
-        "Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "Ax1UBvL1hPjgSqE6iA82",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a IA explicável (Explainable AI - XAI)?",
-      "opcoes": [
-        "Métodos e técnicas que permitem que os resultados dos humanos compreendam as decisões da IA",
-        "Uma IA que fala em voz alta",
-        "Um manual de instruções impresso",
-        "O código-fonte aberto de um programa"
-      ]
-    },
-    {
-      "idQuestao": "EFw4x00Oq33qjxchAQEr",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "Qual é a utilidade dos algoritmos de recomendação (como na Netflix ou Spotify)?",
-      "opcoes": [
-        "Sugerir conteúdos com base nas preferências e histórico do usuário",
-        "Apagar músicas antigas do aparelho",
-        "Aumentar o volume do som automaticamente",
-        "Bloquear o acesso à internet"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791460872489",
+  "publicadoEm": "2026-10-08T12:01:12.489Z",
+  "encerradoEm": "2026-10-08T12:01:12.489Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
