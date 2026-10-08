@@ -545,30 +545,9 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
 </style>
 </head>
 <body>
-<script>
-/* Inatividade: nunca sai durante uma prova ou na tela de resultado.
-   Somente a entrada inicial pode retornar à apresentação após 3 minutos. */
-(function(){
-  const limite=180000;
-  let ultimaInteracao=Date.now();
-  ['pointerdown','keydown','touchstart','input','scroll'].forEach(tipo=>
-    document.addEventListener(tipo,()=>{ultimaInteracao=Date.now()},{passive:true}));
-  setInterval(()=>{
-    if(document.hidden || Date.now()-ultimaInteracao<limite) return;
-    const entrada=document.getElementById('tela-login');
-    const prova=document.getElementById('tela-quiz');
-    const resultado=document.getElementById('tela-resultado');
-    const visivel=el=>el && !el.classList.contains('hidden') && getComputedStyle(el).display!=='none';
-    if(!visivel(entrada) || visivel(prova) || visivel(resultado)) return;
-    location.replace('apresentacao.html');
-  },10000);
-})();
-</script>
 
   <div class="container">
     <div id="tela-login">
-      <!-- Acesso de retorno: aparece somente na tela inicial do aluno. -->
-      <a href="apresentacao.html" id="voltar-apresentacao-aluno" style="display:inline-flex;align-items:center;gap:7px;margin:0 0 18px;padding:9px 13px;border:1px solid #334155;border-radius:10px;color:#93c5fd;text-decoration:none;font-size:14px;font-weight:700;background:#142238;">← Voltar à apresentação</a>
       <h1>ÁREA DO ALUNO - Avaliação</h1>
       <div id="detalhes-prova-ativa" class="info-box">⏳ Verificando se há alguma prova ativa no momento...</div>
 
@@ -1734,7 +1713,12 @@ if (unsubscribePermissaoAluno) {
       conferirPacotePublicoNaEntrada();
     }
 
-    document.getElementById("btn-reiniciar")?.addEventListener("click", voltarTelaInicialAluno);
+    // O botão "Sair / Tela Inicial" leva à apresentação pública.
+    // Mantemos voltarTelaInicialAluno() para o retorno automático de segurança.
+    document.getElementById("btn-reiniciar")?.addEventListener("click", () => {
+      voltarTelaInicialAluno(); // Limpa os dados da tentativa anterior antes de sair.
+      window.location.replace("apresentacao.html");
+    });
   
     /* ============================================================
        [AJUSTE MANUAL 03] DEMONSTRAÇÃO DO ALUNO

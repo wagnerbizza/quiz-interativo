@@ -5591,8 +5591,9 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
 
   window.sairPainelProfessor = async function() {
     if (!confirm("Deseja sair do Painel do Professor?")) return;
+    // Após confirmar a saída, encerra a sessão Firebase antes de voltar à apresentação.
     await signOut(auth);
-    window.location.replace("login.html");
+    window.location.replace("apresentacao.html");
   };
 }
 
