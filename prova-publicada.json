@@ -1,21 +1,70 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791503880869",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791497121001,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791497121001",
-  "publicadoEm": "2026-10-08T22:05:21.001Z",
-  "encerradoEm": "2026-10-08T22:05:21.001Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791514680869,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791503880869",
+  "publicadoEm": "2026-10-08T23:58:01.537Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "VvbFUH2gF6wts1NJ45yg",
+      "materia": "Programacao Front-End",
+      "categoria": "Programacao Front-End",
+      "pergunta": "[Técnico 10 - 1790258353910]Qual a principal responsabilidade do CSS em páginas web?",
+      "opcoes": [
+        "Estruturar os textos semânticos",
+        "Controlar a aparência visual, layout, cores e responsividade",
+        "Processar regras de negócio no servidor",
+        "Armazenar dados em banco NoSQL"
+      ]
+    },
+    {
+      "idQuestao": "xb0kCqBM5JK52hA5spgR",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Mineração de Texto (Text Mining)?",
+      "opcoes": [
+        "Processo de derivar informações de alta qualidade a partir de textos não estruturados",
+        "Criação manual de documentos de texto no editor",
+        "Compactação de arquivos PDF para envio por e-mail",
+        "Tradução de manuais impressos para o formato digital",
+        "Exclusão de arquivos duplicados no servidor"
+      ]
+    },
+    {
+      "idQuestao": "a5KYm1wAnsiLeCuTfz2l",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a segmentação de imagens em Visão Computacional?",
+      "opcoes": [
+        "O processo de dividir uma imagem digital em múltiples segmentos ou regiões (ex: separar fundo de objeto)",
+        "A divisão de uma foto em vários arquivos menores",
+        "O aumento da resolução de uma imagem",
+        "A conversão de imagens coloridas para preto e branco"
+      ]
+    }
+  ]
 }
