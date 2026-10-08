@@ -1669,6 +1669,17 @@ body.light-mode section {
 }
 </style>
 
+
+<style id="correcao-espaco-vazio-banco-v8">
+/* Banco de Dados: a antiga barra separadora ::before estava sendo
+   contada como o primeiro cartão da grade CSS, deixando uma célula
+   vazia e empurrando as questões para a linha seguinte.
+   Removê-la não interfere em dados, botões nem nos modos de visualização. */
+#catalogo-questoes-grid::before {
+  content: none !important;
+  display: none !important;
+}
+</style>
 </head>
 <body>
 
