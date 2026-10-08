@@ -620,6 +620,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       <div class="info-box" style="text-align: center;">
         <h2 id="nota-final-txt" style="color: var(--success); margin-bottom: 5px;">Nota: 0.0 / 10.0</h2>
         <p id="detalhes-acertos-txt" style="color: var(--text-muted);">Acertos e erros processados com sucesso.</p>
+        <p id="motivo-conclusao-aluno" style="display:none; color:#fbbf24; margin-top:10px; font-weight:bold;" role="status" aria-live="polite"></p>
         <p id="status-envio-txt" style="color: #38bdf8; margin-top: 8px; font-weight: bold;"></p>
       </div>
 
@@ -1583,12 +1584,21 @@ if (unsubscribePermissaoAluno) {
       document.getElementById("detalhes-acertos-txt").textContent = `Questões: ${listaQuestoes.length} | Tempo: ${tempoGastoFormatado}`;
       document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
 
-      if (encerradaPeloProfessor) {
-        document.getElementById("status-envio-txt").textContent =
-          `🏁 Avaliação encerrada pelo professor. Motivo: ${motivoEncerramento}`;
-      } else if (motivoEncerramento) {
-        document.getElementById("status-envio-txt").textContent = `⌛ ${motivoEncerramento}`;
+      // Motivo da conclusão é independente do status de envio ao Firebase.
+      // Uma falha de conexão não deve esconder que o professor encerrou a prova.
+      const motivoVisivel = document.getElementById("motivo-conclusao-aluno");
+      const motivoNormalizado = String(motivoEncerramento || "").trim();
+      const finalizacaoPorPrazo = /prazo geral|tempo máximo|tempo maximo|esgotado|expirad/i.test(motivoNormalizado);
+      const encerramentoManualProfessor = encerradaPeloProfessor && !finalizacaoPorPrazo;
+      if (motivoVisivel) {
+        motivoVisivel.style.display = "block";
+        motivoVisivel.textContent = encerramentoManualProfessor
+          ? "🏁 Avaliação encerrada pelo professor." + (motivoNormalizado ? " Motivo: " + motivoNormalizado : "")
+          : finalizacaoPorPrazo
+            ? "⌛ Avaliação encerrada por limite de tempo." + (motivoNormalizado ? " " + motivoNormalizado : "")
+            : "✅ Avaliação finalizada pelo aluno.";
       }
+      document.getElementById("status-envio-txt").textContent = "⏳ Salvando resultado e verificando envio...";
 
       // Programa o retorno ANTES da sincronização remota: Firebase lento não
       // pode deixar dados do aluno expostos em computadores compartilhados.
@@ -1622,8 +1632,8 @@ if (unsubscribePermissaoAluno) {
           tempoGastoFormatado,
           // serverTimestamp não pode ser serializado no localStorage; o painel também usa timestamp.
           timestamp: agora,
-          finalizadoPeloProfessor: encerradaPeloProfessor,
-          motivoFinalizacao: motivoEncerramento || ""
+          finalizadoPeloProfessor: encerramentoManualProfessor,
+          motivoFinalizacao: motivoNormalizado || (encerramentoManualProfessor ? "Avaliação encerrada pelo professor." : finalizacaoPorPrazo ? "Tempo máximo da avaliação esgotado." : "Avaliação entregue pelo aluno.")
         };
 
         // Primeiro salva localmente; só depois tenta a rede.
@@ -1639,12 +1649,7 @@ if (unsubscribePermissaoAluno) {
         await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
         if (alunoAtual.id !== sessaoFinalizada) return;
-        if (!encerradaPeloProfessor) {
-          document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
-        } else {
-          document.getElementById("status-envio-txt").innerHTML =
-            `🏁 <strong>Avaliação encerrada pelo professor.</strong><br>Motivo: ${motivoEncerramento}<br>✅ Resultado salvo com sucesso.`;
-        }
+        document.getElementById("status-envio-txt").textContent = "✅ Resultado enviado e salvo com sucesso.";
       } catch (err) {
         console.warn("Resultado protegido localmente; sincronização pendente:", err?.code || err);
         if (alunoAtual.id !== sessaoFinalizada) return;

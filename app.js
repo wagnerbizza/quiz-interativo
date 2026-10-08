@@ -4316,8 +4316,8 @@ if (window.location.pathname.includes("painel.html")) {
           </td>
           <td>
             <span class="status-finalizado-limpo">✓ Finalizado</span>
-            ${(typeof res.motivoFinalizacao === "string" && res.motivoFinalizacao.trim() && res.motivoFinalizacao !== "[object Object]")
-              ? `<div class="motivo-finalizacao-limpo">🏁 ${res.motivoFinalizacao}</div>` : ""}
+            ${motivoConclusaoRelatorio(res)
+              ? `<div class="motivo-finalizacao-limpo">🏁 ${motivoConclusaoRelatorio(res).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>` : ""}
           </td>
           <td>${dataFormatada}</td>
           <td><strong>${res.escola || 'N/D'}</strong></td>
@@ -4387,7 +4387,7 @@ if (window.location.pathname.includes("painel.html")) {
         <div class="campo"><b>Data/Hora:</b> ${dataResultado(r)}</div><div class="campo"><b>Tempo:</b> ${r.tempoGastoFormatado||"Não informado"}</div>
       </div>
       <div class="metricas"><div class="metrica">Questões<strong>${m.total}</strong></div><div class="metrica">Acertos<strong>${m.acertos}</strong></div><div class="metrica">Erros<strong>${m.erros}</strong></div><div class="metrica">Nota<strong>${m.nota}/10</strong></div></div>
-      ${r.motivoFinalizacao?`<div class="obs"><b>Finalização:</b> ${r.motivoFinalizacao}</div>`:""}
+      ${motivoConclusaoRelatorio(r)?`<div class="obs"><b>Finalização:</b> ${motivoConclusaoRelatorio(r).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`:""}
       <div class="assinaturas"><div>Professor(a) / Responsável</div><div>Coordenação</div></div>`);
   };
 
@@ -4516,6 +4516,16 @@ if (window.location.pathname.includes("painel.html")) {
     return (resultadosFiltradosCache && resultadosFiltradosCache.length)
       ? resultadosFiltradosCache : resultadosGlobaisCache.filter(r => !alunosOcultosCache.has(r.idDoc) && !alunosLixeiraCache.has(r.idDoc));
   }
+  // Mantém o motivo registrado pelo aluno visível nos relatórios e exportações.
+  // Resultados antigos sem motivo explícito permanecem como finalizados, sem inferir a causa.
+  function motivoConclusaoRelatorio(r) {
+    const motivo = typeof r?.motivoFinalizacao === "string" ? r.motivoFinalizacao.trim() : "";
+    if (r?.finalizadoPeloProfessor === true) return "Encerrada pelo professor" + (motivo ? " — " + motivo : "");
+    if (/prazo geral|tempo máximo|tempo maximo|esgotado|expirad/i.test(motivo)) return "Encerrada por tempo limite" + (motivo ? " — " + motivo : "");
+    if (motivo) return motivo;
+    return "";
+  }
+
   function csvSeguro(v) { return `"${String(v ?? "").replace(/"/g,'""').replace(/\r?\n/g," ")}"`; }
 
   window.exportarResultadosCSV = function() {
@@ -4527,7 +4537,7 @@ if (window.location.pathname.includes("painel.html")) {
       const m=metricasResultado(r);
       linhas.push([
         dataResultado(r),r.escola||"",r.periodo||"",r.nome||"",r.turma||"",r.materia||"",
-        r.tempoGastoFormatado||"",m.total,m.acertos,m.erros,m.nota,r.motivoFinalizacao||""
+        r.tempoGastoFormatado||"",m.total,m.acertos,m.erros,m.nota,motivoConclusaoRelatorio(r)
       ].map(csvSeguro).join(";"));
     });
     const blob=new Blob(["\uFEFF"+linhas.join("\r\n")],{type:"text/csv;charset=utf-8;"});
