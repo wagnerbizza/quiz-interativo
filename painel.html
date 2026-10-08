@@ -2128,7 +2128,7 @@ body.light-mode section {
 const DEMO_PROFESSOR_ATIVA = true;
 /* A sequência é fixa e independe do rearranjo das abas. */
 const descricoesDemoProfessor = {
- "aba-global":"Configurações Gerais e Home do painel.",
+ "aba-global":"Consulte as configurações gerais e os padrões do painel.",
  "aba-escolas":"Cadastre e revise as unidades escolares disponíveis nas avaliações.",
  "aba-ativacao":"Escolha escola, matérias, turmas, questões, tempos e código de acesso. Nada é publicado pela demonstração.",
  "aba-questoes":"Consulte e organize questões e alternativas sem modificar o gabarito.",
@@ -2173,18 +2173,10 @@ function renderDemoProfessor(){
   document.getElementById("demo-prof-proximo").textContent =
     passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Próximo";
 
-  /* AJUSTE MANUAL 14 — NAVEGAÇÃO REAL DA DEMONSTRAÇÃO
-     Usa o MESMO botão de aba do painel. Não clica em Publicar, Excluir,
-     Sincronizar, Encerrar ou qualquer outro comando operacional. */
-  const botaoAba=localizarAbaDemo(passo.aba);
-  /* A sequência depende do ID lógico, nunca da posição visual das abas. */
-  if(botaoAba){
-    botaoAba.click();
-    /* Mantém a etapa fixa mesmo após reordenar abas. */
-    overlayDemoProfessor.classList.add("ativo");
-    overlayDemoProfessor.setAttribute("aria-hidden","false");
-  }
-  /* O próprio clique na aba atualiza o hash e o conteúdo. */
+  /* AJUSTE MANUAL 14 — VISUALIZAÇÃO SEGURA DA DEMONSTRAÇÃO
+     Não dispara os listeners operacionais do app.js: a aba Banco de Dados
+     possui um carregamento externo que pode falhar durante o tutorial. */
+  mostrarAbaSomenteDemoProfessor(passo.aba);
 
   const idPassoAtual=passo.aba;
   setTimeout(()=>{
@@ -2198,25 +2190,44 @@ function renderDemoProfessor(){
     } else destaqueDemoProfessor.style.display="none";
   },120);
 }
-function fecharDemoProfessor(){
-  overlayDemoProfessor.classList.remove("ativo");
-  overlayDemoProfessor.setAttribute("aria-hidden","true");
-  destaqueDemoProfessor.style.display="none";
+/* Alterna somente a apresentação visual das abas; não executa ações
+   nem carregamentos do Firebase. Mantém a navegação pelo hash coerente. */
+function mostrarAbaSomenteDemoProfessor(idAba){
+  document.querySelectorAll('.btn-aba[data-aba]').forEach(botao=>{
+    const selecionado=botao.dataset.aba===idAba;
+    botao.classList.toggle('active',selecionado);
+    botao.setAttribute('aria-selected',String(selecionado));
+  });
+  document.querySelectorAll('.aba-conteudo').forEach(conteudo=>{
+    conteudo.classList.toggle('hidden',conteudo.id!==idAba);
+  });
+  /* replaceState não dispara hashchange, evitando carregamentos inesperados. */
+  const rotas={
+    'aba-global':'global', 'aba-escolas':'escolas',
+    'aba-ativacao':'ativacao', 'aba-monitoramento':'monitoramento',
+    'aba-relatorios':'relatorios', 'aba-questoes':'questoes',
+    'aba-banco-dados':'banco-dados'
+  };
+  const rota=rotas[idAba];
+  if(rota && location.hash!=='#'+rota){
+    history.replaceState(history.state,'',location.pathname+location.search+'#'+rota);
+  }
 }
-
-/* AJUSTE MANUAL 15 — DESTINO AO CONCLUIR/PULAR A DEMONSTRAÇÃO
-   Concluir ou Pular: fecha o tutorial e retorna à Home/Painel (Configurações Gerais).
-   Fechar: também retorna à Home para evitar deixar a demonstração em outra aba. */
+function fecharDemoProfessor(){
+  /* Move o foco para fora antes de esconder a caixa (evita aviso aria-hidden). */
+  if(overlayDemoProfessor.contains(document.activeElement)){
+    document.activeElement.blur();
+  }
+  overlayDemoProfessor.classList.remove('ativo');
+  overlayDemoProfessor.setAttribute('aria-hidden','true');
+  destaqueDemoProfessor.style.display='none';
+}
+/* AJUSTE MANUAL 15 — Home real: Cadastro de Escolas, não Configurações Gerais. */
 function voltarHomeAposDemoProfessor(){
-  /* Volta à Home sem recarregar a página e sem interferir nas provas. */
   fecharDemoProfessor();
   passoDemoProfessor=0;
-  const home=localizarAbaDemo("aba-global");
-  if(home){
-    home.click();
-    /* A navegação oficial do painel controla classes, hash e conteúdo. */
-  }
-  window.scrollTo({top:0,behavior:"smooth"});
+  mostrarAbaSomenteDemoProfessor('aba-escolas');
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
 btnDemoProfessor?.addEventListener("click",()=>{
