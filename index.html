@@ -1195,7 +1195,11 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         });
       }
 
-      if (filtradas.length === 0) filtradas = [...banco];
+      // O pacote GitHub já contém a seleção OFICIAL da avaliação.
+      // Não refiltrar por matéria: isso poderia trocar/remover questões do PDF.
+      if (dadosProvaAtiva.origemPublicacao === "github" && Array.isArray(dadosProvaAtiva.questoesPublicas)) {
+        filtradas = [...banco];
+      } else if (filtradas.length === 0) filtradas = [...banco];
 
       let qtdDesejada = parseInt(qtdQ) || 10;
       let materiaNome = materiasAtivas.length > 0 ? materiasAtivas[0] : "Conteúdo Geral";
@@ -1206,7 +1210,10 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         let chave = (q.pergunta || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         if (chave && !mapaUnicas.has(chave)) mapaUnicas.set(chave, q);
       });
-      let unicasArray = Array.from(mapaUnicas.values());
+      // A seleção publicada deve ser preservada integralmente; somente a ordem muda.
+      // A remoção por enunciado é exclusiva do banco legado, não do pacote oficial.
+      let unicasArray = dadosProvaAtiva.origemPublicacao === "github" && Array.isArray(dadosProvaAtiva.questoesPublicas)
+        ? [...filtradas] : Array.from(mapaUnicas.values());
 
       // 🔵 FASE 7 — EMBARALHAMENTO QUE FUNCIONA TAMBÉM COM POUCAS QUESTÕES
       // Usa o seed da prova + aluno. Quando o professor clica "Reembaralhar",
@@ -1236,7 +1243,8 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         }
       }
 
-      listaQuestoes = unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
+      listaQuestoes = dadosProvaAtiva.origemPublicacao === "github" && Array.isArray(dadosProvaAtiva.questoesPublicas)
+        ? unicasArray : unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
 
       // Registra a tentativa assim que a prova realmente conseguiu carregar.
       // 1) trava local imediatamente; 2) tenta gravar a trava central no Firebase.
@@ -1725,6 +1733,14 @@ if (unsubscribePermissaoAluno) {
       { alvo: "#turma-aluno", texto: "<strong>5. Turma:</strong> selecione somente a sua turma entre as turmas liberadas para esta avaliação." },
       { alvo: "#btn-iniciar-prova", texto: "<strong>6. Iniciar Avaliação:</strong> ao clicar aqui, o sistema confere os dados e o código. A demonstração não inicia nem registra nenhuma tentativa." }
     ];
+    // Etapas ocultas (ex.: código quando não há token) não são exibidas.
+    function passosVisiveisDemoAluno(){
+      return passosDemoAluno.filter(p => {
+        const el=document.querySelector(p.alvo);
+        return el && el.getClientRects().length > 0 && getComputedStyle(el).display !== "none";
+      });
+    }
+    let passosAtuaisDemoAluno = [];
     let passoDemoAluno = 0;
     let alvoDemoAlunoAtual = null;
     const btnDemoAluno=document.getElementById("btn-demo-aluno");
@@ -1773,10 +1789,11 @@ if (unsubscribePermissaoAluno) {
     }
     function renderDemoAluno(){
       limparDestaqueDemoAluno();
-      const passo=passosDemoAluno[passoDemoAluno];
+      const passo=passosAtuaisDemoAluno[passoDemoAluno];
+      if(!passo){fecharDemoAluno(false);return;}
       textoDemoAluno.innerHTML=passo.texto;
       document.getElementById("demo-proximo-aluno").textContent =
-        passoDemoAluno===passosDemoAluno.length-1 ? "Concluir" : "Próximo";
+        passoDemoAluno===passosAtuaisDemoAluno.length-1 ? "Concluir" : "Próximo";
       alvoDemoAlunoAtual=document.querySelector(passo.alvo);
       if(alvoDemoAlunoAtual){
         alvoDemoAlunoAtual.classList.add("demo-aluno-destaque");
@@ -1818,6 +1835,8 @@ if (unsubscribePermissaoAluno) {
     if(!DEMO_ALUNO_ATIVA) btnDemoAluno.style.display="none";
     btnDemoAluno?.addEventListener("click",()=>{
       passoDemoAluno=0;
+      passosAtuaisDemoAluno=passosVisiveisDemoAluno();
+      if(!passosAtuaisDemoAluno.length) return;
       document.body.classList.add("demo-aluno-aberta");
       overlayDemoAluno.classList.add("ativo");
       overlayDemoAluno.setAttribute("aria-hidden","false");
@@ -1825,7 +1844,7 @@ if (unsubscribePermissaoAluno) {
       renderDemoAluno();
     });
     document.getElementById("demo-proximo-aluno")?.addEventListener("click",()=>{
-      if(passoDemoAluno<passosDemoAluno.length-1){passoDemoAluno++;renderDemoAluno();}
+      if(passoDemoAluno<passosAtuaisDemoAluno.length-1){passoDemoAluno++;renderDemoAluno();}
       else fecharDemoAluno(false);
     });
     document.getElementById("demo-pular-aluno")?.addEventListener("click",()=>fecharDemoAluno(false));
