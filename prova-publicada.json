@@ -1,21 +1,72 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791495533346",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791469859154,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791469859154",
-  "publicadoEm": "2026-10-08T14:30:59.154Z",
-  "encerradoEm": "2026-10-08T14:30:59.154Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 2,
+  "tempoMaximoMinutos": 2,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791506333346,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791495533346",
+  "publicadoEm": "2026-10-08T21:38:54.225Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "gAAP6XWWS1btQ5lud9OU",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é uma Rede Definida por Software (SDN)?",
+      "opcoes": [
+        "Abordagem de rede onde o controle é desacoplado do encaminhamento de dados e gerenciado programaticamente",
+        "Uso exclusivo de cabos de fibra óptica em redes locais",
+        "Criptografia de pacotes em roteadores tradicionais de hardware",
+        "Instalação de firewalls físicos em todas as pontas da rede",
+        "Substituição de endereços IP por endereços MAC dinâmicos"
+      ]
+    },
+    {
+      "idQuestao": "fV0Jx5Ept2u6YMdAjC4K",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Inteligência Artificial Transparente?",
+      "opcoes": [
+        "Modelos cujos processos de decisão podem ser inspecionados e compreendidos claramente",
+        "Softwares cujo código-fonte está totalmente oculto dos usuários",
+        "Sistemas que funcionam apenas offline sem acesso externo",
+        "Plataformas de computação em nuvem sem suporte técnico",
+        "Redes de computadores protegidas por senhas complexas"
+      ]
+    },
+    {
+      "idQuestao": "7vca6EZUsC5Ndf7ArfKG",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que são Agentes Inteligentes em IA?",
+      "opcoes": [
+        "Entidades autônomas que percebem seu ambiente por sensores e agem por atuadores",
+        "Roteadores de rede que direcionam pacotes de dados",
+        "Servidores dedicados ao armazenamento de arquivos de log",
+        "Ferramentas de linha de comando para administradores",
+        "Dispositivos de hardware para resfriamento de placas"
+      ]
+    }
+  ]
 }
