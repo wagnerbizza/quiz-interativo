@@ -1363,6 +1363,12 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       if (timerInterval) clearInterval(timerInterval);
       atualizarPainelTempoAluno();
       timerInterval = setInterval(() => {
+        // Não dispara avisos atrasados após sair da prova ou durante a finalização.
+        if (finalizacaoAlunoEmAndamento || document.getElementById("tela-quiz").classList.contains("hidden")) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          return;
+        }
         segundosPassados++;
         atualizarPainelTempoAluno();
 
@@ -1370,7 +1376,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         if (limiteSeg > 0 && segundosPassados >= limiteSeg) {
           clearInterval(timerInterval);
           timerInterval = null;
-          alert("⌛ O tempo máximo da avaliação terminou. A prova será finalizada automaticamente.");
+          // Nunca usar alert(): ele bloqueia a tela e atrasa a finalização.
           finalizarProva("Tempo máximo da avaliação esgotado.", false);
         }
       }, 1000);
@@ -1550,6 +1556,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (finalizacaoAlunoEmAndamento) return;
       finalizacaoAlunoEmAndamento = true;
+      const sessaoFinalizada = alunoAtual.id;
       if (timerInterval) clearInterval(timerInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
       if (verificacaoPacotePublicoInterval) {
@@ -1577,9 +1584,16 @@ if (unsubscribePermissaoAluno) {
       document.getElementById("container-revisao-resultado").innerHTML = htmlRev;
 
       if (encerradaPeloProfessor) {
-        document.getElementById("status-envio-txt").innerHTML =
-          `🏁 <strong>Avaliação encerrada pelo professor.</strong><br>Motivo: ${motivoEncerramento}`;
+        document.getElementById("status-envio-txt").textContent =
+          `🏁 Avaliação encerrada pelo professor. Motivo: ${motivoEncerramento}`;
+      } else if (motivoEncerramento) {
+        document.getElementById("status-envio-txt").textContent = `⌛ ${motivoEncerramento}`;
       }
+
+      // Programa o retorno ANTES da sincronização remota: Firebase lento não
+      // pode deixar dados do aluno expostos em computadores compartilhados.
+      if (retornoTelaInicialTimeout) clearTimeout(retornoTelaInicialTimeout);
+      retornoTelaInicialTimeout = setTimeout(voltarTelaInicialAluno, 15000);
 
       try {
         const agora = Date.now();
@@ -1624,6 +1638,7 @@ if (unsubscribePermissaoAluno) {
         }, { merge: true });
         await deleteDoc(doc(db, "alunos_online", alunoAtual.id));
 
+        if (alunoAtual.id !== sessaoFinalizada) return;
         if (!encerradaPeloProfessor) {
           document.getElementById("status-envio-txt").textContent = "Avaliação enviada e salva com sucesso! ✅";
         } else {
@@ -1632,14 +1647,12 @@ if (unsubscribePermissaoAluno) {
         }
       } catch (err) {
         console.warn("Resultado protegido localmente; sincronização pendente:", err?.code || err);
+        if (alunoAtual.id !== sessaoFinalizada) return;
         document.getElementById("status-envio-txt").textContent =
           "⚠️ Resultado protegido neste computador. O envio será tentado automaticamente quando a conexão permitir.";
       }
 
-      // A confirmação fica visível por 15 segundos e depois volta sozinha.
-      // O botão "Sair / Tela Inicial" continua funcionando imediatamente.
-      if (retornoTelaInicialTimeout) clearTimeout(retornoTelaInicialTimeout);
-      retornoTelaInicialTimeout = setTimeout(voltarTelaInicialAluno, 15000);
+      // O retorno já foi programado antes da rede, sem aguardar o Firebase.
     }
 
     function voltarTelaInicialAluno() {
