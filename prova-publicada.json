@@ -1,21 +1,96 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791468000803",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 5,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791467061680,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791467061680",
-  "publicadoEm": "2026-10-08T13:44:21.680Z",
-  "encerradoEm": "2026-10-08T13:44:21.680Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 5,
+  "tempoMaximoMinutos": 5,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791478800803,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791468000803",
+  "publicadoEm": "2026-10-08T14:00:01.835Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "fZ1tLC73Dqp1pFJ46mzP",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Validação Cruzada (Cross-Validation)?",
+      "opcoes": [
+        "Técnica para avaliar a generalização do modelo dividindo os dados em várias dobras (folds)",
+        "Método de criptografia de senhas de usuários no banco",
+        "Processo de formatação e limpeza de planilhas Excel",
+        "Cópia de segurança realizada em servidores geograficamente distantes",
+        "Envio simultâneo de e-mails para múltiplos destinatários"
+      ]
+    },
+    {
+      "idQuestao": "1WxPHHk0DAroDhVX5mTK",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que são hiperparâmetros em Machine Learning?",
+      "opcoes": [
+        "Parâmetros cujos valores são definidos antes do início do processo de aprendizado",
+        "Os erros de digitação no código",
+        "A quantidade de memória RAM instalada",
+        "O modelo da placa-mãe"
+      ]
+    },
+    {
+      "idQuestao": "ju2I2akZHzhuKYvZr9kE",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML é utilizada para inserir um link (âncora)?",
+      "opcoes": [
+        "<link>",
+        "<a>",
+        "<href>",
+        "<url>",
+        "<navigate>"
+      ]
+    },
+    {
+      "idQuestao": "0dQyBDbtJGoCTaPn0j8W",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 37] O que é o reconhecimento de voz?",
+      "opcoes": [
+        "A) Tecnologia que converte a fala humana em texto compreensível por sistemas computucionais",
+        "B) Gravador de áudio digital",
+        "C) Caixa de som inteligente",
+        "D) Microfone sem fio"
+      ]
+    },
+    {
+      "idQuestao": "xb0kCqBM5JK52hA5spgR",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Mineração de Texto (Text Mining)?",
+      "opcoes": [
+        "Processo de derivar informações de alta qualidade a partir de textos não estruturados",
+        "Criação manual de documentos de texto no editor",
+        "Compactação de arquivos PDF para envio por e-mail",
+        "Tradução de manuais impressos para o formato digital",
+        "Exclusão de arquivos duplicados no servidor"
+      ]
+    }
+  ]
 }
