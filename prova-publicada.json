@@ -1,21 +1,68 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791466474498",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791466289760,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791466289760",
-  "publicadoEm": "2026-10-08T13:31:29.760Z",
-  "encerradoEm": "2026-10-08T13:31:29.760Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791477274498,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791466474498",
+  "publicadoEm": "2026-10-08T13:34:35.076Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "Pt8ebWjkv0Hmxb80F3gg",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 64 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "UIEb75zcPa0LHIalikIq",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual operador lógico JavaScript representa o operador 'OU' (OR)?",
+      "opcoes": [
+        "&&",
+        "!"
+      ]
+    },
+    {
+      "idQuestao": "J6Wdlyj3B1BfLZwA7fht",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual é a utilidade dos algoritmos de recomendação (como na Netflix ou Spotify)?",
+      "opcoes": [
+        "Sugerir conteúdos com base nas preferências e histórico do usuário",
+        "Apagar músicas antigas do aparelho",
+        "Aumentar o volume do som automaticamente",
+        "Bloquear o acesso à internet"
+      ]
+    }
+  ]
 }
