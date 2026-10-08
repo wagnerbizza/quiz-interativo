@@ -666,6 +666,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     let syncOnlineInterval = null;
     let verificacaoPacotePublicoInterval = null; // Atualiza ativação/encerramento pelo GitHub sem leituras Firestore.
     let idPacoteAplicadoNaEntrada = ""; // Evita reconstruir o formulário a cada 5 segundos.
+    let sequenciaConsultaPacote = 0; // Impede que uma consulta antiga sobrescreva um encerramento recente.
 
     const selectEscola = document.getElementById("escola-aluno");
     const selectTurma = document.getElementById("turma-aluno");
@@ -796,11 +797,12 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     }
 
     async function conferirPacotePublicoNaEntrada() {
+      const sequenciaAtual = ++sequenciaConsultaPacote;
       // Se já está dentro da prova, o watcher específico da sessão assume.
       if (!document.getElementById("tela-quiz")?.classList.contains("hidden")) return;
 
       const pacote = await carregarPacotePublicoBruto();
-      if (!pacote) return; // Falha temporária de rede não apaga um estado válido da tela.
+      if (!pacote || sequenciaAtual !== sequenciaConsultaPacote) return; // Ignora falha e resposta atrasada.
 
       const expirada =
         Number(pacote.expiraEmMillis || 0) > 0 &&
@@ -810,6 +812,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       // "ativa:false" deve derrubar imediatamente a liberação mostrada ao aluno.
       const estaInativa = pacote.ativa === false || pacote.ativa === "false";
       if (estaInativa || expirada || !String(pacote.escolaAtiva || "").trim()) {
+        if (unsubscribeProvaEscola) { unsubscribeProvaEscola(); unsubscribeProvaEscola = null; }
         dadosProvaAtiva = {};
         idPacoteAplicadoNaEntrada = "";
         if (selectEscola) selectEscola.disabled = false;
@@ -984,9 +987,11 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       uidAlunoFirebase = usuario.uid;
       await carregarEscolasAluno();
       await conferirPacotePublicoNaEntrada();
-      if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
-      verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 5000);
     });
+    // Verifica o encerramento independentemente do login anônimo do Firebase.
+    // Assim a tela inicial não fica presa em "AVALIAÇÃO ATIVA" se a autenticação atrasar.
+    verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 5000);
+    conferirPacotePublicoNaEntrada();
     // A sessão anônima fica apenas na memória desta página/instância.
     // Ela não substitui o login persistente do professor.
     setPersistence(auth, inMemoryPersistence)
