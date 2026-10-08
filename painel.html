@@ -1,0 +1,2243 @@
+<!--
+==========================================================
+👨‍🏫 PAINEL DO PROFESSOR
+Aqui ficam cadastro de escolas, ativação de provas,
+banco de questões, monitoramento e resultados.
+
+A maior parte da lógica desta página está em app.js.
+Procure no app.js pela seção:
+"PAINEL DO PROFESSOR".
+==========================================================
+-->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Professor - Gestão Escolar</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+  <style>
+
+    /* CORREÇÃO DEFINITIVA DO MODAL DA LIXEIRA DE QUESTÕES */
+#modal-lixeira-questoes {
+  display: none;
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 999999;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+#modal-lixeira-questoes.show { 
+  display: flex !important; 
+}
+
+/* Garante que o conteúdo interno do modal não estoure a tela */
+#modal-lixeira-questoes .modal-conteudo-win {
+  width: 100%;
+  max-width: 850px;
+  max-height: 85vh;
+  background: #1e293b;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #2563eb;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #eab308;
+      --text: #f8fafc;
+      --border: #334155;
+      --hover-bg: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text); padding: 15px; min-height: 100vh; opacity: 0; transition: opacity 0.3s ease-in-out; }
+    body.fade-in { opacity: 1; }
+    .container { max-width: 1300px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 15px; }
+    header h1 { color: #60a5fa; font-size: 26px; }
+
+    /* CORREÇÃO DO ESPAÇAMENTO INFERIOR PARA NÃO CORTAR AS ÚLTIMAS QUESTÕES */
+#aba-banco-dados {
+  padding-bottom: 120px !important;
+}
+#catalogo-questoes-grid {
+  margin-bottom: 80px !important;
+  padding-bottom: 50px !important;
+}
+
+/* ALINHAMENTO PERFEITO DOS BOTÕES CLASSIFICAR E VISUALIZAR */
+.painel-controle-topo .grupo-controles-direita {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+}
+
+    .barra-acoes-topo { 
+      display: flex; justify-content: space-between; align-items: center; 
+      background-color: var(--card-bg); padding: 10px 16px; border-radius: 8px; 
+      border: 1px solid var(--border); margin-bottom: 15px; position: sticky; top: 10px; z-index: 900;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .status-tempo-real { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4ade80; font-weight: bold; }
+    .ponto-ativo { width: 9px; height: 9px; background-color: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e; }
+
+    .nav-abas { 
+      display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border); 
+      padding-bottom: 8px; flex-wrap: wrap; position: sticky; top: 60px; background-color: var(--bg-dark); z-index: 890; padding-top: 5px;
+    }
+    .btn-aba { background-color: #334155; color: white; border: none; padding: 10px 16px; border-radius: 8px 8px 0 0; cursor: grab; font-weight: bold; font-size: 14px; transition: background 0.2s, transform 0.1s; user-select: none; }
+    .btn-aba:active { cursor: grabbing; }
+    .btn-aba:hover { background-color: #475569; }
+    .btn-aba.active { background-color: var(--primary); }
+    .btn-aba.dragging { opacity: 0.4; transform: scale(0.95); }
+
+    .aba-conteudo { background-color: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
+    .hidden { display: none !important; }
+
+    h2 { color: #93c5fd; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    
+    label { display: block; margin-top: 12px; color: #cbd5e1; font-size: 13px; font-weight: bold; }
+    input[type="text"], input[type="number"], input[type="datetime-local"], select, textarea { width: 100%; padding: 8px 12px; margin-top: 5px; background-color: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 13px; }
+
+    button.btn-acao { background-color: var(--primary); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; transition: all 0.2s; }
+    button.btn-acao:hover { opacity: 0.9; transform: translateY(-1px); }
+    button.btn-sucesso-animado { background-color: var(--success) !important; }
+    button.btn-danger { background-color: var(--danger) !important; }
+    button.btn-secondary { background-color: #475569 !important; }
+
+    .dropdown-win { position: relative !important; display: inline-block !important; }
+    .btn-dropdown-win { background-color: #334155; color: white; border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; }
+    .btn-dropdown-win:hover { background-color: #475569; border-color: #64748b; }
+    
+    .dropdown-menu-win { 
+      display: none; 
+      position: absolute !important; 
+      top: calc(100% + 5px) !important; 
+      left: 0 !important; 
+      background-color: #1e293b !important; 
+      min-width: 240px !important; 
+      max-height: 280px !important; 
+      overflow-y: auto !important; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.7) !important; 
+      border: 1px solid var(--border) !important; 
+      border-radius: 8px !important; 
+      z-index: 99999 !important; 
+      padding: 6px !important; 
+    }
+    .dropdown-menu-win.show { display: block !important; }
+    
+    .painel-controle-topo { 
+      display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; gap: 12px; position: sticky; top: 120px; z-index: 880; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .grupo-controles-esquerda, .grupo-controles-direita { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .bloco-calculadora { background: #0f172a; border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-top: 12px; position: relative; }
+    .sub-titulo-linha { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .sub-titulo-linha h3 { color: #60a5fa; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+
+    .grid-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px; }
+    .checkbox-item-global, .checkbox-item { background: #1e293b; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #fff; width: 100%; }
+    .checkbox-item-global span, .checkbox-item span { display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; word-break: break-word; }
+
+    .escolas-seletor-topo { background: #0f172a; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background-color: #0f172a; color: #60a5fa; position: relative; z-index: 2; padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+
+    /* ESTILOS DO CATÁLOGO DE BANCO DE DADOS (MODOS: GRADE, LISTA, BLOCOS) */
+    .catalogo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 15px;
+    }
+    .catalogo-grid.modo-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .catalogo-grid.modo-blocos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .catalogo-card {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: border-color 0.2s;
+    }
+    .catalogo-card:hover {
+      border-color: #3b82f6;
+    }
+    .catalogo-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-materia {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .catalogo-enunciado {
+      font-size: 13.5px;
+      font-weight: bold;
+      color: #f8fafc;
+      line-height: 1.4;
+    }
+    .catalogo-opcoes-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .catalogo-opcao-item {
+      padding: 5px 8px;
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 6px;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .catalogo-opcao-item.correta {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border-color: rgba(34, 197, 94, 0.4);
+      font-weight: bold;
+    }
+
+    #modal-ocultos, #modal-lixeira, #modal-editar-questao {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
+      z-index: 99999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    #modal-ocultos.show, #modal-lixeira.show, #modal-editar-questao.show { display: flex !important; }
+    .modal-conteudo-win {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 800px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .modal-cabecalho {
+      background: #0f172a;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-corpo {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    #toast-notification { 
+      position: fixed; 
+      top: 25px; 
+      right: 25px; 
+      background-color: #1e293b; 
+      color: #fff; 
+      padding: 18px 28px; 
+      border-radius: 10px; 
+      border-left: 8px solid #22c55e; 
+      box-shadow: 0 15px 35px rgba(0,0,0,0.7); 
+      z-index: 99999; 
+      display: none; 
+      font-weight: bold; 
+      font-size: 16px; 
+      letter-spacing: 0.3px;
+    }
+
+    @media print {
+      body { background-color: #fff !important; color: #000 !important; }
+      .no-print, .nav-abas, .barra-acoes-topo, header, .painel-controle-topo { display: none !important; }
+      .aba-conteudo { background: #fff !important; border: none !important; padding: 0 !important; }
+    }
+  </style>
+
+<style id="fase4-banco-legivel">
+/* ==========================================================
+   🟢 FASE 4 — BANCO DE QUESTÕES MAIS LEGÍVEL
+   Altere somente este bloco se quiser mudar a aparência dos
+   cards/listagem do Banco de Dados.
+   ========================================================== */
+
+/* Permite que textos grandes cresçam sem serem cortados. */
+#container-catalogo-questoes,
+#lista-questoes-banco,
+#catalogo-questoes,
+#aba-banco-dados {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Qualquer card/linha de questão deve poder aumentar de altura. */
+#aba-banco-dados .questao-card,
+#aba-banco-dados .card-questao,
+#aba-banco-dados .item-questao,
+#aba-banco-dados .questao-item,
+#aba-banco-dados [class*="questao"] {
+  min-height: 0 !important;
+}
+
+/* Enunciados e alternativas: nunca cortar com "..." */
+#aba-banco-dados p,
+#aba-banco-dados span,
+#aba-banco-dados td,
+#aba-banco-dados div {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#aba-banco-dados .texto-pergunta,
+#aba-banco-dados .pergunta,
+#aba-banco-dados .enunciado,
+#aba-banco-dados [class*="pergunta"],
+#aba-banco-dados [class*="enunciado"],
+#aba-banco-dados [class*="alternativa"],
+#aba-banco-dados [class*="opcao"] {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-height: none !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+}
+
+/* Tabelas: a questão pode quebrar linha e aumentar a altura. */
+#aba-banco-dados table {
+  width: 100%;
+  table-layout: auto;
+}
+
+#aba-banco-dados th,
+#aba-banco-dados td {
+  white-space: normal !important;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+/* Área de alternativas mais confortável. */
+#aba-banco-dados ul,
+#aba-banco-dados ol {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding-left: 24px;
+}
+
+#aba-banco-dados li {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+/* Em telas pequenas, evita que o conteúdo suma lateralmente. */
+@media (max-width: 800px) {
+  #aba-banco-dados {
+    overflow-x: auto !important;
+  }
+  #aba-banco-dados table {
+    min-width: 700px;
+  }
+}
+</style>
+
+
+<style id="fase4b-corrige-final-catalogo">
+/* ==========================================================
+   🔧 CORREÇÃO FASE 4B — FINAL DO BANCO DE QUESTÕES
+   O problema era o contêiner da lista: o último card ficava
+   atrás do limite inferior da área e as alternativas sumiam.
+   ========================================================== */
+
+#aba-banco-dados {
+  height: auto !important;
+  min-height: calc(100vh - 120px);
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding-bottom: 100px !important;
+}
+
+#container-catalogo-questoes,
+#lista-questoes-banco,
+#catalogo-questoes,
+#container-questoes-db,
+#lista-questoes-db {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding-bottom: 80px !important;
+}
+
+/* Evita que o último card seja recortado por algum pai flex/grid. */
+#aba-banco-dados > *,
+#aba-banco-dados .questao-card,
+#aba-banco-dados .card-questao,
+#aba-banco-dados .item-questao,
+#aba-banco-dados .questao-item {
+  flex-shrink: 0;
+}
+
+/* Garante espaço após a última questão. */
+#aba-banco-dados::after {
+  content: "";
+  display: block;
+  height: 80px;
+  width: 100%;
+}
+</style>
+
+
+<style id="fase4c-grade-corrigida">
+/* ==========================================================
+   🔧 FASE 4C — GRADE DO BANCO DE DADOS
+   Corrige os espaços vazios entre as questões sem voltar a
+   cortar enunciados ou alternativas.
+
+   Se quiser mudar a quantidade de colunas futuramente,
+   procure por "grid-template-columns" neste bloco.
+   ========================================================== */
+
+/* A grade volta a preencher da esquerda para a direita. */
+#aba-banco-dados .grid-questoes,
+#aba-banco-dados .catalogo-grid,
+#aba-banco-dados [class*="grid"][class*="quest"] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
+  align-items: start !important;
+  align-content: start !important;
+  gap: 14px !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Os cards crescem conforme o conteúdo, sem reservar alturas gigantes. */
+#aba-banco-dados .questao-card,
+#aba-banco-dados .card-questao,
+#aba-banco-dados .item-questao,
+#aba-banco-dados .questao-item {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: start !important;
+  overflow: visible !important;
+}
+
+/* Remove o espaço artificial grande que a Fase 4B adicionava. */
+#aba-banco-dados::after {
+  height: 20px !important;
+}
+
+#container-catalogo-questoes,
+#lista-questoes-banco,
+#catalogo-questoes,
+#container-questoes-db,
+#lista-questoes-db {
+  padding-bottom: 25px !important;
+}
+
+/* Responsivo: 2 colunas e depois 1 coluna. */
+@media (max-width: 1200px) {
+  #aba-banco-dados .grid-questoes,
+  #aba-banco-dados .catalogo-grid,
+  #aba-banco-dados [class*="grid"][class*="quest"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #aba-banco-dados .grid-questoes,
+  #aba-banco-dados .catalogo-grid,
+  #aba-banco-dados [class*="grid"][class*="quest"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+
+<style id="fase4d-grade-sem-buracos">
+/* ==========================================================
+   🔧 FASE 4D — CORREÇÃO REAL DO "VAZIO NO CENTRO"
+
+   O catálogo usa cards com alturas diferentes.
+   CSS Grid cria linhas com a altura do maior card da linha,
+   deixando grandes espaços vazios embaixo dos cards menores.
+
+   Nesta correção o modo GRADE usa colunas independentes,
+   como um mural. Assim o próximo card ocupa o espaço livre.
+   ========================================================== */
+
+/* MODO GRADE PADRÃO — sem buracos entre cards */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+  display: block !important;
+  column-count: 3 !important;
+  column-gap: 14px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Este é o nome REAL dos cards criados pelo app.js */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) > .catalogo-card {
+  display: inline-flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 0 14px 0 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  vertical-align: top !important;
+  overflow: visible !important;
+}
+
+/* LISTA continua sendo uma questão abaixo da outra */
+#catalogo-questoes-grid.catalogo-grid.modo-lista {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  column-count: auto !important;
+}
+
+/* BLOCOS continua usando a grade compacta original */
+#catalogo-questoes-grid.catalogo-grid.modo-blocos {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 12px !important;
+  column-count: auto !important;
+}
+
+/* Texto e alternativas sempre completos */
+#catalogo-questoes-grid .catalogo-card,
+#catalogo-questoes-grid .catalogo-card * {
+  overflow-wrap: anywhere;
+}
+
+#catalogo-questoes-grid .catalogo-card {
+  white-space: normal !important;
+}
+
+/* Responsivo */
+@media (max-width: 1200px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+    column-count: 2 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+    column-count: 1 !important;
+  }
+}
+</style>
+
+
+<style id="fase4e-topo-corrigido">
+/* ==========================================================
+   🔧 FASE 4E — CORREÇÃO DO TOPO DO BANCO DE DADOS
+
+   A Fase 4D resolveu os espaços vazios, mas CSS columns pode
+   iniciar o primeiro card muito próximo/atrás da barra de
+   filtros. Este bloco cria uma separação segura no topo.
+   ========================================================== */
+
+/* A barra/filtros ficam no fluxo normal e acima dos cards. */
+#aba-banco-dados {
+  padding-top: 0 !important;
+}
+
+#catalogo-questoes-grid {
+  position: relative !important;
+  clear: both !important;
+  margin-top: 18px !important;
+  padding-top: 8px !important;
+  overflow: visible !important;
+}
+
+/* O primeiro card nunca sobe por baixo dos controles. */
+#catalogo-questoes-grid > .catalogo-card:first-child {
+  margin-top: 0 !important;
+}
+
+/* Mantém os cards inteiros no começo de cada coluna. */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) > .catalogo-card {
+  break-inside: avoid-column !important;
+  -webkit-column-break-inside: avoid !important;
+}
+
+/* Evita que elementos flutuantes anteriores invadam o catálogo. */
+#catalogo-questoes-grid::before {
+  content: "";
+  display: block;
+  height: 1px;
+  width: 100%;
+}
+</style>
+
+
+<style id="fase4f-masonry-estavel">
+/* ==========================================================
+   🔧 FASE 4F — SOLUÇÃO DEFINITIVA DA GRADE
+
+   IMPORTANTE:
+   As fases anteriores usavam CSS columns. O navegador podia
+   fragmentar uma questão entre duas colunas. Esta versão
+   desativa isso e usa 3 colunas reais criadas pelo app.js.
+
+   Para mudar a quantidade/visual das colunas, procure FASE 4F.
+   ========================================================== */
+
+/* Desativa completamente o sistema de colunas CSS anterior. */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+  display: block !important;
+  column-count: initial !important;
+  columns: initial !important;
+  column-gap: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-top: 0 !important;
+}
+
+/* Mural com três colunas independentes. */
+#catalogo-questoes-grid .mural-questoes-estavel {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+#catalogo-questoes-grid .mural-coluna {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+
+/* Cada questão é indivisível e cresce conforme o conteúdo. */
+#catalogo-questoes-grid .mural-coluna > .catalogo-card {
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  break-inside: auto !important;
+}
+
+/* Mantém alternativas e enunciados completos. */
+#catalogo-questoes-grid .catalogo-card,
+#catalogo-questoes-grid .catalogo-card * {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  max-height: none !important;
+}
+
+/* Responsividade sem fragmentar cards. */
+@media (max-width: 1200px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    flex-wrap: wrap !important;
+  }
+  #catalogo-questoes-grid .mural-coluna {
+    flex: 1 1 calc(50% - 14px) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    display: block !important;
+  }
+  #catalogo-questoes-grid .mural-coluna {
+    width: 100% !important;
+    margin-bottom: 14px !important;
+  }
+}
+</style>
+
+
+<style id="fase8-painel-profissional">
+/* ==========================================================
+   🔵 FASE 8 — PAINEL MAIS INTUITIVO E PROFISSIONAL
+   Esta área controla os cartões de informações da prova ativa.
+   Para mudar tamanho/espaçamento dos indicadores, altere aqui.
+   ========================================================== */
+.resumo-prova-metricas{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(130px,1fr));
+  gap:10px;
+  margin-top:14px;
+  margin-bottom:4px;
+}
+.metrica-prova{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:58px;
+  padding:10px 12px;
+  border:1px solid #334155;
+  border-radius:10px;
+  background:rgba(15,23,42,.78);
+}
+.metrica-icone{
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  border-radius:8px;
+  background:rgba(59,130,246,.15);
+  font-size:17px;
+}
+.metrica-prova div{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.metrica-prova small{
+  color:#94a3b8;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.6px;
+}
+.metrica-prova strong{
+  color:#f8fafc;
+  font-size:13px;
+  line-height:1.2;
+}
+@media(max-width:1000px){
+  .resumo-prova-metricas{grid-template-columns:repeat(2,minmax(130px,1fr));}
+}
+@media(max-width:600px){
+  .resumo-prova-metricas{grid-template-columns:1fr;}
+}
+
+/* Monitoramento: deixa progresso e tempo mais fáceis de ler. */
+#tabela-monitoramento td{
+  vertical-align:middle;
+}
+#tabela-monitoramento td:nth-last-child(3),
+#tabela-monitoramento td:nth-last-child(2){
+  font-weight:700;
+}
+</style>
+
+<style id="fase10a-auth-css">
+.sessao-professor{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 16px;padding:10px 14px;border:1px solid #334155;border-radius:10px;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:12px}
+.sessao-professor>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sessao-status{color:#4ade80;font-weight:900;font-size:10px;letter-spacing:.5px}
+.btn-sair-professor{border:0;border-radius:7px;padding:8px 13px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer}
+</style>
+
+<style id="fase10b2-layout-responsivo">
+/* ==========================================================
+   🖥️ FASE 10B.2 — LAYOUT RESPONSIVO DO PAINEL
+   Não altera Firebase nem lógica do sistema.
+   ========================================================== */
+html,body{max-width:100%;overflow-x:hidden}
+.container{width:min(100%,1440px)!important;max-width:1440px!important;padding:0 6px}
+.aba-conteudo{min-width:0!important;overflow:visible!important}
+.tabela-responsiva{
+  width:100%;max-width:100%;overflow-x:auto;overflow-y:visible;
+  -webkit-overflow-scrolling:touch;border:1px solid var(--border);
+  border-radius:9px;margin-top:12px;background:#0f172a;
+}
+.tabela-responsiva table{margin-top:0!important;min-width:1120px;width:100%}
+.tabela-responsiva th,.tabela-responsiva td{
+  height:auto!important;min-height:44px;vertical-align:middle;
+  white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.35;
+}
+.tabela-responsiva th{white-space:nowrap}
+.tabela-resultados td:nth-child(6){min-width:180px}
+.tabela-resultados td:nth-child(8){min-width:220px}
+.tabela-monitoramento td:nth-child(4){min-width:170px}
+.tabela-monitoramento td:nth-child(5){min-width:160px}
+.tabela-monitoramento td:nth-child(7){min-width:220px}
+
+/* controles ocupam o espaço disponível sem criar um bloco gigante */
+#aba-relatorios .painel-controle-topo,
+#aba-monitoramento .painel-controle-topo{
+  position:relative!important;top:auto!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(260px,auto);
+  align-items:center!important;gap:10px!important;
+}
+#aba-relatorios .grupo-controles-esquerda,
+#aba-relatorios .grupo-controles-direita,
+#aba-monitoramento .grupo-controles-esquerda,
+#aba-monitoramento .grupo-controles-direita{
+  min-width:0;display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important
+}
+#aba-relatorios .grupo-controles-direita,
+#aba-monitoramento .grupo-controles-direita{justify-content:flex-end}
+#input-busca-resultados,#input-busca-monitoramento{width:180px!important;max-width:100%}
+
+/* evita que as barras sticky cubram conteúdo quando a janela fica estreita */
+@media(max-width:1100px){
+  body{padding:10px!important}
+  .barra-acoes-topo,.nav-abas,.painel-controle-topo{position:relative!important;top:auto!important}
+  .nav-abas{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px!important}
+  .btn-aba{width:100%;min-height:46px;padding:9px 8px!important;font-size:12px!important;border-radius:8px!important}
+  #aba-relatorios .painel-controle-topo,
+  #aba-monitoramento .painel-controle-topo{grid-template-columns:1fr!important}
+  #aba-relatorios .grupo-controles-direita,
+  #aba-monitoramento .grupo-controles-direita{justify-content:flex-start}
+  .aba-conteudo{padding:14px!important}
+}
+@media(max-width:720px){
+  header h1{font-size:20px!important}
+  .sessao-professor,.barra-acoes-topo{flex-direction:column!important;align-items:stretch!important}
+  .nav-abas{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grupo-controles-esquerda,.grupo-controles-direita{width:100%}
+  #aba-relatorios button.btn-acao,#aba-monitoramento button.btn-acao{flex:1 1 130px;justify-content:center}
+  #input-busca-resultados,#input-busca-monitoramento,
+  #select-filtro-escola-relatorio{width:100%!important;min-width:0!important}
+}
+@media(max-width:460px){
+  .nav-abas{grid-template-columns:1fr!important}
+}
+</style>
+
+
+<style id="fase10b3-relatorios-compactos">
+/* ==========================================================
+   📊 FASE 10B.3 — RELATÓRIOS COMPACTOS
+   Apenas visual. Não altera Firebase nem regras.
+   ========================================================== */
+
+/* Cada resultado volta a ter altura natural/compacta. */
+.tabela-resultados tbody tr{
+  height:auto !important;
+  min-height:0 !important;
+}
+.tabela-resultados tbody td{
+  height:auto !important;
+  min-height:64px !important;
+  padding:10px 8px !important;
+  vertical-align:middle !important;
+}
+
+/* Evita que conteúdo centralizado estique a linha. */
+.tabela-resultados td{
+  line-height:1.3 !important;
+}
+.tabela-resultados td:nth-last-child(4),
+.tabela-resultados td:nth-last-child(3),
+.tabela-resultados td:nth-last-child(2){
+  text-align:center !important;
+}
+
+/* Ações: botões pequenos, em grade, sem determinar uma altura gigante. */
+.tabela-resultados td:last-child{
+  min-width:220px !important;
+  width:220px !important;
+  padding:8px !important;
+}
+.tabela-resultados td:last-child .acoes,
+.tabela-resultados td:last-child .acoes-relatorio,
+.tabela-resultados td:last-child > div{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(92px,1fr)) !important;
+  gap:6px !important;
+  align-items:center !important;
+}
+.tabela-resultados td:last-child button,
+.tabela-resultados td:last-child .btn-acao,
+.tabela-resultados td:last-child a{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:34px !important;
+  height:auto !important;
+  padding:7px 8px !important;
+  margin:0 !important;
+  font-size:11px !important;
+  line-height:1.15 !important;
+  border-radius:7px !important;
+  white-space:nowrap !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+}
+
+/* Reduz a largura mínima criada na fase responsiva anterior. */
+.tabela-responsiva .tabela-resultados{
+  min-width:980px !important;
+}
+
+/* Conteúdos longos podem quebrar linha sem aumentar exageradamente a coluna. */
+.tabela-resultados td:nth-child(6){
+  min-width:150px !important;
+}
+.tabela-resultados td:nth-child(8){
+  min-width:170px !important;
+}
+
+/* Em telas bem estreitas, ações continuam compactas. */
+@media(max-width:720px){
+  .tabela-resultados td:last-child{
+    min-width:190px !important;
+    width:190px !important;
+  }
+  .tabela-resultados td:last-child .acoes,
+  .tabela-resultados td:last-child .acoes-relatorio,
+  .tabela-resultados td:last-child > div{
+    grid-template-columns:1fr 1fr !important;
+  }
+}
+</style>
+
+
+<style id="fase10b4-profissional">
+/* 🔵 FASE 10B.4 — acabamento geral e responsivo */
+#input-busca-resultados{width:min(330px,100%)!important}
+.controle-densidade{margin:0;padding:7px 9px;background:#1e293b;border:1px solid #475569;color:#fff;border-radius:7px;font-size:11px;font-weight:700}
+.tabela-resultados[data-densidade="compacta"] td{padding:5px 6px!important;min-height:42px!important}
+.tabela-resultados[data-densidade="normal"] td{padding:8px 7px!important;min-height:54px!important}
+.tabela-resultados[data-densidade="confortavel"] td{padding:13px 9px!important;min-height:68px!important}
+.tabela-resultados .grupo-botoes-acoes{
+  display:grid!important;grid-template-columns:repeat(2,minmax(86px,1fr))!important;
+  gap:6px!important;width:100%!important;max-width:none!important;margin:0!important
+}
+.tabela-resultados .grupo-botoes-acoes .btn-acao{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;height:34px!important;min-height:34px!important;
+  padding:5px 7px!important;margin:0!important;font-size:10.5px!important;line-height:1!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+.tabela-resultados td:last-child{width:205px!important;min-width:205px!important}
+.dropdown-menu-win{max-height:min(420px,65vh);overflow-y:auto}
+#dropdown-menu-resultados button,#dropdown-menu-monitoramento button{
+  min-height:34px!important;height:auto!important;padding:8px 10px!important;font-size:11px!important;
+  display:flex!important;align-items:center!important;white-space:normal!important
+}
+@media(max-width:1100px){
+  #bloco-direita-relatorios{display:grid!important;grid-template-columns:minmax(220px,1fr) repeat(4,auto)!important;width:100%}
+  #input-busca-resultados{width:100%!important}
+}
+@media(max-width:760px){
+  #bloco-direita-relatorios{grid-template-columns:1fr 1fr!important}
+  #input-busca-resultados,#select-filtro-escola-relatorio{grid-column:1/-1}
+}
+</style>
+
+
+<style id="fase10b5-interface-dinamica">
+/* ==========================================================
+   🧩 FASE 10B.5 — INTERFACE DINÂMICA
+   ========================================================== */
+.tabela-responsiva{resize:both;overflow:auto!important;min-height:240px;max-width:100%}
+.tabela-resultados{table-layout:auto!important}
+
+/* Status limpo: sem moldura/fundo verde */
+.status-finalizado-limpo{
+  color:#4ade80;font-weight:800;font-size:11px;display:inline-flex;
+  align-items:center;gap:4px;background:transparent!important;border:0!important;
+  padding:0!important;border-radius:0!important;box-shadow:none!important
+}
+.motivo-finalizacao-limpo{margin-top:4px;color:#facc15;font-size:10px;line-height:1.25}
+
+/* Redimensionamento horizontal real pelo cabeçalho */
+.tabela-resultados th{position:relative;user-select:none}
+.col-resizer{
+  position:absolute;right:-4px;top:0;width:8px;height:100%;cursor:col-resize;
+  z-index:5;background:transparent
+}
+.col-resizer:hover{background:rgba(59,130,246,.35)}
+
+/* Redimensionamento vertical das linhas */
+.tabela-resultados tbody tr{position:relative}
+.row-resizer{
+  position:absolute;left:0;bottom:-3px;width:100%;height:7px;cursor:row-resize;
+  z-index:4;background:transparent
+}
+.row-resizer:hover{background:rgba(59,130,246,.25)}
+
+/* ações sempre centralizadas e contidas */
+.tabela-resultados .grupo-botoes-acoes{
+  display:grid!important;grid-template-columns:repeat(2,minmax(82px,1fr))!important;
+  gap:6px!important;max-width:210px!important;margin:auto!important
+}
+.tabela-resultados .grupo-botoes-acoes .btn-acao{
+  width:100%!important;height:34px!important;min-height:34px!important;padding:5px 6px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+  font-size:10.5px!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important
+}
+#bloco-esquerda-relatorios,#bloco-direita-relatorios{align-items:center!important}
+#btn-arquivar-resultados{white-space:nowrap}
+@media(max-width:900px){
+  .tabela-resultados .grupo-botoes-acoes{grid-template-columns:1fr 1fr!important}
+}
+</style>
+
+
+<style id="fase10b6-painel-dinamico">
+/* ==========================================================
+   🧭 FASE 10B.6 — PADRÃO DINÂMICO NAS OUTRAS ABAS
+   Cada bloco abaixo está comentado para facilitar futuras alterações.
+   ========================================================== */
+
+/* Tooltip: aparece quando o mouse permanece sobre um controle. */
+[data-ajuda]{position:relative}
+.tooltip-sistema{
+  position:fixed;z-index:99999;max-width:290px;padding:8px 10px;
+  border:1px solid #475569;border-radius:7px;background:#020617;color:#e2e8f0;
+  font-size:11px;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.35);
+  pointer-events:none;opacity:0;transform:translateY(3px);
+  transition:opacity .15s ease,transform .15s ease
+}
+.tooltip-sistema.visivel{opacity:1;transform:translateY(0)}
+
+/* Todos os blocos principais podem encolher sem estourar a tela. */
+#aba-escolas,#aba-ativacao,#aba-monitoramento,#aba-banco,#aba-dados{min-width:0!important}
+#aba-escolas input,#aba-escolas select,
+#aba-ativacao input,#aba-ativacao select,
+#aba-monitoramento input,#aba-monitoramento select,
+#aba-banco input,#aba-banco select,
+#aba-dados input,#aba-dados select{max-width:100%}
+
+/* Cartões/listas: grid fluido para aproveitar melhor 100% de zoom. */
+#lista-escolas,#lista-escolas-ativacao,#lista-provas-ativas,
+#lista-banco-questoes,#lista-banco-dados{
+  min-width:0;max-width:100%
+}
+
+/* Barras de ações: quebram linha sem sobrepor conteúdo. */
+#aba-escolas .painel-controle-topo,
+#aba-ativacao .painel-controle-topo,
+#aba-monitoramento .painel-controle-topo,
+#aba-banco .painel-controle-topo,
+#aba-dados .painel-controle-topo{
+  position:relative!important;top:auto!important;display:flex!important;
+  flex-wrap:wrap!important;align-items:center!important;gap:8px!important
+}
+
+/* Botões mantêm conteúdo centralizado e nunca deixam texto escapar. */
+#aba-escolas button,#aba-ativacao button,#aba-monitoramento button,
+#aba-banco button,#aba-dados button{
+  max-width:100%;height:auto;min-height:34px;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  white-space:normal;line-height:1.15
+}
+
+/* Tabelas das outras abas também recebem rolagem local quando necessário. */
+#aba-monitoramento table,#aba-dados table{width:100%;min-width:900px}
+#aba-monitoramento .tabela-responsiva,#aba-dados .tabela-responsiva{
+  max-width:100%;overflow:auto
+}
+
+/* Telas médias: navegação e controles se reorganizam automaticamente. */
+@media(max-width:1050px){
+  #aba-escolas .painel-controle-topo,
+  #aba-ativacao .painel-controle-topo,
+  #aba-monitoramento .painel-controle-topo,
+  #aba-banco .painel-controle-topo,
+  #aba-dados .painel-controle-topo{align-items:stretch!important}
+}
+
+/* Celular/janela estreita: controles importantes ocupam largura útil. */
+@media(max-width:700px){
+  #aba-escolas .btn-acao,#aba-ativacao .btn-acao,#aba-monitoramento .btn-acao,
+  #aba-banco .btn-acao,#aba-dados .btn-acao{flex:1 1 135px}
+  #aba-escolas input,#aba-ativacao input,#aba-monitoramento input,
+  #aba-banco input,#aba-dados input,
+  #aba-escolas select,#aba-ativacao select,#aba-monitoramento select,
+  #aba-banco select,#aba-dados select{width:100%!important}
+}
+
+  /* ============================================================
+     RESPONSIVIDADE GERAL DO PAINEL — 100% de zoom
+     Preserva funções, IDs, tabelas e eventos existentes.
+     ============================================================ */
+  html { font-size: 14px; }
+  body { overflow-x: hidden !important; }
+  .container, .painel-container, main, .main-container, #app {
+    width: min(96vw, 1500px) !important;
+    max-width: 1500px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+  }
+  h1 { font-size: clamp(1.55rem, 2.3vw, 2.25rem) !important; line-height: 1.15 !important; }
+  h2 { font-size: clamp(1.15rem, 1.8vw, 1.55rem) !important; }
+  button, input, select, textarea { box-sizing: border-box; }
+  button { min-height: 36px; }
+  .tabs, .abas, .nav-tabs, .tab-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .tabs button, .abas button, .nav-tabs button, .tab-buttons button {
+    flex: 1 1 170px !important;
+    white-space: normal !important;
+  }
+  .card, .panel, .painel, .secao, section {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .table-container, .tabela-container, .table-wrapper, .resultado-tabela,
+  .monitoramento-tabela, .banco-tabela {
+    max-width: 100% !important;
+    overflow: auto !important;
+  }
+  table {
+    max-width: 100% !important;
+    font-size: .92rem !important;
+  }
+  th, td {
+    padding: 8px 9px !important;
+    vertical-align: middle !important;
+  }
+  input[type="text"], input[type="number"], input[type="password"],
+  input[type="email"], input[type="datetime-local"], select, textarea {
+    max-width: 100% !important;
+  }
+  @media (max-width: 1100px) {
+    html { font-size: 13px; }
+    .container, .painel-container, main, .main-container, #app { width: 98vw !important; }
+    th, td { padding: 7px !important; }
+  }
+  @media (max-width: 760px) {
+    .tabs button, .abas button, .nav-tabs button, .tab-buttons button { flex: 1 1 45% !important; }
+    .toolbar, .acoes, .controls, .controles { flex-wrap: wrap !important; }
+  }
+
+
+  /* ============================================================
+     [AJUSTE MANUAL 10] DEMONSTRAÇÃO DO PAINEL DO PROFESSOR
+     Esta camada é somente ajuda visual; não altera Firebase nem dados.
+     ============================================================ */
+  .demo-prof-btn{position:fixed;right:18px;bottom:18px;z-index:9000;border:1px solid #3b82f6;background:#17243a;color:#dbeafe;border-radius:10px;padding:9px 13px;cursor:pointer;font-weight:800;box-shadow:0 8px 25px #0006}
+  .demo-prof-btn:hover{background:#1e3a5f;color:#fff}
+  .demo-prof-overlay{position:fixed;inset:0;background:#000a;z-index:9998;display:none}
+  .demo-prof-overlay.ativo{display:block}
+  .demo-prof-caixa{position:fixed;z-index:10002;right:22px;top:22px;left:auto;bottom:auto;transform:none;width:min(92vw,520px);max-height:calc(100vh - 44px);overflow:auto;background:#111c2f;border:1px solid #60a5fa;border-radius:14px;padding:16px;color:#eef6ff;box-shadow:0 18px 55px #000b}
+  .demo-prof-caixa h3{margin:0 0 8px;color:#60a5fa}.demo-prof-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.demo-prof-acoes button{min-height:36px;padding:7px 12px;border-radius:8px;border:1px solid #46617f;cursor:pointer}
+
+
+  /* ============================================================
+     [AJUSTE MANUAL 12] DESTAQUE DA DEMONSTRAÇÃO GUIADA
+     O destaque é apenas visual. pointer-events:none impede que a
+     demonstração clique/execute ações reais no painel.
+     ============================================================ */
+  .demo-prof-destaque {
+    position: fixed;
+    z-index: 10001;
+    border: 2px solid #60a5fa;
+    border-radius: 12px;
+    box-shadow: 0 0 0 3px rgba(96,165,250,.14), 0 0 14px rgba(96,165,250,.55);
+    pointer-events: none;
+    transition: all .28s ease;
+    display: none;
+  }
+  .demo-prof-legenda {
+    color:#bcd7ff;
+    font-size:.9rem;
+    margin-top:6px;
+  }
+
+</style>
+
+
+<style id="ajuste-visual-compacto-2026">
+/* ============================================================
+   AJUSTE VISUAL FINAL — PAINEL DO PROFESSOR
+   O QUE FAZ: reduz espaços/fontes e amplia a área útil em 100%.
+   NÃO ALTERA: Firebase, publicação, relatórios ou monitoramento.
+   ============================================================ */
+html { font-size: 14px; }
+body { padding: 8px 10px 24px !important; line-height: 1.35; }
+.container { width: min(100%, 1560px) !important; max-width: 1560px !important; }
+header { margin-bottom: 8px !important; }
+header h1 { font-size: clamp(22px,2vw,29px) !important; margin: 8px 0 !important; }
+.btn-nav-icone, button.btn-acao, .btn-aba { font-size: 12.5px !important; min-height: 38px !important; padding: 7px 12px !important; }
+.barra-navegacao-global { min-height: 0 !important; padding: 8px 12px !important; margin-bottom: 8px !important; }
+.abas-navegacao { gap: 6px !important; margin-bottom: 8px !important; padding-top: 3px !important; }
+.btn-aba { border-radius: 7px 7px 0 0 !important; }
+.aba-conteudo { gap: 12px !important; padding-top: 10px !important; }
+.aba-conteudo > h2, .aba-conteudo h2 { font-size: clamp(19px,1.7vw,24px) !important; margin: 8px 0 10px !important; }
+.aba-conteudo h3 { font-size: 17px !important; margin: 8px 0 !important; }
+input[type="text"], input[type="number"], input[type="datetime-local"], input[type="email"], input[type="password"], select, textarea {
+  font-size: 12.5px !important; padding: 7px 10px !important; min-height: 36px !important; margin-top: 3px !important;
+}
+label, .texto-ajuda, small { font-size: 12px !important; }
+table { font-size: 12px !important; margin-top: 8px !important; }
+th, td { padding: 7px 8px !important; line-height: 1.3 !important; }
+.tabela-responsiva { margin-top: 8px !important; }
+.painel-controles, .controles, .acoes-tabela { gap: 7px !important; padding: 8px !important; }
+.tooltip-sistema { font-size: 11px !important; max-width: 270px !important; }
+/* Modo claro: melhora contraste de controles sem mudar a lógica do tema. */
+body.tema-claro-ativo input, body.tema-claro-ativo select, body.tema-claro-ativo textarea { background:#fff !important; color:#0f172a !important; border-color:#94a3b8 !important; }
+body.tema-claro-ativo table, body.tema-claro-ativo td { color:#0f172a; }
+/* Marca d'água discreta, padrão de identificação do sistema. */
+.marca-agua-sistema { position:fixed; left:12px; bottom:7px; z-index:650; pointer-events:none; user-select:none; font-size:9px; letter-spacing:.08em; opacity:.18; color:var(--text); text-transform:uppercase; }
+body.tema-claro-ativo .marca-agua-sistema { opacity:.22; color:#334155; }
+@media (max-width:900px){ html{font-size:13px} body{padding:6px 7px 22px!important} .btn-nav-icone,button.btn-acao,.btn-aba{font-size:12px!important;padding:6px 9px!important} header h1{font-size:22px!important} }
+@media (max-width:620px){ .marca-agua-sistema{font-size:8px;left:7px;bottom:5px}.abas-navegacao{overflow-x:auto!important;flex-wrap:nowrap!important}.btn-aba{flex:0 0 auto!important} }
+</style>
+<style id="ajuste-visual-compacto-v2">
+/* ============================================================
+   VISUAL: COMPACTAÇÃO DO PAINEL DO PROFESSOR
+   O QUE FAZ: reduz espaços, títulos, botões, abas e formulários.
+   NÃO ALTERA: Firebase, relatórios, monitoramento ou publicação.
+   ============================================================ */
+@media (min-width: 900px) {
+  body { font-size: 14px !important; }
+  .container, main, .main-container { max-width: 1600px !important; }
+  h1 { font-size: clamp(25px, 2vw, 31px) !important; margin: 10px 0 !important; }
+  h2 { font-size: clamp(20px, 1.6vw, 25px) !important; margin: 8px 0 !important; }
+  h3 { font-size: 18px !important; margin: 7px 0 !important; }
+
+  button, .btn, input, select, textarea {
+    font-size: 13px !important;
+  }
+  button, .btn {
+    min-height: 36px !important;
+    padding: 7px 13px !important;
+  }
+  input, select {
+    min-height: 38px !important;
+    padding: 7px 11px !important;
+  }
+  textarea { padding: 8px 11px !important; }
+
+  nav, header, .topbar, .toolbar, .status-bar, .status-card,
+  .card, .panel, .section, .box {
+    --compact-gap: 10px;
+  }
+
+  .tabs, .tab-buttons, .nav-tabs {
+    gap: 8px !important;
+  }
+  .tabs button, .tab-buttons button, .nav-tabs button,
+  [role="tab"] {
+    min-height: 42px !important;
+    padding: 8px 13px !important;
+    font-size: 13px !important;
+  }
+
+  table { font-size: 12.5px !important; }
+  th, td { padding: 7px 9px !important; }
+  label { font-size: 13px !important; }
+
+  /* reduz grandes vazios verticais sem alterar a estrutura */
+  section { margin-top: 10px !important; margin-bottom: 10px !important; }
+}
+@media (max-width: 899px) {
+  body { font-size: 14px !important; }
+  button, .btn { min-height: 40px !important; }
+}
+
+/* ============================================================
+   MARCA D'ÁGUA DO AUTOR
+   Para alterar no futuro, procure por: WagnerBIZZA
+   pointer-events:none garante que ela nunca bloqueie cliques.
+   ============================================================ */
+#marca-wagnerbizza {
+  position: fixed;
+  left: 12px;
+  bottom: 8px;
+  z-index: 2147483000;
+  font: 500 10px/1.2 Arial, sans-serif;
+  letter-spacing: .35px;
+  opacity: .20;
+  color: currentColor;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+</style>
+
+
+<style id="ajuste-painel-organizado-v3">
+/* ============================================================
+   AJUSTE VISUAL V3 — DEMONSTRAÇÃO + BANCO DE DADOS
+   SOMENTE VISUAL. Não altera Firebase, questões ou relatórios.
+   ============================================================ */
+
+/* DEMONSTRAÇÃO:
+   A caixa fica na parte inferior, preservando o cabeçalho e as abas. */
+.demo-prof-caixa {
+  top: auto !important;
+  bottom: 72px !important;
+  right: 22px !important;
+  left: auto !important;
+  width: min(92vw, 540px) !important;
+  max-height: min(42vh, 390px) !important;
+  overflow: auto !important;
+  padding: 14px 16px !important;
+}
+.demo-prof-caixa h3 { font-size: 18px !important; }
+.demo-prof-acoes { margin-top: 10px !important; }
+
+/* BANCO DE DADOS:
+   Transforma o mural irregular em uma grade alinhada.
+   Cada linha acompanha a altura do maior card daquela linha. */
+#catalogo-questoes-grid .mural-questoes-estavel {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+#catalogo-questoes-grid .mural-coluna {
+  display: contents !important;
+}
+#catalogo-questoes-grid .mural-coluna > .catalogo-card {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+}
+#catalogo-questoes-grid .catalogo-card {
+  padding: 14px !important;
+  border-radius: 12px !important;
+}
+#catalogo-questoes-grid .catalogo-card button {
+  min-width: 72px !important;
+  white-space: nowrap !important;
+  line-height: 1.15 !important;
+}
+#catalogo-questoes-grid .catalogo-card [class*="acoes"],
+#catalogo-questoes-grid .catalogo-card [class*="action"] {
+  gap: 7px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Mais leitura em notebooks: duas colunas antes de ficar apertado. */
+@media (max-width: 1350px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 780px) {
+  #catalogo-questoes-grid .mural-questoes-estavel {
+    grid-template-columns: 1fr !important;
+  }
+  .demo-prof-caixa {
+    right: 10px !important;
+    left: 10px !important;
+    width: auto !important;
+    bottom: 68px !important;
+    max-height: 45vh !important;
+  }
+}
+</style>
+
+
+<style id="ajuste-banco-grade-v4">
+/* ============================================================
+   BANCO DE DADOS V4 — GRADE SEQUENCIAL E LEGÍVEL
+   SOMENTE VISUAL:
+   - preenche esquerda -> centro -> direita;
+   - mantém cards confortáveis;
+   - impede "Correta" e botões de quebrarem;
+   - não altera Firebase, dados, filtros, edição ou exclusão.
+   ============================================================ */
+
+/* O contêiner principal passa a controlar a grade inteira. */
+#catalogo-questoes-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+/* Os agrupadores antigos deixam de criar colunas independentes.
+   Assim todos os cards entram na mesma sequência da grade. */
+#catalogo-questoes-grid > .mural-questoes-estavel,
+#catalogo-questoes-grid .mural-questoes-estavel,
+#catalogo-questoes-grid .mural-coluna {
+  display: contents !important;
+}
+
+/* Card de questão */
+#catalogo-questoes-grid .catalogo-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 15px !important;
+  box-sizing: border-box !important;
+  border-radius: 12px !important;
+  font-size: 13.5px !important;
+  line-height: 1.38 !important;
+  overflow: visible !important;
+}
+
+/* Enunciado e alternativas com leitura confortável */
+#catalogo-questoes-grid .catalogo-card p,
+#catalogo-questoes-grid .catalogo-card li,
+#catalogo-questoes-grid .catalogo-card label,
+#catalogo-questoes-grid .catalogo-card span {
+  line-height: 1.38 !important;
+}
+#catalogo-questoes-grid .catalogo-card [class*="enunciado"] {
+  font-size: 14px !important;
+}
+
+/* Cabeçalho do card: permite a matéria ocupar espaço sem esmagar botões. */
+#catalogo-questoes-grid .catalogo-card > :first-child {
+  gap: 8px !important;
+}
+
+/* Editar / Excluir */
+#catalogo-questoes-grid .catalogo-card button {
+  min-width: 76px !important;
+  min-height: 34px !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+}
+
+/* Etiquetas curtas, inclusive "Correta", não quebram. */
+#catalogo-questoes-grid .catalogo-card .correta,
+#catalogo-questoes-grid .catalogo-card [class*="correta"],
+#catalogo-questoes-grid .catalogo-card [class*="badge"] {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  min-width: max-content !important;
+}
+
+/* Responsividade */
+@media (max-width: 1350px) {
+  #catalogo-questoes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 800px) {
+  #catalogo-questoes-grid {
+    grid-template-columns: 1fr !important;
+  }
+  #catalogo-questoes-grid .catalogo-card {
+    font-size: 14px !important;
+  }
+}
+</style>
+
+
+<style id="correcao-modos-visualizacao-v5">
+/* ============================================================
+   CORREÇÃO V5 — MODOS DE VISUALIZAÇÃO DO BANCO DE DADOS
+
+   CAUSA CORRIGIDA:
+   A regra visual da Grade V4 estava mais forte e mantinha
+   3 colunas mesmo quando o botão "Lista" adicionava modo-lista.
+
+   NÃO ALTERA:
+   Firebase, banco, filtros, edição, exclusão ou questões.
+   ============================================================ */
+
+/* GRADE: três colunas sequenciais */
+#catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+/* LISTA: uma questão por linha, usando toda a largura */
+#catalogo-questoes-grid.catalogo-grid.modo-lista {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+#catalogo-questoes-grid.catalogo-grid.modo-lista > .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-lista .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-lista .mural-coluna {
+  display: contents !important;
+}
+#catalogo-questoes-grid.catalogo-grid.modo-lista .catalogo-card {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+/* BLOCOS: cards menores para visão geral rápida */
+#catalogo-questoes-grid.catalogo-grid.modo-blocos {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+#catalogo-questoes-grid.catalogo-grid.modo-blocos > .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-blocos .mural-questoes-estavel,
+#catalogo-questoes-grid.catalogo-grid.modo-blocos .mural-coluna {
+  display: contents !important;
+}
+
+/* Responsividade somente para a Grade normal */
+@media (max-width: 1350px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 800px) {
+  #catalogo-questoes-grid.catalogo-grid:not(.modo-lista):not(.modo-blocos),
+  #catalogo-questoes-grid.catalogo-grid.modo-blocos {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+
+<style id="topo-profissional-v6">
+/* ============================================================
+   TOPO PROFISSIONAL V6 — SOMENTE VISUAL
+   NÃO ALTERA autenticação, Firebase, navegação ou sincronização.
+   ============================================================ */
+
+/* Barra superior: mais baixa, limpa e consistente */
+body > .container > div:first-child,
+.top-nav,
+.topbar {
+  min-height: 48px !important;
+}
+
+/* Título principal sem personagens/emoji */
+h1 {
+  font-size: 26px !important;
+  font-weight: 750 !important;
+  letter-spacing: .4px !important;
+  margin: 12px 0 10px !important;
+  line-height: 1.15 !important;
+}
+
+/* Blocos de conexão e sincronização mais discretos */
+#status-auth,
+#status-conexao,
+.status-bar,
+.status-card {
+  min-height: 48px !important;
+}
+
+/* Botões do topo com aparência uniforme */
+button {
+  border-radius: 8px;
+}
+</style>
+
+
+<style id="visual-institucional-v7">
+/* ============================================================
+   VISUAL INSTITUCIONAL V7 — TESTE
+   Inspirado em painéis educacionais modernos, sem copiar
+   identidade visual de terceiros.
+
+   SOMENTE APARÊNCIA:
+   não altera Firebase, autenticação, publicação, banco,
+   relatórios, monitoramento ou sincronização.
+   ============================================================ */
+
+:root {
+  --ui-radius: 10px;
+  --ui-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+
+/* Tipografia mais limpa e administrativa */
+body {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+/* Título principal: remove visual lúdico mesmo se emoji antigo
+   ainda existir no texto do HTML. */
+h1 {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+  font-size: 25px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.3px !important;
+}
+
+/* Cartões e painéis */
+.card, .panel, .box, section,
+.status-bar, .status-card {
+  border-radius: var(--ui-radius) !important;
+}
+
+/* Botões: mais sóbrios */
+button, .btn {
+  border-radius: 8px !important;
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+/* Campos */
+input, select, textarea {
+  border-radius: 8px !important;
+  font-family: inherit !important;
+}
+
+/* Abas principais com aparência de navegação administrativa */
+.tabs, .tab-buttons, .nav-tabs {
+  gap: 6px !important;
+}
+.tabs button, .tab-buttons button, .nav-tabs button, [role="tab"] {
+  border-radius: 8px 8px 4px 4px !important;
+  font-weight: 650 !important;
+}
+
+/* Tabelas mais limpas */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+th {
+  font-weight: 700 !important;
+  letter-spacing: .1px !important;
+}
+
+/* Cabeçalho superior: visual mais discreto */
+body > .container > div:first-child,
+.top-nav, .topbar {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+/* A marca do autor permanece discreta */
+#marca-wagnerbizza {
+  opacity: .28 !important;
+  font-size: 10.5px !important;
+  font-family: "Segoe UI", Arial, sans-serif !important;
+}
+
+/* Modo claro: cartões suaves e contraste administrativo.
+   Só usa seletores genéricos já existentes; não altera estrutura. */
+body.light-mode .card,
+body.light-mode .panel,
+body.light-mode .box,
+body.light-mode section {
+  box-shadow: var(--ui-shadow);
+}
+
+/* Em telas menores, mantém conforto */
+@media (max-width: 800px) {
+  h1 { font-size: 22px !important; }
+}
+</style>
+
+</head>
+<body>
+
+  <div id="toast-notification">Notificação</div>
+
+  <!-- MODAL DA LIXEIRA DE QUESTÕES DO BANCO -->
+  <div id="modal-lixeira-questoes">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #f87171; font-size: 16px; display: flex; align-items: center; gap: 8px;">🗑️ Lixeira de Questões Excluídas</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalLixeiraQuestao()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Estes itens foram movidos para a lixeira. Você pode restaurá-los de volta ao catálogo oficial ou excluí-los permanentemente.</p>
+        
+        <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-acao" style="background:#22c55e;" onclick="restaurarQuestoesSelecionadasLixeira()">♻️ Restaurar Selecionadas</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirPermanentementeQuestoesLixeira()">🔥 Excluir Permanentemente</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px; text-align: center;"><input type="checkbox" id="chk-todos-lixeira-questoes" onclick="alternarTodosModalLixeiraQuestao(this.checked)"></th>
+              <th>Matéria</th>
+              <th>Enunciado da Pergunta</th>
+              <th style="text-align: center;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-lixeira-questoes">
+            <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 20px;">A lixeira de questões está vazia.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO DE QUESTÃO (MATÉRIA, ENUNCIADO E ALTERNATIVAS) -->
+  <div id="modal-editar-questao">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #60a5fa; font-size: 16px; display: flex; align-items: center; gap: 8px;">✏️ Editar Matéria, Enunciado e Alternativas</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalEditarQuestao()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <input type="hidden" id="edit-id-questao">
+        <label>Matéria / Categoria:</label>
+        <input type="text" id="edit-materia-questao">
+        <label>Enunciado da Pergunta:</label>
+        <textarea id="edit-pergunta-questao" rows="3"></textarea>
+        
+        <label style="margin-top: 15px; color: #60a5fa;">Opções de Resposta e Alternativa Correta:</label>
+        <div id="edit-container-alternativas" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
+        
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" class="btn-acao" style="background:#2563eb;" onclick="adicionarNovaAlternativaEdicao()">➕ Adicionar Alternativa</button>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+          <button type="button" class="btn-acao btn-secondary" onclick="fecharModalEditarQuestao()">Cancelar</button>
+          <button type="button" class="btn-acao" style="background: #22c55e;" onclick="salvarEdicaoQuestaoModal()">💾 Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE ALUNOS OCULTOS -->
+  <div id="modal-ocultos">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #60a5fa; font-size: 16px; display: flex; align-items: center; gap: 8px;">📁 Alunos Arquivados / Conferidos Ocultos</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalOcultos()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Estes registros foram ocultados da tabela principal após a conferência. Selecione-os e clique em "Resgatar Selecionados" para trazê-los de volta à visualização ativa.</p>
+        <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+          <button type="button" class="btn-acao" style="background:#0d9488;" onclick="resgatarAlunosSelecionados()">♻️ Resgatar Selecionados</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px; text-align: center;"><input type="checkbox" id="chk-todos-modal-ocultos" onclick="alternarTodosModalOcultos(this.checked)"></th>
+              <th>Data/Hora</th>
+              <th>Aluno</th>
+              <th>Turma</th>
+              <th>Matéria</th>
+              <th>Nota</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-ocultos">
+            <tr><td colspan="6" style="text-align:center; color:#94a3b8;">Nenhum registro oculto no momento.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DA LIXEIRA DE EXCLUÍDOS -->
+  <div id="modal-lixeira">
+    <div class="modal-conteudo-win">
+      <div class="modal-cabecalho">
+        <h3 style="color: #f87171; font-size: 16px; display: flex; align-items: center; gap: 8px;">🗑️ Lixeira de Alunos Excluídos</h3>
+        <button type="button" class="btn-acao btn-secondary" onclick="fecharModalLixeira()" style="padding: 4px 10px;">✕ Fechar</button>
+      </div>
+      <div class="modal-corpo">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Estes registros foram removidos da tabela principal. Você pode restaurá-los de volta à visualização ou excluí-los permanentemente do banco de dados.</p>
+        <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-acao" style="background:#22c55e;" onclick="restaurarAlunosSelecionadosLixeira()">♻️ Restaurar Selecionados</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirPermanentementeSelecionados()">🔥 Excluir Permanentemente</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px; text-align: center;"><input type="checkbox" id="chk-todos-modal-lixeira" onclick="alternarTodosModalLixeira(this.checked)"></th>
+              <th>Data/Hora</th>
+              <th>Aluno</th>
+              <th>Turma</th>
+              <th>Matéria</th>
+              <th>Nota</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-lixeira">
+            <tr><td colspan="6" style="text-align:center; color:#94a3b8;">A lixeira está vazia.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <header>
+      <h1>👨‍‍🏫 PAINEL DE CONTROLE ESCOLAR</h1>
+      <!-- 🔐 FASE 10A — sessão do professor -->
+      <div class="sessao-professor">
+        <div><span class="sessao-status" id="status-conexao-professor">● CONECTADO</span>
+        <span id="professor-email-logado" id="status-usuario-professor">Verificando usuário...</span></div>
+        <button type="button" onclick="sairPainelProfessor()" class="btn-sair-professor">🚪 Sair</button>
+      </div>
+    </header>
+
+    <div class="barra-acoes-topo no-print">
+      <div class="status-tempo-real">
+        <span class="ponto-ativo"></span id="status-firebase-tempo-real"> Sincronizado com Firebase em Tempo Real...
+      </div>
+      <button id="btn-recarregar-painel" class="btn-acao btn-secondary" onclick="location.reload()">🔄 Recarregar</button>
+    </div>
+
+    <!-- BARRA DE ABAS COM DRAG AND DROP (ARRASTAR E SOLTAR) -->
+    <div class="nav-abas no-print" id="barra-navegacao-abas">
+      <button class="btn-aba active" data-aba="aba-global" draggable="true">⚙ Configurações Gerais</button>
+      <button class="btn-aba" data-aba="aba-escolas" draggable="true">🏫 Cadastro de Escolas</button>
+      <button class="btn-aba" data-aba="aba-ativacao" draggable="true">🚀 Ativação de Provas</button>
+      <button class="btn-aba" data-aba="aba-questoes" draggable="true">📚 Banco de Questões</button>
+      <button class="btn-aba" data-aba="aba-banco-dados" draggable="true">🗄️ Banco de Dados</button>
+      <button class="btn-aba" data-aba="aba-monitoramento" draggable="true">🟢 Monitoramento</button>
+      <button class="btn-aba" data-aba="aba-relatorios" draggable="true">📊 Resultados e Relatórios</button>
+    </div>
+
+    <!-- ABA 0: CONFIGURAÇÕES GERAIS -->
+    <div id="aba-global" class="aba-conteudo">
+      <h2>⚙ Configurações Gerais e Padrão Base</h2>
+      
+      <div class="escolas-seletor-topo">
+        <div>
+          <strong style="color: #60a5fa; font-size: 14px;">🏫 Selecione a Escola para Gestão Individual:</strong>
+          <p style="color: #94a3b8; font-size: 11px; margin-top: 2px;">Escolha qual unidade deseja configurar ou ativar rapidamente.</p>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <select id="select-escola-geral-topo" style="padding: 8px; background: #1e293b; border: 1px solid var(--border); color: white; border-radius: 6px; font-weight: bold; min-width: 200px;"></select>
+          <button type="button" id="btn-ir-config-escola" class="btn-acao" style="margin: 0; background-color: #2563eb;">⚙️ Abrir Configuração</button>
+        </div>
+      </div>
+
+      <div id="container-boxes-globais"></div>
+
+      <div style="background: #0f172a; padding: 14px; border-radius: 8px; border: 1px dashed var(--border); margin-top: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <input type="text" id="nova-box-titulo" placeholder="Nome da Nova Box..." style="flex: 1; margin: 0;">
+        <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb;" onclick="criarNovaBoxGlobal()">➕ Adicionar</button>
+      </div>
+
+      <button type="button" id="btn-salvar-global-definitivo" class="btn-acao" style="background-color: #22c55e; width: 100%; margin-top: 20px; font-size: 14px; padding: 12px; justify-content: center;">💾 Salvar e Atualizar Padrão Global</button>
+    </div>
+
+    <!-- ABA 1: CADASTRO DE ESCOLAS -->
+    <div id="aba-escolas" class="aba-conteudo hidden">
+      <h2>🏫 Cadastro de Unidades Escolares</h2>
+      <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
+        <input type="hidden" id="input-escola-id-editando" value="">
+        <label>Nome da Escola:</label>
+        <input type="text" id="input-nome-escola" placeholder="Ex: EE Profª Maria da Silva...">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+          <div>
+            <label>Diretor(a) / Gestor(a):</label>
+            <input type="text" id="input-gestor-escola" placeholder="Nome do Gestor...">
+          </div>
+          <div>
+            <label>Cidade / Município:</label>
+            <input type="text" id="input-cidade-escola" placeholder="Ex: São Paulo - SP...">
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-salvar-nova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 15px; flex: 1; justify-content: center;">➕ Cadastrar Escola</button>
+          <button id="btn-cancelar-edicao" class="btn-acao btn-secondary hidden" style="margin-top: 15px;">✖ Cancelar</button>
+        </div>
+      </div>
+      <h3 style="color: #60a5fa; font-size: 15px; margin-bottom: 12px;">📋 Escolas Cadastradas</h3>
+      <div id="lista-escolas-cadastradas-container">Carregando escolas...</div>
+    </div>
+
+    <!-- ABA 2: ATIVAÇÃO DE PROVAS -->
+    <div id="aba-ativacao" class="aba-conteudo hidden">
+      <div id="bloco-prova-ativa-topo" style="background: #0f172a; border: 2px solid #3b82f6; padding: 16px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+        <div style="margin-bottom: 6px; font-weight: bold; color: #94a3b8; font-size: 13px; text-transform: uppercase;">🚀 Central de Ativação de Provas</div>
+        <div id="detalhes-prova-ativa-painel"></div>
+      </div>
+      <div id="painel-resumo-escola-ativacao" class="hidden" style="background: #0f172a; border: 1px solid #3b82f6; padding: 12px; border-radius: 8px; margin-top: 12px;">
+        <h3 style="color: #60a5fa; font-size: 14px; margin-bottom: 6px;">📋 Resumo das Configurações Ativas desta Unidade:</h3>
+        <div id="conteudo-resumo-ativacao" style="font-size: 12px; color: #cbd5e1; line-height: 1.5;"></div>
+      </div>
+    </div>
+
+    <!-- ABA 3: BANCO DE QUESTÕES -->
+    <div id="aba-questoes" class="aba-conteudo hidden">
+      <h2>➕ Cadastrar Nova Questão (Com 5 Alternativas: A a E)</h2>
+      <form id="form-cadastrar-questao">
+        <label>Matéria / Disciplina:</label>
+        <select id="cad-materia" required></select>
+        <label>Enunciado da Pergunta:</label>
+        <textarea id="cad-pergunta" rows="2" required></textarea>
+        <label>Opções de Resposta (A a E):</label>
+        <input type="text" id="cad-op-a" placeholder="Opção A" required>
+        <input type="text" id="cad-op-b" placeholder="Opção B" required>
+        <input type="text" id="cad-op-c" placeholder="Opção C" required>
+        <input type="text" id="cad-op-d" placeholder="Opção D" required>
+        <input type="text" id="cad-op-e" placeholder="Opção E" required>
+        <label>Alternativa Correta:</label>
+        <select id="cad-correta" required>
+          <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
+        </select>
+        <button type="submit" class="btn-acao" style="margin-top:15px;">➕ Salvar Questão no Banco</button>
+      </form>
+
+      <div class="bloco-calculadora" style="margin-top: 25px;">
+        <div class="sub-titulo-linha">
+          <h3>📂 Importação em Massa de Questões (TXT, Word, Excel) - 5 Alternativas</h3>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
+          Selecione um arquivo (<strong style="color: #60a5fa;">.txt, .docx, .xlsx</strong>) ou cole o conteúdo no formato: <br>
+          <code style="color: #facc15; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">Matéria | Pergunta | Opção A | Opção B | Opção C | Opção D | Opção E | Correta (A/B/C/D/E)</code>
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <input type="file" id="input-arquivo-questoes" accept=".txt, .docx, .xlsx, .xls" onchange="processarArquivoImportacao(event)" style="background: #1e293b; border: 1px solid #334155; padding: 10px; border-radius: 8px; color: #fff; cursor: pointer;">
+          <textarea id="input-massa-questoes" rows="6" placeholder="Ou cole as questões em massa aqui diretamente..." style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px;"></textarea>
+          <button type="button" onclick="importarQuestoesEmMassa()" style="background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; align-self: flex-start;">🚀 Processar e Importar para o Banco</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 4: BANCO DE DADOS (CATÁLOGO INTERATIVO DE QUESTÕES) -->
+    <div id="aba-banco-dados" class="aba-conteudo hidden">
+      <h2>🗄️ Catálogo Interativo do Banco de Dados</h2>
+      <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 15px;">
+        Pesquise, filtre, organize, edite enunciados/alternativas e altere modos de visualização em tempo real.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+          <span style="color: #94a3b8; font-size: 12px; font-weight: bold;">TOTAL DE QUESTÕES NO CATÁLOGO</span>
+          <div id="db-total-questoes" style="font-size: 24px; font-weight: bold; color: #60a5fa; margin-top: 5px;">Carregando...</div>
+        </div>
+        <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+          <span style="color: #94a3b8; font-size: 12px; font-weight: bold;">STATUS DA CONEXÃO</span>
+          <div style="font-size: 16px; font-weight: bold; color: #4ade80; margin-top: 8px; display:flex; align-items:center; gap:6px;">
+            <span class="ponto-ativo"></span> Online / Sincronizado
+          </div>
+        </div>
+      </div>
+
+      <div class="grupo-controles-direita">
+
+        
+  <!-- Botão Classificar -->
+  <div class="dropdown-win">
+  </div>
+
+  <!-- Botão Visualizar -->
+  <div class="dropdown-win">
+  </div>
+
+  <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="carregarBancoDadosCompleto()">🔄 Atualizar</button>
+  
+  <!-- BOTÃO DA LIXEIRA -->
+  <button type="button" class="btn-acao" style="background-color: #b91c1c; color: white;" onclick="abrirModalLixeiraQuestao()">🗑️ Lixeira</button>
+</div>
+
+      <div class="painel-controle-topo no-print">
+        <div class="grupo-controles-esquerda">
+          <input type="text" id="input-busca-banco-dados" placeholder="🔍 Pesquisar no catálogo..." style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; width: 220px;" oninput="renderizarCatalogoBancoDados()">
+          <select id="select-filtro-materia-db" style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; min-width: 180px;" onchange="renderizarCatalogoBancoDados()">
+            <option value="TODAS">📚 Todas as Matérias</option>
+          </select>
+        </div>
+        <div class="grupo-controles-direita">
+          <!-- BOTÃO CLASSIFICAR COM A OPÇÃO "VER TUDO" DENTRO -->
+          <div class="dropdown-win">
+            <button type="button" id="btn-dropdown-classificar-db" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-classificar-db', 'btn-dropdown-classificar-db')">
+              🔄 Classificar <span style="font-size: 10px;">▼</span>
+            </button>
+            <div id="dropdown-menu-classificar-db" class="dropdown-menu-win">
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; font-weight:bold; border-bottom:1px solid #334155;" onclick="aplicarClassificacaoDB('nenhum')">🔄 Ver Tudo / Sem Classificação</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('materia')">📚 Matéria / Categoria</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('nome')">🔤 Enunciado (A-Z)</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('crescente')">📈 Ordem Crescente (ID)</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('decrescente')">📉 Ordem Decrescente (ID)</button>
+            </div>
+          </div>
+
+          <!-- BOTÃO VISUALIZAR CORRIGIDO -->
+          <div class="dropdown-win">
+            <button type="button" id="btn-dropdown-visualizar-db" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-visualizar-db', 'btn-dropdown-visualizar-db')">
+              ≡ Visualizar <span style="font-size: 10px;">▼</span>
+            </button>
+            <div id="dropdown-menu-visualizar-db" class="dropdown-menu-win">
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('grade')">🔲 Grade (Cards)</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('lista')">≡ Lista</button>
+              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('blocos')">🗂️ Blocos</button>
+            </div>
+          </div>
+
+          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="carregarBancoDadosCompleto()">🔄 Atualizar</button>
+        </div>
+      </div>
+
+      <div id="catalogo-questoes-grid" class="catalogo-grid">
+        <div style="color: #94a3b8; text-align: center; grid-column: 1 / -1; padding: 30px;">Carregando catálogo de questões...</div>
+      </div>
+    </div>
+
+    <!-- ABA 5: MONITORAMENTO -->
+    <div id="aba-monitoramento" class="aba-conteudo hidden">
+      <h2>🟢 Alunos Acessando em Tempo Real</h2>
+      <div class="painel-controle-topo no-print">
+        <div class="grupo-controles-esquerda">
+          <button type="button" class="btn-acao" onclick="selecionarTodosOnline(true)">☑️ Marcar</button>
+          <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosOnline(false)">🔲 Limpar</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirOnlineSelecionados()">🗑️ Excluir</button>
+        </div>
+        <div class="grupo-controles-direita">
+          <input type="text" id="input-busca-monitoramento" placeholder="🔍 Aluno, escola, turma, matéria, nota..." style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:12px; width: 140px;" oninput="renderizarTabelaTempoReal()">
+          <div class="dropdown-win">
+            <button type="button" id="btn-dropdown-monitoramento" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-monitoramento', 'btn-dropdown-monitoramento')">
+              🔄 Classificar <span style="font-size: 10px;">▼</span>
+            </button>
+            <div id="dropdown-menu-monitoramento" class="dropdown-menu-win"></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabela-responsiva">
+      <table class="tabela-monitoramento">
+        <thead>
+          <tr>
+            <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-online" onclick="selecionarTodosOnline(this.checked)"></th>
+            <th>Status</th><th>Início</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria</th><th>Questão</th><th>Tempo</th><th style="text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela-tempo-real">
+          <tr><td colspan="10" style="text-align:center; color: #94a3b8;">Nenhum aluno resolvendo provas no momento.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <!-- ABA 6: RESULTADOS -->
+    <div id="aba-relatorios" class="aba-conteudo hidden">
+      <h2>📊 Histórico de Resultados e Relatórios</h2>
+      
+      <div class="painel-controle-topo no-print">
+        <div class="grupo-controles-esquerda" id="bloco-esquerda-relatorios">
+          <button type="button" class="btn-acao" onclick="selecionarTodosResultados(true)" title="Marcar todos visíveis">☑️ Marcar</button>
+          <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosResultados(false)" title="Desmarcar todos">🔲 Limpar</button>
+          <button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()" title="Excluir selecionados">🗑️ Excluir</button>
+          <button type="button" id="btn-arquivar-resultados" class="btn-acao" style="background-color:#0d9488;" onclick="ocultarAlunosSelecionados()" title="Retirar os resultados selecionados da lista principal sem excluí-los">📁 Arquivar selecionados</button>
+          <button type="button" class="btn-acao" style="background-color: #475569;" onclick="abrirModalOcultos()" title="Visualizar e resgatar alunos ocultados">📂 Ver Ocultos</button>
+          <button type="button" class="btn-acao" style="background-color: #b91c1c;" onclick="abrirModalLixeira()" title="Abrir lixeira de excluídos">🗑️ Lixeira</button>
+        </div>
+
+        <div class="grupo-controles-direita" id="bloco-direita-relatorios">
+          <input type="text" id="input-busca-resultados" placeholder="🔍 Pesquisar..." style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:12px; width: 120px;" oninput="renderizarTabelaResultadosFiltrada()">
+          
+          <select id="select-filtro-escola-relatorio" style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:110px; font-size: 12px;">
+            <option value="TODAS">🏫 Escolas</option>
+          </select>
+
+          <div class="dropdown-win">
+            <button type="button" id="btn-dropdown-resultados" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-resultados', 'btn-dropdown-resultados')">
+              🔄 Classificar <span style="font-size: 10px;">▼</span>
+            </button>
+            <div id="dropdown-menu-resultados" class="dropdown-menu-win"></div>
+          </div>
+
+
+          <button type="button" class="btn-acao" style="background-color: #22c55e;" onclick="exportarResultadosCSV()">📥 CSV</button>
+          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="exportarResultadosPDF()">🖨️ PDF</button>
+        </div>
+      </div>
+
+      <div class="tabela-responsiva">
+      <table class="tabela-resultados">
+        <thead>
+          <tr>
+            <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-resultados" onclick="selecionarTodosResultados(this.checked)"></th>
+            <th>Status</th><th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo</th><th>Acertos</th><th>Nota</th><th style="text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela">
+          <tr><td colspan="12" style="text-align:center;">Carregando resultados...</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+  </div>
+  
+
+  <script type="module" src="app.js"></script>
+
+<!-- Demonstração guiada do professor: pode ser aberta/fechada sem alterar dados. -->
+<button type="button" id="btn-demo-prof" class="demo-prof-btn" title="Abrir demonstração do painel">❔ Demonstração</button>
+<div id="demo-prof-overlay" class="demo-prof-overlay" aria-hidden="true">
+ <div id="demo-prof-destaque" class="demo-prof-destaque" aria-hidden="true"></div>
+ <div class="demo-prof-caixa" role="dialog" aria-modal="true">
+  <h3>Demonstração do Painel do Professor</h3>
+  <div id="demo-prof-texto"></div>
+  <div class="demo-prof-acoes">
+   <button type="button" id="demo-prof-pular">Pular demonstração</button>
+   <button type="button" id="demo-prof-proximo">Próximo</button>
+   <button type="button" id="demo-prof-fechar">Fechar</button>
+  </div>
+ </div>
+</div>
+<script>
+/* ============================================================
+   [AJUSTE MANUAL 11] DEMONSTRAÇÃO GUIADA DO PROFESSOR
+   true  = mostra o botão de demonstração
+   false = oculta o botão sem apagar o tutorial
+
+   [AJUSTE MANUAL 13] COMO ALTERAR OS PASSOS
+   Cada passo possui:
+   titulo    -> nome exibido na janela
+   texto     -> explicação
+   seletor   -> elemento que recebe o destaque azul
+   hash      -> aba para a qual a demonstração pode navegar
+   IMPORTANTE: a demonstração NÃO clica em botões de ação.
+   ============================================================ */
+const DEMO_PROFESSOR_ATIVA = true;
+const passosDemoProfessor = [
+ {titulo:"1. Cadastro de Escolas", texto:"Cadastre e revise as unidades escolares. Esta área define as escolas que poderão ser usadas nas avaliações.", aba:"aba-escolas", hash:"#escolas"},
+ {titulo:"2. Ativação de Provas", texto:"Escolha escola, matérias, turmas, quantidade de questões, tempos e código de acesso. A demonstração não publica nenhuma avaliação.", aba:"aba-ativacao", hash:"#ativacao"},
+ {titulo:"3. Monitoramento", texto:"Acompanhe alunos em atividade, progresso, tempo e encerramento. A demonstração apenas destaca a área; não encerra provas.", aba:"aba-monitoramento", hash:"#monitoramento"},
+ {titulo:"4. Banco de Questões", texto:"Consulte e organize perguntas e alternativas. O gabarito deve continuar protegido na área privada.", aba:"aba-questoes", hash:"#questoes"},
+ {titulo:"5. Banco de Dados", texto:"Use esta área para consultar as estruturas e informações administrativas disponíveis no sistema.", aba:"aba-banco-dados", hash:"#banco"},
+ {titulo:"6. Resultados e Relatórios", texto:"Consulte histórico, notas, tempos, filtros, backups e exportações. Evite sincronizações repetidas sem necessidade.", aba:"aba-relatorios", hash:"#relatorios"}
+];
+let passoDemoProfessor=0;
+const btnDemoProfessor=document.getElementById("btn-demo-prof");
+const overlayDemoProfessor=document.getElementById("demo-prof-overlay");
+const textoDemoProfessor=document.getElementById("demo-prof-texto");
+const destaqueDemoProfessor=document.getElementById("demo-prof-destaque");
+
+function localizarAbaDemo(idAba){
+  return document.querySelector('.btn-aba[data-aba="'+idAba+'"]');
+}
+function posicionarDestaqueDemo(el){
+  if(!el){ destaqueDemoProfessor.style.display="none"; return; }
+  const r=el.getBoundingClientRect();
+  const margem=4;
+  destaqueDemoProfessor.style.display="block";
+  destaqueDemoProfessor.style.left=(r.left-margem)+"px";
+  destaqueDemoProfessor.style.top=(r.top-margem)+"px";
+  destaqueDemoProfessor.style.width=(r.width+margem*2)+"px";
+  destaqueDemoProfessor.style.height=(r.height+margem*2)+"px";
+}
+function renderDemoProfessor(){
+  const passo=passosDemoProfessor[passoDemoProfessor];
+  textoDemoProfessor.innerHTML="<strong>"+passo.titulo+":</strong> "+passo.texto+
+    '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>';
+  document.getElementById("demo-prof-proximo").textContent =
+    passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Próximo";
+
+  /* AJUSTE MANUAL 14 — NAVEGAÇÃO REAL DA DEMONSTRAÇÃO
+     Usa o MESMO botão de aba do painel. Não clica em Publicar, Excluir,
+     Sincronizar, Encerrar ou qualquer outro comando operacional. */
+  const botaoAba=localizarAbaDemo(passo.aba);
+  /* A sequência depende do ID lógico, nunca da posição visual das abas. */
+  if(botaoAba && !botaoAba.classList.contains("active")) botaoAba.click();
+  if(passo.hash) history.replaceState(null,"",passo.hash);
+
+  setTimeout(()=>{
+    const botao=localizarAbaDemo(passo.aba);
+    if(botao){
+      botao.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+      setTimeout(()=>posicionarDestaqueDemo(botao),220);
+    } else destaqueDemoProfessor.style.display="none";
+  },120);
+}
+function fecharDemoProfessor(){
+  overlayDemoProfessor.classList.remove("ativo");
+  overlayDemoProfessor.setAttribute("aria-hidden","true");
+  destaqueDemoProfessor.style.display="none";
+}
+
+/* AJUSTE MANUAL 15 — DESTINO AO CONCLUIR/PULAR A DEMONSTRAÇÃO
+   Concluir ou Pular: fecha o tutorial e retorna à Home/Painel (Configurações Gerais).
+   Fechar: apenas fecha o tutorial e mantém a aba atual para o professor continuar trabalhando. */
+function voltarHomeAposDemoProfessor(){
+  fecharDemoProfessor();
+
+  /* AJUSTE MANUAL 17 — RETORNO REAL À HOME APÓS CONCLUIR/PULAR
+     A Home/Painel é um link real para painel.html criado pelo app.js.
+     Alterar somente o hash não troca a tela interna já aberta. Por isso,
+     ao concluir ou pular a demonstração fazemos uma navegação real para
+     painel.html#escolas. Isso recarrega o painel na primeira área funcional visível, exatamente
+     como o botão "Home / Painel" do topo.
+
+     PARA ALTERAR MANUALMENTE NO FUTURO:
+     - destino atual: "painel.html#escolas"
+     - se a página inicial mudar de nome, altere apenas a linha abaixo.
+     - o botão "Fechar" NÃO usa esta função; ele continua na aba atual. */
+  window.location.assign("painel.html#escolas");
+}
+
+if(!DEMO_PROFESSOR_ATIVA) btnDemoProfessor.style.display="none";
+btnDemoProfessor?.addEventListener("click",()=>{
+  passoDemoProfessor=0; renderDemoProfessor();
+  overlayDemoProfessor.classList.add("ativo");
+  overlayDemoProfessor.setAttribute("aria-hidden","false");
+});
+document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
+  if(passoDemoProfessor<passosDemoProfessor.length-1){passoDemoProfessor++;renderDemoProfessor();}
+  else voltarHomeAposDemoProfessor();
+});
+document.getElementById("demo-prof-pular")?.addEventListener("click",voltarHomeAposDemoProfessor);
+document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemoProfessor);
+/* Atualiza o contorno após rearranjo manual de abas, sem avançar etapas. */
+const abasDemoContainer=document.querySelector('.btn-aba[data-aba="aba-escolas"]')?.parentElement;
+if(abasDemoContainer){
+  const observarOrdemDemo=new MutationObserver(()=>{
+    if(overlayDemoProfessor.classList.contains("ativo"))
+      requestAnimationFrame(()=>posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba)));
+  });
+  observarOrdemDemo.observe(abasDemoContainer,{childList:true});
+}
+window.addEventListener("resize",()=>{
+  if(overlayDemoProfessor.classList.contains("ativo")){
+    posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba));
+  }
+});
+</script>
+
+
+
+
+<style id="demo-professor-mais-clara-v1">
+/* SOMENTE DEMONSTRAÇÃO: aumenta leitura sem afetar abas e dados. */
+.demo-prof-overlay{background:rgba(0,0,0,.28) !important;}
+.demo-prof-destaque{border:3px solid #7dd3fc !important;box-shadow:0 0 0 5px rgba(125,211,252,.30),0 0 22px rgba(125,211,252,.85) !important;}
+.demo-prof-caixa{background:#182940 !important;border:2px solid #93c5fd !important;color:#fff !important;}
+</style>
+<div id="marca-wagnerbizza" aria-hidden="true">© 2026 WagnerBIZZA</div>
+</body>
+</html>
