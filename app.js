@@ -3043,23 +3043,42 @@ if (window.location.pathname.includes("painel.html")) {
       const dataHoraAtual = new Date().toLocaleString('pt-BR');
       const periodo = pData.periodoAtivo || 'Geral';
        
-      const qSnap = await getDocs(collection(db, "questoes"));
-      let questoesValidas = [];
-      qSnap.forEach(s => {
-        let q = normalizarDocumentoQuestao(s.data(), s.id);
-        if (materias.length === 0 || materias.some(m => normalizarTexto(q.categoria).includes(normalizarTexto(m)))) {
-          questoesValidas.push(q);
-        }
-      });
-
-      for (let i = questoesValidas.length - 1; i > 0; i--) {
-        const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-        const j = Math.floor((aleatorio / 4294967295) * (i + 1));
-        [questoesValidas[i], questoesValidas[j]] = [questoesValidas[j], questoesValidas[i]];
+      // A cópia oficial deve usar a seleção exata do pacote publicado.
+      // Nunca sortear questões novamente ao imprimir.
+      const handlePublicado = await obterHandlePublicacao();
+      if (!handlePublicado) throw new Error('Vincule prova-publicada.json antes de gerar a Cópia Geral.');
+      const pacotePublicado = JSON.parse(await (await handlePublicado.getFile()).text());
+      if (!pacotePublicado.ativa || !Array.isArray(pacotePublicado.questoesPublicas) || !pacotePublicado.questoesPublicas.length) {
+        throw new Error('O arquivo vinculado não contém uma avaliação ativa com questões.');
       }
-
-      let limitQ = pData.quantidadeQuestoes || 10;
-      let selecionadas = questoesValidas.slice(0, limitQ);
+      if (normalizarTexto(pacotePublicado.escolaAtiva || '') !== normalizarTexto(escolaNome)) {
+        throw new Error('O pacote vinculado pertence a outra escola.');
+      }
+      if (pacotePublicado.idAvaliacao && pData.idAvaliacao && pacotePublicado.idAvaliacao !== pData.idAvaliacao) {
+        throw new Error('A avaliação publicada não corresponde à avaliação do painel.');
+      }
+      const selecionadas = pacotePublicado.questoesPublicas.map(q => ({
+        idQuestao: q.idQuestao || q.id || '',
+        pergunta: String(q.pergunta || ''),
+        opcoes: Array.isArray(q.opcoes) ? q.opcoes.map(op => String(op)) : []
+      }));
+      // Gabarito exclusivo do professor: localizar a resposta no banco privado
+      // pelo identificador da questão, sem expor respostas no pacote público.
+      const qSnap = await getDocs(collection(db, 'questoes'));
+      const respostasPrivadas = new Map();
+      qSnap.forEach(d => {
+        const dados = d.data();
+        const id = String(d.id);
+        const letra = String(dados.correta || dados.resposta || dados.correto || '').trim().toUpperCase();
+        const opcoesOriginais = (dados.opcoes || dados.alternativas || dados.respostas || []).map(op => limparPrefixoOpcao(op));
+        const pos = 'ABCDE'.indexOf(letra);
+        if (pos >= 0 && opcoesOriginais[pos]) respostasPrivadas.set(id, opcoesOriginais[pos]);
+      });
+      selecionadas.forEach(q => {
+        const textoCorreto = respostasPrivadas.get(String(q.idQuestao));
+        const pos = textoCorreto ? q.opcoes.findIndex(op => limparPrefixoOpcao(op) === textoCorreto) : -1;
+        q.correta = pos >= 0 ? 'ABCDE'[pos] : 'Não disponível (verificar ID da questão)';
+      });
 
       let janelaImpressao = window.open('', '_blank');
       let html = `
