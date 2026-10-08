@@ -2163,6 +2163,7 @@ function renderDemoProfessor(){
      Usa o MESMO botão de aba do painel. Não clica em Publicar, Excluir,
      Sincronizar, Encerrar ou qualquer outro comando operacional. */
   const botaoAba=localizarAbaDemo(passo.aba);
+  /* A sequência depende do ID lógico, nunca da posição visual das abas. */
   if(botaoAba && !botaoAba.classList.contains("active")) botaoAba.click();
   if(passo.hash) history.replaceState(null,"",passo.hash);
 
@@ -2212,6 +2213,15 @@ document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
 });
 document.getElementById("demo-prof-pular")?.addEventListener("click",voltarHomeAposDemoProfessor);
 document.getElementById("demo-prof-fechar")?.addEventListener("click",fecharDemoProfessor);
+/* Atualiza o contorno após rearranjo manual de abas, sem avançar etapas. */
+const abasDemoContainer=document.querySelector('.btn-aba[data-aba="aba-escolas"]')?.parentElement;
+if(abasDemoContainer){
+  const observarOrdemDemo=new MutationObserver(()=>{
+    if(overlayDemoProfessor.classList.contains("ativo"))
+      requestAnimationFrame(()=>posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba)));
+  });
+  observarOrdemDemo.observe(abasDemoContainer,{childList:true});
+}
 window.addEventListener("resize",()=>{
   if(overlayDemoProfessor.classList.contains("ativo")){
     posicionarDestaqueDemo(localizarAbaDemo(passosDemoProfessor[passoDemoProfessor].aba));
@@ -2222,6 +2232,12 @@ window.addEventListener("resize",()=>{
 
 
 
+<style id="demo-professor-mais-clara-v1">
+/* SOMENTE DEMONSTRAÇÃO: aumenta leitura sem afetar abas e dados. */
+.demo-prof-overlay{background:rgba(0,0,0,.28) !important;}
+.demo-prof-destaque{border:3px solid #7dd3fc !important;box-shadow:0 0 0 5px rgba(125,211,252,.30),0 0 22px rgba(125,211,252,.85) !important;}
+.demo-prof-caixa{background:#182940 !important;border:2px solid #93c5fd !important;color:#fff !important;}
+</style>
 <div id="marca-wagnerbizza" aria-hidden="true">© 2026 WagnerBIZZA</div>
 </body>
 </html>

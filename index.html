@@ -531,6 +531,18 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
 }
 </style>
 
+<style id="demo-aluno-sem-sobreposicao-v1">
+/* Ajuste exclusivo da demonstração: não modifica o formulário fora do tutorial. */
+@media (min-width:1000px){
+ body.demo-aluno-aberta #tela-login{padding-right:370px !important;box-sizing:border-box !important;}
+ body.demo-aluno-aberta #tela-login > div{max-width:100% !important;width:100% !important;box-sizing:border-box !important;}
+ body.demo-aluno-aberta .demo-caixa.demo-aluno-caixa{width:min(340px,29vw) !important;max-height:calc(100vh - 44px);overflow:auto;}
+}
+@media (max-width:999px){
+ body.demo-aluno-aberta #tela-login{padding-bottom:280px !important;}
+ body.demo-aluno-aberta .demo-caixa.demo-aluno-caixa{max-height:240px;overflow:auto;}
+}
+</style>
 </head>
 <body>
 
@@ -1673,37 +1685,27 @@ if (unsubscribePermissaoAluno) {
     // Se quiser aumentar a distância entre a caixa e o destaque, altere apenas `folga`.
     function posicionarCaixaDemoAluno(){
       if(!caixaDemoAluno || !alvoDemoAlunoAtual) return;
-      const r=alvoDemoAlunoAtual.getBoundingClientRect();
-      const folga=18;
-      const margemTela=16;
-      const alturaCaixa=caixaDemoAluno.offsetHeight || 190;
-      const larguraCaixa=caixaDemoAluno.offsetWidth || Math.min(window.innerWidth*.90,620);
-      const espacoAcima=r.top-margemTela;
-      const espacoAbaixo=window.innerHeight-r.bottom-margemTela;
-      let top;
-
-      // No primeiro passo o painel é grande. Mantemos a caixa no topo e
-      // deslocamos o painel para começar abaixo dela, evitando qualquer cruzamento.
-      if(passoDemoAluno===0){
-        top=margemTela;
-        const topoSeguro=alturaCaixa+folga+margemTela;
-        if(r.top < topoSeguro-4){
-          window.scrollBy({top:r.top-topoSeguro,behavior:"smooth"});
-        }
-      }else if(espacoAbaixo >= alturaCaixa+folga){
-        top=r.bottom+folga;
-      }else if(espacoAcima >= alturaCaixa+folga){
-        top=r.top-alturaCaixa-folga;
-      }else{
-        // Sem espaço suficiente: fixa a caixa no topo; o contorno continua
-        // independente e nunca passa por cima da caixa.
-        top=margemTela;
+      const margem=14;
+      /* Em telas largas, o formulário libera uma coluna lateral exclusiva
+         para a janela da demonstração. Ela não cobre campos ou botões. */
+      if(window.innerWidth>=1000){
+        caixaDemoAluno.style.position='fixed';
+        caixaDemoAluno.style.top='22px';
+        caixaDemoAluno.style.right='16px';
+        caixaDemoAluno.style.left='auto';
+        caixaDemoAluno.style.bottom='auto';
+        caixaDemoAluno.style.width='min(340px, 29vw)';
+        caixaDemoAluno.style.transform='none';
+        return;
       }
-      let left=Math.min(window.innerWidth-larguraCaixa-margemTela, Math.max(margemTela, r.left+(r.width-larguraCaixa)/2));
-      caixaDemoAluno.style.top=`${Math.max(margemTela,top)}px`;
-      caixaDemoAluno.style.left=`${Math.max(margemTela,left)}px`;
-      caixaDemoAluno.style.right='auto';
-      caixaDemoAluno.style.bottom='auto';
+      /* Em telas pequenas, a janela fica fixa no rodapé, enquanto o item
+         destacado recebe espaço para rolagem e permanece visível. */
+      caixaDemoAluno.style.position='fixed';
+      caixaDemoAluno.style.top='auto';
+      caixaDemoAluno.style.bottom=margem+'px';
+      caixaDemoAluno.style.left=margem+'px';
+      caixaDemoAluno.style.right=margem+'px';
+      caixaDemoAluno.style.width='auto';
       caixaDemoAluno.style.transform='none';
     }
     function limparDestaqueDemoAluno(){
@@ -1720,7 +1722,7 @@ if (unsubscribePermissaoAluno) {
       alvoDemoAlunoAtual=document.querySelector(passo.alvo);
       if(alvoDemoAlunoAtual){
         alvoDemoAlunoAtual.classList.add("demo-aluno-destaque");
-        alvoDemoAlunoAtual.scrollIntoView({behavior:"smooth",block:"center"});
+        alvoDemoAlunoAtual.scrollIntoView({behavior:"smooth",block:"start"});
         // Aguarda a rolagem começar/terminar e reposiciona o foco.
         requestAnimationFrame(posicionarFocoDemoAluno);
         setTimeout(posicionarFocoDemoAluno,220);
@@ -1732,6 +1734,7 @@ if (unsubscribePermissaoAluno) {
     window.addEventListener("resize",posicionarFocoDemoAluno);
     function fecharDemoAluno(permanecer=true){
       limparDestaqueDemoAluno();
+      document.body.classList.remove("demo-aluno-aberta");
       overlayDemoAluno.classList.remove("ativo");
       overlayDemoAluno.setAttribute("aria-hidden","true");
       if(caixaDemoAluno) caixaDemoAluno.style.display="none";
@@ -1750,6 +1753,7 @@ if (unsubscribePermissaoAluno) {
     if(!DEMO_ALUNO_ATIVA) btnDemoAluno.style.display="none";
     btnDemoAluno?.addEventListener("click",()=>{
       passoDemoAluno=0;
+      document.body.classList.add("demo-aluno-aberta");
       overlayDemoAluno.classList.add("ativo");
       overlayDemoAluno.setAttribute("aria-hidden","false");
       if(caixaDemoAluno) caixaDemoAluno.style.display="block";
