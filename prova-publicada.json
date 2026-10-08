@@ -1,21 +1,70 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791465746421",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791465314421,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791465314421",
-  "publicadoEm": "2026-10-08T13:15:14.421Z",
-  "encerradoEm": "2026-10-08T13:15:14.421Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791476546421,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791465746422",
+  "publicadoEm": "2026-10-08T13:22:27.118Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "CbRPK49UsdjOFYyf9OKH",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a computação cognitiva?",
+      "opcoes": [
+        "Sistemas que simulam o processo de pensamento humano em um modelo complexo e computadorizado",
+        "O uso de calculadoras científicas",
+        "A memorização de senhas complexas",
+        "A execução de planilhas eletrônicas"
+      ]
+    },
+    {
+      "idQuestao": "kn5QFHxgU1YcGuonEHtL",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é o gerenciamento de patches (Patch Management)?",
+      "opcoes": [
+        "Processo de aquisição, teste e instalação de atualizações de correção de falhas em softwares",
+        "Criação manual de backups em discos rígidos externos",
+        "Configuração de endereços IP dinâmicos via DHCP",
+        "Monitoramento da velocidade de conexão com a internet",
+        "Exclusão definitiva de arquivos corrompidos"
+      ]
+    },
+    {
+      "idQuestao": "Bn15QxuiWTyV9fkXgJNF",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é um sistema autoadaptativo?",
+      "opcoes": [
+        "Um sistema computacional que pode modificar seu comportamento em resposta a mudanças em seu ambiente",
+        "Um computador que troca de cor sozinho",
+        "Um antivírus que atualiza a base de dados",
+        "Um programa que fecha por falta de memória"
+      ]
+    }
+  ]
 }
