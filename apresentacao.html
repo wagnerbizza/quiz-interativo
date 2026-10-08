@@ -53,6 +53,17 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
 .demo-choice:first-letter{color:var(--accent)}
 .demo-caption{font-size:.76rem;color:var(--muted);margin-top:13px}
 @media(max-width:760px){.demo-grid{grid-template-columns:1fr}}
+
+/* Carrossel da apresentacao: independente do sistema de provas. */
+.hero-slide[hidden]{display:none!important}
+.hero-slide{min-height:245px;animation:slideAparecer .35s ease}
+@keyframes slideAparecer{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:none}}
+.slide-controls{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:15px}
+.slide-controls button{background:var(--secondary-bg);color:var(--secondary-text);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font:inherit;font-size:.8rem;cursor:pointer}
+.slide-controls button:hover{border-color:var(--accent)}
+.slide-status{font-size:.78rem;color:var(--muted)}
+.marca-apresentacao{position:fixed;bottom:10px;left:12px;color:var(--muted);opacity:.55;font-size:.73rem;pointer-events:none;z-index:2}
+@media(prefers-reduced-motion:reduce){.hero-slide{animation:none}}
 </style>
 </head>
 <body>
@@ -68,7 +79,14 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
 <div class="hero" id="inicio">
 <div><div class="eyebrow">Tecnologia a favor da aprendizagem</div><h1>Avaliações digitais, <span>mais interativas.</span></h1><p class="lead">Conheça o Quiz Interativo, um ambiente para organizar avaliações, acompanhar a participação dos estudantes e consultar resultados de forma prática.</p>
 <div class="actions"><a class="btn primary" href="#acessos">Começar agora →</a><a class="btn secondary" href="#recursos">Conhecer recursos</a></div></div>
-<div class="visual" aria-label="Ilustração conceitual do sistema de avaliações"><div class="window"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="screen"><h3>Visão geral da avaliação</h3><div class="mockrow"><span>Questões e alternativas</span><span class="pill">Organizadas</span></div><div class="mockrow"><span>Acompanhamento</span><span class="pill">Professor</span></div><div class="mockrow"><span>Resultados</span><span class="pill">Relatórios</span></div><div class="progress"><div></div></div><p class="hint">Imagem ilustrativa — não representa dados reais de alunos.</p></div></div></div>
+<div class="visual" aria-label="Ilustração conceitual do sistema de avaliações"><div class="window"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="screen" id="apresentacao-slides" aria-label="Apresentação automática dos recursos do Quiz Interativo">
+<div class="hero-slide"><h3>📝 Prepare suas avaliações</h3><div class="mockrow"><span>Questões e alternativas</span><span class="pill">Organizadas</span></div><div class="mockrow"><span>Configuração de provas</span><span class="pill">Professor</span></div><p class="hint">Organize atividades e disponibilize avaliações para suas turmas.</p></div>
+<div class="hero-slide" hidden><h3>🔀 Avaliações mais dinâmicas</h3><div class="mockrow"><span>Ordem das questões</span><span class="pill">Variável</span></div><div class="mockrow"><span>Ordem das alternativas</span><span class="pill">Variável</span></div><p class="hint">O embaralhamento oferece apresentações diferentes da mesma avaliação.</p></div>
+<div class="hero-slide" hidden><h3>⏱️ Acompanhe a participação</h3><div class="mockrow"><span>Andamento da prova</span><span class="pill">Painel</span></div><div class="mockrow"><span>Participação dos alunos</span><span class="pill">Professor</span></div><p class="hint">Acompanhe as avaliações pelo painel do professor.</p></div>
+<div class="hero-slide" hidden><h3>📊 Consulte os resultados</h3><div class="mockrow"><span>Desempenho</span><span class="pill">Notas</span></div><div class="mockrow"><span>Informações da avaliação</span><span class="pill">Relatórios</span></div><p class="hint">Consulte os dados registrados das avaliações concluídas.</p></div>
+<div class="slide-controls"><button type="button" id="slideAnterior" aria-label="Slide anterior">← Anterior</button><span id="slideStatus" class="slide-status" aria-live="off">1 de 4</span><button type="button" id="slidePausar">⏸ Pausar</button><button type="button" id="slideProximo" aria-label="Próximo slide">Próximo →</button></div>
+<p class="hint">Demonstração ilustrativa — não representa dados reais de alunos.</p>
+</div></div></div>
 </div>
 </div>
 <section id="recursos"><div class="wrap"><div class="eyebrow">Conheça o sistema</div><h2 class="section-title">Ferramentas para cada etapa</h2><p class="section-sub">Da elaboração da avaliação à consulta dos resultados, o Quiz Interativo reúne recursos para apoiar o trabalho pedagógico.</p><div class="grid">
@@ -122,7 +140,7 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
 <div class="card"><div class="ico" aria-hidden="true">👨‍🏫</div><h3>Área do professor</h3><p>Entre com sua conta para acessar o painel de gestão das avaliações.</p><a class="btn primary" href="login.html">Entrar como professor →</a></div>
 <div class="card"><div class="ico" aria-hidden="true">🎒</div><h3>Área do aluno</h3><p>Acesse a página destinada à realização das avaliações.</p><a class="btn secondary" href="index.html">Entrar como aluno →</a></div>
 </div><p class="note">A disponibilidade de avaliações depende da ativação realizada pelo professor. Esta página não ativa, altera ou encerra provas.</p></div></section>
-</main>
+</main><div class="marca-apresentacao" aria-hidden="true">© 2026 WagnerBIZZA</div>
 <footer class="foot"><div class="wrap"><span>Quiz Interativo · Página de apresentação</span><a href="#inicio">Voltar ao início ↑</a></div></footer>
 <!-- TEMA: inicia sempre no modo escuro. O botao alterna para claro durante a visita.
      Ao atualizar a pagina, retorna ao escuro. Para mudar, consulte apply('dark') abaixo. -->
@@ -144,6 +162,26 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
     const next=root.getAttribute('data-theme')==='light'?'dark':'light';
     apply(next);
   });
+})();
+</script>
+<script>
+/* Slides automáticos: a cada 6 segundos; pausar/retomar e navegação manual. */
+(function(){
+  const slides=[...document.querySelectorAll('#apresentacao-slides .hero-slide')];
+  const status=document.getElementById('slideStatus'), pausa=document.getElementById('slidePausar');
+  if(!slides.length) return;
+  let atual=0, pausado=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function mostrar(indice){
+    atual=(indice+slides.length)%slides.length;
+    slides.forEach((slide,i)=>{slide.hidden=i!==atual});
+    status.textContent=(atual+1)+' de '+slides.length;
+  }
+  function atualizarPausa(){pausa.textContent=pausado?'▶ Retomar':'⏸ Pausar';pausa.setAttribute('aria-pressed',String(pausado))}
+  document.getElementById('slideAnterior').addEventListener('click',()=>mostrar(atual-1));
+  document.getElementById('slideProximo').addEventListener('click',()=>mostrar(atual+1));
+  pausa.addEventListener('click',()=>{pausado=!pausado;atualizarPausa()});
+  setInterval(()=>{if(!pausado && !document.hidden)mostrar(atual+1)},6000);
+  mostrar(0);atualizarPausa();
 })();
 </script>
 </body>
