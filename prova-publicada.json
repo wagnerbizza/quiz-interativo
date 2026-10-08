@@ -1,21 +1,72 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791468675282",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791468152321,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791468152321",
-  "publicadoEm": "2026-10-08T14:02:32.321Z",
-  "encerradoEm": "2026-10-08T14:02:32.321Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 5,
+  "tempoMaximoMinutos": 5,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791479475282,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791468675282",
+  "publicadoEm": "2026-10-08T14:11:16.030Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "TrvYCvyL6gwQeuglams1",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML5 é usada para agrupar conteúdo em rodapés de páginas ou seções?",
+      "opcoes": [
+        "<bottom>",
+        "<foot>",
+        "<footer>",
+        "<section>",
+        "<end>"
+      ]
+    },
+    {
+      "idQuestao": "qL62X0Ruid4pDnudMsec",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "Qual protocolo dinâmico atribui endereços IP automaticamente aos dispositivos em uma rede?",
+      "opcoes": [
+        "DNS",
+        "HTTP",
+        "DHCP",
+        "ARP",
+        "SMTP"
+      ]
+    },
+    {
+      "idQuestao": "S9VKpXNuJhLyv5mc7QCO",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Revocação (Recall ou Sensibilidade)?",
+      "opcoes": [
+        "A proporção de verdadeiros positivos identificados em relação a todas as amostras positivas reais",
+        "A capacidade do modelo de memorizar textos longos",
+        "O tempo necessário para reiniciar o servidor de IA",
+        "A taxa de erro cometida durante o processo de teste",
+        "O volume de dados consumido durante o treinamento"
+      ]
+    }
+  ]
 }
