@@ -1,21 +1,157 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791469377975",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 10,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791468923837,
-  "turmasAtivas": [],
+  "tempoMaximoMinutos": 0,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791480177975,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
   "token": "",
-  "seedReordenacao": "1791468923837",
-  "publicadoEm": "2026-10-08T14:15:23.837Z",
-  "encerradoEm": "2026-10-08T14:15:23.837Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "seedReordenacao": "1791469377975",
+  "publicadoEm": "2026-10-08T14:22:58.686Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "R2Ly633sfQXWBTSGknyP",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que são Algoritmos Genéticos?",
+      "opcoes": [
+        "Técnicas de busca e otimização inspiradas no processo de seleção natural e evolução biológica",
+        "Protocolos de roteamento de pacotes em redes de computadores",
+        "Sistemas de controle de versão de código fonte",
+        "Ferramentas de edição de imagens baseadas em vetores",
+        "Métodos de compactação de arquivos multimídia"
+      ]
+    },
+    {
+      "idQuestao": "EsR2iriZE60rgVY55LQz",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Inteligência Artificial Forte?",
+      "opcoes": [
+        "Um conceito teórico de IA que teria a capacidade de compreender, aprender e agir como um ser humano em qualquer contexto",
+        "Uma IA com carcaça de metal resistente",
+        "Um supercomputador militar",
+        "Um sistema que nunca apresenta falhas"
+      ]
+    },
+    {
+      "idQuestao": "SDNZgmcaM5UGhBsx6IKy",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 63 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "HNgWgXSCUtntnZB3KSny",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual propriedade CSS controla se um elemento é visível ou oculto, mantendo ou não o seu espaço no layout?",
+      "opcoes": [
+        "visibility (ou display)",
+        "opacity",
+        "screen-state",
+        "show-hide"
+      ]
+    },
+    {
+      "idQuestao": "MW3jWcVoKqPxcdCv8nQD",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML representa um item individual dentro de listas ordenadas ou não ordenadas?",
+      "opcoes": [
+        "<li>",
+        "<item>",
+        "<list-el>",
+        "<ul>"
+      ]
+    },
+    {
+      "idQuestao": "VsdDUEHAor6KyYDffgKK",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 1] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "xGmzOciDAN4kCnOEpRdQ",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o clustering (agrupamento) em Machine Learning?",
+      "opcoes": [
+        "A tarefa de dividir um conjunto de dados em grupos de itens semelhantes",
+        "A compactação de arquivos ZIP",
+        "A exclusão de dados duplicados",
+        "A organização de pastas no computador"
+      ]
+    },
+    {
+      "idQuestao": "COWZmiphlz6JtxGS5s8l",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é um Ransomware?",
+      "opcoes": [
+        "Software malicioso que sequestra dados de um sistema e exige resgate para liberá-los",
+        "Ferramenta legítima de backup incremental em nuvem",
+        "Protocolo de segurança para redes sem fio protegidas",
+        "Sistema antivírus com análise heurística avançada",
+        "Aplicativo de mensagens instantâneas criptografadas"
+      ]
+    },
+    {
+      "idQuestao": "btu4r3ZLHlCQ3gM9pino",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual é a principal característica da IA Narrow (Estreita)?",
+      "opcoes": [
+        "É focada e extremamente eficiente em realizar uma tarefa específica",
+        "Possui consciência própria e supera a inteligência humana em tudo",
+        "Pode ser executada sem nenhum tipo de processador",
+        "Funciona exclusivamente offline sem necessidade de dados",
+        "É um modelo obsoleto que não é mais utilizado"
+      ]
+    },
+    {
+      "idQuestao": "WkOdZoQSJ8RO4fa1ll3F",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que significa a métrica \"Acurácia\" (Accuracy) em modelos de IA?",
+      "opcoes": [
+        "A proporção de previsões corretas em relação ao total de casos examinados",
+        "A velocidade de processamento do computador",
+        "O tamanho do arquivo do modelo",
+        "A quantidade de energia consumida"
+      ]
+    }
+  ]
 }
