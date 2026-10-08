@@ -1,71 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791463615446",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791474415446,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791463795930,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791463615446",
-  "publicadoEm": "2026-10-08T12:46:56.084Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "CDYskGX6DMl7FNKHCKSL",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o underfitting (subajuste)?",
-      "opcoes": [
-        "Quando o modelo é muito simples e não consegue capturar os padrões dos dados",
-        "Quando o sistema roda rápido demais",
-        "Quando há excesso de memória RAM",
-        "Quando o programa trava"
-      ]
-    },
-    {
-      "idQuestao": "36ySVCUkGyUWqJEDuQ4J",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 73 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    },
-    {
-      "idQuestao": "gLjMtumPgFWg7Bbaecnf",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "Questão oficial de nível avançado nº 44 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
-      "opcoes": [
-        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
-        "Processamento autônomo baseado em regras estáticas locais",
-        "Conversão estruturada de metadados em arquivos compactados",
-        "Execução direta de rotinas em camada de hardware isolada",
-        "Indexação sequencial de logs e repositórios desatualizados"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791463795930",
+  "publicadoEm": "2026-10-08T12:49:55.930Z",
+  "encerradoEm": "2026-10-08T12:49:55.930Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
