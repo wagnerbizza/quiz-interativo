@@ -667,6 +667,8 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     let verificacaoPacotePublicoInterval = null; // Atualiza ativação/encerramento pelo GitHub sem leituras Firestore.
     let idPacoteAplicadoNaEntrada = ""; // Evita reconstruir o formulário a cada 5 segundos.
     let sequenciaConsultaPacote = 0; // Impede que uma consulta antiga sobrescreva um encerramento recente.
+    let consultaEntradaEmAndamento = false; // Não cancela respostas válidas com consultas sobrepostas.
+    let ultimoPacotePublicoConfirmado = null; // Mantém o último estado confirmado quando a rede oscilar.
 
     const selectEscola = document.getElementById("escola-aluno");
     const selectTurma = document.getElementById("turma-aluno");
@@ -787,22 +789,38 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     // Lê o pacote público sem exigir que o aluno escolha uma escola primeiro.
     // Assim a própria página identifica qual escola está com avaliação ativa.
     async function carregarPacotePublicoBruto() {
+      // A consulta é limitada a 4 segundos para uma requisição travada não
+      // impedir as próximas verificações automáticas de encerramento.
+      const controle = new AbortController();
+      const limite = setTimeout(() => controle.abort(), 4000);
       try {
-        const r = await fetch(`prova-publicada.json?v=${Date.now()}`, { cache: "no-store" });
+        const r = await fetch(`prova-publicada.json?v=${Date.now()}`, {
+          cache: "no-store", signal: controle.signal,
+          headers: { "Cache-Control": "no-cache" }
+        });
         if (!r.ok) return null;
         return await r.json();
-      } catch (_) {
+      } catch (erro) {
+        console.warn("Consulta do pacote público indisponível:", erro?.name || erro);
         return null;
+      } finally {
+        clearTimeout(limite);
       }
     }
 
     async function conferirPacotePublicoNaEntrada() {
-      const sequenciaAtual = ++sequenciaConsultaPacote;
-      // Se já está dentro da prova, o watcher específico da sessão assume.
+      // Não sobrepor consultas: em redes lentas, a verificação antiga podia
+      // ser descartada a cada 5 segundos sem nunca atualizar a interface.
+      if (consultaEntradaEmAndamento) return;
       if (!document.getElementById("tela-quiz")?.classList.contains("hidden")) return;
-
-      const pacote = await carregarPacotePublicoBruto();
-      if (!pacote || sequenciaAtual !== sequenciaConsultaPacote) return; // Ignora falha e resposta atrasada.
+      consultaEntradaEmAndamento = true;
+      const sequenciaAtual = ++sequenciaConsultaPacote;
+      let pacote;
+      try { pacote = await carregarPacotePublicoBruto(); }
+      finally { consultaEntradaEmAndamento = false; }
+      if (!pacote || sequenciaAtual !== sequenciaConsultaPacote) return;
+      if (!document.getElementById("tela-quiz")?.classList.contains("hidden")) return;
+      ultimoPacotePublicoConfirmado = pacote;
 
       const expirada =
         Number(pacote.expiraEmMillis || 0) > 0 &&
@@ -991,6 +1009,13 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     // Verifica o encerramento independentemente do login anônimo do Firebase.
     // Assim a tela inicial não fica presa em "AVALIAÇÃO ATIVA" se a autenticação atrasar.
     verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 5000);
+    // Retomada de abas suspensas: consulta assim que o navegador volta à aba.
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) conferirPacotePublicoNaEntrada();
+    });
+    window.addEventListener("focus", conferirPacotePublicoNaEntrada);
+    window.addEventListener("pageshow", conferirPacotePublicoNaEntrada);
+    window.addEventListener("online", conferirPacotePublicoNaEntrada);
     conferirPacotePublicoNaEntrada();
     // A sessão anônima fica apenas na memória desta página/instância.
     // Ela não substitui o login persistente do professor.
@@ -998,7 +1023,9 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       .then(() => signInAnonymously(auth))
       .catch((erro) => {
         console.error("Falha na autenticação anônima:", erro);
-        detalhesProvaAtiva.innerHTML = "⚠️ Não foi possível iniciar uma sessão segura. Atualize a página.";
+        if (!ultimoPacotePublicoConfirmado) {
+          detalhesProvaAtiva.textContent = "⚠️ Não foi possível iniciar uma sessão segura. Verifique a conexão.";
+        }
       });
 
     // Olho para o aluno conferir o código digitado antes de iniciar.
@@ -1634,8 +1661,10 @@ if (unsubscribePermissaoAluno) {
       if (inputNomeAluno) inputNomeAluno.value = "";
       if (inputTokenAluno) inputTokenAluno.value = "";
 
-      // Ao voltar, confere imediatamente o pacote público.
-      // Se a prova já encerrou, a tela inicial mostra que não há avaliação ativa.
+      // Reativa a verificação da tela inicial após a conclusão da avaliação.
+      // Antes, o intervalo era cancelado na finalização e não era reiniciado.
+      if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
+      verificacaoPacotePublicoInterval = setInterval(conferirPacotePublicoNaEntrada, 5000);
       conferirPacotePublicoNaEntrada();
     }
 
