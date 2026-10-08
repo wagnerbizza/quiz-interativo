@@ -2105,6 +2105,7 @@ body.light-mode section {
   <div id="demo-prof-texto"></div>
   <div class="demo-prof-acoes">
    <button type="button" id="demo-prof-pular">Pular demonstração</button>
+   <button type="button" id="demo-prof-voltar">Voltar</button>
    <button type="button" id="demo-prof-proximo">Próximo</button>
    <button type="button" id="demo-prof-fechar">Fechar</button>
   </div>
@@ -2125,8 +2126,7 @@ body.light-mode section {
    IMPORTANTE: a demonstração NÃO clica em botões de ação.
    ============================================================ */
 const DEMO_PROFESSOR_ATIVA = true;
-/* A sequência é reconstruída conforme a ordem REAL das abas na tela.
-   Inclui Configurações Gerais; nenhuma aba é pulada após arrastar. */
+/* A sequência é fixa e independe do rearranjo das abas. */
 const descricoesDemoProfessor = {
  "aba-global":"Configurações Gerais e Home do painel.",
  "aba-escolas":"Cadastre e revise as unidades escolares disponíveis nas avaliações.",
@@ -2165,8 +2165,10 @@ function posicionarDestaqueDemo(el){
 function renderDemoProfessor(){
   const passo=passosDemoProfessor[passoDemoProfessor];
   if(!passo) return;
+  document.getElementById("demo-prof-voltar").disabled=passoDemoProfessor===0;
   overlayDemoProfessor.classList.add("ativo");
-  textoDemoProfessor.innerHTML="<strong>"+passo.titulo+":</strong> "+passo.texto+
+  overlayDemoProfessor.setAttribute("aria-hidden","false");
+  textoDemoProfessor.innerHTML="<strong>Etapa "+(passoDemoProfessor+1)+" de "+passosDemoProfessor.length+" — "+passo.titulo+":</strong> "+passo.texto+
     '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>';
   document.getElementById("demo-prof-proximo").textContent =
     passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Próximo";
@@ -2204,7 +2206,7 @@ function fecharDemoProfessor(){
 
 /* AJUSTE MANUAL 15 — DESTINO AO CONCLUIR/PULAR A DEMONSTRAÇÃO
    Concluir ou Pular: fecha o tutorial e retorna à Home/Painel (Configurações Gerais).
-   Fechar: apenas fecha o tutorial e mantém a aba atual para o professor continuar trabalhando. */
+   Fechar: também retorna à Home para evitar deixar a demonstração em outra aba. */
 function voltarHomeAposDemoProfessor(){
   /* Volta à Home sem recarregar a página e sem interferir nas provas. */
   fecharDemoProfessor();
@@ -2212,13 +2214,7 @@ function voltarHomeAposDemoProfessor(){
   const home=localizarAbaDemo("aba-global");
   if(home){
     home.click();
-    /* Fallback visual caso outro manipulador não ative a aba. */
-    document.querySelectorAll('.btn-aba[data-aba]').forEach(b=>b.classList.toggle('active',b===home));
-    document.querySelectorAll('.aba-conteudo').forEach(el=>{
-      const ativa=el.id==='aba-global';
-      el.classList.toggle('hidden',!ativa);
-      if(ativa) el.style.display='';
-    });
+    /* A navegação oficial do painel controla classes, hash e conteúdo. */
   }
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -2232,6 +2228,9 @@ btnDemoProfessor?.addEventListener("click",()=>{
 document.getElementById("demo-prof-proximo")?.addEventListener("click",()=>{
   if(passoDemoProfessor<passosDemoProfessor.length-1){passoDemoProfessor++;renderDemoProfessor();}
   else voltarHomeAposDemoProfessor();
+});
+document.getElementById("demo-prof-voltar")?.addEventListener("click",()=>{
+  if(passoDemoProfessor>0){passoDemoProfessor--;renderDemoProfessor();}
 });
 document.getElementById("demo-prof-pular")?.addEventListener("click",voltarHomeAposDemoProfessor);
 document.getElementById("demo-prof-fechar")?.addEventListener("click",voltarHomeAposDemoProfessor);
@@ -2269,6 +2268,14 @@ window.addEventListener("resize",()=>{
 .demo-prof-caixa{box-sizing:border-box!important;max-height:min(48dvh,390px)!important;bottom:12px!important;right:12px!important;width:min(440px,calc(100vw - 24px))!important;overflow-y:auto!important;}
 .demo-prof-caixa .demo-prof-acoes{position:sticky;bottom:0;background:#182940;padding:8px 0;}
 @media(max-width:700px){.demo-prof-caixa{left:12px!important;right:12px!important;width:auto!important;max-height:45dvh!important;}}
+</style>
+<style id="demo-professor-ajuste-navegacao-v2">
+/* Apenas a demonstração: botões acessíveis e caixa sem cortes. */
+#demo-prof-voltar:disabled{opacity:.45;cursor:not-allowed}
+.demo-prof-caixa{max-height:calc(100dvh - 24px)!important;overflow-y:auto!important}
+.demo-prof-acoes{display:flex!important;justify-content:flex-end;gap:7px!important}
+.demo-prof-acoes button{font-size:12px!important;white-space:normal}
+@media(max-width:600px){.demo-prof-acoes button{flex:1 1 42%}}
 </style>
 </body>
 </html>
