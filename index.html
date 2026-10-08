@@ -670,6 +670,10 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     let sequenciaConsultaPacote = 0; // Impede que uma consulta antiga sobrescreva um encerramento recente.
     let consultaEntradaEmAndamento = false; // Não cancela respostas válidas com consultas sobrepostas.
     let ultimoPacotePublicoConfirmado = null; // Mantém o último estado confirmado quando a rede oscilar.
+    // Aviso transitório apenas quando uma prova previamente ativa é encerrada.
+    // Não exibe um aviso antigo ao abrir uma página que já está inativa.
+    let avisoEncerramentoEntradaAte = 0;
+    let textoAvisoEncerramentoEntrada = "";
 
     const selectEscola = document.getElementById("escola-aluno");
     const selectTurma = document.getElementById("turma-aluno");
@@ -821,6 +825,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       finally { consultaEntradaEmAndamento = false; }
       if (!pacote || sequenciaAtual !== sequenciaConsultaPacote) return;
       if (!document.getElementById("tela-quiz")?.classList.contains("hidden")) return;
+      const pacoteAnterior = ultimoPacotePublicoConfirmado;
       ultimoPacotePublicoConfirmado = pacote;
 
       const expirada =
@@ -831,11 +836,25 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       // "ativa:false" deve derrubar imediatamente a liberação mostrada ao aluno.
       const estaInativa = pacote.ativa === false || pacote.ativa === "false";
       if (estaInativa || expirada || !String(pacote.escolaAtiva || "").trim()) {
+        // Só notifica a transição real de ativa para encerrada; a leitura inicial
+        // de um pacote já encerrado mostra diretamente "Nenhuma avaliação ativa".
+        const estavaAtiva = pacoteAnterior && pacoteAnterior.ativa !== false &&
+          pacoteAnterior.ativa !== "false" && String(pacoteAnterior.escolaAtiva || "").trim();
+        if (estavaAtiva && (estaInativa || expirada)) {
+          const motivo = String(pacote.motivoEncerramento || "").trim();
+          const porTempo = expirada && !estaInativa || /tempo máximo|tempo maximo|prazo geral|esgotad|expirad/i.test(motivo);
+          textoAvisoEncerramentoEntrada = porTempo
+            ? "⌛ O tempo da avaliação terminou. A prova foi encerrada automaticamente."
+            : "🏁 A avaliação foi encerrada pelo professor.";
+          avisoEncerramentoEntradaAte = Date.now() + 15000;
+        }
         if (unsubscribeProvaEscola) { unsubscribeProvaEscola(); unsubscribeProvaEscola = null; }
         dadosProvaAtiva = {};
         idPacoteAplicadoNaEntrada = "";
         if (selectEscola) selectEscola.disabled = false;
+        const mostrarAviso = Date.now() < avisoEncerramentoEntradaAte;
         detalhesProvaAtiva.innerHTML =
+          (mostrarAviso ? `<div role="status" aria-live="polite" style="color:#fbbf24;font-weight:800;margin-bottom:12px;">${textoAvisoEncerramentoEntrada}</div>` : "") +
           `<div style="font-size:18px;font-weight:900;color:#f87171;margin-bottom:6px;">🔴 NENHUMA AVALIAÇÃO ATIVA</div>
            <div>Nenhuma escola possui avaliação publicada neste momento.</div>`;
         selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
