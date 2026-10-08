@@ -1734,11 +1734,18 @@ if (unsubscribePermissaoAluno) {
       { alvo: "#btn-iniciar-prova", texto: "<strong>6. Iniciar Avaliação:</strong> ao clicar aqui, o sistema confere os dados e o código. A demonstração não inicia nem registra nenhuma tentativa." }
     ];
     // Etapas ocultas (ex.: código quando não há token) não são exibidas.
+    function elementoVisivelDemoAluno(el){
+      if(!el || !el.isConnected) return false;
+      /* Confere também ancestrais ocultos, não apenas o próprio elemento. */
+      for(let no=el;no && no.nodeType===1;no=no.parentElement){
+        const css=getComputedStyle(no);
+        if(no.hidden || css.display==="none" || css.visibility==="hidden" || css.visibility==="collapse") return false;
+      }
+      const r=el.getBoundingClientRect();
+      return r.width>1 && r.height>1;
+    }
     function passosVisiveisDemoAluno(){
-      return passosDemoAluno.filter(p => {
-        const el=document.querySelector(p.alvo);
-        return el && el.getClientRects().length > 0 && getComputedStyle(el).display !== "none";
-      });
+      return passosDemoAluno.filter(p=>elementoVisivelDemoAluno(document.querySelector(p.alvo)));
     }
     let passosAtuaisDemoAluno = [];
     let passoDemoAluno = 0;
@@ -1757,6 +1764,10 @@ if (unsubscribePermissaoAluno) {
 
     function posicionarFocoDemoAluno(){
       if(!alvoDemoAlunoAtual || !overlayDemoAluno?.classList.contains("ativo")) return;
+      if(!elementoVisivelDemoAluno(alvoDemoAlunoAtual)){
+        focoDemoAluno.classList.remove("ativo");
+        return;
+      }
       const r=alvoDemoAlunoAtual.getBoundingClientRect();
       const margem=7;
       focoDemoAluno.style.left=`${Math.max(4,r.left-margem)}px`;
@@ -1789,6 +1800,11 @@ if (unsubscribePermissaoAluno) {
     }
     function renderDemoAluno(){
       limparDestaqueDemoAluno();
+      /* Se a publicação mudou durante o tutorial, pula campos que desapareceram. */
+      while(passoDemoAluno<passosAtuaisDemoAluno.length &&
+            !elementoVisivelDemoAluno(document.querySelector(passosAtuaisDemoAluno[passoDemoAluno].alvo))){
+        passoDemoAluno++;
+      }
       const passo=passosAtuaisDemoAluno[passoDemoAluno];
       if(!passo){fecharDemoAluno(false);return;}
       textoDemoAluno.innerHTML=passo.texto;

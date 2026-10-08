@@ -2138,10 +2138,10 @@ const descricoesDemoProfessor = {
 };
 let passosDemoProfessor=[];
 function atualizarPassosDemoProfessor(){
-  passosDemoProfessor=Array.from(document.querySelectorAll('.abas-navegacao .btn-aba'))
-    .filter(btn=>descricoesDemoProfessor[btn.dataset.aba])
-    .map((btn,i)=>({titulo:(i+1)+'. '+btn.textContent.trim(),texto:descricoesDemoProfessor[btn.dataset.aba],aba:btn.dataset.aba}));
-  /* Sequência congelada ao iniciar: mudanças de DOM não pulam passos. */
+  /* Ordem lógica fixa: arrastar botões não altera o roteiro da demonstração. */
+  const ordem=["aba-global","aba-escolas","aba-ativacao","aba-monitoramento","aba-questoes","aba-banco-dados","aba-relatorios"];
+  passosDemoProfessor=ordem.filter(id=>descricoesDemoProfessor[id] && localizarAbaDemo(id))
+    .map((id,i)=>({titulo:(i+1)+'. '+localizarAbaDemo(id).textContent.trim(),texto:descricoesDemoProfessor[id],aba:id}));
 }
 let passoDemoProfessor=0;
 const btnDemoProfessor=document.getElementById("btn-demo-prof");
@@ -2165,6 +2165,7 @@ function posicionarDestaqueDemo(el){
 function renderDemoProfessor(){
   const passo=passosDemoProfessor[passoDemoProfessor];
   if(!passo) return;
+  overlayDemoProfessor.classList.add("ativo");
   textoDemoProfessor.innerHTML="<strong>"+passo.titulo+":</strong> "+passo.texto+
     '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>';
   document.getElementById("demo-prof-proximo").textContent =
@@ -2175,7 +2176,12 @@ function renderDemoProfessor(){
      Sincronizar, Encerrar ou qualquer outro comando operacional. */
   const botaoAba=localizarAbaDemo(passo.aba);
   /* A sequência depende do ID lógico, nunca da posição visual das abas. */
-  if(botaoAba) botaoAba.click();
+  if(botaoAba){
+    botaoAba.click();
+    /* A navegação real não pode encerrar a demonstração em andamento. */
+    overlayDemoProfessor.classList.add("ativo");
+    overlayDemoProfessor.setAttribute("aria-hidden","false");
+  }
   /* O próprio clique na aba atualiza o hash e o conteúdo. */
 
   setTimeout(()=>{
