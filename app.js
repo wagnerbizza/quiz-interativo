@@ -2687,7 +2687,7 @@ if (window.location.pathname.includes("painel.html")) {
           </div>
 
           <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
-            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">📚 Matérias para Ativação</h5>
+            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">📚 Matérias para Ativação <span style="color:#f87171" title="Campo obrigatório">*</span></h5>
             <div style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
               ${htmlMat}
             </div>
@@ -2708,7 +2708,7 @@ if (window.location.pathname.includes("painel.html")) {
           </div>
 
           <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
-            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">🎒 Turmas que Vão Fazer a Prova</h5>
+            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">🎒 Turmas que Vão Fazer a Prova <span style="color:#f87171" title="Campo obrigatório">*</span></h5>
             <div style="max-height: 160px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px;">
               ${htmlTurmas}
             </div>
@@ -2716,10 +2716,11 @@ if (window.location.pathname.includes("painel.html")) {
 
           <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 12px;">
             <h5 style="margin: 0; color: #f8fafc; font-size: 13px;">⏱️ Parâmetros de Ativação, Tempo e Segurança</h5>
+            <div style="font-size: 12px; color: #cbd5e1;"><span style="color:#f87171; font-weight:bold">*</span> Campos obrigatórios para ativar a avaliação.</div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Qtd. de Questões:</label>
-                <input type="number" id="qtd-questoes-ativacao" value="10" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Qtd. de Questões: <span style="color:#f87171" title="Campo obrigatório">*</span></label>
+                <input type="number" id="qtd-questoes-ativacao" min="1" required aria-required="true" value="10" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
                 <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo Mínimo (minutos):</label>
@@ -2730,12 +2731,12 @@ if (window.location.pathname.includes("painel.html")) {
                 <input type="number" id="tempo-prova-ativacao" value="0" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Encerrar Ativação Após (min):</label>
-                <input type="number" id="tempo-ativacao-prova" value="180" min="5" step="5" title="Tempo total em que esta prova ficará disponível para novos alunos. Ao vencer, a Área do Aluno bloqueia novos acessos." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Encerrar Ativação Após (min): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
+                <input type="number" id="tempo-ativacao-prova" required aria-required="true" value="180" min="5" step="5" title="Tempo total em que esta prova ficará disponível para novos alunos. Ao vencer, a Área do Aluno bloqueia novos acessos." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Token / Senha de Acesso (obrigatório):</label>
-                <input type="text" id="input-token-ativacao" required autocomplete="off" placeholder="Obrigatório — Ex: PROVA123" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Token / Senha de Acesso (obrigatório): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
+                <input type="text" id="input-token-ativacao" required aria-required="true" autocomplete="off" placeholder="Obrigatório — Ex: PROVA123" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
                 <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Agendar Início Simultâneo:</label>
@@ -2806,6 +2807,20 @@ if (window.location.pathname.includes("painel.html")) {
         const tempoLim = parseInt(painelDinamico.querySelector("#tempo-prova-ativacao")?.value) || 0;
         // 🔵 FASE 10C.1 — duração total da publicação; diferente do tempo individual do aluno.
         const tempoAtivacao = Math.max(5, parseInt(painelDinamico.querySelector("#tempo-ativacao-prova")?.value) || 180);
+
+        // Campos obrigatórios devem ter valores válidos, mesmo com publicação via GitHub.
+        const campoQtd = painelDinamico.querySelector("#qtd-questoes-ativacao");
+        const campoDuracao = painelDinamico.querySelector("#tempo-ativacao-prova");
+        if (!campoQtd?.value.trim() || !Number.isInteger(Number(campoQtd.value)) || Number(campoQtd.value) < 1) {
+          alert("⚠ Informe uma quantidade válida de questões (mínimo de 1).");
+          campoQtd?.focus();
+          return;
+        }
+        if (!campoDuracao?.value.trim() || !Number.isFinite(Number(campoDuracao.value)) || Number(campoDuracao.value) < 5) {
+          alert("⚠ Informe a duração da ativação (mínimo de 5 minutos).");
+          campoDuracao?.focus();
+          return;
+        }
 
         // Não permitir publicar avaliações sem token, inclusive pelo modo de contingência.
         if (!tokenProva) {
