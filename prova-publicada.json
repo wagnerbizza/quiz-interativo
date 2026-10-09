@@ -1,69 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791545087563",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": -1,
-  "tempoMaximoMinutos": -1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791555887563,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791545182285,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791545087563",
-  "publicadoEm": "2026-10-09T11:24:48.217Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "o1UQQ0YbKnGVuxdoXSe0",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 7] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "hJecmTcmONpfyD38ohoM",
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem",
-      "pergunta": "[Técnico 48] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "B) Entrega de softwares prontos via navegador",
-        "C) Ambiente exclusivo para programar sem gerenciar servidores",
-        "D) Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "r7HcuFSRhEcNqS2tJpW0",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que são LLMs (Large Language Models)?",
-      "opcoes": [
-        "Modelos de linguagem de grande escala treinados em imensos volumes de texto",
-        "Dispositivos de armazenamento em nuvem",
-        "Placas de vídeo para jogos",
-        "Cabos de rede de alta velocidade"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791545182285",
+  "publicadoEm": "2026-10-09T11:26:22.285Z",
+  "encerradoEm": "2026-10-09T11:26:22.285Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
