@@ -4829,17 +4829,30 @@ if (window.location.pathname.includes("painel.html")) {
     const idAluno = botao.dataset.id;
     const aluno = alunosOnlineCache.find(a => a.idDoc === idAluno);
     if (!aluno) { alert("Aluno não localizado no monitoramento. Atualize a lista."); return; }
-    if (!confirm(`Gerar autorização de recuperação para ${aluno.nome || "Aluno"}?\n\nIsto NÃO reinicia a prova e NÃO libera uma segunda tentativa.`)) return;
+    // Nunca emitir autorização sem avaliação identificada: evita reaproveitar
+    // o código de uma prova anterior em outra avaliação do mesmo aluno.
+    const idAvaliacaoAtual = String(aluno.idAvaliacao || "").trim();
+    if (!idAvaliacaoAtual) {
+      alert("Não foi possível identificar a avaliação deste aluno. A autorização não foi criada.");
+      return;
+    }
+    if (!confirm(`Gerar autorização de recuperação para ${aluno.nome || "Aluno"}?\n\nAvaliação: ${idAvaliacaoAtual}\n\nIsto NÃO reinicia a prova e NÃO libera uma segunda tentativa.`)) return;
     botao.disabled = true;
     try {
       const referencia = doc(db, "recuperacoes_tentativas", idAluno);
       const anterior = await getDoc(referencia);
-      const codigo = anterior.exists() && anterior.data().status === "autorizada"
-        ? anterior.data().codigo : criarCodigoRecuperacao();
+      const autorizacaoAnterior = anterior.exists() ? anterior.data() : null;
+      const reutilizarCodigo = autorizacaoAnterior?.status === "autorizada"
+        && String(autorizacaoAnterior.idAvaliacao || "") === idAvaliacaoAtual
+        && String(autorizacaoAnterior.escola || "") === String(aluno.escola || "")
+        && typeof autorizacaoAnterior.codigo === "string"
+        && autorizacaoAnterior.codigo.length >= 8;
+      const codigo = reutilizarCodigo ? autorizacaoAnterior.codigo : criarCodigoRecuperacao();
       const registro = {
         idAluno, nome: aluno.nome || "", turma: aluno.turma || "",
-        escola: aluno.escola || "", idAvaliacao: aluno.idAvaliacao || "",
+        escola: aluno.escola || "", idAvaliacao: idAvaliacaoAtual,
         codigo, status: "autorizada", autorizadoEm: serverTimestamp(),
+        codigoReutilizado: reutilizarCodigo,
         ultimaAtividadeAluno: aluno.atualizadoEm || null,
         questaoAtual: aluno.questaoAtual || 1,
         totalQuestoes: aluno.totalQuestoes || 0,
@@ -4851,9 +4864,12 @@ if (window.location.pathname.includes("painel.html")) {
         idAluno, nome: registro.nome, escola: registro.escola,
         turma: registro.turma, idAvaliacao: registro.idAvaliacao,
         evento: "autorizacao_recuperacao", data: serverTimestamp(),
-        detalhe: "Código emitido no painel; tentativa original preservada."
+        codigoReutilizado: reutilizarCodigo,
+        detalhe: reutilizarCodigo
+          ? "Autorização renovada para a mesma avaliação; tentativa preservada."
+          : "Novo código gerado para esta avaliação; tentativa preservada."
       });
-      alert(`Código de recuperação de ${registro.nome}:\n\n${codigo}\n\nInforme ao aluno somente quando confirmar sua identidade. A entrada com código na tela do aluno será integrada na próxima etapa.`);
+      alert(`Código de recuperação de ${registro.nome}:\n\n${codigo}\n\nConfirme a identidade antes de informar o código. A validação na tela do aluno ainda não está disponível.`);
       mostrarNotificacao("Autorização de recuperação registrada.");
     } catch (erro) {
       console.error("Falha ao registrar recuperação:", erro);
