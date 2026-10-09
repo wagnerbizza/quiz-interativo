@@ -10,17 +10,18 @@ input:focus{border-color:#3b82f6}button{width:100%;margin-top:20px;padding:13px;
 button:disabled{opacity:.6}.msg{display:none;margin-top:14px;padding:10px;border-radius:8px;font-size:12px}.erro{display:block;background:#ef44441f;border:1px solid #ef444459;color:#fecaca}.ok{display:block;background:#22c55e1a;border:1px solid #22c55e4d;color:#bbf7d0}
 
 /* Navegacao e marca visual: apenas tela de entrada. */
-.voltar-apresentacao{position:fixed;top:18px;left:20px;z-index:10;display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border:1px solid #334155;border-radius:9px;background:#111b2c;color:#93c5fd;font-size:13px;text-decoration:none;box-shadow:0 4px 16px #0003}
-@media(max-width:480px){.voltar-apresentacao{top:10px;left:10px;padding:8px 11px;font-size:12px}body{padding-top:65px}}
+.voltar-apresentacao{position:static;display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border:1px solid #334155;border-radius:9px;background:#111b2c;color:#93c5fd;font-size:13px;text-decoration:none;box-shadow:0 4px 16px #0003}
+@media(max-width:480px){.voltar-apresentacao{padding:8px 11px;font-size:12px}}
 .voltar-apresentacao:hover{text-decoration:underline}
+.card .logo{margin-top:12px}
 .marca-entrada{position:fixed;bottom:12px;left:14px;font-size:12px;color:#94a3b8;opacity:.65;pointer-events:none}
 </style></head><body>
-<main class="card"><div class="logo">🔐</div><h1>Painel do Professor</h1>
+<main class="card"><a class="voltar-apresentacao" href="apresentacao.html">← Voltar à apresentação</a><div class="logo">🔐</div><h1>Painel do Professor</h1>
 <div class="sub">Acesso protegido pelo Firebase Authentication</div>
 <form id="form-login"><label>E-mail</label><input id="email" type="email" autocomplete="username" required>
 <label>Senha</label><input id="senha" type="password" autocomplete="current-password" required>
 <button id="btn-login">🔑 Entrar no Painel</button>
-<button id="btn-entrar-offline" type="button" style="display:none;background:#475569;">📴 Entrar em modo offline</button><div id="mensagem" class="msg"></div></form></main><a class="voltar-apresentacao" href="apresentacao.html">← Voltar à apresentação</a><div class="marca-entrada" aria-hidden="true">© 2026 WagnerBIZZA</div>
+<button id="btn-entrar-offline" type="button" style="display:none;background:#475569;">📴 Entrar em modo offline</button><div id="mensagem" class="msg"></div></form></main><div class="marca-entrada" aria-hidden="true">© 2026 WagnerBIZZA</div>
 <script>
 /* Retorna à apresentação após 3 minutos sem interação, somente enquanto o login está aberto. */
 (function(){
