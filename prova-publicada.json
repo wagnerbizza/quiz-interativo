@@ -1,21 +1,72 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791546797889",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791546747736,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791546747736",
-  "publicadoEm": "2026-10-09T11:52:27.736Z",
-  "encerradoEm": "2026-10-09T11:52:27.736Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791557597889,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791546797889",
+  "publicadoEm": "2026-10-09T11:53:18.156Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "qifQ6NewIIHlgQUU38NW",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual método JavaScript adiciona um novo item ao final de um array?",
+      "opcoes": [
+        "shift()",
+        "unshift()",
+        "push()",
+        "pop()",
+        "slice()"
+      ]
+    },
+    {
+      "idQuestao": "PC0lEIfmoQyxpxmrRmMR",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é a criptografia de dados em trânsito?",
+      "opcoes": [
+        "Proteção dos dados enquanto são transmitidos através de uma rede (ex: via HTTPS ou VPN)",
+        "Armazenamento criptografado de arquivos em discos rígidos locais",
+        "Ocultação de endereços IP em roteadores corporativos",
+        "Exclusão de logs de acesso em servidores web",
+        "Processamento de dados em memória RAM sem criptografia"
+      ]
+    },
+    {
+      "idQuestao": "KyfdSgzXYjAdanOYVSRH",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "Qual serviço de nuvem fornece infraestrutura virtualizada completa, incluindo servidores, armazenamento e redes (IaaS)?",
+      "opcoes": [
+        "Software as a Service (SaaS)",
+        "Platform as a Service (PaaS)",
+        "Infrastructure as a Service (IaaS)",
+        "Function as a Service (FaaS)",
+        "Security as a Service (SECaaS)"
+      ]
+    }
+  ]
 }
