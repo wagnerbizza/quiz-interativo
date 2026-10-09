@@ -610,6 +610,12 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     <h2 style="color:#38bdf8;margin:8px 0;font-size:27px;">ÁREA DO ALUNO</h2>
     <p style="color:#cbd5e1;margin:0;">Digite o código fornecido pelo professor para acessar sua avaliação.</p>
   </div>
+  <!-- Contagem do prazo compartilhado: calculada pelo instante de expiração da ativação. -->
+  <div id="prazo-token-aluno" role="timer" aria-live="off" style="display:none;text-align:center;margin:12px 0;padding:13px;border:1px solid #38bdf8;border-radius:12px;background:rgba(56,189,248,.08);">
+    <div id="prazo-token-titulo" style="font-weight:750;">⌛ Tempo restante para entrar com o token</div>
+    <div id="prazo-token-relogio" style="font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;margin:4px 0;">--:--</div>
+    <small id="prazo-token-instrucao" style="color:var(--text-muted)">O prazo começa na ativação feita pelo professor, não ao abrir esta página.</small>
+  </div>
   <div class="grupo-form" id="grupo-token-acesso">
     <label for="token-aluno">Token da avaliação</label>
     <div style="position:relative;">
@@ -808,11 +814,48 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     function limparEtapaAluno() {
       try { sessionStorage.removeItem(CHAVE_ETAPA_ALUNO); } catch (_) {}
     }
-    tokenLiberadoParaProva = lerEtapaAluno();
+    // Nunca restaura autorização de token após F5; exigir nova digitação.
+    limparEtapaAluno();
+    tokenLiberadoParaProva = "";
 
     function chaveTokenProva(prova) {
       return String(prova?.idAvaliacao || prova?.publicadoEm || prova?.seedReordenacao || "");
     }
+    // Contagem regressiva comum a todos os alunos: NÃO reinicia ao atualizar (F5).
+    // expiraEmMillis é gravado no momento da ativação, no painel do professor.
+    function atualizarPrazoTokenAluno() {
+      const painel = document.getElementById("prazo-token-aluno");
+      const relogio = document.getElementById("prazo-token-relogio");
+      const titulo = document.getElementById("prazo-token-titulo");
+      const instrucao = document.getElementById("prazo-token-instrucao");
+      if (!painel || !relogio || !titulo || !instrucao) return;
+      const prova = dadosProvaAtiva || {};
+      const expira = Number(prova.expiraEmMillis || 0);
+      const temProva = !!(prova.escolaAtiva && prova.ativa !== false);
+      painel.style.display = temProva ? "block" : "none";
+      if (!temProva) return;
+      if (!Number.isFinite(expira) || expira <= 0) {
+        relogio.textContent = "Prazo não informado";
+        titulo.textContent = "⌛ Prazo de entrada indisponível";
+        instrucao.textContent = "Consulte o professor antes de iniciar a avaliação.";
+        return;
+      }
+      const restante = Math.max(0, Math.ceil((expira - Date.now()) / 1000));
+      const horas = Math.floor(restante / 3600);
+      const minutos = Math.floor((restante % 3600) / 60);
+      const segundos = restante % 60;
+      relogio.textContent = (horas ? String(horas).padStart(2,"0") + ":" : "") + String(minutos).padStart(2,"0") + ":" + String(segundos).padStart(2,"0");
+      const encerrado = restante === 0;
+      titulo.textContent = encerrado ? "⛔ Prazo de entrada encerrado" : "⌛ Tempo restante para entrar com o token";
+      instrucao.textContent = encerrado
+        ? "Novos alunos não podem iniciar normalmente. Solicite ao professor um CÓDIGO DE ENTRADA ATRASADA. Quem já começou deve solicitar um CÓDIGO DE RECUPERAÇÃO."
+        : "O prazo começou quando o professor ativou a avaliação. Termine a identificação e inicie antes de 00:00.";
+      painel.style.borderColor = encerrado || restante <= 60 ? "#fbbf24" : "#38bdf8";
+    }
+    setInterval(atualizarPrazoTokenAluno, 1000);
+    window.addEventListener("focus", atualizarPrazoTokenAluno);
+    document.addEventListener("visibilitychange", atualizarPrazoTokenAluno);
+
     function atualizarEtapaTokenAluno() {
       const prova = dadosProvaAtiva;
       const ativo = !!(prova && prova.escolaAtiva && prova.ativa !== false);
@@ -852,7 +895,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         return;
       }
       tokenLiberadoParaProva = chaveTokenProva(prova);
-      salvarEtapaAluno(tokenLiberadoParaProva);
+      // A validação não é persistida: F5 exige token novamente.
+      limparEtapaAluno();
       if (avisoTokenAluno) avisoTokenAluno.textContent = "";
       atualizarEtapaTokenAluno();
       document.getElementById("nome-aluno")?.focus();
@@ -1041,7 +1085,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       // O pacote público é a fonte de verdade para ativação/encerramento.
       // "ativa:false" deve derrubar imediatamente a liberação mostrada ao aluno.
       const estaInativa = pacote.ativa === false || pacote.ativa === "false";
-      if (estaInativa || expirada || !String(pacote.escolaAtiva || "").trim()) {
+      if (estaInativa || !String(pacote.escolaAtiva || "").trim()) {
         // Só notifica a transição real de ativa para encerrada; a leitura inicial
         // de um pacote já encerrado mostra diretamente "Nenhuma avaliação ativa".
         const estavaAtiva = pacoteAnterior && pacoteAnterior.ativa !== false &&
@@ -1088,7 +1132,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
 
     async function aplicarProvaRecebida(escolaNome,p,origem="firebase"){
       if(!p||p.ativa===false) return false;
-      if(Number(p.expiraEmMillis||0)>0&&Date.now()>=Number(p.expiraEmMillis)) return false;
+      // O fim do prazo bloqueia novas tentativas, mas mantém os códigos visíveis para recuperação.
       // Normaliza os campos de tempo recebidos do GitHub/Firebase.
       const tempoMinimoNormalizado = Number(p.tempoMinimoMinutos ?? p.tempoMinimo ?? 0) || 0;
       const tempoLimiteNormalizado = Number(p.tempoLimiteMinutos ?? p.tempoMaximoMinutos ?? p.tempoMaximo ?? 0) || 0;
@@ -1117,6 +1161,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         }
       }
       atualizarEtapaTokenAluno();
+      atualizarPrazoTokenAluno();
       if (inputTokenAluno) {
         // A verificação automática ocorre a cada 5 s, mas não pode apagar
         // o código enquanto o aluno está digitando.
@@ -1293,6 +1338,11 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       let idAlunoGerado = `${normalizarId(escolaVal)}__${normalizarId(nomeVal)}__${normalizarId(turmaVal)}`;
       recuperacaoAutorizadaAluno = null;
       codigoRetomadaAtivo = "";
+      const codigoAtrasado = String(document.getElementById("codigo-entrada-atrasada-aluno")?.value || "").trim().toUpperCase();
+      if (codigoAtrasado) {
+        alert("🕒 Código de ENTRADA ATRASADA: a validação individual ainda não está habilitada. Peça orientação ao professor. A avaliação não foi iniciada.");
+        return;
+      }
       const codigoInformado = String(document.getElementById("codigo-recuperacao-aluno")?.value || "").trim().toUpperCase();
       if (codigoInformado) {
         try {
@@ -1314,7 +1364,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           recuperacaoAutorizadaAluno = dados;
           codigoRetomadaAtivo = codigoInformado;
         } catch (erro) {
-          alert("⚠️ Recuperação não autorizada: " + (erro.message || erro.code || erro));
+          alert("⚠️ CÓDIGO DE RECUPERAÇÃO não autorizado: " + (erro.message || erro.code || erro));
           return;
         }
       }
@@ -1324,6 +1374,21 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       // Primeiro confere a trava deste navegador. Isso impede repetir a mesma
       // avaliação apenas acrescentando ponto, espaço ou hífen ao nome.
       const rascunhoAnterior = lerRascunhoAluno(idAlunoGerado, avaliacaoAtual);
+      // Retomar depois de atualizar, travar ou fechar exige autorização individual.
+      // O rascunho permanece salvo; apenas o acesso às questões fica bloqueado.
+      if (rascunhoAnterior && !recuperacaoAutorizadaAluno) {
+        alert("🔄 Esta avaliação já foi iniciada. Para CONTINUAR de onde parou, informe o TOKEN e o CÓDIGO DE RECUPERAÇÃO fornecido pelo professor. Suas respostas salvas não serão apagadas.");
+        return;
+      }
+      if (recuperacaoAutorizadaAluno && normalizarId(recuperacaoAutorizadaAluno.nome || "") !== normalizarId(nomeVal)) {
+        alert("❌ O CÓDIGO DE RECUPERAÇÃO não corresponde ao nome informado. Confira com o professor.");
+        return;
+      }
+      if (!recuperacaoAutorizadaAluno && Number(dadosProvaAtiva.expiraEmMillis || 0) > 0 && Date.now() >= Number(dadosProvaAtiva.expiraEmMillis)) {
+        alert("⌛ O prazo de entrada terminou. Para INICIAR uma nova prova, solicite ao professor um CÓDIGO DE ENTRADA ATRASADA.");
+        return;
+      }
+
       if (tentativaBloqueadaLocalmente(idAlunoGerado, avaliacaoAtual) && !rascunhoAnterior && !recuperacaoAutorizadaAluno) {
         alert("❌ Esta avaliação já foi iniciada/concluída por este aluno neste computador. Solicite liberação ao professor para refazê-la.");
         return;
@@ -1350,12 +1415,12 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       if (dadosProvaAtiva.token && String(dadosProvaAtiva.token).trim() !== "") {
         const tokenInput = String(inputTokenAluno?.value || "").trim();
         if (!tokenInput) {
-          alert("🔐 Digite o código de acesso fornecido pelo professor.");
+          alert("🔐 Informe o TOKEN DE ACESSO obrigatório fornecido pelo professor. O código de recuperação e o de entrada atrasada não substituem o token.");
           inputTokenAluno?.focus();
           return;
         }
         if (tokenInput !== String(dadosProvaAtiva.token).trim()) {
-          alert("❌ Código de acesso incorreto. A avaliação não foi iniciada.");
+          alert("❌ TOKEN DE ACESSO incorreto. Confira o token da avaliação com o professor.");
           if (inputTokenAluno) {
             inputTokenAluno.value = "";
             inputTokenAluno.focus();
