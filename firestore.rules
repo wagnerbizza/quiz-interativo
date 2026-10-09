@@ -63,6 +63,11 @@ service cloud.firestore {
       allow delete: if professor();
     }
 
+    // Códigos individuais e trilha de auditoria: somente professor.
+    // Nunca armazenar códigos na coleção permissões_alunos, que pode ser lida por alunos.
+    match /recuperacoes_tentativas/{id} { allow read, write: if professor(); }
+    match /registros_recuperacao/{id} { allow read, write: if professor(); }
+
     // Resultado: aluno anônimo pode CRIAR somente resultado que declare seu próprio UID.
     // Depois de criado, somente o professor pode alterar/corrigir/excluir.
     match /avaliacoes/{id} {

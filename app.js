@@ -2812,36 +2812,6 @@ if (window.location.pathname.includes("painel.html")) {
           return;
         }
 
-        // Segurança de ativação: cada escola deve usar um token não vazio e exclusivo.
-        // Esta checagem ocorre ANTES da confirmação e de qualquer gravação.
-        if (tokenProva.length < 4) {
-          alert("🔐 Informe um token com pelo menos 4 caracteres para esta escola antes de ativar a avaliação.");
-          painelDinamico.querySelector("#input-token-ativacao")?.focus();
-          return;
-        }
-        try {
-          const ativas = await getDocs(collection(db, "provas_ativas"));
-          const agora = Date.now();
-          const tokenRepetido = ativas.docs.some(registro => {
-            const prova = registro.data() || {};
-            const outraEscola = normalizarTexto(prova.escolaAtiva || registro.id) !== normalizarTexto(escolaNome);
-            const ativa = prova.ativa !== false && prova.ativa !== "false";
-            const dentroDoPrazo = !Number(prova.expiraEmMillis || 0) || Number(prova.expiraEmMillis) > agora;
-            return outraEscola && ativa && dentroDoPrazo &&
-              String(prova.token || "").trim().toLowerCase() === tokenProva.toLowerCase();
-          });
-          if (tokenRepetido) {
-            alert("🔐 Este token já está associado a outra escola com avaliação ativa. Informe um token diferente.");
-            painelDinamico.querySelector("#input-token-ativacao")?.focus();
-            return;
-          }
-        } catch (erroConsulta) {
-          // Falha fechada: sem conseguir conferir a exclusividade, não publicar.
-          console.warn("Não foi possível verificar tokens de outras escolas:", erroConsulta);
-          alert("⚠️ Não foi possível conferir se o token é exclusivo. Verifique a conexão com o Firebase e tente novamente.");
-          return;
-        }
-
         if (!confirm(`Deseja realmente confirmar e publicar a avaliação para a unidade "${escolaNome}"?`)) return;
 
         let timestampAgendamento = agendamentoData ? new Date(agendamentoData).getTime() : 0;
@@ -4792,6 +4762,9 @@ if (window.location.pathname.includes("painel.html")) {
       let tempoStr = `${min}m ${seg}s`;
       let dataInicioStr = aluno.dataInicio?.toDate ? aluno.dataInicio.toDate().toLocaleString('pt-BR') : "Agora";
       let estaMarcado = selecionadosAntes.has(aluno.idDoc) ? "checked" : "";
+      const ultimoContato = aluno.atualizadoEm?.toMillis?.() || 0;
+      const contatoAtrasado = ultimoContato > 0 && (Date.now() - ultimoContato > 45000);
+      const situacaoContato = contatoAtrasado ? "🟠 Sem atualização recente" : "🟢 Em acompanhamento";
        
       let questaoAtualProgresso = aluno.questaoAtual || 1;
       let totalQProgresso = aluno.totalQuestoes || 10;
@@ -4801,7 +4774,7 @@ if (window.location.pathname.includes("painel.html")) {
           <td class="chk-col" style="text-align: center;">
             <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}" ${estaMarcado}>
           </td>
-          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 3px 6px; border-radius: 6px; font-weight: bold; font-size: 11px;">🟢 Online</span></td>
+          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 3px 6px; border-radius: 6px; font-weight: bold; font-size: 11px;">${situacaoContato}</span></td>
           <td><span style="color: #cbd5e1; font-size: 12px;">📅 ${dataInicioStr}</span></td>
           <td><strong>${aluno.escola || 'N/D'}</strong></td>
           <td>${aluno.nome || 'Aluno'}</td>
@@ -4810,12 +4783,58 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
           <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
           <td style="text-align: center;">
+            <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="prepararRecuperacaoAluno(this)" title="Gerar código privado e registrar autorização de retomada">🔑 Recuperação</button>
             <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11.5px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)">🏁 Finalizar</button>
           </td>
         </tr>
       `;
     });
     corpoTabelaTempoReal.innerHTML = htmlOnline;
+  };
+
+  // Recuperação assistida: o código é privado do professor. Não altera a
+  // permissão de refazer a prova nem expõe o código em permissões_alunos.
+  function criarCodigoRecuperacao() {
+    const bytes = new Uint8Array(10);
+    crypto.getRandomValues(bytes);
+    const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return Array.from(bytes, n => alfabeto[n % alfabeto.length]).join("");
+  }
+
+  window.prepararRecuperacaoAluno = async function(botao) {
+    const idAluno = botao.dataset.id;
+    const aluno = alunosOnlineCache.find(a => a.idDoc === idAluno);
+    if (!aluno) { alert("Aluno não localizado no monitoramento. Atualize a lista."); return; }
+    if (!confirm(`Gerar autorização de recuperação para ${aluno.nome || "Aluno"}?\n\nIsto NÃO reinicia a prova e NÃO libera uma segunda tentativa.`)) return;
+    botao.disabled = true;
+    try {
+      const referencia = doc(db, "recuperacoes_tentativas", idAluno);
+      const anterior = await getDoc(referencia);
+      const codigo = anterior.exists() && anterior.data().status === "autorizada"
+        ? anterior.data().codigo : criarCodigoRecuperacao();
+      const registro = {
+        idAluno, nome: aluno.nome || "", turma: aluno.turma || "",
+        escola: aluno.escola || "", idAvaliacao: aluno.idAvaliacao || "",
+        codigo, status: "autorizada", autorizadoEm: serverTimestamp(),
+        ultimaAtividadeAluno: aluno.atualizadoEm || null,
+        questaoAtual: aluno.questaoAtual || 1,
+        totalQuestoes: aluno.totalQuestoes || 0,
+        observacao: "Retomada da mesma tentativa; não autoriza reinício."
+      };
+      await setDoc(referencia, registro, {merge:true});
+      // Mantém um registro de auditoria separado para cada autorização.
+      await addDoc(collection(db, "registros_recuperacao"), {
+        idAluno, nome: registro.nome, escola: registro.escola,
+        turma: registro.turma, idAvaliacao: registro.idAvaliacao,
+        evento: "autorizacao_recuperacao", data: serverTimestamp(),
+        detalhe: "Código emitido no painel; tentativa original preservada."
+      });
+      alert(`Código de recuperação de ${registro.nome}:\n\n${codigo}\n\nInforme ao aluno somente quando confirmar sua identidade. A entrada com código na tela do aluno será integrada na próxima etapa.`);
+      mostrarNotificacao("Autorização de recuperação registrada.");
+    } catch (erro) {
+      console.error("Falha ao registrar recuperação:", erro);
+      alert("Não foi possível registrar a autorização no Firebase: " + (erro.code || erro.message));
+    } finally { botao.disabled = false; }
   };
 
   window.finalizarAlunoElemento = function(btn) {
