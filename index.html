@@ -641,6 +641,11 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             <option value="" disabled selected>Aguardando liberação de turmas...</option>
           </select>
         </div>
+        <div class="grupo-form" style="margin-top:8px;">
+          <label for="codigo-recuperacao-aluno">Código de recuperação (somente se autorizado pelo professor):</label>
+          <input type="text" id="codigo-recuperacao-aluno" autocomplete="off" maxlength="16" placeholder="Código individual, se necessário" style="text-transform:uppercase;">
+          <small style="color:var(--text-muted)">Deixe em branco para entrada normal. O código não reinicia a avaliação.</small>
+        </div>
         <button type="submit" id="btn-iniciar-prova" class="btn">🚀 Iniciar Avaliação</button>
       </form>
     </div>
@@ -1257,6 +1262,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       inputTokenAluno.focus();
     });
 
+    let recuperacaoAutorizadaAluno = null;
+    let codigoRetomadaAtivo = "";
     document.getElementById("form-login")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const escolaVal = selectEscola.value;
@@ -1267,14 +1274,41 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       if (!dadosProvaAtiva.escolaAtiva) { alert("⚠️ Não há avaliação ativa para esta escola."); return; }
 
       // 🟢 Agora o ID inclui ESCOLA + NOME + TURMA, evitando conflito entre escolas.
-      const idAlunoGerado = `${normalizarId(escolaVal)}__${normalizarId(nomeVal)}__${normalizarId(turmaVal)}`;
+      let idAlunoGerado = `${normalizarId(escolaVal)}__${normalizarId(nomeVal)}__${normalizarId(turmaVal)}`;
+      recuperacaoAutorizadaAluno = null;
+      codigoRetomadaAtivo = "";
+      const codigoInformado = String(document.getElementById("codigo-recuperacao-aluno")?.value || "").trim().toUpperCase();
+      if (codigoInformado) {
+        try {
+          await garantirAuthAnonimaAtual();
+          const bilhete = await getDoc(doc(db, "bilhetes_recuperacao", codigoInformado));
+          if (!bilhete.exists()) throw new Error("Código não encontrado ou ainda não autorizado.");
+          const dados = bilhete.data();
+          const avaliacaoEsperada = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+          if (dados.status !== "autorizada" || String(dados.idAvaliacao) !== avaliacaoEsperada ||
+              normalizarId(dados.escola || "") !== normalizarId(escolaVal) ||
+              normalizarId(dados.turma || "") !== normalizarId(turmaVal)) {
+            throw new Error("Código não corresponde à escola, turma ou avaliação ativa.");
+          }
+          if (!dados.inicio || !Array.isArray(dados.questoesIds) || !dados.questoesIds.length) {
+            throw new Error("O professor precisa gerar o código após a primeira sincronização do aluno.");
+          }
+          // O bilhete identifica a tentativa ORIGINAL; nunca criar uma segunda identidade.
+          idAlunoGerado = String(dados.idAluno);
+          recuperacaoAutorizadaAluno = dados;
+          codigoRetomadaAtivo = codigoInformado;
+        } catch (erro) {
+          alert("⚠️ Recuperação não autorizada: " + (erro.message || erro.code || erro));
+          return;
+        }
+      }
 
       const avaliacaoAtual = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
 
       // Primeiro confere a trava deste navegador. Isso impede repetir a mesma
       // avaliação apenas acrescentando ponto, espaço ou hífen ao nome.
       const rascunhoAnterior = lerRascunhoAluno(idAlunoGerado, avaliacaoAtual);
-      if (tentativaBloqueadaLocalmente(idAlunoGerado, avaliacaoAtual) && !rascunhoAnterior) {
+      if (tentativaBloqueadaLocalmente(idAlunoGerado, avaliacaoAtual) && !rascunhoAnterior && !recuperacaoAutorizadaAluno) {
         alert("❌ Esta avaliação já foi iniciada/concluída por este aluno neste computador. Solicite liberação ao professor para refazê-la.");
         return;
       }
@@ -1288,7 +1322,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           const perm = docPermissao.data() || {};
           const avaliacaoBloqueada = String(perm.idAvaliacao || "");
           // Só bloqueia a MESMA avaliação. Uma nova ativação não herda o bloqueio antigo.
-          if (avaliacaoBloqueada && avaliacaoBloqueada === avaliacaoAtual && !rascunhoAnterior) {
+          if (avaliacaoBloqueada && avaliacaoBloqueada === avaliacaoAtual && !rascunhoAnterior && !recuperacaoAutorizadaAluno) {
             alert("❌ Esta avaliação já foi concluída. Solicite liberação ao professor para refazê-la.");
             return;
           }
@@ -1315,7 +1349,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       }
 
       alunoAtual = {
-        nome: nomeVal,
+        nome: recuperacaoAutorizadaAluno?.nome || nomeVal,
         escola: escolaVal,
         periodo: dadosProvaAtiva.periodoAtivo || "Geral",
         materia: (dadosProvaAtiva.materiasAtivas || ["Geral"]).join(" / "),
@@ -1330,7 +1364,14 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
 
     async function iniciarCarregamentoProva() {
       const avaliacaoRetomada = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
-      const rascunhoRetomada = lerRascunhoAluno(alunoAtual.id, avaliacaoRetomada);
+      let rascunhoRetomada = lerRascunhoAluno(alunoAtual.id, avaliacaoRetomada);
+      if (!rascunhoRetomada && recuperacaoAutorizadaAluno) {
+        const d = recuperacaoAutorizadaAluno;
+        // Recupera respostas e horário do monitoramento, sem reiniciar o tempo.
+        rascunhoRetomada = {estado:"andamento", idAluno:alunoAtual.id, idAvaliacao:avaliacaoRetomada,
+          inicio:Number(d.inicio), indice:Math.max(0, Number(d.questaoAtual || 1)-1),
+          respostas:d.respostas || {}, questoes:null, questoesIds:d.questoesIds};
+      }
       segundosPassados = 0;
       let banco = [];
       try {
@@ -1447,6 +1488,12 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       listaQuestoes = dadosProvaAtiva.origemPublicacao === "github" && Array.isArray(dadosProvaAtiva.questoesPublicas)
         ? unicasArray : unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
 
+      // Retomada remota: preserva a ordem original registrada pelo monitoramento.
+      if (rascunhoRetomada?.questoesIds?.length && !rascunhoRetomada.questoes) {
+        const ordem = new Map(rascunhoRetomada.questoesIds.map((id,i)=>[String(id),i]));
+        listaQuestoes.sort((a,b)=>(ordem.get(String(a.idQuestao)) ?? 99999)-(ordem.get(String(b.idQuestao)) ?? 99999));
+        rascunhoRetomada.questoes = listaQuestoes;
+      }
       // Se houve F5, a ordem e as alternativas devem ser exatamente as originais.
       if (rascunhoRetomada && Array.isArray(rascunhoRetomada.questoes) && rascunhoRetomada.questoes.length &&
           Number.isFinite(rascunhoRetomada.inicio) && rascunhoRetomada.inicio > 0) {
@@ -1471,6 +1518,17 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       bloquearTentativaLocalmente(alunoAtual.id, avaliacaoEmUso);
       try {
         const usuarioTentativa = await garantirAuthAnonimaAtual();
+        if (recuperacaoAutorizadaAluno) {
+          await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
+            uid: usuarioTentativa.uid, podeFazer: false, idAvaliacao: avaliacaoEmUso,
+            recuperacaoCodigo: codigoRetomadaAtivo, retomadaEm: serverTimestamp()
+          }, {merge:true});
+          await setDoc(doc(db, "registros_retomadas_alunos", `${codigoRetomadaAtivo}_${usuarioTentativa.uid}`), {
+            uid: usuarioTentativa.uid, idAluno: alunoAtual.id, idAvaliacao: avaliacaoEmUso,
+            escola: alunoAtual.escola, evento:"retomada", data:serverTimestamp(),
+            codigo: codigoRetomadaAtivo
+          });
+        }
         if (!retomandoTentativa) await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
           podeFazer: false,
           uid: usuarioTentativa.uid,
@@ -1480,6 +1538,12 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         }, { merge: true });
       } catch (erroTrava) {
         console.warn("Trava central temporariamente indisponível; trava local mantida:", erroTrava?.code || erroTrava);
+        if (recuperacaoAutorizadaAluno) {
+          alert("⚠️ Não foi possível confirmar a retomada no Firebase. A prova não será aberta para evitar uma tentativa duplicada.");
+          btnIniciarProva.disabled = false;
+          btnIniciarProva.textContent = "🚀 Iniciar Avaliação";
+          return;
+        }
       }
 
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
@@ -1646,6 +1710,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             materia: alunoAtual.materia, periodo: alunoAtual.periodo,
             questaoAtual: indiceAtual + 1, totalQuestoes: listaQuestoes.length,
             segundosPassados, uid: uidAlunoFirebase, respostas: respostasUsuario,
+            ...(codigoRetomadaAtivo ? {recuperacaoCodigo:codigoRetomadaAtivo} : {}),
             respostasTexto: listaQuestoes.map((q,i) => {
               const letra=String(respostasUsuario[i] || "").toUpperCase();
               const pos="ABCDE".indexOf(letra); return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
@@ -1672,6 +1737,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             totalQuestoes: listaQuestoes.length,
             segundosPassados: segundosPassados,
             uid: uidAlunoFirebase,
+            ...(codigoRetomadaAtivo ? {recuperacaoCodigo:codigoRetomadaAtivo} : {}),
             respostas: respostasUsuario,
             respostasTexto: listaQuestoes.map((q,i) => {
               const letra=String(respostasUsuario[i] || "").toUpperCase();

@@ -4858,6 +4858,28 @@ if (window.location.pathname.includes("painel.html")) {
         totalQuestoes: aluno.totalQuestoes || 0,
         observacao: "Retomada da mesma tentativa; não autoriza reinício."
       };
+      // Bilhete de capacidade: somente quem conhece o código consegue buscar este documento.
+      // A prova não contém gabarito; o bilhete contém apenas o progresso existente.
+      const [onlineSnap, permissaoSnap] = await Promise.all([
+        getDoc(doc(db,"alunos_online",idAluno)), getDoc(doc(db,"permissoes_alunos",idAluno))
+      ]);
+      if (!onlineSnap.exists() || !permissaoSnap.exists()) {
+        throw new Error("A tentativa original não está disponível para recuperação.");
+      }
+      const online = onlineSnap.data(), permissao = permissaoSnap.data();
+      if (String(online.idAvaliacao || "") !== idAvaliacaoAtual ||
+          String(permissao.idAvaliacao || "") !== idAvaliacaoAtual ||
+          !Number(permissao.tentativaIniciadaEm)) {
+        throw new Error("A tentativa original não corresponde à avaliação atual.");
+      }
+      await setDoc(doc(db,"bilhetes_recuperacao",codigo), {
+        idAluno, idAvaliacao:idAvaliacaoAtual, escola:aluno.escola || "",
+        nome:aluno.nome || "", turma:aluno.turma || "", status:"autorizada",
+        inicio:Number(permissao.tentativaIniciadaEm),
+        questaoAtual:online.questaoAtual || 1,
+        questoesIds:online.questoesIds || [], respostas:online.respostas || {},
+        autorizadoEm:serverTimestamp()
+      });
       await setDoc(referencia, registro, {merge:true});
       // Mantém um registro de auditoria separado para cada autorização.
       await addDoc(collection(db, "registros_recuperacao"), {
@@ -4869,7 +4891,7 @@ if (window.location.pathname.includes("painel.html")) {
           ? "Autorização renovada para a mesma avaliação; tentativa preservada."
           : "Novo código gerado para esta avaliação; tentativa preservada."
       });
-      alert(`Código de recuperação de ${registro.nome}:\n\n${codigo}\n\nConfirme a identidade antes de informar o código. A validação na tela do aluno ainda não está disponível.`);
+      alert(`Código de recuperação de ${registro.nome}:\n\n${codigo}\n\nConfirme a identidade antes de informar o código. Informe este código ao aluno para retomar a tentativa.`);
       mostrarNotificacao("Autorização de recuperação registrada.");
     } catch (erro) {
       console.error("Falha ao registrar recuperação:", erro);
@@ -4886,16 +4908,17 @@ if (window.location.pathname.includes("painel.html")) {
     try {
       const aluno = alunosOnlineCache.find(a => a.idDoc === idAluno);
       const referencia = doc(db, "recuperacoes_tentativas", idAluno);
-      const [autorizacao, eventos] = await Promise.all([
+      const [autorizacao, eventos, retomadas] = await Promise.all([
         getDoc(referencia),
-        getDocs(query(collection(db, "registros_recuperacao"), where("idAluno", "==", idAluno)))
+        getDocs(query(collection(db, "registros_recuperacao"), where("idAluno", "==", idAluno))),
+        getDocs(query(collection(db, "registros_retomadas_alunos"), where("idAluno", "==", idAluno)))
       ]);
       const dataFormatada = (valor) => {
         const data = valor?.toDate?.();
         return data instanceof Date && !Number.isNaN(data.getTime())
           ? data.toLocaleString("pt-BR") : "Data ainda não sincronizada";
       };
-      const linhas = eventos.docs.map(item => item.data()).sort((a,b) =>
+      const linhas = [...eventos.docs, ...retomadas.docs].map(item => item.data()).sort((a,b) =>
         (b.data?.toMillis?.() || 0) - (a.data?.toMillis?.() || 0));
       const cabecalho = `Aluno: ${aluno?.nome || idAluno}\nEscola: ${aluno?.escola || "Não informada"}\nTurma: ${aluno?.turma || "Não informada"}`;
       const situacao = autorizacao.exists()

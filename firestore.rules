@@ -40,13 +40,35 @@ service cloud.firestore {
       allow write: if professor();
     }
 
+    // Bilhetes de recuperação: leitura apenas por ID secreto, nunca listagem.
+    // O código deve ser compartilhado pelo professor somente com o aluno correto.
+    match /bilhetes_recuperacao/{codigo} {
+      allow get: if alunoAnonimo();
+      allow list: if professor();
+      allow write: if professor();
+    }
+    function bilheteValido(id, dados) {
+      return alunoAnonimo() && dados.keys().hasAll(['recuperacaoCodigo','idAvaliacao'])
+        && exists(/databases/$(database)/documents/bilhetes_recuperacao/$(dados.recuperacaoCodigo))
+        && get(/databases/$(database)/documents/bilhetes_recuperacao/$(dados.recuperacaoCodigo)).data.idAluno == id
+        && get(/databases/$(database)/documents/bilhetes_recuperacao/$(dados.recuperacaoCodigo)).data.idAvaliacao == dados.idAvaliacao
+        && get(/databases/$(database)/documents/bilhetes_recuperacao/$(dados.recuperacaoCodigo)).data.status == 'autorizada'
+        && exists(/databases/$(database)/documents/alunos_online/$(id));
+    }
+    match /registros_retomadas_alunos/{id} {
+      allow read: if professor();
+      allow create: if alunoAnonimo() && request.resource.data.uid == request.auth.uid
+        && bilheteValido(request.resource.data.idAluno,request.resource.data);
+      allow update, delete: if professor();
+    }
     // Monitoramento: aluno só grava documentos identificados com o próprio UID.
     match /alunos_online/{id} {
       allow read: if professor();
       allow create: if alunoAnonimo() && request.resource.data.uid == request.auth.uid;
-      allow update: if alunoAnonimo()
-                    && resource.data.uid == request.auth.uid
-                    && request.resource.data.uid == request.auth.uid;
+      allow update: if alunoAnonimo() && request.resource.data.uid == request.auth.uid
+        && (resource.data.uid == request.auth.uid ||
+            (bilheteValido(id, request.resource.data) &&
+             resource.data.idAvaliacao == request.resource.data.idAvaliacao));
       allow delete: if professor() || (alunoAnonimo() && resource.data.uid == request.auth.uid);
     }
 
@@ -59,7 +81,10 @@ service cloud.firestore {
                     && request.resource.data.podeFazer == false);
       allow update: if professor() || (alunoAnonimo()
                     && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.podeFazer == false);
+                    && request.resource.data.podeFazer == false
+                    && (resource.data.uid == request.auth.uid ||
+                        (bilheteValido(id, request.resource.data) &&
+                         resource.data.idAvaliacao == request.resource.data.idAvaliacao)));
       allow delete: if professor();
     }
 
