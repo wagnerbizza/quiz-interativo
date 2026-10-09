@@ -2723,12 +2723,12 @@ if (window.location.pathname.includes("painel.html")) {
                 <input type="number" id="qtd-questoes-ativacao" min="1" required aria-required="true" value="10" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo Mínimo (minutos):</label>
-                <input type="number" id="tempo-minimo-ativacao" value="0" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo Mínimo (minutos): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
+                <input type="number" id="tempo-minimo-ativacao" value="0" min="0" step="1" required aria-required="true" title="Preenchimento obrigatório. Use 0 para indicar sem limite." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo máximo por aluno (min):</label>
-                <input type="number" id="tempo-prova-ativacao" value="0" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo máximo por aluno (min): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
+                <input type="number" id="tempo-prova-ativacao" value="0" min="0" step="1" required aria-required="true" title="Preenchimento obrigatório. Use 0 para indicar sem limite." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
                 <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo para novos alunos entrarem após a ativação (min): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
@@ -2803,8 +2803,8 @@ if (window.location.pathname.includes("painel.html")) {
         const tokenProva = painelDinamico.querySelector("#input-token-ativacao")?.value.trim() || "";
         const agendamentoData = painelDinamico.querySelector("#input-agendamento-ativacao")?.value || "";
         const qtdQ = parseInt(painelDinamico.querySelector("#qtd-questoes-ativacao")?.value) || 10;
-        const tempoMin = parseInt(painelDinamico.querySelector("#tempo-minimo-ativacao")?.value) || 0;
-        const tempoLim = parseInt(painelDinamico.querySelector("#tempo-prova-ativacao")?.value) || 0;
+        const tempoMin = Number(painelDinamico.querySelector("#tempo-minimo-ativacao")?.value);
+        const tempoLim = Number(painelDinamico.querySelector("#tempo-prova-ativacao")?.value);
         // 🔵 FASE 10C.1 — duração total da publicação; diferente do tempo individual do aluno.
         const tempoAtivacao = Math.max(1, parseInt(painelDinamico.querySelector("#tempo-ativacao-prova")?.value) || 180);
 
@@ -2819,6 +2819,25 @@ if (window.location.pathname.includes("painel.html")) {
         if (!campoDuracao?.value.trim() || !Number.isFinite(Number(campoDuracao.value)) || Number(campoDuracao.value) < 1) {
           alert("⚠ Informe a duração da ativação (mínimo de 1 minuto).");
           campoDuracao?.focus();
+          return;
+        }
+
+        // Tempo mínimo e máximo são campos obrigatórios; 0 é um valor válido (livre/sem limite).
+        for (const [seletor, descricao] of [
+          ["#tempo-minimo-ativacao", "tempo mínimo"],
+          ["#tempo-prova-ativacao", "tempo máximo por aluno"]
+        ]) {
+          const campo = painelDinamico.querySelector(seletor);
+          const valor = campo?.value?.trim() ?? "";
+          if (valor === "" || !Number.isInteger(Number(valor)) || Number(valor) < 0) {
+            alert(`⚠ Preencha o ${descricao} com um número inteiro igual ou maior que 0.`);
+            campo?.focus();
+            return;
+          }
+        }
+        if (tempoLim > 0 && tempoMin > tempoLim) {
+          alert("⚠ O tempo mínimo não pode ser maior que o tempo máximo por aluno.");
+          painelDinamico.querySelector("#tempo-minimo-ativacao")?.focus();
           return;
         }
 
