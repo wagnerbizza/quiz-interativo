@@ -548,9 +548,23 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
 
   <div class="container">
     <div id="tela-login">
-      <h1>ÁREA DO ALUNO - Avaliação</h1>
+      <h1>ÁREA DO ALUNO - Avaliação</h1>\n      <a href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
       <div id="detalhes-prova-ativa" class="info-box">⏳ Verificando se há alguma prova ativa no momento...</div>
 
+<!-- Etapa de acesso: utiliza a validação de token já existente, sem duplicar a segurança. -->
+<div id="etapa-token-aluno" style="display:none;max-width:640px;margin:0 auto 16px;">
+  <p style="color:var(--text-muted);">Digite o código fornecido pelo professor antes de preencher seus dados.</p>
+        <div class="grupo-form" id="grupo-token-acesso" style="display:none;">
+          <label for="token-aluno">🔐 Código de Acesso da Avaliação:</label>
+          <div style="position:relative;">
+            <input type="password" id="token-aluno" placeholder="Digite o código fornecido pelo professor..." autocomplete="off" style="padding-right:52px;width:100%;box-sizing:border-box;">
+            <button type="button" id="btn-ver-token-aluno" title="Mostrar ou ocultar o código digitado" aria-label="Mostrar código" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:20px;padding:6px;"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <small style="display:block;margin-top:6px;color:var(--text-muted);">O código será conferido antes de liberar a identificação.</small>
+        </div>
+  <button type="button" id="btn-validar-token-aluno" class="btn" style="width:100%;margin-top:12px;">🔓 Continuar</button>
+  <p id="aviso-token-aluno" role="status" style="color:#fda4af;font-weight:700;"></p>
+</div>
       <form id="form-login">
         <!-- 🏫 ALTERAR AQUI somente se quiser mudar o texto do seletor de escola -->
         <div class="grupo-form">
@@ -558,14 +572,6 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
           <select id="escola-aluno" required>
             <option value="" disabled selected>Carregando escolas...</option>
           </select>
-        </div>
-        <div class="grupo-form" id="grupo-token-acesso" style="display:none;">
-          <label for="token-aluno">🔐 Código de Acesso da Avaliação:</label>
-          <div style="position:relative;">
-            <input type="password" id="token-aluno" placeholder="Digite o código fornecido pelo professor..." autocomplete="off" style="padding-right:52px;width:100%;box-sizing:border-box;">
-            <button type="button" id="btn-ver-token-aluno" title="Mostrar ou ocultar o código digitado" aria-label="Mostrar código" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:20px;padding:6px;"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          </div>
-          <small style="display:block;margin-top:6px;color:var(--text-muted);">O código será conferido quando você clicar em “Iniciar Avaliação”.</small>
         </div>
         <div class="grupo-form">
           <label for="nome-aluno">Nome Completo:</label>
@@ -703,6 +709,40 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
     const grupoTokenAcesso = document.getElementById("grupo-token-acesso");
     const btnVerTokenAluno = document.getElementById("btn-ver-token-aluno");
 
+    // ETAPA DE TOKEN: somente apresentação da entrada; a validação original no submit permanece.
+    const etapaTokenAluno = document.getElementById("etapa-token-aluno");
+    const formularioAluno = document.getElementById("form-login");
+    const avisoTokenAluno = document.getElementById("aviso-token-aluno");
+    let tokenLiberadoParaProva = "";
+    function atualizarEtapaTokenAluno() {
+      const prova = dadosProvaAtiva;
+      const tokenExigido = !!(prova && String(prova.token || "").trim());
+      const chave = prova ? String(prova.idAvaliacao || prova.publicadoEm || prova.seedReordenacao || "") : "";
+      const liberado = !tokenExigido || tokenLiberadoParaProva === chave;
+      if (etapaTokenAluno) etapaTokenAluno.style.display = tokenExigido && !liberado ? "block" : "none";
+      if (formularioAluno) formularioAluno.style.display = liberado ? "" : "none";
+    }
+    document.getElementById("btn-validar-token-aluno")?.addEventListener("click", () => {
+      const prova = dadosProvaAtiva;
+      const esperado = String(prova?.token || "").trim();
+      const informado = String(inputTokenAluno?.value || "").trim();
+      if (!esperado || informado !== esperado) {
+        if (avisoTokenAluno) avisoTokenAluno.textContent = "Código incorreto ou avaliação indisponível.";
+        if (inputTokenAluno) { inputTokenAluno.value = ""; inputTokenAluno.focus(); }
+        return;
+      }
+      tokenLiberadoParaProva = String(prova.idAvaliacao || prova.publicadoEm || prova.seedReordenacao || "");
+      if (avisoTokenAluno) avisoTokenAluno.textContent = "";
+      atualizarEtapaTokenAluno();
+      document.getElementById("nome-aluno")?.focus();
+    });
+    inputTokenAluno?.addEventListener("keydown", (evento) => {
+      if (evento.key === "Enter" && etapaTokenAluno?.style.display !== "none") {
+        evento.preventDefault();
+        document.getElementById("btn-validar-token-aluno")?.click();
+      }
+    });
+
     function limparPrefixoPergunta(pergunta) {
       if (!pergunta) return "";
       let limpa = pergunta.replace(/^\[.*?\]\s*/, "").trim();
@@ -787,7 +827,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
       selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
       btnIniciarProva.disabled = true;
-      if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";
+      if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";\n      tokenLiberadoParaProva = "";\n      atualizarEtapaTokenAluno();
       if (inputTokenAluno) inputTokenAluno.value = "";
     }
 
@@ -859,7 +899,7 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
            <div>Nenhuma escola possui avaliação publicada neste momento.</div>`;
         selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
         btnIniciarProva.disabled = true;
-        if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";
+        if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";\n      tokenLiberadoParaProva = "";\n      atualizarEtapaTokenAluno();
         if (inputTokenAluno) inputTokenAluno.value = "";
         return;
       }
@@ -901,6 +941,11 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         <div class="linha-detalhe"><span class="icone">🔐</span><div class="conteudo-texto"><strong>Acesso:</strong> ${p.token&&String(p.token).trim()?"código obrigatório fornecido pelo professor":"sem código de acesso"}</div></div>
         <div class="linha-detalhe"><span class="icone">📡</span><div class="conteudo-texto"><strong>Origem:</strong> ${origem==="github"?"GitHub / pacote publicado":"Firebase"}</div></div>`;
       if (grupoTokenAcesso) grupoTokenAcesso.style.display = (p.token&&String(p.token).trim()) ? "block" : "none";
+      if (typeof idPacoteAplicadoNaEntrada !== "undefined") {
+        const chaveAtual = String(p.idAvaliacao || p.publicadoEm || p.seedReordenacao || "");
+        if (tokenLiberadoParaProva && tokenLiberadoParaProva !== chaveAtual) tokenLiberadoParaProva = "";
+      }
+      atualizarEtapaTokenAluno();
       if (inputTokenAluno) {
         // A verificação automática ocorre a cada 5 s, mas não pode apagar
         // o código enquanto o aluno está digitando.
@@ -1713,12 +1758,7 @@ if (unsubscribePermissaoAluno) {
       conferirPacotePublicoNaEntrada();
     }
 
-    // O botão "Sair / Tela Inicial" leva à apresentação pública.
-    // Mantemos voltarTelaInicialAluno() para o retorno automático de segurança.
-    document.getElementById("btn-reiniciar")?.addEventListener("click", () => {
-      voltarTelaInicialAluno(); // Limpa os dados da tentativa anterior antes de sair.
-      window.location.replace("apresentacao.html");
-    });
+    document.getElementById("btn-reiniciar")?.addEventListener("click", voltarTelaInicialAluno);
   
     /* ============================================================
        [AJUSTE MANUAL 03] DEMONSTRAÇÃO DO ALUNO
