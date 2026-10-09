@@ -2812,6 +2812,36 @@ if (window.location.pathname.includes("painel.html")) {
           return;
         }
 
+        // Segurança de ativação: cada escola deve usar um token não vazio e exclusivo.
+        // Esta checagem ocorre ANTES da confirmação e de qualquer gravação.
+        if (tokenProva.length < 4) {
+          alert("🔐 Informe um token com pelo menos 4 caracteres para esta escola antes de ativar a avaliação.");
+          painelDinamico.querySelector("#input-token-ativacao")?.focus();
+          return;
+        }
+        try {
+          const ativas = await getDocs(collection(db, "provas_ativas"));
+          const agora = Date.now();
+          const tokenRepetido = ativas.docs.some(registro => {
+            const prova = registro.data() || {};
+            const outraEscola = normalizarTexto(prova.escolaAtiva || registro.id) !== normalizarTexto(escolaNome);
+            const ativa = prova.ativa !== false && prova.ativa !== "false";
+            const dentroDoPrazo = !Number(prova.expiraEmMillis || 0) || Number(prova.expiraEmMillis) > agora;
+            return outraEscola && ativa && dentroDoPrazo &&
+              String(prova.token || "").trim().toLowerCase() === tokenProva.toLowerCase();
+          });
+          if (tokenRepetido) {
+            alert("🔐 Este token já está associado a outra escola com avaliação ativa. Informe um token diferente.");
+            painelDinamico.querySelector("#input-token-ativacao")?.focus();
+            return;
+          }
+        } catch (erroConsulta) {
+          // Falha fechada: sem conseguir conferir a exclusividade, não publicar.
+          console.warn("Não foi possível verificar tokens de outras escolas:", erroConsulta);
+          alert("⚠️ Não foi possível conferir se o token é exclusivo. Verifique a conexão com o Firebase e tente novamente.");
+          return;
+        }
+
         if (!confirm(`Deseja realmente confirmar e publicar a avaliação para a unidade "${escolaNome}"?`)) return;
 
         let timestampAgendamento = agendamentoData ? new Date(agendamentoData).getTime() : 0;
