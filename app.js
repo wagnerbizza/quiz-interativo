@@ -2727,12 +2727,12 @@ if (window.location.pathname.includes("painel.html")) {
                 <input type="number" id="tempo-minimo-ativacao" value="0" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo Máximo / Limite (min):</label>
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo máximo por aluno (min):</label>
                 <input type="number" id="tempo-prova-ativacao" value="0" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Encerrar Ativação Após (min): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
-                <input type="number" id="tempo-ativacao-prova" required aria-required="true" value="180" min="5" step="5" title="Tempo total em que esta prova ficará disponível para novos alunos. Ao vencer, a Área do Aluno bloqueia novos acessos." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Permitir novas entradas por (min): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
+                <input type="number" id="tempo-ativacao-prova" required aria-required="true" value="180" min="5" step="5" title="Prazo para iniciar a prova. Após esse prazo, novos alunos não entram; tentativas em andamento continuam até seu limite individual ou encerramento pelo professor." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
                 <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Token / Senha de Acesso (obrigatório): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
@@ -2916,11 +2916,9 @@ if (window.location.pathname.includes("painel.html")) {
       snapshot.forEach(d => {
         const dados = d.data();
         const expirada = Number(dados.expiraEmMillis || 0) > 0 && Date.now() >= Number(dados.expiraEmMillis);
-        if (dados.ativa !== false && dados.escolaAtiva && !expirada) provas.push({ idDoc: d.id, ...dados });
-        // 🔵 Se o prazo venceu, o painel marca a prova como encerrada no Firebase.
-        if (dados.ativa !== false && expirada) {
-          setDoc(d.ref, { ativa:false, motivoEncerramento:"Prazo de ativação encerrado automaticamente.", encerradoEm:serverTimestamp() }, {merge:true}).catch(console.error);
-        }
+        // O fim do prazo de entrada não encerra tentativas que já começaram.
+        // Somente o professor (ou o limite individual do aluno) encerra a prova em andamento.
+        if (dados.ativa !== false && dados.escolaAtiva) provas.push({ idDoc: d.id, ...dados });
       });
       provas.sort((a,b) => (a.escolaAtiva || "").localeCompare(b.escolaAtiva || "", "pt-BR"));
 
@@ -2964,7 +2962,7 @@ if (window.location.pathname.includes("painel.html")) {
                 </div>
               </div>
               <div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.45);color:#fde68a;font-size:12px;">
-                ⚠️ <strong>Prova ainda ativa.</strong> ${Number(dados.expiraEmMillis||0)>0 ? `Encerramento automático: ${new Date(Number(dados.expiraEmMillis)).toLocaleString("pt-BR")}` : `Sem encerramento automático configurado.`} Use <strong>Encerrar</strong> se quiser fechá-la antes.
+                ${Number(dados.expiraEmMillis||0)>0 && Date.now()>=Number(dados.expiraEmMillis) ? '⛔ <strong>Prazo para novas entradas encerrado.</strong> Alunos que já iniciaram continuam com seu tempo individual.' : `🟢 <strong>Entradas liberadas.</strong> ${Number(dados.expiraEmMillis||0)>0 ? `Novas entradas até: ${new Date(Number(dados.expiraEmMillis)).toLocaleString("pt-BR")}.` : ''}`} Use <strong>Encerrar</strong> para finalizar a avaliação e as tentativas em andamento.
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
                 <a href="https://wagnerbizza.github.io/quiz-interativo/" target="_blank" rel="noopener" style="background:#22c55e;color:white;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;" title="Abre exatamente a versão publicada que os alunos usam">👁️ Testar publicação</a>

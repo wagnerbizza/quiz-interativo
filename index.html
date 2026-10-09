@@ -1034,7 +1034,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           const motivo = String(pacote.motivoEncerramento || "").trim();
           const porTempo = expirada && !estaInativa || /tempo máximo|tempo maximo|prazo geral|esgotad|expirad/i.test(motivo);
           textoAvisoEncerramentoEntrada = porTempo
-            ? "⌛ O tempo da avaliação terminou. A prova foi encerrada automaticamente."
+            ? "⌛ O prazo para iniciar a avaliação terminou. Novas entradas estão bloqueadas."
             : "🏁 A avaliação foi encerrada pelo professor.";
           avisoEncerramentoEntradaAte = Date.now() + 15000;
         }
@@ -1593,11 +1593,10 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           if (!pacote) return;
           const expirou = Number(pacote.expiraEmMillis || 0) > 0 &&
             Date.now() >= Number(pacote.expiraEmMillis);
-          if (pacote.ativa === false || expirou) {
-            await encerrarSessaoAluno(
-              pacote.motivoEncerramento ||
-              (expirou ? "Prazo geral da avaliação encerrado." : "Avaliação encerrada pelo professor.")
-            );
+          // O prazo expiraEmMillis restringe apenas NOVOS inícios.
+          // Uma tentativa em andamento termina por tempo individual ou encerramento explícito.
+          if (pacote.ativa === false) {
+            await encerrarSessaoAluno(pacote.motivoEncerramento || "Avaliação encerrada pelo professor.");
           }
         } catch (_) {}
       }, 5000);
