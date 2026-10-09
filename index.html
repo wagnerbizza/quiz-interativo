@@ -191,6 +191,18 @@ ATENÇÃO:
     stroke: currentColor !important;
   }
 
+
+/* ACESSO EM DUAS ETAPAS: a primeira tela não revela dados da avaliação. */
+body:not(.token-aluno-validado) #detalhes-prova-ativa,
+body:not(.token-aluno-validado) #form-login,
+body:not(.token-aluno-validado) #tela-login > h1 { display:none !important; }
+body.token-aluno-validado #etapa-token-aluno { display:none !important; }
+body.token-aluno-validado #form-login { display:block !important; }
+body.token-aluno-validado #detalhes-prova-ativa { display:block !important; }
+body.token-aluno-validado #tela-login > h1 { display:block !important; }
+body:not(.token-aluno-validado) #tela-login {max-width:720px;margin:auto;}
+body:not(.token-aluno-validado) #etapa-token-aluno {display:block !important;}
+#escola-identificada-aluno {padding:12px 14px;border:1px solid #334155;border-radius:10px;margin-bottom:12px;color:#cbd5e1;}
 </style>
 
 <style id="fase8b-aluno-profissional">
@@ -570,8 +582,10 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
   <p id="aviso-token-aluno" role="status" style="color:#fda4af;font-weight:700;"></p>
 </div>
       <form id="form-login" style="display:none;">
+        <div id="escola-identificada-aluno" aria-live="polite">🏫 Escola identificada pelo token</div>
+        <button type="button" id="voltar-ao-token-aluno" style="border:0;background:none;color:#93c5fd;cursor:pointer;margin:0 0 14px;">← Voltar ao token</button>
         <!-- 🏫 ALTERAR AQUI somente se quiser mudar o texto do seletor de escola -->
-        <div class="grupo-form">
+        <div class="grupo-form" id="grupo-escola-aluno" style="display:none;">
           <label for="escola-aluno">Sua Escola:</label>
           <select id="escola-aluno" required>
             <option value="" disabled selected>Carregando escolas...</option>
@@ -727,6 +741,17 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
       const ativo = !!(prova && prova.escolaAtiva && prova.ativa !== false);
       const esperado = String(prova?.token || "").trim();
       const liberado = ativo && !!esperado && tokenLiberadoParaProva === chaveTokenProva(prova);
+      document.body.classList.toggle("token-aluno-validado", liberado);
+      if (liberado) {
+        const nomeEscola = String(prova.escolaAtiva || "");
+        const avisoEscola = document.getElementById("escola-identificada-aluno");
+        if (avisoEscola) avisoEscola.textContent = "🏫 Escola: " + nomeEscola;
+        const seletor = document.getElementById("escola-aluno");
+        if (seletor) {
+          const correspondente = [...seletor.options].find(o => normalizarId(o.value) === normalizarId(nomeEscola));
+          if (correspondente) seletor.value = correspondente.value;
+        }
+      }
       if (etapaTokenAluno) etapaTokenAluno.style.display = liberado ? "none" : "block";
       if (formularioAluno) formularioAluno.style.display = liberado ? "" : "none";
       if (detalhesProvaAtiva) detalhesProvaAtiva.style.display = liberado ? "" : "none";
@@ -754,6 +779,11 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         evento.preventDefault();
         btnValidarTokenAluno?.click();
       }
+    });
+    document.getElementById("voltar-ao-token-aluno")?.addEventListener("click", () => {
+      tokenLiberadoParaProva = "";
+      if (inputTokenAluno) inputTokenAluno.value = "";
+      atualizarEtapaTokenAluno();
     });
     // Bloqueia visualmente o formulário se uma prova diferente for publicada.
     atualizarEtapaTokenAluno();
