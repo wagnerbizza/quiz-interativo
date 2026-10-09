@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791546924325",
+  "idAvaliacao": "av_1791556438217",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -13,12 +13,12 @@
     "Ensino Médio Técnico"
   ],
   "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
-  "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 5,
-  "tempoMaximoMinutos": 5,
+  "quantidadeQuestoes": 5,
+  "tempoMinimoMinutos": 1,
+  "tempoLimiteMinutos": 3,
+  "tempoMaximoMinutos": 3,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791557724325,
+  "expiraEmMillis": 1791567238217,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -26,46 +26,67 @@
     "3D"
   ],
   "token": "4321",
-  "seedReordenacao": "1791546924325",
-  "publicadoEm": "2026-10-09T11:55:24.646Z",
+  "seedReordenacao": "1791556438217",
+  "publicadoEm": "2026-10-09T14:33:58.875Z",
   "questoesPublicas": [
     {
-      "idQuestao": "q1wTzKtmEJ0FlbsVV2x0",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Análise de Componentes Principais (PCA)?",
+      "idQuestao": "NTACcgHWNulQshcLxCFu",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 33] O que é um hiperparâmetro em machine learning?",
       "opcoes": [
-        "Técnica estatística de redução de dimensionalidade baseada em transformações lineares",
-        "Protocolo de segurança para autenticação de usuários em redes",
-        "Sistema de gerenciamento de banco de dados relacional distribuído",
-        "Ferramenta de edição gráfica para criação de banners web",
-        "Método de backup automático de arquivos do sistema"
+        "A) Parâmetro externo cuja configuração é definida antes do início do processo de treinamento",
+        "B) Um parâmetro que muda sozinho na nuvem",
+        "C) A velocidade máxima do sistema operacional",
+        "D) Um comando de terminal Linux"
       ]
     },
     {
-      "idQuestao": "POStIHPo6LZL4bZT6lyq",
+      "idQuestao": "HbaBr5Ik7V21X0Paav8u",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Qual tag HTML5 é usada para incorporar elementos vetoriais escaláveis diretamente no documento?",
+      "pergunta": "O que é o DOM Virtual no React?",
       "opcoes": [
-        "<canvas>",
-        "<vector>",
-        "<svg>",
-        "<draw>",
-        "<graphic>"
+        "Uma cópia leve na memória do DOM real, usada para otimizar a renderização e performance",
+        "Um óculos de realidade virtual para desenvolvedores",
+        "Um servidor de hospedagem em nuvem",
+        "Um emulador de terminal"
       ]
     },
     {
-      "idQuestao": "d6ahpdxGfnZd32zFUHkm",
+      "idQuestao": "LEqS4rmU7hTLPSyb9DUW",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é Computer Vision e qual sua aplicação comum?",
+      "pergunta": "O que é a interpretabilidade pós-hoc?",
       "opcoes": [
-        "Reconhecimento facial em sistemas de segurança e biometria",
-        "Criação de planilhas financeiras automatizadas",
-        "Envio de mensagens instantâneas criptografadas",
-        "Gerenciamento de filas de impressão em rede",
-        "Otimização de consultas em bancos de dados relacionais"
+        "Métodos aplicados após o treinamento de um modelo complexo para explicar suas previsões",
+        "A correção de erros após o programa travar",
+        "A formatação de um computador após o uso",
+        "A criação de relatórios impressos"
+      ]
+    },
+    {
+      "idQuestao": "9vebpQlyjhdY78kB7cCw",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 35] Qual é a principal função de uma rede neural artificial?",
+      "opcoes": [
+        "A) Gerenciar partições físicas de disco rígido",
+        "B) Compilar códigos de baixo nível",
+        "C) Processar dados através de camadas de nós para reconhecimento de padrões",
+        "D) Imprimir relatórios em formato PDF"
+      ]
+    },
+    {
+      "idQuestao": "1e8grQIi6yYzxxi6tedS",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a detecção de anomalias por IA?",
+      "opcoes": [
+        "A identificação de itens, eventos ou observações que não se ajustam a um padrão esperado",
+        "A busca por palavras repetidas em um texto",
+        "A contagem de arquivos em uma pasta",
+        "A atualização de softwares de segurança"
       ]
     }
   ]
