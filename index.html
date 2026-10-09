@@ -548,7 +548,8 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
 
   <div class="container">
     <div id="tela-login">
-      <h1>ÁREA DO ALUNO - Avaliação</h1>\n      <a href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
+      <h1>ÁREA DO ALUNO - Avaliação</h1>
+      <a href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
       <div id="detalhes-prova-ativa" class="info-box">⏳ Verificando se há alguma prova ativa no momento...</div>
 
 <!-- Etapa de acesso: utiliza a validação de token já existente, sem duplicar a segurança. -->
@@ -827,7 +828,9 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
         `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
       selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
       btnIniciarProva.disabled = true;
-      if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";\n      tokenLiberadoParaProva = "";\n      atualizarEtapaTokenAluno();
+      if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";
+      tokenLiberadoParaProva = "";
+      atualizarEtapaTokenAluno();
       if (inputTokenAluno) inputTokenAluno.value = "";
     }
 
@@ -899,7 +902,9 @@ input, select { padding: 9px 11px !important; min-height: 40px !important; font-
            <div>Nenhuma escola possui avaliação publicada neste momento.</div>`;
         selectTurma.innerHTML = `<option value="" disabled selected>Nenhuma turma liberada</option>`;
         btnIniciarProva.disabled = true;
-        if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";\n      tokenLiberadoParaProva = "";\n      atualizarEtapaTokenAluno();
+        if (grupoTokenAcesso) grupoTokenAcesso.style.display = "none";
+      tokenLiberadoParaProva = "";
+      atualizarEtapaTokenAluno();
         if (inputTokenAluno) inputTokenAluno.value = "";
         return;
       }
