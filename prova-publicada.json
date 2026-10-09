@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791556438217",
+  "idAvaliacao": "av_1791558627106",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -13,12 +13,12 @@
     "Ensino Médio Técnico"
   ],
   "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 5,
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 1,
-  "tempoLimiteMinutos": 3,
-  "tempoMaximoMinutos": 3,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791567238217,
+  "tempoLimiteMinutos": 2,
+  "tempoMaximoMinutos": 2,
+  "tempoAtivacaoMinutos": 10,
+  "expiraEmMillis": 1791559227106,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -26,67 +26,44 @@
     "3D"
   ],
   "token": "4321",
-  "seedReordenacao": "1791556438217",
-  "publicadoEm": "2026-10-09T14:33:58.875Z",
+  "seedReordenacao": "1791558627106",
+  "publicadoEm": "2026-10-09T15:10:27.818Z",
   "questoesPublicas": [
     {
-      "idQuestao": "NTACcgHWNulQshcLxCFu",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 33] O que é um hiperparâmetro em machine learning?",
-      "opcoes": [
-        "A) Parâmetro externo cuja configuração é definida antes do início do processo de treinamento",
-        "B) Um parâmetro que muda sozinho na nuvem",
-        "C) A velocidade máxima do sistema operacional",
-        "D) Um comando de terminal Linux"
-      ]
-    },
-    {
-      "idQuestao": "HbaBr5Ik7V21X0Paav8u",
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End",
-      "pergunta": "O que é o DOM Virtual no React?",
-      "opcoes": [
-        "Uma cópia leve na memória do DOM real, usada para otimizar a renderização e performance",
-        "Um óculos de realidade virtual para desenvolvedores",
-        "Um servidor de hospedagem em nuvem",
-        "Um emulador de terminal"
-      ]
-    },
-    {
-      "idQuestao": "LEqS4rmU7hTLPSyb9DUW",
+      "idQuestao": "rPzPtmw5wT00KIwQvj2O",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a interpretabilidade pós-hoc?",
+      "pergunta": "Quem é frequentemente considerado o pai da computação e pioneiro nos testes de inteligência artificial?",
       "opcoes": [
-        "Métodos aplicados após o treinamento de um modelo complexo para explicar suas previsões",
-        "A correção de erros após o programa travar",
-        "A formatação de um computador após o uso",
-        "A criação de relatórios impressos"
+        "Alan Turing",
+        "Albert Einstein",
+        "Isaac Newton",
+        "Bill Gates"
       ]
     },
     {
-      "idQuestao": "9vebpQlyjhdY78kB7cCw",
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial",
-      "pergunta": "[Técnico 35] Qual é a principal função de uma rede neural artificial?",
+      "idQuestao": "o8ZCHN73ip5kHcb9Rohb",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "[Técnico 5 - 1790243771995]O que caracteriza o modelo IaaS na computação em nuvem?",
       "opcoes": [
-        "A) Gerenciar partições físicas de disco rígido",
-        "B) Compilar códigos de baixo nível",
-        "C) Processar dados através de camadas de nós para reconhecimento de padrões",
-        "D) Imprimir relatórios em formato PDF"
+        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "Entrega de softwares prontos via navegador",
+        "Ambiente exclusivo para programar sem gerenciar servidores",
+        "Armazenamento local em HDs físicos"
       ]
     },
     {
-      "idQuestao": "1e8grQIi6yYzxxi6tedS",
+      "idQuestao": "KdEeowQVG8Jk6vIOZvSP",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a detecção de anomalias por IA?",
+      "pergunta": "O que é o Aprendizado Ativo (Active Learning)?",
       "opcoes": [
-        "A identificação de itens, eventos ou observações que não se ajustam a um padrão esperado",
-        "A busca por palavras repetidas em um texto",
-        "A contagem de arquivos em uma pasta",
-        "A atualização de softwares de segurança"
+        "Subcampo onde o algoritmo pode consultar um humano para rotular dados mais informativos",
+        "Sistema que funciona apenas quando o usuário está conectado",
+        "Processo de atualização automática do sistema operacional",
+        "Cópia de segurança realizada em horários de pico",
+        "Envio de notificações push para dispositivos móveis"
       ]
     }
   ]
