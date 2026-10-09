@@ -2734,8 +2734,8 @@ if (window.location.pathname.includes("painel.html")) {
                 <input type="number" id="tempo-ativacao-prova" value="180" min="5" step="5" title="Tempo total em que esta prova ficará disponível para novos alunos. Ao vencer, a Área do Aluno bloqueia novos acessos." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Token / Senha de Acesso:</label>
-                <input type="text" id="input-token-ativacao" placeholder="Ex: PROVA123" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
+                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Token / Senha de Acesso (obrigatório):</label>
+                <input type="text" id="input-token-ativacao" required autocomplete="off" placeholder="Obrigatório — Ex: PROVA123" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
               </div>
               <div>
                 <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Agendar Início Simultâneo:</label>
@@ -2806,6 +2806,14 @@ if (window.location.pathname.includes("painel.html")) {
         const tempoLim = parseInt(painelDinamico.querySelector("#tempo-prova-ativacao")?.value) || 0;
         // 🔵 FASE 10C.1 — duração total da publicação; diferente do tempo individual do aluno.
         const tempoAtivacao = Math.max(5, parseInt(painelDinamico.querySelector("#tempo-ativacao-prova")?.value) || 180);
+
+        // Não permitir publicar avaliações sem token, inclusive pelo modo de contingência.
+        if (!tokenProva) {
+          alert("⚠ Informe o token de acesso antes de ativar a avaliação. O token é obrigatório.");
+          const campoToken = painelDinamico.querySelector("#input-token-ativacao");
+          campoToken?.focus();
+          return;
+        }
 
         if (materiasSelecionadas.length === 0 || turmasSelecionadas.length === 0) {
           alert("⚠ Selecione pelo menos uma matéria e uma turma para publicar a prova!");
