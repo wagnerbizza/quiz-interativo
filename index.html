@@ -702,7 +702,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     // 🔐 FASE 10C — o aluno recebe uma identidade anônima do Firebase.
     // Ele não precisa criar conta nem digitar senha.
-    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence }
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserSessionPersistence }
       from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     console.info("QUIZ BUILD: GITHUB-FALLBACK-TESTE-2026-10-05");
@@ -1232,10 +1232,13 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     window.addEventListener("pageshow", conferirPacotePublicoNaEntrada);
     window.addEventListener("online", conferirPacotePublicoNaEntrada);
     conferirPacotePublicoNaEntrada();
-    // A sessão anônima fica apenas na memória desta página/instância.
-    // Ela não substitui o login persistente do professor.
-    setPersistence(auth, inMemoryPersistence)
-      .then(() => signInAnonymously(auth))
+    // Mantém o MESMO UID anônimo ao atualizar a aba (F5), permitindo
+    // atualizar o registro de monitoramento protegido pelas regras do Firestore.
+    // A instância alunoApp é separada da autenticação do professor.
+    // A persistência de sessão termina quando a sessão do navegador é encerrada;
+    // a retomada em OUTRO computador exigirá autorização segura específica.
+    setPersistence(auth, browserSessionPersistence)
+      .then(() => auth.currentUser ? auth.currentUser : signInAnonymously(auth))
       .catch((erro) => {
         console.error("Falha na autenticação anônima:", erro);
         if (!ultimoPacotePublicoConfirmado) {
