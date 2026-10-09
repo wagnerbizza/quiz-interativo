@@ -617,9 +617,23 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       <button type="button" id="btn-ver-token-aluno" title="Mostrar ou ocultar o código digitado" aria-label="Mostrar código" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:20px;padding:6px;">👁</button>
     </div>
   </div>
+  <!-- Os três códigos ficam na mesma tela; códigos especiais nunca substituem o token. -->
+  <div style="margin-top:18px;padding:14px;border:1px solid #334155;border-radius:12px;display:grid;gap:14px;">
+    <div class="grupo-form" style="margin:0;">
+      <label for="codigo-recuperacao-aluno">🔄 Código de recuperação (opcional)</label>
+      <input type="text" id="codigo-recuperacao-aluno" autocomplete="off" maxlength="16" placeholder="Somente se já iniciou a prova" style="text-transform:uppercase;width:100%;box-sizing:border-box;">
+      <small style="color:var(--text-muted)">Para continuar uma avaliação interrompida. Solicite ao professor. Não reinicia o tempo.</small>
+    </div>
+    <div class="grupo-form" style="margin:0;">
+      <label for="codigo-entrada-atrasada-aluno">🕒 Código de entrada atrasada (opcional)</label>
+      <input type="text" id="codigo-entrada-atrasada-aluno" autocomplete="off" maxlength="16" placeholder="Somente se o prazo de entrada acabou" style="text-transform:uppercase;width:100%;box-sizing:border-box;">
+      <small style="color:var(--text-muted)">Para quem ainda não começou e recebeu autorização individual do professor. A validação deste código ainda depende da integração com o sistema.</small>
+    </div>
+    <small style="color:var(--text-muted)">Entrada normal: preencha apenas o token. Os códigos especiais são usados somente quando autorizados.</small>
+  </div>
   <button type="button" id="btn-validar-token-aluno" class="btn" style="width:100%;margin-top:12px;" disabled>Continuar →</button>
   <p id="aviso-token-aluno" role="status" style="color:#fda4af;font-weight:700;"></p>
-  <p id="aviso-inatividade-aluno">Por segurança, o acesso retorna à apresentação após 5 minutos sem atividade.</p>
+  <p id="aviso-inatividade-aluno">Por segurança, após 3 minutos sem atividade nesta tela, você voltará à apresentação.</p>
 </div>
       <form id="form-login" style="display:none;">
         <div id="escola-identificada-aluno" aria-live="polite">🏫 Escola identificada pelo token</div>
@@ -641,11 +655,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             <option value="" disabled selected>Aguardando liberação de turmas...</option>
           </select>
         </div>
-        <div class="grupo-form" style="margin-top:8px;">
-          <label for="codigo-recuperacao-aluno">Código de recuperação (somente se autorizado pelo professor):</label>
-          <input type="text" id="codigo-recuperacao-aluno" autocomplete="off" maxlength="16" placeholder="Código individual, se necessário" style="text-transform:uppercase;">
-          <small style="color:var(--text-muted)">Deixe em branco para entrada normal. O código não reinicia a avaliação.</small>
-        </div>
+
         <button type="submit" id="btn-iniciar-prova" class="btn">🚀 Iniciar Avaliação</button>
       </form>
     </div>
@@ -828,6 +838,11 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       else if (avisoTokenAluno && /^(Aguardando|Avaliação sem token)/.test(avisoTokenAluno.textContent)) avisoTokenAluno.textContent = "";
     }
     btnValidarTokenAluno?.addEventListener("click", () => {
+      const codigoAtraso = document.getElementById("codigo-entrada-atrasada-aluno")?.value.trim();
+      if (codigoAtraso) {
+        if (avisoTokenAluno) avisoTokenAluno.textContent = "O código de entrada atrasada ainda não está habilitado para validação. Solicite orientação ao professor.";
+        return;
+      }
       const prova = dadosProvaAtiva;
       const esperado = String(prova?.token || "").trim();
       const informado = String(inputTokenAluno?.value || "").trim();
@@ -856,7 +871,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     });
     // Retorno automático somente ANTES do início da prova (nunca durante questões).
     // Mantém um único relógio de inatividade para as duas etapas de acesso.
-    const TEMPO_INATIVIDADE_ACESSO = 5 * 60 * 1000;
+    const TEMPO_INATIVIDADE_ACESSO = 3 * 60 * 1000;
     let ultimaInteracaoAcesso = Date.now();
     function registrarInteracaoAcesso() {
       if (!document.getElementById("tela-login")?.classList.contains("hidden")) {
@@ -883,6 +898,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         if (inputTokenAluno) inputTokenAluno.value = "";
         const nome = document.getElementById("nome-aluno");
         if (nome) nome.value = "";
+        for (const id of ["codigo-recuperacao-aluno", "codigo-entrada-atrasada-aluno"]) { const campo = document.getElementById(id); if (campo) campo.value = ""; }
         window.location.replace("apresentacao.html");
       }
     }
@@ -1957,7 +1973,7 @@ if (unsubscribePermissaoAluno) {
       // Programa o retorno ANTES da sincronização remota: Firebase lento não
       // pode deixar dados do aluno expostos em computadores compartilhados.
       if (retornoTelaInicialTimeout) clearTimeout(retornoTelaInicialTimeout);
-      retornoTelaInicialTimeout = setTimeout(voltarTelaInicialAluno, 15000);
+      retornoTelaInicialTimeout = setTimeout(voltarTelaInicialAluno, 60000);
 
       try {
         const agora = Date.now();
@@ -2034,6 +2050,8 @@ if (unsubscribePermissaoAluno) {
       }
       if (inputNomeAluno) inputNomeAluno.value = "";
       if (inputTokenAluno) inputTokenAluno.value = "";
+      for (const id of ["codigo-recuperacao-aluno", "codigo-entrada-atrasada-aluno"]) { const campo = document.getElementById(id); if (campo) campo.value = ""; }
+      ultimaInteracaoAcesso = Date.now();
 
       // Reativa a verificação da tela inicial após a conclusão da avaliação.
       // Antes, o intervalo era cancelado na finalização e não era reiniciado.
