@@ -1,0 +1,3 @@
+# Backups locais podem conter dados escolares; não publicar no GitHub.
+backup-local/**
+!backup-local/**/.gitkeep

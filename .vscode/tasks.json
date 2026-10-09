@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Sincronização automática do sistema",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "Write-Host 'QUIZ: sincronizacao automatica ativa (modo silencioso).' -ForegroundColor Green\n$arquivos = @('prova-publicada.json','app.js','index.html','painel.html','login.html','escola.html','style.css','firebase.json','firestore.rules','apresentacao.html')\n$ultimoFetch = [datetime]::MinValue\n$ultimoAviso = ''\nwhile ($true) {\n  Start-Sleep -Seconds 10\n  $pendentes = @(git status --porcelain -- $arquivos)\n  if ($LASTEXITCODE -ne 0) { if ($ultimoAviso -ne 'status') { Write-Host 'QUIZ: erro ao consultar arquivos.' -ForegroundColor Red; $ultimoAviso='status' }; continue }\n  if ($pendentes.Count -gt 0) {\n    git add -- $arquivos\n    if ($LASTEXITCODE -ne 0) { if ($ultimoAviso -ne 'add') { Write-Host 'QUIZ: erro ao preparar arquivos.' -ForegroundColor Red; $ultimoAviso='add' }; continue }\n    git diff --cached --quiet\n    if ($LASTEXITCODE -eq 1) {\n      git -c gc.auto=0 commit -m 'Atualizacao automatica do sistema'\n      if ($LASTEXITCODE -ne 0) { if ($ultimoAviso -ne 'commit') { Write-Host 'QUIZ: erro ao registrar alteracoes.' -ForegroundColor Red; $ultimoAviso='commit' }; continue }\n    }\n  }\n  $agora = Get-Date\n  if (($agora - $ultimoFetch).TotalSeconds -ge 60) {\n    git -c gc.auto=0 -c fetch.writeCommitGraph=false fetch origin main --quiet\n    if ($LASTEXITCODE -ne 0) { if ($ultimoAviso -ne 'fetch') { Write-Host 'QUIZ: sem acesso ao GitHub; nova tentativa em breve.' -ForegroundColor Yellow; $ultimoAviso='fetch' }; continue }\n    $ultimoFetch = $agora\n  }\n  git merge-base --is-ancestor origin/main HEAD\n  if ($LASTEXITCODE -ne 0) { if ($ultimoAviso -ne 'divergencia') { Write-Host 'QUIZ: commits remotos pendentes. Publicacao pausada; integrar manualmente antes de enviar.' -ForegroundColor Yellow; $ultimoAviso='divergencia' }; continue }\n  git rev-list --count origin/main..HEAD | ForEach-Object { $quantidade = [int]$_ }\n  if ($LASTEXITCODE -ne 0) { continue }\n  if ($quantidade -gt 0) {\n    git -c gc.auto=0 push origin main\n    if ($LASTEXITCODE -eq 0) { Write-Host 'QUIZ: Publicacao concluida.' -ForegroundColor Green; $ultimoAviso='' }\n    elseif ($ultimoAviso -ne 'push') { Write-Host 'QUIZ: envio nao concluido; nova tentativa em breve.' -ForegroundColor Yellow; $ultimoAviso='push' }\n  } else { $ultimoAviso='' }\n}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "focus": false,
+        "clear": true,
+        "showReuseMessage": true
+      }
+    }
+  ]
+}
