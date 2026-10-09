@@ -40,6 +40,12 @@ service cloud.firestore {
       allow write: if professor();
     }
 
+    // Autorização individual de primeira entrada após o prazo geral.
+    // Nesta primeira etapa, os bilhetes são administrados SOMENTE pelo professor.
+    // Não liberar leitura anônima até que a validação do aluno esteja integrada.
+    match /bilhetes_entrada_atrasada/{codigo} { allow read, write: if professor(); }
+    match /registros_entrada_atrasada/{id} { allow read, write: if professor(); }
+
     // Bilhetes de recuperação: leitura apenas por ID secreto, nunca listagem.
     // O código deve ser compartilhado pelo professor somente com o aluno correto.
     match /bilhetes_recuperacao/{codigo} {

@@ -2987,6 +2987,7 @@ if (window.location.pathname.includes("painel.html")) {
                 <a href="https://wagnerbizza.github.io/quiz-interativo/" target="_blank" rel="noopener" style="background:#22c55e;color:white;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;" title="Abre exatamente a versão publicada que os alunos usam">👁️ Testar publicação</a>
                 <button type="button" onclick="gerarCopiaProvaAtivaPDF('${escolaEsc}')" style="background:#0284c7;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">📄 Cópia</button>
                 <button type="button" class="btn-reembaralhar-escola" data-escola="${dados.escolaAtiva}" style="background:#8b5cf6;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🔀 Reembaralhar</button>
+                <button type="button" class="btn-liberar-atrasado" data-escola="${dados.escolaAtiva}" data-avaliacao="${dados.idAvaliacao || dados.publicadoEm || ''}" data-turmas="${(dados.turmasAtivas||[]).join(' | ')}" style="background:#d97706;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;" title="Gerar código individual para um aluno iniciar após o prazo">🔑 Entrada atrasada</button>
                 <button type="button" onclick="encerrarProvaAtivaAgora('${escolaEsc}')" style="background:#ef4444;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🛑 Encerrar</button>
               </div>
             </div>`;
@@ -4832,6 +4833,51 @@ if (window.location.pathname.includes("painel.html")) {
     });
     corpoTabelaTempoReal.innerHTML = htmlOnline;
   };
+
+  // Entrada atrasada é diferente de recuperação: destina-se a uma PRIMEIRA tentativa.
+  // O bilhete é individual, por avaliação/escola/turma e fica registrado para auditoria.
+  // Não altera expiraEmMillis nem reabre o acesso dos demais alunos.
+  document.addEventListener("click", async (evento) => {
+    const botao = evento.target.closest?.(".btn-liberar-atrasado");
+    if (!botao) return;
+    const escola = String(botao.dataset.escola || "").trim();
+    const idAvaliacao = String(botao.dataset.avaliacao || "").trim();
+    const turmas = String(botao.dataset.turmas || "").split(" | ").filter(Boolean);
+    if (!escola || !idAvaliacao) { alert("Não foi possível identificar a escola e a avaliação."); return; }
+    const nome = prompt("Nome completo do aluno que chegou atrasado:");
+    if (nome === null) return;
+    const nomeLimpo = nome.trim().replace(/\s+/g, " ").toUpperCase();
+    if (nomeLimpo.length < 3) { alert("Informe o nome completo do aluno."); return; }
+    const turma = prompt("Turma autorizada (uma destas: " + turmas.join(", ") + "):", turmas[0] || "");
+    if (turma === null) return;
+    const turmaEscolhida = turmas.find(t => t.toLocaleLowerCase("pt-BR") === turma.trim().toLocaleLowerCase("pt-BR"));
+    if (!turmaEscolhida) { alert("A turma deve corresponder a uma turma da avaliação ativa."); return; }
+    if (!confirm(`Autorizar PRIMEIRA entrada atrasada para ${nomeLimpo} (${turmaEscolhida})?\n\nEssa ação não reinicia tentativas nem altera o prazo geral.`)) return;
+    botao.disabled = true;
+    try {
+      const codigo = criarCodigoRecuperacao();
+      const idAluno = [escola, nomeLimpo, turmaEscolhida].map(v => String(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "")).join("__");
+      const [online, permissao] = await Promise.all([
+        getDoc(doc(db,"alunos_online",idAluno)), getDoc(doc(db,"permissoes_alunos",idAluno))
+      ]);
+      if ((online.exists() && String(online.data().idAvaliacao||"") === idAvaliacao) ||
+          (permissao.exists() && String(permissao.data().idAvaliacao||"") === idAvaliacao && permissao.data().tentativaIniciada)) {
+        throw new Error("Já existe tentativa para este aluno. Use Recuperação, não Entrada atrasada.");
+      }
+      const registro = { codigo, escola, idAvaliacao, nome:nomeLimpo, turma:turmaEscolhida,
+        idAluno, status:"autorizada", tipo:"entrada_atrasada", autorizadoEm:serverTimestamp() };
+      await setDoc(doc(db,"bilhetes_entrada_atrasada",codigo), registro);
+      await addDoc(collection(db,"registros_entrada_atrasada"), {
+        escola,idAvaliacao,nome:nomeLimpo,turma:turmaEscolhida,idAluno,
+        evento:"autorizacao_entrada_atrasada",data:serverTimestamp(),codigo
+      });
+      alert(`Código de ENTRADA ATRASADA para ${nomeLimpo}:\n\n${codigo}\n\nEntregue somente ao aluno identificado. Este código ainda requer integração na tela do aluno.`);
+      mostrarNotificacao("Autorização de entrada atrasada registrada.");
+    } catch (erro) {
+      console.error("Falha na autorização de entrada atrasada:",erro);
+      alert("Não foi possível gerar o código: " + (erro.message || erro.code || erro));
+    } finally { botao.disabled = false; }
+  });
 
   // Recuperação assistida: o código é privado do professor. Não altera a
   // permissão de refazer a prova nem expõe o código em permissões_alunos.
