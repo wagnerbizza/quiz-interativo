@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791546797889",
+  "idAvaliacao": "av_1791546924325",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -15,10 +15,10 @@
   "periodoAtivo": "Manhã",
   "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
+  "tempoLimiteMinutos": 5,
+  "tempoMaximoMinutos": 5,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791557597889,
+  "expiraEmMillis": 1791557724325,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -26,46 +26,46 @@
     "3D"
   ],
   "token": "4321",
-  "seedReordenacao": "1791546797889",
-  "publicadoEm": "2026-10-09T11:53:18.156Z",
+  "seedReordenacao": "1791546924325",
+  "publicadoEm": "2026-10-09T11:55:24.646Z",
   "questoesPublicas": [
     {
-      "idQuestao": "qifQ6NewIIHlgQUU38NW",
+      "idQuestao": "q1wTzKtmEJ0FlbsVV2x0",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Análise de Componentes Principais (PCA)?",
+      "opcoes": [
+        "Técnica estatística de redução de dimensionalidade baseada em transformações lineares",
+        "Protocolo de segurança para autenticação de usuários em redes",
+        "Sistema de gerenciamento de banco de dados relacional distribuído",
+        "Ferramenta de edição gráfica para criação de banners web",
+        "Método de backup automático de arquivos do sistema"
+      ]
+    },
+    {
+      "idQuestao": "POStIHPo6LZL4bZT6lyq",
       "materia": "Programação Front-End",
       "categoria": "Programação Front-End",
-      "pergunta": "Qual método JavaScript adiciona um novo item ao final de um array?",
+      "pergunta": "Qual tag HTML5 é usada para incorporar elementos vetoriais escaláveis diretamente no documento?",
       "opcoes": [
-        "shift()",
-        "unshift()",
-        "push()",
-        "pop()",
-        "slice()"
+        "<canvas>",
+        "<vector>",
+        "<svg>",
+        "<draw>",
+        "<graphic>"
       ]
     },
     {
-      "idQuestao": "PC0lEIfmoQyxpxmrRmMR",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é a criptografia de dados em trânsito?",
+      "idQuestao": "d6ahpdxGfnZd32zFUHkm",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é Computer Vision e qual sua aplicação comum?",
       "opcoes": [
-        "Proteção dos dados enquanto são transmitidos através de uma rede (ex: via HTTPS ou VPN)",
-        "Armazenamento criptografado de arquivos em discos rígidos locais",
-        "Ocultação de endereços IP em roteadores corporativos",
-        "Exclusão de logs de acesso em servidores web",
-        "Processamento de dados em memória RAM sem criptografia"
-      ]
-    },
-    {
-      "idQuestao": "KyfdSgzXYjAdanOYVSRH",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "Qual serviço de nuvem fornece infraestrutura virtualizada completa, incluindo servidores, armazenamento e redes (IaaS)?",
-      "opcoes": [
-        "Software as a Service (SaaS)",
-        "Platform as a Service (PaaS)",
-        "Infrastructure as a Service (IaaS)",
-        "Function as a Service (FaaS)",
-        "Security as a Service (SECaaS)"
+        "Reconhecimento facial em sistemas de segurança e biometria",
+        "Criação de planilhas financeiras automatizadas",
+        "Envio de mensagens instantâneas criptografadas",
+        "Gerenciamento de filas de impressão em rede",
+        "Otimização de consultas em bancos de dados relacionais"
       ]
     }
   ]
