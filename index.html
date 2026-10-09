@@ -573,17 +573,23 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
 #aviso-inatividade-aluno {font-size:12px;text-align:center;color:#94a3b8;margin:12px 0 0}
 @media(max-width:700px){#tela-login{width:100%!important;max-width:100%!important;padding:16px!important}#tela-login #etapa-token-aluno{max-width:100%!important}}
 </style>
+<style id="navegacao-exclusiva-token-v2">
+  html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!important}
+  html.acesso-aluno-autorizado #voltar-apresentacao-token {display:none!important}
+  #etapa-token-aluno #voltar-apresentacao-token {display:inline-block;margin:0 0 14px}
+</style>
 </head>
 <body>
 
   <div class="container">
     <div id="tela-login">
       <h1>ÁREA DO ALUNO - Avaliação</h1>
-      <a id="voltar-apresentacao-token" href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
+      
       <div id="detalhes-prova-ativa" class="info-box" style="display:none;">⏳ Verificando se há alguma prova ativa no momento...</div>
 
 <!-- ETAPA 1: acesso por token; a prova e os dados pessoais só aparecem depois da validação. -->
 <div id="etapa-token-aluno" style="max-width:640px;margin:0 auto 18px;">
+  <a id="voltar-apresentacao-token" href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
   <div style="text-align:center;margin:10px 0 22px;">
     <div aria-hidden="true" style="font-size:38px;color:#38bdf8;">🎓</div>
     <h2 style="color:#38bdf8;margin:8px 0;font-size:27px;">ÁREA DO ALUNO</h2>
@@ -752,6 +758,27 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
     const avisoTokenAluno = document.getElementById("aviso-token-aluno");
     const btnValidarTokenAluno = document.getElementById("btn-validar-token-aluno");
     let tokenLiberadoParaProva = "";
+    // Preserva apenas a etapa autorizada durante F5, por até 5 minutos.
+    // Não grava o token nem o nome do aluno. A prova ativa é conferida novamente.
+    const CHAVE_ETAPA_ALUNO = "quiz_etapa_token_autorizada_v1";
+    function lerEtapaAluno() {
+      try {
+        const valor = JSON.parse(sessionStorage.getItem(CHAVE_ETAPA_ALUNO) || "null");
+        if (!valor || !valor.chave || Date.now() > valor.expira) {
+          sessionStorage.removeItem(CHAVE_ETAPA_ALUNO);
+          return "";
+        }
+        return String(valor.chave);
+      } catch (_) { return ""; }
+    }
+    function salvarEtapaAluno(chave) {
+      try { sessionStorage.setItem(CHAVE_ETAPA_ALUNO, JSON.stringify({chave, expira:Date.now()+5*60*1000})); } catch (_) {}
+    }
+    function limparEtapaAluno() {
+      try { sessionStorage.removeItem(CHAVE_ETAPA_ALUNO); } catch (_) {}
+    }
+    tokenLiberadoParaProva = lerEtapaAluno();
+
     function chaveTokenProva(prova) {
       return String(prova?.idAvaliacao || prova?.publicadoEm || prova?.seedReordenacao || "");
     }
@@ -789,6 +816,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
         return;
       }
       tokenLiberadoParaProva = chaveTokenProva(prova);
+      salvarEtapaAluno(tokenLiberadoParaProva);
       if (avisoTokenAluno) avisoTokenAluno.textContent = "";
       atualizarEtapaTokenAluno();
       document.getElementById("nome-aluno")?.focus();
@@ -801,6 +829,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
     });
     document.getElementById("voltar-ao-token-aluno")?.addEventListener("click", () => {
       tokenLiberadoParaProva = "";
+      limparEtapaAluno();
       if (inputTokenAluno) inputTokenAluno.value = "";
       atualizarEtapaTokenAluno();
     });
@@ -829,6 +858,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
       }
       if (Date.now() - ultimaInteracaoAcesso >= TEMPO_INATIVIDADE_ACESSO) {
         tokenLiberadoParaProva = "";
+        limparEtapaAluno();
         if (inputTokenAluno) inputTokenAluno.value = "";
         const nome = document.getElementById("nome-aluno");
         if (nome) nome.value = "";
@@ -1044,7 +1074,10 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
       if (grupoTokenAcesso) grupoTokenAcesso.style.display = "block";
       if (typeof idPacoteAplicadoNaEntrada !== "undefined") {
         const chaveAtual = String(p.idAvaliacao || p.publicadoEm || p.seedReordenacao || "");
-        if (tokenLiberadoParaProva && tokenLiberadoParaProva !== chaveAtual) tokenLiberadoParaProva = "";
+        if (tokenLiberadoParaProva && tokenLiberadoParaProva !== chaveAtual) {
+          tokenLiberadoParaProva = "";
+          limparEtapaAluno();
+        }
       }
       atualizarEtapaTokenAluno();
       if (inputTokenAluno) {
@@ -1838,6 +1871,8 @@ if (unsubscribePermissaoAluno) {
         clearTimeout(retornoTelaInicialTimeout);
         retornoTelaInicialTimeout = null;
       }
+      limparEtapaAluno();
+      tokenLiberadoParaProva = "";
       respostasUsuario = {};
       indiceAtual = 0;
       listaQuestoes = [];
