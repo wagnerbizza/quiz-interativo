@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791503880869",
+  "idAvaliacao": "av_1791544520717",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -18,22 +18,22 @@
   "tempoLimiteMinutos": 1,
   "tempoMaximoMinutos": 1,
   "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791514680869,
+  "expiraEmMillis": 1791555320718,
   "turmasAtivas": [
     "2A",
     "3B",
     "2I",
     "3D"
   ],
-  "token": "4321",
-  "seedReordenacao": "1791503880869",
-  "publicadoEm": "2026-10-08T23:58:01.537Z",
+  "token": "",
+  "seedReordenacao": "1791544520718",
+  "publicadoEm": "2026-10-09T11:15:21.517Z",
   "questoesPublicas": [
     {
-      "idQuestao": "VvbFUH2gF6wts1NJ45yg",
+      "idQuestao": "A7ZzsoZSqgfo3UAZNzX6",
       "materia": "Programacao Front-End",
       "categoria": "Programacao Front-End",
-      "pergunta": "[Técnico 10 - 1790258353910]Qual a principal responsabilidade do CSS em páginas web?",
+      "pergunta": "[Técnico 13 - 1790258354790]Qual a principal responsabilidade do CSS em páginas web?",
       "opcoes": [
         "Estruturar os textos semânticos",
         "Controlar a aparência visual, layout, cores e responsividade",
@@ -42,28 +42,27 @@
       ]
     },
     {
-      "idQuestao": "xb0kCqBM5JK52hA5spgR",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a Mineração de Texto (Text Mining)?",
+      "idQuestao": "JVWN2XYSI5l9p6bY40wZ",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "[Técnico 6 - 1790243772185]O que caracteriza o modelo IaaS na computação em nuvem?",
       "opcoes": [
-        "Processo de derivar informações de alta qualidade a partir de textos não estruturados",
-        "Criação manual de documentos de texto no editor",
-        "Compactação de arquivos PDF para envio por e-mail",
-        "Tradução de manuais impressos para o formato digital",
-        "Exclusão de arquivos duplicados no servidor"
+        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "Entrega de softwares prontos via navegador",
+        "Ambiente exclusivo para programar sem gerenciar servidores",
+        "Armazenamento local em HDs físicos"
       ]
     },
     {
-      "idQuestao": "a5KYm1wAnsiLeCuTfz2l",
+      "idQuestao": "IbhICyJeKCiGiNpfHHL2",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a segmentação de imagens em Visão Computacional?",
+      "pergunta": "O que é a desinformação gerada por IA (Deepfakes)?",
       "opcoes": [
-        "O processo de dividir uma imagem digital em múltiples segmentos ou regiões (ex: separar fundo de objeto)",
-        "A divisão de uma foto em vários arquivos menores",
-        "O aumento da resolução de uma imagem",
-        "A conversão de imagens coloridas para preto e branco"
+        "Mídia sintética onde uma pessoa em uma imagem ou vídeo é substituída pela likeness de outra",
+        "Vídeos sem som gerados por erro",
+        "Fotos em preto e branco antigas",
+        "Códigos de computador corrompidos"
       ]
     }
   ]
