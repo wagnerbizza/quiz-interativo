@@ -4784,6 +4784,7 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
           <td style="text-align: center;">
             <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="prepararRecuperacaoAluno(this)" title="Gerar código privado e registrar autorização de retomada">🔑 Recuperação</button>
+            <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="verHistoricoRecuperacaoAluno(this)" title="Consultar autorizações e registros de recuperação deste aluno">📋 Histórico</button>
             <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11.5px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)">🏁 Finalizar</button>
           </td>
         </tr>
@@ -4834,6 +4835,40 @@ if (window.location.pathname.includes("painel.html")) {
     } catch (erro) {
       console.error("Falha ao registrar recuperação:", erro);
       alert("Não foi possível registrar a autorização no Firebase: " + (erro.code || erro.message));
+    } finally { botao.disabled = false; }
+  };
+
+  // Histórico individual de recuperação, restrito ao professor autenticado.
+  // Não expõe códigos em relatórios públicos e não altera tentativas existentes.
+  window.verHistoricoRecuperacaoAluno = async function(botao) {
+    const idAluno = botao.dataset.id;
+    if (!idAluno) return;
+    botao.disabled = true;
+    try {
+      const aluno = alunosOnlineCache.find(a => a.idDoc === idAluno);
+      const referencia = doc(db, "recuperacoes_tentativas", idAluno);
+      const [autorizacao, eventos] = await Promise.all([
+        getDoc(referencia),
+        getDocs(query(collection(db, "registros_recuperacao"), where("idAluno", "==", idAluno)))
+      ]);
+      const dataFormatada = (valor) => {
+        const data = valor?.toDate?.();
+        return data instanceof Date && !Number.isNaN(data.getTime())
+          ? data.toLocaleString("pt-BR") : "Data ainda não sincronizada";
+      };
+      const linhas = eventos.docs.map(item => item.data()).sort((a,b) =>
+        (b.data?.toMillis?.() || 0) - (a.data?.toMillis?.() || 0));
+      const cabecalho = `Aluno: ${aluno?.nome || idAluno}\nEscola: ${aluno?.escola || "Não informada"}\nTurma: ${aluno?.turma || "Não informada"}`;
+      const situacao = autorizacao.exists()
+        ? `Autorização: ${autorizacao.data().status || "Registrada"}\nEmitida: ${dataFormatada(autorizacao.data().autorizadoEm)}\nCódigo: disponível no botão Recuperação (não incluído no histórico)`
+        : "Nenhuma autorização individual encontrada.";
+      const detalhes = linhas.length ? linhas.map((e, i) =>
+        `${i+1}. ${dataFormatada(e.data)} — ${e.evento || "Evento"}\n   ${e.detalhe || ""}`
+      ).join("\n") : "Nenhum evento registrado.";
+      alert(`${cabecalho}\n\n${situacao}\n\nHISTÓRICO DE RECUPERAÇÃO\n${detalhes}`);
+    } catch (erro) {
+      console.error("Erro ao consultar histórico de recuperação:", erro);
+      alert("Não foi possível consultar o histórico. Verifique a conexão e as regras do Firebase.");
     } finally { botao.disabled = false; }
   };
 
