@@ -1,7 +1,7 @@
 {
   "versaoPacote": 1,
   "ativa": true,
-  "idAvaliacao": "av_1791558627106",
+  "idAvaliacao": "av_1791558704294",
   "escolaAtiva": "EE José Lins do Rego",
   "materiasAtivas": [
     "Inteligência Artificial",
@@ -17,8 +17,8 @@
   "tempoMinimoMinutos": 1,
   "tempoLimiteMinutos": 2,
   "tempoMaximoMinutos": 2,
-  "tempoAtivacaoMinutos": 10,
-  "expiraEmMillis": 1791559227106,
+  "tempoAtivacaoMinutos": 3,
+  "expiraEmMillis": 1791558884294,
   "turmasAtivas": [
     "2A",
     "3B",
@@ -26,44 +26,45 @@
     "3D"
   ],
   "token": "4321",
-  "seedReordenacao": "1791558627106",
-  "publicadoEm": "2026-10-09T15:10:27.818Z",
+  "seedReordenacao": "1791558704294",
+  "publicadoEm": "2026-10-09T15:11:44.992Z",
   "questoesPublicas": [
     {
-      "idQuestao": "rPzPtmw5wT00KIwQvj2O",
+      "idQuestao": "qlkXcgwTrx548hN0siEU",
       "materia": "Inteligência Artificial",
       "categoria": "Inteligência Artificial",
-      "pergunta": "Quem é frequentemente considerado o pai da computação e pioneiro nos testes de inteligência artificial?",
+      "pergunta": "Questão oficial de nível avançado nº 54 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
       "opcoes": [
-        "Alan Turing",
-        "Albert Einstein",
-        "Isaac Newton",
-        "Bill Gates"
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
       ]
     },
     {
-      "idQuestao": "o8ZCHN73ip5kHcb9Rohb",
+      "idQuestao": "1lIkcVTMASKmzKn9vPRX",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é robótica inteligente?",
+      "opcoes": [
+        "A integração da inteligência artificial com sistemas robóticos físicos",
+        "A construção de carros sem motor",
+        "A criação de planilhas eletrônicas",
+        "O reparo de telas de celulares"
+      ]
+    },
+    {
+      "idQuestao": "VjFm3giwdD2Qh4DMujhV",
       "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
       "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "[Técnico 5 - 1790243771995]O que caracteriza o modelo IaaS na computação em nuvem?",
+      "pergunta": "O que é o protocolo NTP (Network Time Protocol)?",
       "opcoes": [
-        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "Entrega de softwares prontos via navegador",
-        "Ambiente exclusivo para programar sem gerenciar servidores",
-        "Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "KdEeowQVG8Jk6vIOZvSP",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o Aprendizado Ativo (Active Learning)?",
-      "opcoes": [
-        "Subcampo onde o algoritmo pode consultar um humano para rotular dados mais informativos",
-        "Sistema que funciona apenas quando o usuário está conectado",
-        "Processo de atualização automática do sistema operacional",
-        "Cópia de segurança realizada em horários de pico",
-        "Envio de notificações push para dispositivos móveis"
+        "Protocolo para sincronização dos relógios dos computadores através de redes de dados",
+        "Protocolo de transferência de arquivos em servidores FTP",
+        "Protocolo de resolução de endereços IP para nomes de domínio",
+        "Protocolo de segurança para autenticação em redes sem fio",
+        "Protocolo de envio de correio eletrônico"
       ]
     }
   ]
