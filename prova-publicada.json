@@ -1,21 +1,71 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791545559970",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791545182285,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791545182285",
-  "publicadoEm": "2026-10-09T11:26:22.285Z",
-  "encerradoEm": "2026-10-09T11:26:22.285Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1791556359970,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791545559970",
+  "publicadoEm": "2026-10-09T11:32:40.604Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "1NSWPdMpMJMi0x1uXBux",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual a principal diferença entre IA Fraca e IA Forte?",
+      "opcoes": [
+        "IA Fraca executa tarefas específicas; IA Forte possui consciência geral similar à humana",
+        "IA Fraca consome muita energia; IA Forte consome poucos recursos",
+        "IA Fraca roda apenas na nuvem; IA Forte roda apenas localmente",
+        "IA Fraca é obsoleta; IA Forte é a tecnologia atual",
+        "IA Fraca é utilizada apenas na educação; IA Forte na medicina"
+      ]
+    },
+    {
+      "idQuestao": "9h2M4SMIBcQtNOVTcwth",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 7 - 1790258361439]O que é uma Sprint no framework Scrum?",
+      "opcoes": [
+        "Um documento com requisitos estáticos",
+        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "Reunião final de homologação do cliente",
+        "Cargo de gestão tradicional de projetos"
+      ]
+    },
+    {
+      "idQuestao": "orKrQqxDtgqNCOEqSL1a",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é a Segurança em Camadas (Defesa em Profundidade)?",
+      "opcoes": [
+        "Estratégia de segurança que utiliza múltiplas camadas de proteção para salvaguardar dados e sistemas",
+        "Uso de uma única senha mestra extremamente complexa",
+        "Armazenamento de backups em um único disco rígido externo",
+        "Conexão de computadores a redes sem fio públicas protegidas",
+        "Desativação de firewalls para melhorar a velocidade de rede"
+      ]
+    }
+  ]
 }
