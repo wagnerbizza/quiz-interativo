@@ -1,69 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791544520717",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 1,
-  "tempoMaximoMinutos": 1,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1791555320718,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791545014395,
+  "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1791544520718",
-  "publicadoEm": "2026-10-09T11:15:21.517Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "A7ZzsoZSqgfo3UAZNzX6",
-      "materia": "Programacao Front-End",
-      "categoria": "Programacao Front-End",
-      "pergunta": "[Técnico 13 - 1790258354790]Qual a principal responsabilidade do CSS em páginas web?",
-      "opcoes": [
-        "Estruturar os textos semânticos",
-        "Controlar a aparência visual, layout, cores e responsividade",
-        "Processar regras de negócio no servidor",
-        "Armazenar dados em banco NoSQL"
-      ]
-    },
-    {
-      "idQuestao": "JVWN2XYSI5l9p6bY40wZ",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "[Técnico 6 - 1790243772185]O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "Entrega de softwares prontos via navegador",
-        "Ambiente exclusivo para programar sem gerenciar servidores",
-        "Armazenamento local em HDs físicos"
-      ]
-    },
-    {
-      "idQuestao": "IbhICyJeKCiGiNpfHHL2",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é a desinformação gerada por IA (Deepfakes)?",
-      "opcoes": [
-        "Mídia sintética onde uma pessoa em uma imagem ou vídeo é substituída pela likeness de outra",
-        "Vídeos sem som gerados por erro",
-        "Fotos em preto e branco antigas",
-        "Códigos de computador corrompidos"
-      ]
-    }
-  ]
+  "seedReordenacao": "1791545014395",
+  "publicadoEm": "2026-10-09T11:23:34.395Z",
+  "encerradoEm": "2026-10-09T11:23:34.395Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
