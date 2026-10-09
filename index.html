@@ -617,25 +617,26 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     <small id="prazo-token-instrucao" style="color:var(--text-muted)">O prazo começa na ativação feita pelo professor, não ao abrir esta página.</small>
   </div>
   <div class="grupo-form" id="grupo-token-acesso">
-    <label for="token-aluno">Token da avaliação</label>
+    <label for="token-aluno">🔐 1. Token da avaliação (obrigatório em todas as situações)</label>
+    <small style="color:var(--text-muted)">Código principal fornecido pelo professor para identificar a avaliação. Sozinho, só permite iniciar dentro do prazo.</small>
     <div style="position:relative;">
       <input type="password" id="token-aluno" placeholder="Digite o token..." autocomplete="off" style="padding-right:52px;width:100%;box-sizing:border-box;">
       <button type="button" id="btn-ver-token-aluno" title="Mostrar ou ocultar o código digitado" aria-label="Mostrar código" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:20px;padding:6px;">👁</button>
     </div>
   </div>
-  <!-- Os três códigos ficam na mesma tela; códigos especiais nunca substituem o token. -->
-  <div style="margin-top:18px;padding:14px;border:1px solid #334155;border-radius:12px;display:grid;gap:14px;">
+  <!-- Ordem pedagógica: token principal, atraso para novo ingresso, recuperação para continuidade. -->
+  <div style="margin-top:16px;padding:14px;border:1px solid #334155;border-radius:12px;display:grid;gap:16px;padding-bottom:75px;">
     <div class="grupo-form" style="margin:0;">
-      <label for="codigo-recuperacao-aluno">🔄 Código de recuperação (opcional)</label>
-      <input type="text" id="codigo-recuperacao-aluno" autocomplete="off" maxlength="16" placeholder="Somente se já iniciou a prova" style="text-transform:uppercase;width:100%;box-sizing:border-box;">
-      <small style="color:var(--text-muted)">Para continuar uma avaliação interrompida. Solicite ao professor. Não reinicia o tempo.</small>
+      <label for="codigo-entrada-atrasada-aluno">🕒 2. Código de entrada atrasada (somente quando necessário)</label>
+      <input type="text" id="codigo-entrada-atrasada-aluno" autocomplete="off" maxlength="16" placeholder="Para aluno que ainda NÃO começou e perdeu o prazo" style="text-transform:uppercase;width:100%;box-sizing:border-box;">
+      <small style="color:var(--text-muted)">Use somente se o contador chegou a 00:00 e você ainda não iniciou a prova. Peça ao professor uma autorização individual. Este código não substitui o token.</small>
     </div>
     <div class="grupo-form" style="margin:0;">
-      <label for="codigo-entrada-atrasada-aluno">🕒 Código de entrada atrasada (opcional)</label>
-      <input type="text" id="codigo-entrada-atrasada-aluno" autocomplete="off" maxlength="16" placeholder="Somente se o prazo de entrada acabou" style="text-transform:uppercase;width:100%;box-sizing:border-box;">
-      <small style="color:var(--text-muted)">Para quem ainda não começou e recebeu autorização individual do professor. A validação deste código ainda depende da integração com o sistema.</small>
+      <label for="codigo-recuperacao-aluno">🔄 3. Código de recuperação (somente quando necessário)</label>
+      <input type="text" id="codigo-recuperacao-aluno" autocomplete="off" maxlength="16" placeholder="Para aluno que JÁ começou e teve a prova interrompida" style="text-transform:uppercase;width:100%;box-sizing:border-box;">
+      <small style="color:var(--text-muted)">Use se a prova travou, a página foi atualizada (F5), fechou ou houve falha no computador. Solicite o código ao professor para continuar a tentativa existente, sem reiniciar o tempo.</small>
     </div>
-    <small style="color:var(--text-muted)">Entrada normal: preencha apenas o token. Os códigos especiais são usados somente quando autorizados.</small>
+    <small style="color:var(--text-muted)">ENTRADA NORMAL: informe apenas o token (campo 1). APÓS O PRAZO: token + código de entrada atrasada. PROVA INTERROMPIDA: token + código de recuperação. Não preencha os dois códigos especiais ao mesmo tempo.</small>
   </div>
   <button type="button" id="btn-validar-token-aluno" class="btn" style="width:100%;margin-top:12px;" disabled>Continuar →</button>
   <p id="aviso-token-aluno" role="status" style="color:#fda4af;font-weight:700;"></p>
@@ -882,6 +883,11 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     }
     btnValidarTokenAluno?.addEventListener("click", () => {
       const codigoAtraso = document.getElementById("codigo-entrada-atrasada-aluno")?.value.trim();
+      const codigoRecuperacao = document.getElementById("codigo-recuperacao-aluno")?.value.trim();
+      if (codigoAtraso && codigoRecuperacao) {
+        if (avisoTokenAluno) avisoTokenAluno.textContent = "Escolha apenas UM código especial: ENTRADA ATRASADA para quem ainda não começou; RECUPERAÇÃO para quem já começou e teve interrupção.";
+        return;
+      }
       if (codigoAtraso) {
         if (avisoTokenAluno) avisoTokenAluno.textContent = "O código de entrada atrasada ainda não está habilitado para validação. Solicite orientação ao professor.";
         return;
@@ -892,6 +898,13 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       if (!prova?.escolaAtiva || prova.ativa === false || !esperado || informado !== esperado) {
         if (avisoTokenAluno) avisoTokenAluno.textContent = "Código incorreto ou avaliação indisponível.";
         if (inputTokenAluno) { inputTokenAluno.value = ""; inputTokenAluno.focus(); }
+        return;
+      }
+      // O token sozinho não libera novos inícios após o encerramento do prazo.
+      // Recuperação pode prosseguir à identificação, mas ainda precisa ser validada antes da prova.
+      const prazoFim = Number(prova.expiraEmMillis || 0);
+      if (prazoFim > 0 && Date.now() >= prazoFim && !codigoRecuperacao) {
+        if (avisoTokenAluno) avisoTokenAluno.textContent = "PRAZO ENCERRADO: o TOKEN sozinho não permite começar. Se você ainda não iniciou, peça ao professor o CÓDIGO DE ENTRADA ATRASADA. Se já começou, informe o CÓDIGO DE RECUPERAÇÃO.";
         return;
       }
       tokenLiberadoParaProva = chaveTokenProva(prova);
@@ -1340,7 +1353,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       codigoRetomadaAtivo = "";
       const codigoAtrasado = String(document.getElementById("codigo-entrada-atrasada-aluno")?.value || "").trim().toUpperCase();
       if (codigoAtrasado) {
-        alert("🕒 Código de ENTRADA ATRASADA: a validação individual ainda não está habilitada. Peça orientação ao professor. A avaliação não foi iniciada.");
+        alert("🕒 ENTRADA ATRASADA: a validação individual ainda não está habilitada. Solicite orientação ao professor. A prova NÃO foi iniciada.");
         return;
       }
       const codigoInformado = String(document.getElementById("codigo-recuperacao-aluno")?.value || "").trim().toUpperCase();
