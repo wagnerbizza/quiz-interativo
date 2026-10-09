@@ -578,18 +578,33 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
   html.acesso-aluno-autorizado #voltar-apresentacao-token {display:none!important}
   #etapa-token-aluno #voltar-apresentacao-token {display:inline-block;margin:0 0 14px}
 </style>
+<style id="barra-navegacao-aluno">
+/* Barra superior de navegação: consistente nas duas etapas, sem botões duplicados. */
+#navegacao-acesso-aluno{display:flex;align-items:center;justify-content:flex-start;min-height:36px;margin:0 0 14px;padding:0;gap:10px}
+#navegacao-acesso-aluno a,#navegacao-acesso-aluno button{display:inline-flex;align-items:center;min-height:36px;box-sizing:border-box;padding:7px 12px;border:1px solid #334155;border-radius:9px;background:#18253a;color:#93c5fd;font:inherit;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer}
+#navegacao-acesso-aluno a:hover,#navegacao-acesso-aluno button:hover{background:#253a57;color:#e0f2fe}
+html:not(.acesso-aluno-autorizado) #navegacao-acesso-aluno #voltar-ao-token-aluno{display:none!important}
+html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{display:none!important}
+@media(max-width:640px){#navegacao-acesso-aluno{margin-bottom:10px}#navegacao-acesso-aluno a,#navegacao-acesso-aluno button{font-size:13px}}
+</style>
 </head>
 <body>
 
   <div class="container">
     <div id="tela-login">
+<!-- Navegação única no topo: cada etapa exibe apenas o seu retorno. -->
+      <nav id="navegacao-acesso-aluno" aria-label="Navegação do acesso">
+        <a id="voltar-apresentacao-token" href="apresentacao.html">← Voltar à apresentação</a>
+        <button type="button" id="voltar-ao-token-aluno">← Voltar ao token</button>
+      </nav>
+
       <h1>ÁREA DO ALUNO - Avaliação</h1>
       
       <div id="detalhes-prova-ativa" class="info-box" style="display:none;">⏳ Verificando se há alguma prova ativa no momento...</div>
 
 <!-- ETAPA 1: acesso por token; a prova e os dados pessoais só aparecem depois da validação. -->
 <div id="etapa-token-aluno" style="max-width:640px;margin:0 auto 18px;">
-  <a id="voltar-apresentacao-token" href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
+  
   <div style="text-align:center;margin:10px 0 22px;">
     <div aria-hidden="true" style="font-size:38px;color:#38bdf8;">🎓</div>
     <h2 style="color:#38bdf8;margin:8px 0;font-size:27px;">ÁREA DO ALUNO</h2>
@@ -608,7 +623,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
 </div>
       <form id="form-login" style="display:none;">
         <div id="escola-identificada-aluno" aria-live="polite">🏫 Escola identificada pelo token</div>
-        <button type="button" id="voltar-ao-token-aluno" style="border:0;background:none;color:#93c5fd;cursor:pointer;margin:0 0 14px;">← Voltar ao token</button>
+        
         <!-- 🏫 ALTERAR AQUI somente se quiser mudar o texto do seletor de escola -->
         <div class="grupo-form" id="grupo-escola-aluno" style="display:none;">
           <label for="escola-aluno">Sua Escola:</label>
@@ -713,6 +728,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
     let listaQuestoes = [], indiceAtual = 0, respostasUsuario = {};
     let alunoAtual = {}, qtdQ = 10;
     let timerInterval = null, segundosPassados = 0;
+    let inicioTentativaMillis = 0; // Relógio absoluto: continua contando mesmo após F5.
     let syncOnlineInterval = null;
     let verificacaoPacotePublicoInterval = null; // Atualiza ativação/encerramento pelo GitHub sem leituras Firestore.
     let idPacoteAplicadoNaEntrada = ""; // Evita reconstruir o formulário a cada 5 segundos.
@@ -1254,7 +1270,8 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
 
       // Primeiro confere a trava deste navegador. Isso impede repetir a mesma
       // avaliação apenas acrescentando ponto, espaço ou hífen ao nome.
-      if (tentativaBloqueadaLocalmente(idAlunoGerado, avaliacaoAtual)) {
+      const rascunhoAnterior = lerRascunhoAluno(idAlunoGerado, avaliacaoAtual);
+      if (tentativaBloqueadaLocalmente(idAlunoGerado, avaliacaoAtual) && !rascunhoAnterior) {
         alert("❌ Esta avaliação já foi iniciada/concluída por este aluno neste computador. Solicite liberação ao professor para refazê-la.");
         return;
       }
@@ -1268,7 +1285,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
           const perm = docPermissao.data() || {};
           const avaliacaoBloqueada = String(perm.idAvaliacao || "");
           // Só bloqueia a MESMA avaliação. Uma nova ativação não herda o bloqueio antigo.
-          if (avaliacaoBloqueada && avaliacaoBloqueada === avaliacaoAtual) {
+          if (avaliacaoBloqueada && avaliacaoBloqueada === avaliacaoAtual && !rascunhoAnterior) {
             alert("❌ Esta avaliação já foi concluída. Solicite liberação ao professor para refazê-la.");
             return;
           }
@@ -1309,6 +1326,8 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
     });
 
     async function iniciarCarregamentoProva() {
+      const avaliacaoRetomada = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+      const rascunhoRetomada = lerRascunhoAluno(alunoAtual.id, avaliacaoRetomada);
       segundosPassados = 0;
       let banco = [];
       try {
@@ -1425,6 +1444,23 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
       listaQuestoes = dadosProvaAtiva.origemPublicacao === "github" && Array.isArray(dadosProvaAtiva.questoesPublicas)
         ? unicasArray : unicasArray.slice(0, Math.min(qtdDesejada, unicasArray.length));
 
+      // Se houve F5, a ordem e as alternativas devem ser exatamente as originais.
+      if (rascunhoRetomada && Array.isArray(rascunhoRetomada.questoes) && rascunhoRetomada.questoes.length &&
+          Number.isFinite(rascunhoRetomada.inicio) && rascunhoRetomada.inicio > 0) {
+        listaQuestoes = rascunhoRetomada.questoes;
+        respostasUsuario = rascunhoRetomada.respostas && typeof rascunhoRetomada.respostas === "object"
+          ? {...rascunhoRetomada.respostas} : {};
+        indiceAtual = Math.max(0, Math.min(listaQuestoes.length - 1, Number(rascunhoRetomada.indice) || 0));
+        inicioTentativaMillis = rascunhoRetomada.inicio;
+      } else {
+        respostasUsuario = {};
+        indiceAtual = 0;
+        inicioTentativaMillis = Date.now();
+      }
+      atualizarTempoAbsoluto();
+      // Salva antes de qualquer chamada remota para resistir ao F5 imediato.
+      salvarRascunhoAluno();
+      const retomandoTentativa = !!rascunhoRetomada;
       // Registra a tentativa assim que a prova realmente conseguiu carregar.
       // 1) trava local imediatamente; 2) tenta gravar a trava central no Firebase.
       // Se a internet falhar, a prova continua e a trava local ainda protege este PC.
@@ -1432,12 +1468,12 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
       bloquearTentativaLocalmente(alunoAtual.id, avaliacaoEmUso);
       try {
         const usuarioTentativa = await garantirAuthAnonimaAtual();
-        await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
+        if (!retomandoTentativa) await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
           podeFazer: false,
           uid: usuarioTentativa.uid,
           idAvaliacao: avaliacaoEmUso,
           tentativaIniciada: true,
-          tentativaIniciadaEm: Date.now()
+          tentativaIniciadaEm: inicioTentativaMillis
         }, { merge: true });
       } catch (erroTrava) {
         console.warn("Trava central temporariamente indisponível; trava local mantida:", erroTrava?.code || erroTrava);
@@ -1449,6 +1485,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
 
       iniciarCronogerenciamento();
       iniciarSincronizacaoTempoReal();
+      if (retomandoTentativa) console.info("Tentativa local recuperada sem reiniciar o relógio.");
 
       // ==========================================================
       // VERSÃO ESTÁVEL — CONTROLE DE ENCERRAMENTO
@@ -1568,7 +1605,13 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
 
     function iniciarCronogerenciamento() {
       if (timerInterval) clearInterval(timerInterval);
+      atualizarTempoAbsoluto();
       atualizarPainelTempoAluno();
+      const limiteInicial = (parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0) * 60;
+      if (limiteInicial > 0 && segundosPassados >= limiteInicial) {
+        finalizarProva("Tempo máximo da avaliação esgotado.", false);
+        return;
+      }
       timerInterval = setInterval(() => {
         // Não dispara avisos atrasados após sair da prova ou durante a finalização.
         if (finalizacaoAlunoEmAndamento || document.getElementById("tela-quiz").classList.contains("hidden")) {
@@ -1576,7 +1619,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
           timerInterval = null;
           return;
         }
-        segundosPassados++;
+        atualizarTempoAbsoluto();
         atualizarPainelTempoAluno();
 
         const limiteSeg = (parseInt(dadosProvaAtiva.tempoLimiteMinutos) || 0) * 60;
@@ -1673,6 +1716,7 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
         btn.textContent = `${letra}) ${texto}`;
         btn.onclick = () => {
           respostasUsuario[indiceAtual] = letra;
+          salvarRascunhoAluno();
           try { atualizarPainelTempoAluno(); } catch (e) {}
           exibirQuestao();
         };
@@ -1692,10 +1736,10 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
       }
     }
 
-    window.irQuestao = function(index) { indiceAtual = index; exibirQuestao(); };
+    window.irQuestao = function(index) { indiceAtual = index; salvarRascunhoAluno(); exibirQuestao(); };
 
-    document.getElementById("ant")?.addEventListener("click", () => { if (indiceAtual > 0) { indiceAtual--; exibirQuestao(); } });
-    document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; exibirQuestao(); } });
+    document.getElementById("ant")?.addEventListener("click", () => { if (indiceAtual > 0) { indiceAtual--; salvarRascunhoAluno(); exibirQuestao(); } });
+    document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; salvarRascunhoAluno(); exibirQuestao(); } });
     document.getElementById("fin")?.addEventListener("click", () => finalizarProva());
     // FILA LOCAL: nunca perdemos uma entrega por falha momentânea de rede/Firebase.
     // ==========================================================
@@ -1707,6 +1751,40 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
     // Além do Firebase, mantemos uma trava local para funcionar mesmo
     // quando a rede/cota estiver temporariamente indisponível.
     // ==========================================================
+    // RECUPERAÇÃO LOCAL: somente a tentativa ativa do mesmo navegador.
+    // Nunca guarda gabarito. Uma prova concluída remove imediatamente o rascunho.
+    const CHAVE_RASCUNHOS_ALUNO = "quiz_rascunhos_em_andamento_v1";
+    function lerRascunhoAluno(id, avaliacao) {
+      try {
+        const todos = JSON.parse(localStorage.getItem(CHAVE_RASCUNHOS_ALUNO) || "{}");
+        const r = todos[chaveTentativaAtual(id, avaliacao)];
+        return r && r.idAvaliacao === avaliacao && r.idAluno === id && r.estado === "andamento" ? r : null;
+      } catch (_) { return null; }
+    }
+    function salvarRascunhoAluno() {
+      if (!alunoAtual.id || !listaQuestoes.length || finalizacaoAlunoEmAndamento) return;
+      try {
+        const avaliacao = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+        const todos = JSON.parse(localStorage.getItem(CHAVE_RASCUNHOS_ALUNO) || "{}");
+        todos[chaveTentativaAtual(alunoAtual.id, avaliacao)] = {
+          estado: "andamento", idAluno: alunoAtual.id, idAvaliacao: avaliacao,
+          inicio: inicioTentativaMillis, indice: indiceAtual, respostas: {...respostasUsuario},
+          questoes: listaQuestoes.map(q => ({idQuestao:q.idQuestao, pergunta:q.pergunta, opcoes:q.opcoes, categoria:q.categoria})),
+          salvoEm: Date.now()
+        };
+        localStorage.setItem(CHAVE_RASCUNHOS_ALUNO, JSON.stringify(todos));
+      } catch (e) { console.warn("Rascunho local indisponível:", e); }
+    }
+    function apagarRascunhoAluno(id, avaliacao) {
+      try {
+        const todos = JSON.parse(localStorage.getItem(CHAVE_RASCUNHOS_ALUNO) || "{}");
+        delete todos[chaveTentativaAtual(id, avaliacao)];
+        localStorage.setItem(CHAVE_RASCUNHOS_ALUNO, JSON.stringify(todos));
+      } catch (_) {}
+    }
+    function atualizarTempoAbsoluto() {
+      if (inicioTentativaMillis > 0) segundosPassados = Math.max(0, Math.floor((Date.now() - inicioTentativaMillis) / 1000));
+    }
     const CHAVE_TENTATIVAS_BLOQUEADAS = "quiz_tentativas_bloqueadas_v1";
     function chaveTentativaAtual(idAluno, idAvaliacao) {
       return `${String(idAvaliacao || "")}::${String(idAluno || "")}`;
@@ -1763,7 +1841,9 @@ html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!importan
     async function finalizarProva(motivoEncerramento = "", encerradaPeloProfessor = false) {
       if (finalizacaoAlunoEmAndamento) return;
       finalizacaoAlunoEmAndamento = true;
+      atualizarTempoAbsoluto();
       const sessaoFinalizada = alunoAtual.id;
+      apagarRascunhoAluno(sessaoFinalizada, String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || ""));
       if (timerInterval) clearInterval(timerInterval);
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
       if (verificacaoPacotePublicoInterval) {
