@@ -563,13 +563,23 @@ html.acesso-aluno-autorizado #grupo-escola-aluno {display:none !important;}
 #escola-identificada-aluno {padding:12px 14px;border:1px solid #334155;border-radius:10px;margin-bottom:12px;color:#cbd5e1;}
 @media(max-width:680px){html:not(.acesso-aluno-autorizado) #tela-login {padding:16px !important;}}
 </style>
+<style id="ajuste-etapas-navegacao-aluno">
+/* ETAPAS DO ALUNO: cada etapa tem somente sua própria navegação. */
+html.acesso-aluno-autorizado #voltar-apresentacao-token {display:none!important}
+html:not(.acesso-aluno-autorizado) #voltar-ao-token-aluno {display:none!important}
+#tela-login {box-sizing:border-box}
+#tela-login #detalhes-prova-ativa {font-size:14px;line-height:1.45;margin-bottom:14px}
+#tela-login #form-login {max-width:100%}
+#aviso-inatividade-aluno {font-size:12px;text-align:center;color:#94a3b8;margin:12px 0 0}
+@media(max-width:700px){#tela-login{width:100%!important;max-width:100%!important;padding:16px!important}#tela-login #etapa-token-aluno{max-width:100%!important}}
+</style>
 </head>
 <body>
 
   <div class="container">
     <div id="tela-login">
       <h1>ÁREA DO ALUNO - Avaliação</h1>
-      <a href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
+      <a id="voltar-apresentacao-token" href="apresentacao.html" style="display:inline-block;margin-bottom:12px;color:#93c5fd;font-weight:700;text-decoration:none;">← Voltar à apresentação</a>
       <div id="detalhes-prova-ativa" class="info-box" style="display:none;">⏳ Verificando se há alguma prova ativa no momento...</div>
 
 <!-- ETAPA 1: acesso por token; a prova e os dados pessoais só aparecem depois da validação. -->
@@ -588,6 +598,7 @@ html.acesso-aluno-autorizado #grupo-escola-aluno {display:none !important;}
   </div>
   <button type="button" id="btn-validar-token-aluno" class="btn" style="width:100%;margin-top:12px;" disabled>Continuar →</button>
   <p id="aviso-token-aluno" role="status" style="color:#fda4af;font-weight:700;"></p>
+  <p id="aviso-inatividade-aluno">Por segurança, o acesso retorna à apresentação após 5 minutos sem atividade.</p>
 </div>
       <form id="form-login" style="display:none;">
         <div id="escola-identificada-aluno" aria-live="polite">🏫 Escola identificada pelo token</div>
@@ -793,6 +804,39 @@ html.acesso-aluno-autorizado #grupo-escola-aluno {display:none !important;}
       if (inputTokenAluno) inputTokenAluno.value = "";
       atualizarEtapaTokenAluno();
     });
+    // Retorno automático somente ANTES do início da prova (nunca durante questões).
+    // Mantém um único relógio de inatividade para as duas etapas de acesso.
+    const TEMPO_INATIVIDADE_ACESSO = 5 * 60 * 1000;
+    let ultimaInteracaoAcesso = Date.now();
+    function registrarInteracaoAcesso() {
+      if (!document.getElementById("tela-login")?.classList.contains("hidden")) {
+        ultimaInteracaoAcesso = Date.now();
+      }
+    }
+    ["pointerdown", "keydown", "input", "change", "touchstart"].forEach(tipo => {
+      document.addEventListener(tipo, registrarInteracaoAcesso, {passive: true});
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) verificarInatividadeAcesso();
+    });
+    function verificarInatividadeAcesso() {
+      const acesso = document.getElementById("tela-login");
+      if (!acesso || acesso.classList.contains("hidden") || getComputedStyle(acesso).display === "none") return;
+      // A demonstração aberta não é interpretada como abandono do aluno.
+      if (document.getElementById("demo-overlay-aluno")?.classList.contains("ativo")) {
+        ultimaInteracaoAcesso = Date.now();
+        return;
+      }
+      if (Date.now() - ultimaInteracaoAcesso >= TEMPO_INATIVIDADE_ACESSO) {
+        tokenLiberadoParaProva = "";
+        if (inputTokenAluno) inputTokenAluno.value = "";
+        const nome = document.getElementById("nome-aluno");
+        if (nome) nome.value = "";
+        window.location.replace("apresentacao.html");
+      }
+    }
+    window.setInterval(verificarInatividadeAcesso, 10000);
+    registrarInteracaoAcesso();
     // Bloqueia visualmente o formulário se uma prova diferente for publicada.
     atualizarEtapaTokenAluno();
 
@@ -1828,12 +1872,15 @@ if (unsubscribePermissaoAluno) {
     // Cada passo aponta para um elemento REAL da tela.
     // Para mudar a ordem futuramente, altere somente esta lista.
     const passosDemoAluno = [
-      { alvo: "#detalhes-prova-ativa", texto: "<strong>1. Avaliação ativa:</strong> confira qual escola está com avaliação liberada, as matérias e as turmas autorizadas." },
-      { alvo: "#escola-aluno", texto: "<strong>2. Escola:</strong> confirme a unidade escolar indicada pelo professor." },
-      { alvo: "#grupo-token-acesso", texto: "<strong>3. Código:</strong> digite o código fornecido pelo professor. O olho mostra ou oculta o código digitado." },
-      { alvo: "#nome-aluno", texto: "<strong>4. Nome:</strong> digite seu nome completo para identificar corretamente o resultado." },
-      { alvo: "#turma-aluno", texto: "<strong>5. Turma:</strong> selecione somente a sua turma entre as turmas liberadas para esta avaliação." },
-      { alvo: "#btn-iniciar-prova", texto: "<strong>6. Iniciar Avaliação:</strong> ao clicar aqui, o sistema confere os dados e o código. A demonstração não inicia nem registra nenhuma tentativa." }
+      { alvo: "#grupo-token-acesso", texto: "<strong>1. Código de acesso:</strong> digite o token exclusivo fornecido pelo professor. Use o ícone do olho para conferir o que digitou." },
+      { alvo: "#btn-validar-token-aluno", texto: "<strong>2. Continuar:</strong> valida o token e libera somente a escola correspondente. Um código incorreto não permite avançar." },
+      { alvo: "#voltar-apresentacao-token", texto: "<strong>3. Voltar à apresentação:</strong> retorna à página inicial sem iniciar uma avaliação." },
+      { alvo: "#detalhes-prova-ativa", texto: "<strong>1. Avaliação liberada:</strong> após validar o token, confira a escola e as turmas autorizadas." },
+      { alvo: "#escola-identificada-aluno", texto: "<strong>2. Escola:</strong> esta escola foi identificada pelo código. Não é necessário escolhê-la." },
+      { alvo: "#nome-aluno", texto: "<strong>3. Identificação:</strong> informe seu nome completo." },
+      { alvo: "#turma-aluno", texto: "<strong>4. Turma:</strong> selecione uma das turmas liberadas." },
+      { alvo: "#btn-iniciar-prova", texto: "<strong>5. Iniciar:</strong> confira os dados e comece a avaliação. A demonstração não registra respostas." },
+      { alvo: "#voltar-ao-token-aluno", texto: "<strong>6. Voltar ao token:</strong> retorna à primeira etapa para digitar outro código." }
     ];
     // Etapas ocultas (ex.: código quando não há token) não são exibidas.
     function elementoVisivelDemoAluno(el){
