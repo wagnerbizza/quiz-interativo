@@ -64,13 +64,27 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
 .slide-status{font-size:.78rem;color:var(--muted)}
 .marca-apresentacao{position:fixed;bottom:10px;left:12px;color:var(--muted);opacity:.55;font-size:.73rem;pointer-events:none;z-index:2}
 @media(prefers-reduced-motion:reduce){.hero-slide{animation:none}}
+
+/* ACESSO CENTRALIZADO: apresentação sem cartões de login no corpo da página. */
+.brand{white-space:nowrap;flex-shrink:0}.top-actions{min-width:0}.topnav{justify-content:flex-end}
+.nav-access{font:inherit;font-size:.92rem;font-weight:800;color:var(--accent);background:transparent;border:1px solid var(--accent);border-radius:10px;padding:9px 13px;cursor:pointer;white-space:nowrap}
+.nav-access:hover{background:var(--step-bg)}.btn{font:inherit;cursor:pointer}
+.access-overlay[hidden]{display:none!important}.access-overlay{position:fixed;inset:0;background:rgba(1,7,20,.79);z-index:9999;display:grid;place-items:center;padding:18px;overflow-y:auto}
+.access-dialog{width:min(100%,560px);max-height:calc(100vh - 36px);overflow-y:auto;border:1px solid var(--line);border-radius:22px;background:var(--panel);color:var(--txt);padding:clamp(18px,3vw,28px);box-shadow:0 28px 90px #0009}
+.access-dialog-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.access-dialog-head h2{font-size:clamp(1.4rem,3vw,1.9rem);margin:6px 0}
+.access-close{width:40px;height:40px;flex-shrink:0;border-radius:10px;background:var(--step-bg);border:1px solid var(--line);color:var(--txt);font:inherit;cursor:pointer}
+.access-help{color:var(--muted);font-size:.91rem;line-height:1.5}.access-help a{color:var(--accent)}
+.access-option{display:flex;align-items:center;gap:14px;padding:18px;margin:12px 0;border:1px solid var(--line);border-radius:16px;background:var(--step-bg);text-decoration:none;transition:border-color .15s,transform .15s}
+.access-option:hover{border-color:var(--accent);transform:translateY(-1px)}.access-option>span:nth-child(2){flex:1;min-width:0}.access-option strong{display:block;font-size:1.07rem}.access-option small{display:block;color:var(--muted);margin-top:5px;line-height:1.4}.access-emoji{font-size:1.7rem}
+@media(max-width:700px){.top{align-items:flex-start;flex-wrap:wrap}.top-actions{flex:1;justify-content:flex-end}.topnav{gap:9px}.topnav a{font-size:.82rem}.nav-access{font-size:.82rem}.brand{font-size:1rem}}
+@media(max-width:480px){.top-actions{width:100%;justify-content:flex-start}.topnav{justify-content:flex-start}.topnav a{font-size:.8rem}.access-option{padding:14px}}
 </style>
 </head>
 <body>
 <!-- CABEÇALHO: nome do projeto e links de navegação interna. -->
 <header class="wrap top">
 <a class="brand" href="#inicio">◆ Quiz <span>Interativo</span></a>
-<div class="top-actions"><nav class="topnav" aria-label="Navegação principal"><a href="#recursos">Recursos</a><a href="#como-funciona">Como funciona</a><a href="#demonstracoes">Demonstrações</a><a href="#acessos">Acessar sistema</a></nav>
+<div class="top-actions"><nav class="topnav" aria-label="Navegação principal"><a href="#recursos">Recursos</a><a href="#como-funciona">Como funciona</a><a href="#demonstracoes">Demonstrações</a><button type="button" class="nav-access" data-open-access>Acessar sistema</button></nav>
 <!-- BOTAO DE TEMA: o texto e atualizado automaticamente pelo script no fim do arquivo. -->
 <button id="themeToggle" class="theme-toggle" type="button" aria-label="Ativar modo claro" aria-pressed="false">☀️ Modo claro</button></div>
 </header>
@@ -78,7 +92,7 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
 <div class="wrap">
 <div class="hero" id="inicio">
 <div><div class="eyebrow">Tecnologia a favor da aprendizagem</div><h1>Avaliações digitais, <span>mais interativas.</span></h1><p class="lead">Conheça o Quiz Interativo, um ambiente para organizar avaliações, acompanhar a participação dos estudantes e consultar resultados de forma prática.</p>
-<div class="actions"><a class="btn primary" href="#acessos">Começar agora →</a><a class="btn secondary" href="#recursos">Conhecer recursos</a></div></div>
+<div class="actions"><button class="btn primary" type="button" data-open-access>Acessar sistema →</button><a class="btn secondary" href="#recursos">Conhecer recursos</a></div></div>
 <div class="visual" aria-label="Ilustração conceitual do sistema de avaliações"><div class="window"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="screen" id="apresentacao-slides" aria-label="Apresentação automática dos recursos do Quiz Interativo">
 <div class="hero-slide"><h3>📝 Prepare suas avaliações</h3><div class="mockrow"><span>Questões e alternativas</span><span class="pill">Organizadas</span></div><div class="mockrow"><span>Configuração de provas</span><span class="pill">Professor</span></div><p class="hint">Organize atividades e disponibilize avaliações para suas turmas.</p></div>
 <div class="hero-slide" hidden><h3>🔀 Avaliações mais dinâmicas</h3><div class="mockrow"><span>Ordem das questões</span><span class="pill">Variável</span></div><div class="mockrow"><span>Ordem das alternativas</span><span class="pill">Variável</span></div><p class="hint">O embaralhamento oferece apresentações diferentes da mesma avaliação.</p></div>
@@ -136,11 +150,23 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
 </article>
 </div>
 </div></section>
-<section id="acessos"><div class="wrap"><div class="eyebrow">Entrar no Quiz Interativo</div><h2 class="section-title">Escolha seu acesso</h2><p class="section-sub">Esta apresentação é independente. Os botões abaixo levam às páginas já existentes do projeto.</p><div class="access">
-<div class="card"><div class="ico" aria-hidden="true">👨‍🏫</div><h3>Área do professor</h3><p>Entre com sua conta para acessar o painel de gestão das avaliações.</p><a class="btn primary" href="login.html">Entrar como professor →</a></div>
-<div class="card"><div class="ico" aria-hidden="true">🎒</div><h3>Área do aluno</h3><p>Acesse a página destinada à realização das avaliações.</p><a class="btn secondary" href="index.html">Entrar como aluno →</a></div>
-</div><p class="note">A disponibilidade de avaliações depende da ativação realizada pelo professor. Esta página não ativa, altera ou encerra provas.</p></div></section>
-</main><div class="marca-apresentacao" aria-hidden="true">© 2026 WagnerBIZZA</div>
+<!-- ORIENTAÇÕES: esta seção informa sem solicitar ou validar códigos. -->
+<section id="orientacoes"><div class="wrap"><div class="eyebrow">Orientações para acesso</div><h2 class="section-title">Qual código devo usar?</h2><p class="section-sub">O professor fornece os códigos. Na área do aluno, siga a orientação correspondente à sua situação.</p><div class="grid">
+<article class="card"><div class="ico">🔑</div><h3>1. Token da avaliação</h3><p>É o código principal, necessário para identificar a avaliação. Dentro do prazo, use o token para iniciar normalmente.</p></article>
+<article class="card"><div class="ico">⏰</div><h3>2. Entrada atrasada</h3><p>Se ainda não começou e o prazo terminou, solicite ao professor um código individual de entrada atrasada. Ele não substitui o token.</p></article>
+<article class="card"><div class="ico">🔄</div><h3>3. Recuperação</h3><p>Se já começou e a prova travou, fechou ou foi atualizada, solicite o código individual de recuperação para continuar sem reiniciar a avaliação.</p></article>
+</div><p class="note">Os códigos especiais dependem da autorização do professor e das verificações na área do aluno. Esta página é apenas informativa.</p></div></section>
+</main><!-- JANELA DE ACESSO: mantém os destinos originais do projeto, sem modificar autenticação. -->
+<div class="access-overlay" id="accessOverlay" hidden>
+ <div class="access-dialog" role="dialog" aria-modal="true" aria-labelledby="accessTitle" tabindex="-1">
+  <div class="access-dialog-head"><div><div class="eyebrow">Entrar no sistema</div><h2 id="accessTitle">Como deseja acessar?</h2></div><button class="access-close" type="button" id="accessClose" aria-label="Fechar opções de acesso">✕</button></div>
+  <p class="access-help">Escolha sua área. As avaliações e autorizações continuam controladas pelas páginas originais.</p>
+  <a class="access-option" href="index.html"><span class="access-emoji" aria-hidden="true">🎒</span><span><strong>Sou aluno</strong><small>Avaliação com token, entrada atrasada ou recuperação.</small></span><span aria-hidden="true">→</span></a>
+  <a class="access-option" href="login.html"><span class="access-emoji" aria-hidden="true">👨‍🏫</span><span><strong>Sou professor</strong><small>Gerenciar avaliações, códigos, monitoramento e resultados.</small></span><span aria-hidden="true">→</span></a>
+  <p class="access-help">Dúvidas sobre os códigos? <a href="#orientacoes" id="accessInstructions">Veja as orientações.</a></p>
+ </div>
+</div>
+<div class="marca-apresentacao" aria-hidden="true">© 2026 WagnerBIZZA</div>
 <footer class="foot"><div class="wrap"><span>Quiz Interativo · Página de apresentação</span><a href="#inicio">Voltar ao início ↑</a></div></footer>
 <!-- TEMA: inicia sempre no modo escuro. O botao alterna para claro durante a visita.
      Ao atualizar a pagina, retorna ao escuro. Para mudar, consulte apply('dark') abaixo. -->
@@ -182,6 +208,22 @@ section{padding:65px 0}.section-title{font-size:clamp(1.65rem,3vw,2.4rem);line-h
   pausa.addEventListener('click',()=>{pausado=!pausado;atualizarPausa()});
   setInterval(()=>{if(!pausado && !document.hidden)mostrar(atual+1)},6000);
   mostrar(0);atualizarPausa();
+})();
+</script>
+<script>
+/* MENU DE ACESSO: clique, Escape, clique fora e restauração do foco. */
+(function(){
+ const overlay=document.getElementById('accessOverlay');
+ const dialog=overlay.querySelector('.access-dialog');
+ const close=document.getElementById('accessClose');
+ let previous=null;
+ function open(){previous=document.activeElement;overlay.hidden=false;document.body.style.overflow='hidden';dialog.focus()}
+ function hide(){overlay.hidden=true;document.body.style.overflow='';if(previous&&previous.focus)previous.focus()}
+ document.querySelectorAll('[data-open-access]').forEach(b=>b.addEventListener('click',open));
+ close.addEventListener('click',hide);
+ overlay.addEventListener('click',e=>{if(e.target===overlay)hide()});
+ document.addEventListener('keydown',e=>{if(overlay.hidden)return;if(e.key==='Escape')hide();if(e.key==='Tab'){const items=[...dialog.querySelectorAll('a,button')];const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+ document.getElementById('accessInstructions').addEventListener('click',hide);
 })();
 </script>
 </body>
