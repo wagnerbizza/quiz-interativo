@@ -2806,7 +2806,7 @@ if (window.location.pathname.includes("painel.html")) {
         const tempoMin = parseInt(painelDinamico.querySelector("#tempo-minimo-ativacao")?.value) || 0;
         const tempoLim = parseInt(painelDinamico.querySelector("#tempo-prova-ativacao")?.value) || 0;
         // 🔵 FASE 10C.1 — duração total da publicação; diferente do tempo individual do aluno.
-        const tempoAtivacao = Math.max(5, parseInt(painelDinamico.querySelector("#tempo-ativacao-prova")?.value) || 180);
+        const tempoAtivacao = Math.max(1, parseInt(painelDinamico.querySelector("#tempo-ativacao-prova")?.value) || 180);
 
         // Campos obrigatórios devem ter valores válidos, mesmo com publicação via GitHub.
         const campoQtd = painelDinamico.querySelector("#qtd-questoes-ativacao");
@@ -2816,8 +2816,8 @@ if (window.location.pathname.includes("painel.html")) {
           campoQtd?.focus();
           return;
         }
-        if (!campoDuracao?.value.trim() || !Number.isFinite(Number(campoDuracao.value)) || Number(campoDuracao.value) < 5) {
-          alert("⚠ Informe a duração da ativação (mínimo de 5 minutos).");
+        if (!campoDuracao?.value.trim() || !Number.isFinite(Number(campoDuracao.value)) || Number(campoDuracao.value) < 1) {
+          alert("⚠ Informe a duração da ativação (mínimo de 1 minuto).");
           campoDuracao?.focus();
           return;
         }
@@ -2968,11 +2968,64 @@ if (window.location.pathname.includes("painel.html")) {
                 <a href="https://wagnerbizza.github.io/quiz-interativo/" target="_blank" rel="noopener" style="background:#22c55e;color:white;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;" title="Abre exatamente a versão publicada que os alunos usam">👁️ Testar publicação</a>
                 <button type="button" onclick="gerarCopiaProvaAtivaPDF('${escolaEsc}')" style="background:#0284c7;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">📄 Cópia</button>
                 <button type="button" class="btn-reembaralhar-escola" data-escola="${dados.escolaAtiva}" style="background:#8b5cf6;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🔀 Reembaralhar</button>
+                <button type="button" class="btn-editar-prazo-entrada" data-id-prova="${dados.idDoc}" style="background:#0d9488;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;" title="Altere a data e a hora de encerramento de novas entradas, sem reiniciar as provas dos alunos">🕒 Alterar prazo de entrada</button>
                 <button type="button" onclick="encerrarProvaAtivaAgora('${escolaEsc}')" style="background:#ef4444;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🛑 Encerrar</button>
               </div>
             </div>`;
         }).join("")}
       `;
+      // Cada escola possui seu próprio prazo. O botão é recriado a cada atualização do monitoramento.
+      blocoTopoAtiva.querySelectorAll(".btn-editar-prazo-entrada").forEach(botao => {
+        botao.addEventListener("click", async () => {
+          const prova = provas.find(p => p.idDoc === botao.dataset.idProva);
+          if (!prova) return;
+          const atual = Number(prova.expiraEmMillis || 0);
+          const sugerido = new Date(atual > 0 ? atual : Date.now() + 3600000);
+          // Formato local legível e editável, sem exigir uma biblioteca externa.
+          const dois = n => String(n).padStart(2, "0");
+          const padrao = `${dois(sugerido.getDate())}/${dois(sugerido.getMonth()+1)}/${sugerido.getFullYear()} ${dois(sugerido.getHours())}:${dois(sugerido.getMinutes())}`;
+          const resposta = prompt(`Novo prazo para entradas na escola "${prova.escolaAtiva}" (DD/MM/AAAA HH:MM):`, padrao);
+          if (resposta === null) return;
+          const m = resposta.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+          if (!m) { alert("⚠ Use DD/MM/AAAA HH:MM. Exemplo: 09/10/2026 14:30."); return; }
+          const [dia,mes,ano,hora,minuto] = m.slice(1).map(Number);
+          const data = new Date(ano,mes-1,dia,hora,minuto);
+          if (data.getFullYear()!==ano || data.getMonth()!==mes-1 || data.getDate()!==dia || data.getHours()!==hora || data.getMinutes()!==minuto) {
+            alert("⚠ Data ou horário inválido."); return;
+          }
+          const novoFim = data.getTime();
+          if (!confirm(`Alterar o prazo de entrada de "${prova.escolaAtiva}" para ${resposta.trim()}?\n\nO tempo individual dos alunos não será alterado.`)) return;
+          botao.disabled = true;
+          try {
+            // Nunca sobrescrever uma prova de outra escola no arquivo estático compartilhado.
+            const handle = await obterHandlePublicacao();
+            let pacote = null;
+            if (handle) {
+              try {
+                const arquivo = await handle.getFile();
+                const lido = JSON.parse(await arquivo.text());
+                if (lido.ativa !== false && String(lido.idAvaliacao || "") === String(prova.idAvaliacao || "") && normalizarTexto(lido.escolaAtiva) === normalizarTexto(prova.escolaAtiva)) pacote = lido;
+              } catch (err) { console.warn("Pacote público não pôde ser lido:",err); }
+            }
+            // Exigir atualização da publicação estática quando ela representa esta prova.
+            // Se o arquivo não corresponde à escola, não o modificar.
+            if (pacote) {
+              const antigo = {...pacote};
+              pacote.expiraEmMillis = novoFim;
+              pacote.tempoAtivacaoMinutos = Math.max(1,Math.ceil((novoFim - Number(prova.publicadoEmMillis || Date.now()))/60000));
+              const ok = await garantirVinculoPublicacaoNoClique();
+              if (!ok || !await escreverPacoteNoArquivoVinculado(pacote)) throw new Error("Não foi possível atualizar o arquivo prova-publicada.json. Nenhum prazo foi alterado no Firebase.");
+            }
+            await setDoc(doc(db,"provas_ativas",prova.idDoc), {
+              expiraEmMillis: novoFim,
+              prazoEntradaAlteradoEm: serverTimestamp(),
+              prazoEntradaAnteriorMillis: atual
+            }, {merge:true});
+            alert("✅ Prazo de novas entradas atualizado." + (!pacote ? "\n\nAtenção: a prova desta escola não corresponde ao arquivo prova-publicada.json vinculado. Confira a publicação no GitHub antes de permitir novos acessos." : "\nO arquivo do GitHub também foi atualizado; aguarde a sincronização."));
+          } catch(err) { alert("❌ Não foi possível alterar o prazo: " + (err?.message || err)); }
+          finally { botao.disabled = false; }
+        });
+      });
     };
 
     try {
