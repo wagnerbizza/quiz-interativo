@@ -1,0 +1,61 @@
+[debug] [2026-10-11T19:17:02.673Z] ----------------------------------------------------------------------
+[debug] [2026-10-11T19:17:02.679Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\wagne\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only firestore:rules
+[debug] [2026-10-11T19:17:02.679Z] CLI Version:   15.30.2
+[debug] [2026-10-11T19:17:02.680Z] Platform:      win32
+[debug] [2026-10-11T19:17:02.680Z] Node Version:  v24.14.1
+[debug] [2026-10-11T19:17:02.680Z] Detected Agent: unknown
+[debug] [2026-10-11T19:17:02.681Z] Time:          Sun Oct 11 2026 16:17:02 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2026-10-11T19:17:02.681Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-11T19:17:02.713Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-10-11T19:17:06.297Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-11T19:17:06.298Z] > authorizing via signed-in user (wagnerbizza@gmail.com)
+[debug] [2026-10-11T19:17:06.298Z] [iam] checking project quiz-interativo-8a98c for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-10-11T19:17:06.299Z] Checked if tokens are valid: false, expires at: 1791080112307
+[debug] [2026-10-11T19:17:06.299Z] Checked if tokens are valid: false, expires at: 1791080112307
+[debug] [2026-10-11T19:17:06.299Z] > refreshing access token with scopes: []
+[debug] [2026-10-11T19:17:06.300Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-10-11T19:17:06.301Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-11T19:17:06.492Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-10-11T19:17:06.493Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-11T19:17:06.504Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/quiz-interativo-8a98c:testIamPermissions [none]
+[debug] [2026-10-11T19:17:06.504Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/quiz-interativo-8a98c:testIamPermissions  x-goog-user-project=quiz-interativo-8a98c
+[debug] [2026-10-11T19:17:06.504Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/quiz-interativo-8a98c:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-10-11T19:17:06.622Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-10-11T19:17:06.622Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-10-11T19:17:07.434Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/quiz-interativo-8a98c:testIamPermissions 200
+[debug] [2026-10-11T19:17:07.434Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/quiz-interativo-8a98c:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'quiz-interativo-8a98c'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-10-11T19:17:07.443Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:07.443Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:07.443Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/quiz-interativo-8a98c/databases/(default) [none]
+[debug] [2026-10-11T19:17:08.450Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/quiz-interativo-8a98c/databases/(default) 200
+[debug] [2026-10-11T19:17:08.450Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/quiz-interativo-8a98c/databases/(default) {"name":"projects/quiz-interativo-8a98c/databases/(default)","uid":"76645266-f963-4187-b34c-e73f845ca87c","createTime":"2026-09-10T11:21:44.092570Z","updateTime":"2026-09-10T11:21:44.092570Z","locationId":"nam5","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-10-11T18:17:07.193583Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"s","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IKiHmevWspcDMMfP3vjy45YD"}
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-10-11T19:17:08.451Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:08.451Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:08.451Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c:test [none]
+[debug] [2026-10-11T19:17:08.452Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c:test [omitted]
+[debug] [2026-10-11T19:17:09.645Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c:test 200
+[debug] [2026-10-11T19:17:09.646Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c:test {}
+[info] +  cloud.firestore: rules file firestore.rules compiled successfully 
+[debug] [2026-10-11T19:17:09.648Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:09.649Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:09.649Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/releases pageSize=10&pageToken=
+[debug] [2026-10-11T19:17:10.775Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/releases 200
+[debug] [2026-10-11T19:17:10.776Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/releases {"releases":[{"name":"projects/quiz-interativo-8a98c/releases/cloud.firestore","rulesetName":"projects/quiz-interativo-8a98c/rulesets/cc418e8a-c96b-4daa-ba7a-5f6d684fd395","createTime":"2026-09-10T11:21:49.664518Z","updateTime":"2026-10-09T17:23:26.597516Z"}]}
+[debug] [2026-10-11T19:17:10.778Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:10.778Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:10.778Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/rulesets/cc418e8a-c96b-4daa-ba7a-5f6d684fd395 [none]
+[debug] [2026-10-11T19:17:11.838Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/rulesets/cc418e8a-c96b-4daa-ba7a-5f6d684fd395 200
+[debug] [2026-10-11T19:17:11.839Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/rulesets/cc418e8a-c96b-4daa-ba7a-5f6d684fd395 [omitted]
+[info] i  firestore: uploading rules firestore.rules... 
+[debug] [2026-10-11T19:17:11.845Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:11.845Z] Checked if tokens are valid: true, expires at: 1791749825493
+[debug] [2026-10-11T19:17:11.846Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/rulesets [none]
+[debug] [2026-10-11T19:17:11.846Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/quiz-interativo-8a98c/rulesets [omitted]
