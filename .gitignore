@@ -1,3 +1,10 @@
 # Backups locais podem conter dados escolares; nÃ£o publicar no GitHub.
 backup-local/**
 !backup-local/**/.gitkeep
+
+*.zip
+
+*.zip
+Arquivos de Recuperação/
+*.zip
+Arquivos de Recuperação/
