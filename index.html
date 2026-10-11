@@ -1338,6 +1338,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
 
     let recuperacaoAutorizadaAluno = null;
     let codigoRetomadaAtivo = "";
+    let entradaAtrasadaAutorizadaAluno = null;
     document.getElementById("form-login")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const escolaVal = selectEscola.value;
@@ -1351,12 +1352,36 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       let idAlunoGerado = `${normalizarId(escolaVal)}__${normalizarId(nomeVal)}__${normalizarId(turmaVal)}`;
       recuperacaoAutorizadaAluno = null;
       codigoRetomadaAtivo = "";
+      entradaAtrasadaAutorizadaAluno = null;
       const codigoAtrasado = String(document.getElementById("codigo-entrada-atrasada-aluno")?.value || "").trim().toUpperCase();
-      if (codigoAtrasado) {
-        alert("🕒 ENTRADA ATRASADA: a validação individual ainda não está habilitada. Solicite orientação ao professor. A prova NÃO foi iniciada.");
+      const codigoInformado = String(document.getElementById("codigo-recuperacao-aluno")?.value || "").trim().toUpperCase();
+      if (codigoAtrasado && codigoInformado) {
+        alert("⚠️ Informe apenas um código especial: entrada atrasada OU recuperação.");
         return;
       }
-      const codigoInformado = String(document.getElementById("codigo-recuperacao-aluno")?.value || "").trim().toUpperCase();
+      // O código de entrada atrasada é consultado apenas por seu identificador secreto.
+      // O aluno não pode listar bilhetes nem alterar as autorizações do professor.
+      if (codigoAtrasado) {
+        try {
+          await garantirAuthAnonimaAtual();
+          const bilhete = await getDoc(doc(db, "bilhetes_entrada_atrasada", codigoAtrasado));
+          if (!bilhete.exists()) throw new Error("Código não encontrado ou não autorizado.");
+          const dados = bilhete.data();
+          const avaliacaoEsperada = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+          if (dados.status !== "autorizada" || dados.tipo !== "entrada_atrasada" ||
+              String(dados.idAvaliacao || "") !== avaliacaoEsperada ||
+              normalizarId(dados.escola || "") !== normalizarId(escolaVal) ||
+              normalizarId(dados.turma || "") !== normalizarId(turmaVal) ||
+              normalizarId(dados.nome || "") !== normalizarId(nomeVal) ||
+              String(dados.idAluno || "") !== idAlunoGerado) {
+            throw new Error("Código não corresponde ao aluno, escola, turma ou avaliação ativa.");
+          }
+          entradaAtrasadaAutorizadaAluno = dados;
+        } catch (erro) {
+          alert("⚠️ ENTRADA ATRASADA não autorizada: " + (erro.message || erro.code || erro));
+          return;
+        }
+      }
       if (codigoInformado) {
         try {
           await garantirAuthAnonimaAtual();
@@ -1397,7 +1422,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         alert("❌ O CÓDIGO DE RECUPERAÇÃO não corresponde ao nome informado. Confira com o professor.");
         return;
       }
-      if (!recuperacaoAutorizadaAluno && Number(dadosProvaAtiva.expiraEmMillis || 0) > 0 && Date.now() >= Number(dadosProvaAtiva.expiraEmMillis)) {
+      if (!recuperacaoAutorizadaAluno && !entradaAtrasadaAutorizadaAluno && Number(dadosProvaAtiva.expiraEmMillis || 0) > 0 && Date.now() >= Number(dadosProvaAtiva.expiraEmMillis)) {
         alert("⌛ O prazo de entrada terminou. Para INICIAR uma nova prova, solicite ao professor um CÓDIGO DE ENTRADA ATRASADA.");
         return;
       }

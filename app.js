@@ -4871,7 +4871,7 @@ if (window.location.pathname.includes("painel.html")) {
         escola,idAvaliacao,nome:nomeLimpo,turma:turmaEscolhida,idAluno,
         evento:"autorizacao_entrada_atrasada",data:serverTimestamp(),codigo
       });
-      alert(`Código de ENTRADA ATRASADA para ${nomeLimpo}:\n\n${codigo}\n\nEntregue somente ao aluno identificado. Este código ainda requer integração na tela do aluno.`);
+      alert(`Código de ENTRADA ATRASADA para ${nomeLimpo}:\n\n${codigo}\n\nEntregue somente ao aluno identificado. O aluno deve informar este código e o TOKEN da avaliação.`);
       mostrarNotificacao("Autorização de entrada atrasada registrada.");
     } catch (erro) {
       console.error("Falha na autorização de entrada atrasada:",erro);
