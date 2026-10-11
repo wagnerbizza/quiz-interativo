@@ -8,3 +8,8 @@ backup-local/**
 Arquivos de Recuperação/
 *.zip
 Arquivos de Recuperação/
+
+/Arquivos de Recuperação/
+*.zip
+*.ZIP
+/Arquivos de Recuper*/
