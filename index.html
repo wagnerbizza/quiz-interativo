@@ -888,10 +888,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         if (avisoTokenAluno) avisoTokenAluno.textContent = "Escolha apenas UM código especial: ENTRADA ATRASADA para quem ainda não começou; RECUPERAÇÃO para quem já começou e teve interrupção.";
         return;
       }
-      if (codigoAtraso) {
-        if (avisoTokenAluno) avisoTokenAluno.textContent = "O código de entrada atrasada ainda não está habilitado para validação. Solicite orientação ao professor.";
-        return;
-      }
+      // O código de entrada atrasada será conferido no Firestore após a identificação
+      // do aluno (nome, escola e turma). Nesta etapa conferimos apenas o token.
       const prova = dadosProvaAtiva;
       const esperado = String(prova?.token || "").trim();
       const informado = String(inputTokenAluno?.value || "").trim();
@@ -903,7 +901,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       // O token sozinho não libera novos inícios após o encerramento do prazo.
       // Recuperação pode prosseguir à identificação, mas ainda precisa ser validada antes da prova.
       const prazoFim = Number(prova.expiraEmMillis || 0);
-      if (prazoFim > 0 && Date.now() >= prazoFim && !codigoRecuperacao) {
+      if (prazoFim > 0 && Date.now() >= prazoFim && !codigoRecuperacao && !codigoAtraso) {
         if (avisoTokenAluno) avisoTokenAluno.textContent = "PRAZO ENCERRADO: o TOKEN sozinho não permite começar. Se você ainda não iniciou, peça ao professor o CÓDIGO DE ENTRADA ATRASADA. Se já começou, informe o CÓDIGO DE RECUPERAÇÃO.";
         return;
       }
