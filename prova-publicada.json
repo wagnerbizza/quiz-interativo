@@ -1,21 +1,72 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1791746415053",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1791746345286,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1791746345286",
-  "publicadoEm": "2026-10-11T19:19:05.286Z",
-  "encerradoEm": "2026-10-11T19:19:05.286Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 5,
+  "tempoMaximoMinutos": 5,
+  "tempoAtivacaoMinutos": 3,
+  "expiraEmMillis": 1791746595053,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1791746415053",
+  "publicadoEm": "2026-10-11T19:20:15.671Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "3USDfstQ00KD9jpvB2D1",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 64 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "54hdOuqdkMoTeMagDxCB",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 69 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "SlpYHDWHoF1bs0khmXb7",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 70 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    }
+  ]
 }
