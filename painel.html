@@ -1726,41 +1726,22 @@ body.light-mode #aba-banco-dados > p {
 }
 </style>
 
-<style id="ajuste-menus-responsivos-20261012">
-/* Menus de classificação/visualização: abrir para dentro da tela, sem cortar opções. */
-#dropdown-menu-monitoramento,
-#dropdown-menu-resultados,
-#dropdown-menu-classificar-db,
-#dropdown-menu-visualizar-db {
-  left: auto !important;
-  right: 0 !important;
-  width: max-content !important;
-  min-width: min(240px, calc(100vw - 32px)) !important;
-  max-width: min(340px, calc(100vw - 32px)) !important;
-  box-sizing: border-box !important;
-  max-height: min(420px, calc(100vh - 190px)) !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
-}
-#dropdown-menu-monitoramento button,
-#dropdown-menu-resultados button,
-#dropdown-menu-classificar-db button,
-#dropdown-menu-visualizar-db button {
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  text-align: left !important;
-  white-space: normal !important;
-  overflow-wrap: anywhere !important;
-}
-@media (max-width: 600px) {
-  .painel-controle-topo .grupo-controles-direita {width: 100%; justify-content: flex-end;}
-  #input-busca-monitoramento {flex: 1 1 140px; min-width: 0;}
-  #dropdown-menu-monitoramento,
-  #dropdown-menu-resultados,
-  #dropdown-menu-classificar-db,
-  #dropdown-menu-visualizar-db {max-width: calc(100vw - 24px) !important;}
+<!-- Alinhamento visual: apenas CSS, sem alterar IDs, eventos, valores ou sincronização. -->
+<style id="padrao-alinhamento-campos-20261012">
+/* Campos de ativação: rótulos com alturas iguais, mesmo quando quebram em duas linhas. */
+.grid-campos-ativacao { align-items: stretch; gap: 14px !important; }
+.grid-campos-ativacao > div { min-width: 0; display: grid; grid-template-rows: minmax(46px, auto) 42px; align-content: start; }
+.grid-campos-ativacao > div > label { margin: 0 !important; display: flex !important; align-items: flex-end; padding-bottom: 7px; line-height: 1.35; overflow-wrap: anywhere; }
+.grid-campos-ativacao > div > input { width: 100% !important; min-width: 0; height: 42px !important; min-height: 42px; margin: 0 !important; box-sizing: border-box; }
+/* Padrão compartilhado para entradas, filtros e pesquisas em todas as abas. */
+.aba-conteudo :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea) { box-sizing: border-box; max-width: 100%; }
+.aba-conteudo :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select) { min-height: 38px; }
+.aba-conteudo :is(.painel-controle-topo,.grupo-controles-esquerda,.grupo-controles-direita) { min-width: 0; }
+.aba-conteudo :is(.painel-controle-topo,.grupo-controles-esquerda,.grupo-controles-direita) input { min-width: 0; }
+@media (max-width: 700px) {
+ .grid-campos-ativacao { grid-template-columns: minmax(0,1fr) !important; }
+ .grid-campos-ativacao > div { grid-template-rows: auto 42px; }
+ .grid-campos-ativacao > div > label { min-height: 24px; }
 }
 </style>
 </head>

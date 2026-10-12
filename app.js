@@ -2717,7 +2717,7 @@ if (window.location.pathname.includes("painel.html")) {
           <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 12px;">
             <h5 style="margin: 0; color: #f8fafc; font-size: 13px;">⏱️ Parâmetros de Ativação, Tempo e Segurança</h5>
             <div style="font-size: 12px; color: #cbd5e1;"><span style="color:#f87171; font-weight:bold">*</span> Campos obrigatórios para ativar a avaliação.</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <div class="grid-campos-ativacao" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
               <div>
                 <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Qtd. de Questões: <span style="color:#f87171" title="Campo obrigatório">*</span></label>
                 <input type="number" id="qtd-questoes-ativacao" min="1" required aria-required="true" value="10" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
