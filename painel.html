@@ -1744,6 +1744,48 @@ body.light-mode #aba-banco-dados > p {
  .grid-campos-ativacao > div > label { min-height: 24px; }
 }
 </style>
+
+<!-- Refinamento incremental: somente apresentação; preserva eventos e sincronização. -->
+<style id="padrao-controles-pesquisa-20261012">
+/* Mesma altura e alinhamento para pesquisas, filtros, classificação e exportações. */
+#aba-relatorios .painel-controle-topo :is(button, select, input[type="text"]),
+#aba-monitoramento .painel-controle-topo :is(button, select, input[type="text"]) {
+  box-sizing:border-box; min-height:38px; margin-top:0; margin-bottom:0;
+  vertical-align:middle;
+}
+#aba-relatorios .painel-controle-topo .btn-acao,
+#aba-monitoramento .painel-controle-topo .btn-acao,
+#aba-relatorios .painel-controle-topo .btn-dropdown-win,
+#aba-monitoramento .painel-controle-topo .btn-dropdown-win {
+  display:inline-flex; align-items:center; justify-content:center;
+  text-align:center; line-height:1.25; max-width:100%;
+}
+#aba-relatorios .grupo-controles-direita > .dropdown-win,
+#aba-monitoramento .grupo-controles-direita > .dropdown-win { min-width:0; max-width:100%; }
+#aba-relatorios #select-filtro-escola-relatorio { max-width:230px; min-width:130px; }
+#aba-relatorios .tabela-responsiva,
+#aba-monitoramento .tabela-responsiva,
+#aba-banco-dados .tabela-responsiva { max-width:100%; min-width:0; overflow-x:auto; }
+#aba-relatorios .tabela-resultados th,
+#aba-monitoramento .tabela-monitoramento th { vertical-align:middle; }
+#aba-relatorios .tabela-resultados .chk-col,
+#aba-monitoramento .tabela-monitoramento .chk-col { text-align:center; }
+#aba-relatorios .tabela-resultados input[type="checkbox"],
+#aba-monitoramento .tabela-monitoramento input[type="checkbox"] { vertical-align:middle; margin:0 auto; }
+/* Permite foco visível ao navegar pelo teclado, sem modificar o tema. */
+.aba-conteudo :is(input,select,textarea,button):focus-visible { outline:2px solid #60a5fa; outline-offset:2px; }
+@media(max-width:1100px) {
+ #aba-relatorios .painel-controle-topo,
+ #aba-monitoramento .painel-controle-topo { align-items:start!important; }
+ #aba-relatorios .grupo-controles-direita,
+ #aba-monitoramento .grupo-controles-direita { justify-content:flex-start!important; }
+}
+@media(max-width:720px) {
+ #aba-relatorios #select-filtro-escola-relatorio { max-width:100%; }
+ #aba-relatorios .painel-controle-topo,
+ #aba-monitoramento .painel-controle-topo { padding:10px!important; }
+}
+</style>
 </head>
 <body>
 
