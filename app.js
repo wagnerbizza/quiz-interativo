@@ -4375,6 +4375,7 @@ if (window.location.pathname.includes("painel.html")) {
               <button type="button" class="btn-acao" style="background:#0284c7;" onclick="gerarBoletimPorId('${res.idDoc}')">📜 <span>Boletim</span></button>
               <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova</span></button>
               <button type="button" class="btn-acao" style="background:#10b981;" onclick="gerarCertificadoPorId('${res.idDoc}')">🎓 <span>Certificado</span></button>
+              <button type="button" class="btn-acao btn-secondary" data-id-aluno="${idAlunoAlvo}" data-nome-aluno="${String(res.nome||'Aluno').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onclick="consultarAutorizacoesAluno(this.dataset.idAluno,this.dataset.nomeAluno)">🔐 Autorizações</button>
               <button type="button" class="btn-acao" style="background: #eab308;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome || 'Aluno'}')">🔄 Refazer</button>
             </div>
           </td>
@@ -4570,7 +4571,7 @@ if (window.location.pathname.includes("painel.html")) {
 
   function csvSeguro(v) { return `"${String(v ?? "").replace(/"/g,'""').replace(/\r?\n/g," ")}"`; }
 
-  window.exportarResultadosCSV = function() {
+  window.exportarResultadosCSV = async function() {
     const lista=resultadosParaExportacao();
     if(!lista.length) return alert("⚠️ Não há resultados para exportar.");
     const cab=["Data/Hora","Escola","Período","Aluno","Turma","Matéria(s)","Tempo","Questões","Acertos","Erros","Nota","Motivo da finalização"];
@@ -4582,13 +4583,49 @@ if (window.location.pathname.includes("painel.html")) {
         r.tempoGastoFormatado||"",m.total,m.acertos,m.erros,m.nota,motivoConclusaoRelatorio(r)
       ].map(csvSeguro).join(";"));
     });
+    // Seção separada por aluno, destinada apenas à exportação administrativa do professor.
+    linhas.push('');
+    linhas.push(['HISTÓRICO PRIVADO DE AUTORIZAÇÕES (PROFESSOR)'].map(csvSeguro).join(';'));
+    linhas.push(['Aluno','Escola','Turma','Avaliação','Tipo','Data/Hora','Situação','Código','Evento'].map(csvSeguro).join(';'));
+    for(const r of lista){
+      try { const itens=await carregarAutorizacoesAluno(r.idAluno||r.idDoc,true);
+        itens.forEach(a=>linhas.push([r.nome||'',r.escola||'',r.turma||'',a.idAvaliacao||'',/atrasada/.test(a.origem)?'Entrada atrasada':'Recuperação',dataHistorico(a.data||a.autorizadoEm),a.status||'Registrado',a.codigo||'',a.evento||''].map(csvSeguro).join(';')));
+      }catch(e){linhas.push([r.nome||'','Histórico indisponível',e.message||''].map(csvSeguro).join(';'));}
+    }
     const blob=new Blob(["\uFEFF"+linhas.join("\r\n")],{type:"text/csv;charset=utf-8;"});
     const url=URL.createObjectURL(blob),a=document.createElement("a");
     a.href=url;a.download=`relatorio_avaliacoes_${new Date().toISOString().slice(0,10)}.csv`;a.click();
     setTimeout(()=>URL.revokeObjectURL(url),500);
   };
 
-  window.exportarResultadosPDF = function() {
+  // Excel administrativo: duas planilhas independentes, sem códigos em boletins/certificados.
+  window.exportarResultadosExcel = async function() {
+    if(typeof XLSX==='undefined') return alert('Biblioteca Excel indisponível. Utilize CSV.');
+    const lista=resultadosParaExportacao();
+    if(!lista.length)return alert('Não há resultados para exportar.');
+    const resultados=lista.map(r=>{const m=metricasResultado(r);return {
+      'Data/Hora':dataResultado(r),'Escola':r.escola||'','Período':r.periodo||'',
+      'Aluno':r.nome||'','Turma':r.turma||'','Matéria(s)':r.materia||'',
+      'Tempo':r.tempoGastoFormatado||'','Questões':m.total,'Acertos':m.acertos,
+      'Erros':m.erros,'Nota':m.nota,'Motivo da finalização':motivoConclusaoRelatorio(r)
+    }});
+    const historico=[];
+    for(const r of lista){try{
+      const itens=await carregarAutorizacoesAluno(r.idAluno||r.idDoc,true);
+      itens.forEach(a=>historico.push({'Aluno':r.nome||'','Escola':r.escola||'',
+        'Turma':r.turma||'','Avaliação':a.idAvaliacao||'',
+        'Tipo':/atrasada/.test(a.origem)?'Entrada atrasada':'Recuperação',
+        'Data/Hora':dataHistorico(a.data||a.autorizadoEm),
+        'Situação':a.status||a.evento||'Registrado','Código':a.codigo||'',
+        'Evento':a.evento||''}));
+    }catch(e){historico.push({'Aluno':r.nome||'','Situação':'Histórico indisponível: '+(e.message||'erro')});}}
+    const livro=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(livro,XLSX.utils.json_to_sheet(resultados),'Resultados');
+    XLSX.utils.book_append_sheet(livro,XLSX.utils.json_to_sheet(historico.length?historico:[{'Situação':'Sem autorizações registradas'}]),'Autorizações');
+    XLSX.writeFile(livro,`relatorio_avaliacoes_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
+  window.exportarResultadosPDF = async function() {
     const lista=resultadosParaExportacao();
     if(!lista.length) return alert("⚠️ Não há resultados para exportar.");
     const linhas=lista.map(r=>{const m=metricasResultado(r);return `<tr>
@@ -4596,11 +4633,19 @@ if (window.location.pathname.includes("painel.html")) {
       <td>${r.materia||"Geral"}</td><td>${r.tempoGastoFormatado||"-"}</td><td>${m.acertos}/${m.total}</td><td><b>${m.nota}</b></td>
     </tr>`}).join("");
     const media=lista.reduce((s,r)=>s+Number(metricasResultado(r).nota),0)/lista.length;
+    let historicoHtml='';
+    for(const r of lista){
+      try {const itens=await carregarAutorizacoesAluno(r.idAluno||r.idDoc,true);
+        if(!itens.length)continue;
+        historicoHtml+=`<h3 style="margin-top:18px">${escaparHistorico(r.nome||'Aluno')} — ${escaparHistorico(r.turma||'')}</h3><table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr><th>Tipo</th><th>Data/Hora</th><th>Situação</th><th>Código</th><th>Avaliação</th></tr></thead><tbody>${itens.map(a=>`<tr><td>${/atrasada/.test(a.origem)?'Entrada atrasada':'Recuperação'}</td><td>${escaparHistorico(dataHistorico(a.data||a.autorizadoEm))}</td><td>${escaparHistorico(a.status||a.evento||'Registrado')}</td><td>${escaparHistorico(a.codigo||'-')}</td><td>${escaparHistorico(a.idAvaliacao||'')}</td></tr>`).join('')}</tbody></table>`;
+      }catch(e){historicoHtml+=`<p>${escaparHistorico(r.nome||'Aluno')}: histórico indisponível (${escaparHistorico(e.message||'erro')}).</p>`;}
+    }
     abrirDocumentoImpressao("Relatório de Avaliações",`
       <div class="cab"><h1>Relatório de Avaliações</h1><div class="sub">Emitido em ${new Date().toLocaleString("pt-BR")} • ${lista.length} resultado(s) • Média ${media.toFixed(1)}/10</div></div>
       <table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr>
       <th>Data/Hora</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo</th><th>Acertos</th><th>Nota</th>
       </tr></thead><tbody>${linhas}</tbody></table>
+      <h2 style="margin-top:24px">Histórico privado de autorizações — uso exclusivo do professor</h2>${historicoHtml||"<p>Nenhum registro de autorização localizado.</p>"}
       <style>th,td{border:1px solid #cbd5e1;padding:5px;text-align:left;vertical-align:top}th{background:#e2e8f0}</style>`);
   };
 
@@ -4850,6 +4895,63 @@ if (window.location.pathname.includes("painel.html")) {
     if (abrir) { grupo.style.flexWrap = "wrap"; grupo.style.gap = "4px"; grupo.style.justifyContent = "center"; }
   };
 
+  // Histórico privado de autorizações: leitura sob demanda, sem apagar registros anteriores.
+  // Códigos nunca são inseridos em boletins ou certificados entregues aos alunos.
+  const historicoAutorizacoesCache = new Map();
+  const escaparHistorico = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const dataHistorico = (v) => {
+    const d = v?.toDate?.() || (v?.seconds ? new Date(v.seconds * 1000) : null);
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d.toLocaleString('pt-BR') : 'Data pendente';
+  };
+  function janelaAutorizacao({titulo, nome, codigo, tipo, escola, turma, avaliacao}) {
+    const mensagem = `Autorização de ${tipo} para ${nome}\nEscola: ${escola || '-'} | Turma: ${turma || '-'}\nAvaliação: ${avaliacao || '-'}\nCódigo: ${codigo}\n${tipo === 'Entrada atrasada' ? 'Informe também o TOKEN da avaliação.' : 'Este código retoma a tentativa existente; não reinicia a prova.'}\nEntregue apenas ao aluno identificado.`;
+    document.getElementById('janela-autorizacao-quiz')?.remove();
+    const fundo = document.createElement('div'); fundo.id='janela-autorizacao-quiz';
+    fundo.style.cssText='position:fixed;inset:0;background:#000b;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+    fundo.innerHTML=`<section role="dialog" aria-modal="true" aria-label="Autorização" style="background:#111c30;color:#e2e8f0;border:1px solid #405576;border-radius:14px;padding:24px;max-width:520px;width:100%;box-shadow:0 18px 45px #0008"><h2 style="margin:0 0 14px;color:#93c5fd">${escaparHistorico(titulo)}</h2><p><b>Aluno:</b> ${escaparHistorico(nome)}</p><p><b>Escola/Turma:</b> ${escaparHistorico(escola)} / ${escaparHistorico(turma)}</p><p><b>Avaliação:</b> ${escaparHistorico(avaliacao)}</p><p><b>Código:</b> <code style="font-size:20px;color:#facc15;user-select:all">${escaparHistorico(codigo)}</code></p><p style="font-size:12px;color:#cbd5e1">Entregue apenas ao aluno identificado.</p><div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:20px"><button type="button" data-quiz-copiar="codigo" class="btn-acao btn-secondary">📋 Copiar código</button><button type="button" data-quiz-copiar="mensagem" class="btn-acao btn-secondary">📨 Copiar mensagem</button><button type="button" data-quiz-fechar="1" class="btn-acao btn-secondary">Fechar</button></div><p data-quiz-status style="font-size:12px"></p></section>`;
+    fundo.addEventListener('click', async ev => {
+      if(ev.target.dataset.quizFechar || ev.target === fundo) { fundo.remove(); return; }
+      const qual=ev.target.dataset.quizCopiar;
+      if(!qual) return;
+      try { await navigator.clipboard.writeText(qual==='codigo'?codigo:mensagem); fundo.querySelector('[data-quiz-status]').textContent='Copiado!'; }
+      catch { fundo.querySelector('[data-quiz-status]').textContent='Não foi possível copiar automaticamente. Selecione o código e copie manualmente.'; }
+    });
+    document.body.appendChild(fundo);
+  }
+  async function carregarAutorizacoesAluno(idAluno, forcar=false) {
+    if(!idAluno) return [];
+    if(!forcar && historicoAutorizacoesCache.has(idAluno)) return historicoAutorizacoesCache.get(idAluno);
+    const colecoes=['bilhetes_entrada_atrasada','bilhetes_recuperacao','registros_entrada_atrasada','registros_recuperacao','registros_retomadas_alunos'];
+    const lotes=await Promise.allSettled(colecoes.map(c=>getDocs(query(collection(db,c),where('idAluno','==',idAluno)))));
+    const itens=[]; let erros=0;
+    lotes.forEach((r,i)=>{if(r.status==='rejected'){erros++; console.warn('Histórico indisponível:',colecoes[i],r.reason?.code||r.reason);return;}
+      r.value.forEach(d=>itens.push({origem:colecoes[i],docId:d.id,...d.data()}));
+    });
+    if(erros===colecoes.length) throw new Error('Sem acesso às coleções de histórico. Verifique as regras do Firestore.');
+    if(erros) mostrarNotificacao('Parte do histórico não pôde ser consultada; verifique as permissões do Firebase.');
+    itens.sort((a,b)=>(b.data?.toMillis?.()||b.autorizadoEm?.toMillis?.()||0)-(a.data?.toMillis?.()||a.autorizadoEm?.toMillis?.()||0));
+    historicoAutorizacoesCache.set(idAluno,itens);
+    return itens;
+  }
+  window.consultarAutorizacoesAluno = async function(idAluno, nome='Aluno') {
+    try {
+      const itens=await carregarAutorizacoesAluno(idAluno,true);
+      document.getElementById('janela-historico-quiz')?.remove();
+      const fundo=document.createElement('div'); fundo.id='janela-historico-quiz';
+      fundo.style.cssText='position:fixed;inset:0;background:#000b;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+      const linhas=itens.map((a,i)=>{
+        const tipo=/atrasada/.test(a.origem)?'Entrada atrasada':/retomadas/.test(a.origem)?'Retomada':'Recuperação';
+        const data=dataHistorico(a.data||a.autorizadoEm);
+        const status=a.status||a.evento||'Registrado';
+        const codigo=a.codigo||'';
+        return `<div style="padding:10px;border:1px solid #405576;border-radius:8px;margin:8px 0"><b>${i+1}. ${tipo}</b> — ${escaparHistorico(status)}<div style="font-size:12px;color:#cbd5e1">${escaparHistorico(data)} • ${escaparHistorico(a.idAvaliacao||'')}</div>${codigo?`<div>Código: <code>${escaparHistorico(codigo)}</code> <button type="button" class="btn-acao btn-secondary" data-hist-codigo="${escaparHistorico(codigo)}">Copiar</button></div>`:''}</div>`;
+      }).join('')||'<p>Nenhuma autorização registrada para este aluno.</p>';
+      fundo.innerHTML=`<section role="dialog" aria-modal="true" style="background:#111c30;color:#e2e8f0;border:1px solid #405576;border-radius:14px;padding:20px;max-width:690px;width:100%;max-height:85vh;overflow:auto"><h2>Histórico de autorizações — ${escaparHistorico(nome)}</h2><p style="font-size:12px">Histórico privado do professor. Situações são exibidas conforme registradas no banco, sem presumir utilização ou expiração.</p>${linhas}<button type="button" class="btn-acao btn-secondary" data-hist-fechar="1">Fechar</button><p data-hist-status></p></section>`;
+      fundo.addEventListener('click',async ev=>{if(ev.target===fundo||ev.target.dataset.histFechar){fundo.remove();return;}if(ev.target.dataset.histCodigo){try{await navigator.clipboard.writeText(ev.target.dataset.histCodigo);fundo.querySelector('[data-hist-status]').textContent='Código copiado.';}catch{fundo.querySelector('[data-hist-status]').textContent='Selecione e copie o código manualmente.';}}});
+      document.body.appendChild(fundo);
+    } catch(e){alert('Não foi possível consultar o histórico: '+(e.message||e));}
+  };
+
   // Entrada atrasada é diferente de recuperação: destina-se a uma PRIMEIRA tentativa.
   // O bilhete é individual, por avaliação/escola/turma e fica registrado para auditoria.
   // Não altera expiraEmMillis nem reabre o acesso dos demais alunos.
@@ -4995,12 +5097,13 @@ if (window.location.pathname.includes("painel.html")) {
         idAluno, nome: registro.nome, escola: registro.escola,
         turma: registro.turma, idAvaliacao: registro.idAvaliacao,
         evento: "autorizacao_recuperacao", data: serverTimestamp(),
-        codigoReutilizado: reutilizarCodigo,
+        codigoReutilizado: reutilizarCodigo, codigo, status:"autorizada",
         detalhe: reutilizarCodigo
           ? "Autorização renovada para a mesma avaliação; tentativa preservada."
           : "Novo código gerado para esta avaliação; tentativa preservada."
       });
-      alert(`Código de recuperação de ${registro.nome}:\n\n${codigo}\n\nConfirme a identidade antes de informar o código. Informe este código ao aluno para retomar a tentativa.`);
+      historicoAutorizacoesCache.delete(idAluno);
+      janelaAutorizacao({titulo:"Recuperação autorizada",nome:registro.nome,codigo,tipo:"Recuperação",escola:registro.escola,turma:registro.turma,avaliacao:registro.idAvaliacao});
       mostrarNotificacao("Autorização de recuperação registrada.");
     } catch (erro) {
       console.error("Falha ao registrar recuperação:", erro);
@@ -5011,36 +5114,10 @@ if (window.location.pathname.includes("painel.html")) {
   // Histórico individual de recuperação, restrito ao professor autenticado.
   // Não expõe códigos em relatórios públicos e não altera tentativas existentes.
   window.verHistoricoRecuperacaoAluno = async function(botao) {
-    const idAluno = botao.dataset.id;
-    if (!idAluno) return;
-    botao.disabled = true;
-    try {
-      const aluno = alunosOnlineCache.find(a => a.idDoc === idAluno);
-      const referencia = doc(db, "recuperacoes_tentativas", idAluno);
-      const [autorizacao, eventos, retomadas] = await Promise.all([
-        getDoc(referencia),
-        getDocs(query(collection(db, "registros_recuperacao"), where("idAluno", "==", idAluno))),
-        getDocs(query(collection(db, "registros_retomadas_alunos"), where("idAluno", "==", idAluno)))
-      ]);
-      const dataFormatada = (valor) => {
-        const data = valor?.toDate?.();
-        return data instanceof Date && !Number.isNaN(data.getTime())
-          ? data.toLocaleString("pt-BR") : "Data ainda não sincronizada";
-      };
-      const linhas = [...eventos.docs, ...retomadas.docs].map(item => item.data()).sort((a,b) =>
-        (b.data?.toMillis?.() || 0) - (a.data?.toMillis?.() || 0));
-      const cabecalho = `Aluno: ${aluno?.nome || idAluno}\nEscola: ${aluno?.escola || "Não informada"}\nTurma: ${aluno?.turma || "Não informada"}`;
-      const situacao = autorizacao.exists()
-        ? `Autorização: ${autorizacao.data().status || "Registrada"}\nEmitida: ${dataFormatada(autorizacao.data().autorizadoEm)}\nCódigo: disponível no botão Recuperação (não incluído no histórico)`
-        : "Nenhuma autorização individual encontrada.";
-      const detalhes = linhas.length ? linhas.map((e, i) =>
-        `${i+1}. ${dataFormatada(e.data)} — ${e.evento || "Evento"}\n   ${e.detalhe || ""}`
-      ).join("\n") : "Nenhum evento registrado.";
-      alert(`${cabecalho}\n\n${situacao}\n\nHISTÓRICO DE RECUPERAÇÃO\n${detalhes}`);
-    } catch (erro) {
-      console.error("Erro ao consultar histórico de recuperação:", erro);
-      alert("Não foi possível consultar o histórico. Verifique a conexão e as regras do Firebase.");
-    } finally { botao.disabled = false; }
+    const idAluno=botao?.dataset?.id;
+    if(!idAluno)return;
+    const aluno=alunosOnlineCache.find(a=>a.idDoc===idAluno);
+    await window.consultarAutorizacoesAluno(idAluno,aluno?.nome||idAluno);
   };
 
   window.finalizarAlunoElemento = function(btn) {
