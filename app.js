@@ -4770,6 +4770,30 @@ if (window.location.pathname.includes("painel.html")) {
     }
   }
 
+  // Encerramentos confirmados nesta sessão: evita reaparecimento por snapshots atrasados.
+  // Um novo início posterior ao encerramento é tratado como nova tentativa.
+  const encerramentosConfirmados = new Map();
+  function millisMonitoramento(valor) {
+    if (valor?.toMillis) return valor.toMillis();
+    if (typeof valor?.seconds === "number") return valor.seconds * 1000;
+    if (typeof valor === "number") return valor < 1e11 ? valor * 1000 : valor;
+    if (typeof valor === "string") return Date.parse(valor) || 0;
+    return 0;
+  }
+  function alunoJaEncerradoNoMonitoramento(aluno) {
+    const inicio = millisMonitoramento(aluno.dataInicio);
+    const fechamentoLocal = encerramentosConfirmados.get(aluno.idDoc);
+    if (fechamentoLocal && (!inicio || inicio <= fechamentoLocal)) return true;
+    // Confere somente encerramentos explícitos do professor; não oculta
+    // novas tentativas legítimas nem confunde alunos com nomes semelhantes.
+    return resultadosGlobaisCache.some(res =>
+      res.finalizadoPeloProfessor === true &&
+      (String(res.idAluno || "") === String(aluno.idDoc || "") ||
+       (String(res.idAluno || "") === String(aluno.idAluno || "") && !!aluno.idAluno)) &&
+      Number(res.timestamp || 0) >= inicio && inicio > 0
+    );
+  }
+
   function inicializarTabelaTempoReal() {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
     if (!corpoTabelaTempoReal) return;
@@ -4782,7 +4806,8 @@ if (window.location.pathname.includes("painel.html")) {
       (snapshot) => {
         alunosOnlineCache = [];
         snapshot.forEach(docSnap => {
-          alunosOnlineCache.push({ idDoc: docSnap.id, ...docSnap.data() });
+          const registro = { idDoc: docSnap.id, ...docSnap.data() };
+          if (!alunoJaEncerradoNoMonitoramento(registro)) alunosOnlineCache.push(registro);
         });
         renderizarTabelaTempoReal();
       },
@@ -4816,7 +4841,7 @@ if (window.location.pathname.includes("painel.html")) {
     );
 
     const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
-    let dadosFiltrados = [...alunosOnlineCache];
+    let dadosFiltrados = alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a));
 
     if (termoBusca) {
       dadosFiltrados = dadosFiltrados.filter(aluno => {
@@ -4863,13 +4888,13 @@ if (window.location.pathname.includes("painel.html")) {
           <td class="chk-col" style="text-align: center;">
             <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}" ${estaMarcado}>
           </td>
-          <td><span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 3px 6px; border-radius: 6px; font-weight: bold; font-size: 11px;">${situacaoContato}</span></td>
+          <td><span class="quiz-status-texto" style="color:${contatoAtrasado ? '#fbbf24' : '#4ade80'}">${situacaoContato}</span></td>
           <td><span style="color: #cbd5e1; font-size: 12px;">📅 ${dataInicioStr}</span></td>
           <td><strong>${aluno.escola || 'N/D'}</strong></td>
           <td>${aluno.nome || 'Aluno'}</td>
           <td>${aluno.turma || 'N/D'}</td>
           <td>${aluno.materia || 'Geral'}</td>
-          <td><span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
+          <td><span class="quiz-questao-texto">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
           <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
           <td style="text-align: center;">
             <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${aluno.idAluno || aluno.idDoc}" data-escopo="monitoramento" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
@@ -5246,6 +5271,7 @@ if (window.location.pathname.includes("painel.html")) {
           finalizadoEm: serverTimestamp()
         }, { merge: true });
         await deleteDoc(doc(db, "alunos_online", idAluno));
+        encerramentosConfirmados.set(idAluno, agora);
 
         alunosOnlineCache = alunosOnlineCache.filter(a => a.idDoc !== idAluno);
         renderizarTabelaTempoReal();
