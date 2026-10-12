@@ -1,72 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1791775422836",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 2,
-  "tempoMaximoMinutos": 2,
-  "tempoAtivacaoMinutos": 2,
-  "expiraEmMillis": 1791775542836,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
-  "token": "4321",
-  "seedReordenacao": "1791775422836",
-  "publicadoEm": "2026-10-12T03:23:43.468Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "Ph2yefvXlTM5Hvl7I5dt",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que são Redes Neurais Convolucionais (CNNs)?",
-      "opcoes": [
-        "Redes especializadas no processamento de dados em grade, como imagens e vídeos",
-        "Redes voltadas exclusivamente para a tradução de textos longos",
-        "Algoritmos de ordenação rápida de vetores multidimensionais",
-        "Protocolos de criptografia avançada baseados em blocos",
-        "Sistemas de banco de dados relacionais distribuídos"
-      ]
-    },
-    {
-      "idQuestao": "7bDRNU2B3Z7AyyQtlpfx",
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial",
-      "pergunta": "O que é o viés algorítmico (Algorithmic Bias)?",
-      "opcoes": [
-        "Erros sistemáticos e repetitivos em um sistema de IA que criam resultados discriminatórios ou injustos",
-        "Falha no hardware que desliga o servidor repentinamente",
-        "Lentidão na execução de consultas ao banco de dados",
-        "Ausência de conexão com a internet durante o treinamento",
-        "Duplicação de registros na tabela de usuários"
-      ]
-    },
-    {
-      "idQuestao": "zoN09eJ8vMOWlsSI3jHa",
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "pergunta": "O que é um Ataque de Injeção de Código (Code Injection)?",
-      "opcoes": [
-        "Inserção de código malicioso em um programa para execução não autorizada",
-        "Sobrecarga de servidores web com requisições em massa",
-        "Interceptação de tráfego de rede em Wi-Fi público",
-        "Falsificação de endereços IP em pacotes TCP",
-        "Roubo físico de discos rígidos em data centers"
-      ]
-    }
-  ]
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1791777552061,
+  "turmasAtivas": [],
+  "token": "",
+  "seedReordenacao": "1791777552061",
+  "publicadoEm": "2026-10-12T03:59:12.061Z",
+  "encerradoEm": "2026-10-12T03:59:12.061Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
