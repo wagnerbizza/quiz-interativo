@@ -1712,6 +1712,19 @@ body.light-mode #aba-banco-dados > p {
   color:#475569 !important;
 }
 </style>
+
+<style id="correcao-expandir-recolher-acoes">
+/* Mantém as ações realmente ocultas até o clique em Expandir.
+   As regras antigas de display:grid!important anulavam display:none inline. */
+#aba-relatorios .tabela-resultados .grupo-botoes-acoes[hidden],
+#aba-monitoramento .grupo-botoes-acoes[hidden],
+.tabela-resultados .grupo-botoes-acoes[hidden],
+.grupo-botoes-acoes[hidden] { display: none !important; }
+/* No monitoramento, os botões abertos ficam organizados sem ultrapassar a célula. */
+#aba-monitoramento .grupo-botoes-acoes:not([hidden]) {
+  flex-wrap: wrap; justify-content: center; gap: 4px;
+}
+</style>
 </head>
 <body>
 
