@@ -4370,7 +4370,8 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
           <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
           <td style="text-align: center;">
-            <div class="grupo-botoes-acoes">
+            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
+            <div class="grupo-botoes-acoes" hidden style="display:none;">
               <button type="button" class="btn-acao" style="background:#0284c7;" onclick="gerarBoletimPorId('${res.idDoc}')">📜 <span>Boletim</span></button>
               <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova</span></button>
               <button type="button" class="btn-acao" style="background:#10b981;" onclick="gerarCertificadoPorId('${res.idDoc}')">🎓 <span>Certificado</span></button>
@@ -4824,14 +4825,29 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
           <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
           <td style="text-align: center;">
+            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
+            <div class="grupo-botoes-acoes" hidden style="display:none;">
             <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="prepararRecuperacaoAluno(this)" title="Gerar código privado e registrar autorização de retomada">🔑 Recuperação</button>
             <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="verHistoricoRecuperacaoAluno(this)" title="Consultar autorizações e registros de recuperação deste aluno">📋 Histórico</button>
             <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11.5px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)">🏁 Finalizar</button>
+            </div>
           </td>
         </tr>
       `;
     });
     corpoTabelaTempoReal.innerHTML = htmlOnline;
+  };
+
+  // Mostra apenas as ações da linha escolhida, sem alterar registros ou dados.
+  window.alternarAcoesAluno = function(botao) {
+    const grupo = botao.nextElementSibling;
+    if (!grupo || !grupo.classList.contains("grupo-botoes-acoes")) return;
+    const abrir = botao.getAttribute("aria-expanded") !== "true";
+    botao.setAttribute("aria-expanded", String(abrir));
+    botao.textContent = abrir ? "▾ Recolher" : "▸ Expandir";
+    grupo.hidden = !abrir;
+    grupo.style.display = abrir ? "flex" : "none";
+    if (abrir) { grupo.style.flexWrap = "wrap"; grupo.style.gap = "4px"; grupo.style.justifyContent = "center"; }
   };
 
   // Entrada atrasada é diferente de recuperação: destina-se a uma PRIMEIRA tentativa.
@@ -4871,7 +4887,37 @@ if (window.location.pathname.includes("painel.html")) {
         escola,idAvaliacao,nome:nomeLimpo,turma:turmaEscolhida,idAluno,
         evento:"autorizacao_entrada_atrasada",data:serverTimestamp(),codigo
       });
-      alert(`Código de ENTRADA ATRASADA para ${nomeLimpo}:\n\n${codigo}\n\nEntregue somente ao aluno identificado. O aluno deve informar este código e o TOKEN da avaliação.`);
+      // Exibe código e mensagem com cópia individual, sem expor o código no HTML da tabela.
+      const mensagem = `Código de ENTRADA ATRASADA para ${nomeLimpo}:\\n\\n${codigo}\\n\\nEntregue somente ao aluno identificado. O aluno deve informar este código e o TOKEN da avaliação.`;
+      const caixa = document.createElement("div");
+      caixa.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;";
+      const painel = document.createElement("div");
+      painel.style.cssText = "background:#172033;color:white;border-radius:12px;padding:22px;max-width:480px;width:100%;box-shadow:0 10px 40px #0008;";
+      const titulo = document.createElement("h3");
+      titulo.textContent = "Entrada atrasada autorizada";
+      const detalhe = document.createElement("p");
+      detalhe.textContent = `Aluno: ${nomeLimpo}`;
+      const valor = document.createElement("p");
+      valor.textContent = codigo;
+      valor.style.cssText = "font-size:24px;font-weight:bold;letter-spacing:2px;overflow-wrap:anywhere;";
+      const retorno = document.createElement("p");
+      retorno.setAttribute("role","status");
+      const copiar = (texto) => async () => {
+        try { await navigator.clipboard.writeText(texto); retorno.textContent = "Copiado!"; }
+        catch (_) { window.prompt("Selecione e copie o texto:", texto); }
+      };
+      const criarBotao = (rotulo, acao) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "btn-acao btn-secondary";
+        b.textContent = rotulo; b.style.margin = "5px"; b.addEventListener("click", acao);
+        return b;
+      };
+      painel.append(titulo, detalhe, valor,
+        criarBotao("Copiar código", copiar(codigo)),
+        criarBotao("Copiar mensagem", copiar(mensagem)),
+        criarBotao("Fechar", () => caixa.remove()), retorno);
+      caixa.append(painel);
+      document.body.append(caixa);
       mostrarNotificacao("Autorização de entrada atrasada registrada.");
     } catch (erro) {
       console.error("Falha na autorização de entrada atrasada:",erro);
