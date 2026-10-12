@@ -180,6 +180,18 @@ function salvarAlunosOcultosLocalStorage() {
   localStorage.setItem("alunos_ocultos_painel", JSON.stringify(Array.from(alunosOcultosCache)));
 }
 
+// Exclusões confirmadas: impede que o cache histórico (que faz merge) ressuscite registros.
+// Os identificadores incluem o caminho completo para não confundir avaliações homônimas.
+const CHAVE_EXCLUSOES_CONFIRMADAS = "quiz_resultados_excluidos_confirmados_v1";
+let exclusoesConfirmadas = new Set(JSON.parse(localStorage.getItem(CHAVE_EXCLUSOES_CONFIRMADAS) || "[]"));
+function chaveRegistroResultado(item) {
+  return item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "");
+}
+function resultadoExcluido(item) { return exclusoesConfirmadas.has(chaveRegistroResultado(item)); }
+function salvarExclusoesConfirmadas() {
+  localStorage.setItem(CHAVE_EXCLUSOES_CONFIRMADAS, JSON.stringify([...exclusoesConfirmadas]));
+}
+
 function salvarAlunosLixeiraLocalStorage() {
   localStorage.setItem("alunos_lixeira_painel", JSON.stringify(Array.from(alunosLixeiraCache)));
 }
@@ -1733,6 +1745,7 @@ if (window.location.pathname.includes("painel.html")) {
           if (timestamp < inicioSessaoResultadosPainel) continue;
 
           houveResultadoNovo = true;
+          if (exclusoesConfirmadas.has(docSnap.ref.path)) continue;
           const recebido = {
             idDoc: docSnap.id,
             refPath: docSnap.ref.path,
@@ -1794,6 +1807,7 @@ if (window.location.pathname.includes("painel.html")) {
   let ultimoTimestampConsultado = inicioSessaoResultadosPainel - 5000;
 
   async function incorporarResultadoNovoNoCache(docSnap) {
+    if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
     const recebido = {
       idDoc: docSnap.id,
       refPath: docSnap.ref.path,
@@ -2453,9 +2467,17 @@ if (window.location.pathname.includes("painel.html")) {
           } else {
             await deleteDoc(doc(db, "avaliacoes", idDoc));
           }
+          // Só registra exclusão permanente após confirmação do Firebase.
+          // Limpa também o cache local, que antes recolocava os registros no relatório.
+          exclusoesConfirmadas.add(resObj?.refPath || `avaliacoes/${idDoc}`);
+          salvarExclusoesConfirmadas();
           alunosLixeiraCache.delete(idDoc);
+          resultadosGlobaisCache = resultadosGlobaisCache.filter(r => chaveRegistroResultado(r) !== (resObj?.refPath || `avaliacoes/${idDoc}`));
+          const cacheLimpo = carregarCacheLocalRelatorios();
+          localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(cacheLimpo));
         }
         salvarAlunosLixeiraLocalStorage();
+        renderizarTabelaResultadosFiltrada();
         renderizarTabelaLixeira();
         mostrarNotificacao(`🔥 Registros excluídos permanentemente!`);
       } catch (err) {
@@ -2597,7 +2619,10 @@ if (window.location.pathname.includes("painel.html")) {
     });
   }
 
+  let requisicaoConfiguracaoAtivacao = 0;
+  const rascunhosTokenAtivacao = new Map();
   function carregarConfiguracoesEscolaParaAtivacao(escolaNome) {
+    const numeroRequisicao = ++requisicaoConfiguracaoAtivacao;
     const containerAtivacao = document.getElementById("aba-ativacao");
     if (!containerAtivacao) return;
 
@@ -2610,6 +2635,8 @@ if (window.location.pathname.includes("painel.html")) {
 
     // 10C.7: leitura única da configuração para ativação.
     getDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaNome))).then((docSnap) => {
+      // Ignora resposta antiga quando o professor já selecionou outra escola.
+      if (numeroRequisicao !== requisicaoConfiguracaoAtivacao) return;
       let tab = {};
       let turmasCarregadas = ["1A", "2A", "3A"];
       let materiasMarcadasSalvas = [];
@@ -2670,6 +2697,10 @@ if (window.location.pathname.includes("painel.html")) {
         });
       }
 
+      const campoTokenAnterior = painelDinamico.querySelector("#input-token-ativacao");
+      if (campoTokenAnterior && escolaAtivaSelecionadaIndependente === escolaNome) {
+        rascunhosTokenAtivacao.set(escolaNome, campoTokenAnterior.value);
+      }
       painelDinamico.innerHTML = `
         <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid #3b82f6; padding: 24px; border-radius: 12px; margin-top: 15px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
           
@@ -2787,6 +2818,14 @@ if (window.location.pathname.includes("painel.html")) {
         if (document.getElementById("prev-tlim")) document.getElementById("prev-tlim").textContent = tLimVal;
       }
 
+      // Preserva o token enquanto o Firestore atualiza configurações do formulário.
+      const campoTokenAtual = painelDinamico.querySelector("#input-token-ativacao");
+      if (campoTokenAtual) {
+        campoTokenAtual.value = rascunhosTokenAtivacao.get(escolaNome) || "";
+        campoTokenAtual.addEventListener("input", () => {
+          rascunhosTokenAtivacao.set(escolaNome, campoTokenAtual.value);
+        });
+      }
       painelDinamico.addEventListener("change", atualizarPreviewDinamicoAtivacao);
       painelDinamico.addEventListener("input", atualizarPreviewDinamicoAtivacao);
       atualizarPreviewDinamicoAtivacao();
@@ -3742,8 +3781,8 @@ if (window.location.pathname.includes("painel.html")) {
       const mapa = new Map();
       const chave = (item,i) => item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "") ||
         item?.id || `${item?.nome || item?.aluno || "resultado"}|${item?.timestamp || item?.dataEnvio || i}`;
-      existente.forEach((item,i)=>mapa.set(chave(item,i),item));
-      entrada.forEach((item,i)=>mapa.set(chave(item,i),item));
+      existente.filter(item => !resultadoExcluido(item)).forEach((item,i)=>mapa.set(chave(item,i),item));
+      entrada.filter(item => !resultadoExcluido(item)).forEach((item,i)=>mapa.set(chave(item,i),item));
       localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(Array.from(mapa.values())));
       localStorage.setItem(CHAVE_CACHE_RELATORIOS_DATA, new Date().toISOString());
       return true;
@@ -3757,7 +3796,7 @@ if (window.location.pathname.includes("painel.html")) {
     try {
       const bruto = localStorage.getItem(CHAVE_CACHE_RELATORIOS);
       const lista = bruto ? JSON.parse(bruto) : [];
-      return Array.isArray(lista) ? lista : [];
+      return Array.isArray(lista) ? lista.filter(item => !resultadoExcluido(item)) : [];
     } catch (erro) {
       console.error("Cache local de relatórios inválido:", erro);
       return [];
@@ -4110,6 +4149,7 @@ if (window.location.pathname.includes("painel.html")) {
       // ETAPA 1 — coleção atual. É independente do histórico antigo.
       const atuais = await getDocs(collection(db, "avaliacoes"));
       atuais.forEach((docSnap) => {
+        if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
         mapa.set(docSnap.ref.path, {
           idDoc: docSnap.id,
           refPath: docSnap.ref.path,
@@ -4133,6 +4173,7 @@ if (window.location.pathname.includes("painel.html")) {
       // Esta consulta é feita apenas quando o professor clica em sincronizar.
       const historico = await getDocs(collectionGroup(db, "avaliacoes"));
       historico.forEach((docSnap) => {
+        if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
         mapa.set(docSnap.ref.path, {
           idDoc: docSnap.id,
           refPath: docSnap.ref.path,
@@ -4229,6 +4270,7 @@ if (window.location.pathname.includes("painel.html")) {
           snapshot.docChanges().forEach((mudanca) => {
             if (mudanca.type !== "added" && mudanca.type !== "modified") return;
             const docSnap = mudanca.doc;
+            if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
             const item = { idDoc: docSnap.id, refPath: docSnap.ref.path, ...docSnap.data() };
             const chave = item.refPath || `avaliacoes/${item.idDoc}`;
             if (!mapa.has(chave)) adicionados++;
@@ -4287,7 +4329,7 @@ if (window.location.pathname.includes("painel.html")) {
 
     let dadosFiltrados = [...resultadosGlobaisCache];
 
-    dadosFiltrados = dadosFiltrados.filter(res => !alunosOcultosCache.has(res.idDoc) && !alunosLixeiraCache.has(res.idDoc));
+    dadosFiltrados = dadosFiltrados.filter(res => !resultadoExcluido(res) && !alunosOcultosCache.has(res.idDoc) && !alunosLixeiraCache.has(res.idDoc));
 
     if (escolaSelecionada && escolaSelecionada !== "TODAS") {
       dadosFiltrados = dadosFiltrados.filter(res => {
