@@ -2067,7 +2067,7 @@ body.light-mode #aba-banco-dados > p {
     <!-- ABA 5: MONITORAMENTO -->
     <div id="aba-monitoramento" class="aba-conteudo hidden">
       <h2>🟢 Alunos Acessando em Tempo Real</h2>
-      <p style="font-size:12px;color:var(--text-muted,#94a3b8);margin:4px 0 12px">🔑 Recuperação: o professor pode gerar e registrar um código individual para a tentativa existente. “Sem atualização recente” indica apenas ausência de sincronização; não confirma F5, queda de internet ou fechamento do navegador. A digitação do código pelo aluno será integrada separadamente.</p>
+      <p style="font-size:12px;color:var(--text-muted,#94a3b8);margin:4px 0 12px">🔑 Ações individuais: clique em “⋯ Ações” para consultar códigos de entrada atrasada e recuperação, copiar um código ou gerenciar a tentativa. “Sem atualização recente” significa apenas falta de sincronização, não comprova que o aluno fechou a página.</p>
       <div class="painel-controle-topo no-print">
         <div class="grupo-controles-esquerda">
           <button type="button" class="btn-acao" onclick="selecionarTodosOnline(true)">☑️ Marcar</button>
@@ -2359,6 +2359,23 @@ window.addEventListener("resize",()=>{
 .demo-prof-acoes{display:flex!important;justify-content:flex-end;gap:7px!important}
 .demo-prof-acoes button{font-size:12px!important;white-space:normal}
 @media(max-width:600px){.demo-prof-acoes button{flex:1 1 42%}}
+</style>
+
+<style id="quiz-acoes-compactas-v3">
+/* Menu de ações por aluno: códigos dentro da área expansível, sem deslocar colunas. */
+.btn-expandir-acoes{display:block!important;margin:0 auto!important;min-width:112px;max-width:100%;padding:8px 10px!important;border:1px solid #6284ad!important;border-radius:9px!important;background:#253c58!important;color:#e8f3ff!important;font-weight:700!important;cursor:pointer!important;white-space:nowrap!important;}
+.btn-expandir-acoes:hover,.btn-expandir-acoes:focus-visible{background:#355b84!important;outline:2px solid #60a5fa;outline-offset:1px;}
+.grupo-botoes-acoes[hidden]{display:none!important;}
+.grupo-botoes-acoes:not([hidden]){display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:6px!important;max-width:235px!important;min-width:175px!important;margin:9px auto 0!important;padding:9px!important;border:1px solid #304b6e!important;border-radius:10px!important;background:#17263c!important;box-sizing:border-box!important;}
+.grupo-botoes-acoes>.btn-acao{display:flex!important;justify-content:center!important;align-items:center!important;max-width:100%!important;width:100%!important;box-sizing:border-box!important;margin:0!important;min-height:33px!important;font-size:11px!important;white-space:normal!important;line-height:1.2!important;}
+.quiz-codigos-aluno{order:20;max-width:100%;border-top:1px solid #3b5475;padding-top:9px;margin-top:5px;text-align:left;font-size:11px;overflow-wrap:anywhere;color:#d7e7ff;}
+.quiz-codigos-titulo{font-weight:700;color:#93c5fd;margin-bottom:7px;}
+.quiz-codigo-item{border:1px solid #3a5474;border-radius:8px;padding:7px;margin-bottom:7px;background:#0e1c30;}
+.quiz-codigo-item small{display:block;color:#a9bad0;margin-top:3px;font-size:10px;}
+.quiz-codigo-linha{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-top:6px;flex-wrap:wrap;}
+.quiz-codigo-linha code{color:#fcd34d;font-weight:700;user-select:all;font-size:11px;}
+.quiz-copiar-inline{border:1px solid #5478a5;background:#263e5a;color:white;border-radius:6px;padding:5px;cursor:pointer;font-size:10px;}
+.quiz-copiar-inline:hover{background:#3b6089;}
 </style>
 </body>
 </html>

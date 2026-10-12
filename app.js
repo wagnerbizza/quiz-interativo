@@ -4370,8 +4370,9 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
           <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
           <td style="text-align: center;">
-            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
+            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${idAlunoAlvo}" data-escopo="relatorios" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
             <div class="grupo-botoes-acoes" hidden style="display:none;">
+              <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
               <button type="button" class="btn-acao" style="background:#0284c7;" onclick="gerarBoletimPorId('${res.idDoc}')">📜 <span>Boletim</span></button>
               <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova</span></button>
               <button type="button" class="btn-acao" style="background:#10b981;" onclick="gerarCertificadoPorId('${res.idDoc}')">🎓 <span>Certificado</span></button>
@@ -4383,6 +4384,7 @@ if (window.location.pathname.includes("painel.html")) {
       `;
     });
     corpoTabelaResultados.innerHTML = htmlResultados;
+    restaurarMenusAbertos(corpoTabelaResultados);
   };
 
   // ==========================================================
@@ -4870,8 +4872,9 @@ if (window.location.pathname.includes("painel.html")) {
           <td><span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
           <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
           <td style="text-align: center;">
-            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
+            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${aluno.idAluno || aluno.idDoc}" data-escopo="monitoramento" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
             <div class="grupo-botoes-acoes" hidden style="display:none;">
+              <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
             <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="prepararRecuperacaoAluno(this)" title="Gerar código privado e registrar autorização de retomada">🔑 Recuperação</button>
             <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="verHistoricoRecuperacaoAluno(this)" title="Consultar autorizações e registros de recuperação deste aluno">📋 Histórico</button>
             <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11.5px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)">🏁 Finalizar</button>
@@ -4881,19 +4884,73 @@ if (window.location.pathname.includes("painel.html")) {
       `;
     });
     corpoTabelaTempoReal.innerHTML = htmlOnline;
+    restaurarMenusAbertos(corpoTabelaTempoReal);
   };
 
-  // Mostra apenas as ações da linha escolhida, sem alterar registros ou dados.
+  // Menu individual compacto: preserva estado em atualizações em tempo real.
+  // Consultas de códigos são somente leitura; nunca interferem na sincronização Firebase.
+  const menusAbertosAluno = new Set();
+  function chaveMenuAluno(botao) { return `${botao.dataset.escopo}:${botao.dataset.alunoId}`; }
+  function renderizarCodigosInline(itens) {
+    const vistos=new Set();
+    const autorizacoes=itens.filter(a=>a.codigo && /bilhetes_|registros_(entrada_atrasada|recuperacao)/.test(a.origem)).filter(a=>{
+      const chave=`${a.codigo}|${a.origem.includes('atrasada')?'atrasada':'recuperacao'}`;
+      if(vistos.has(chave)) return false; vistos.add(chave); return true;
+    });
+    if(!autorizacoes.length) return '<span class="quiz-sem-codigos">Nenhum código registrado para este aluno.</span>';
+    return '<div class="quiz-codigos-titulo">🔐 Códigos registrados</div>'+autorizacoes.map(a=>{
+      const tipo=a.origem.includes('atrasada')?'Entrada atrasada':'Recuperação';
+      const codigo=escaparHistorico(a.codigo);
+      const status=escaparHistorico(a.status||'Registrado');
+      const data=escaparHistorico(dataHistorico(a.data||a.autorizadoEm));
+      return `<div class="quiz-codigo-item"><div><b>${tipo}</b><small>${status} · ${data}</small></div><div class="quiz-codigo-linha"><code>${codigo}</code><button type="button" class="quiz-copiar-inline" data-codigo="${codigo}" title="Copiar código ${tipo}">📋 Copiar</button></div></div>`;
+    }).join('');
+  }
+  async function carregarCodigosNoMenu(botao, forcar=false) {
+    const area=botao.nextElementSibling?.querySelector('.quiz-codigos-aluno');
+    if(!area) return;
+    const id=botao.dataset.alunoId;
+    if(!id) {area.textContent='Identificação do aluno indisponível.';return;}
+    const chave=chaveMenuAluno(botao);
+    const cache=historicoAutorizacoesCache.get(id);
+    if(cache && !forcar) {area.innerHTML=renderizarCodigosInline(cache);return;}
+    area.textContent='Consultando códigos…';
+    try {
+      const itens=await carregarAutorizacoesAluno(id,true);
+      // Evita atualizar uma linha removida por renderização em tempo real.
+      if(botao.isConnected && menusAbertosAluno.has(chave)) area.innerHTML=renderizarCodigosInline(itens);
+    } catch(e) {if(botao.isConnected) area.textContent='Não foi possível consultar os códigos. Verifique o acesso ao Firebase.';}
+  }
   window.alternarAcoesAluno = function(botao) {
-    const grupo = botao.nextElementSibling;
-    if (!grupo || !grupo.classList.contains("grupo-botoes-acoes")) return;
-    const abrir = botao.getAttribute("aria-expanded") !== "true";
-    botao.setAttribute("aria-expanded", String(abrir));
-    botao.textContent = abrir ? "▾ Recolher" : "▸ Expandir";
-    grupo.hidden = !abrir;
-    grupo.style.display = abrir ? "flex" : "none";
-    if (abrir) { grupo.style.flexWrap = "wrap"; grupo.style.gap = "4px"; grupo.style.justifyContent = "center"; }
+    const grupo=botao.nextElementSibling;
+    if(!grupo?.classList.contains('grupo-botoes-acoes')) return;
+    const chave=chaveMenuAluno(botao);
+    const abrir=!menusAbertosAluno.has(chave);
+    if(abrir) menusAbertosAluno.add(chave); else menusAbertosAluno.delete(chave);
+    botao.setAttribute('aria-expanded',String(abrir));
+    botao.textContent=abrir?'▴ Fechar ações':'⋯ Ações';
+    grupo.hidden=!abrir;
+    grupo.style.display=abrir?'flex':'none';
+    if(abrir) carregarCodigosNoMenu(botao);
   };
+  // Ao atualizar a tabela, mantém menus abertos e reutiliza dados já consultados.
+  function restaurarMenusAbertos(tabela) {
+    tabela?.querySelectorAll('.btn-expandir-acoes').forEach(botao=>{
+      const aberto=menusAbertosAluno.has(chaveMenuAluno(botao));
+      const grupo=botao.nextElementSibling;
+      botao.textContent=aberto?'▴ Fechar ações':'⋯ Ações';
+      botao.setAttribute('aria-expanded',String(aberto));
+      grupo.hidden=!aberto;
+      grupo.style.display=aberto?'flex':'none';
+      if(aberto) carregarCodigosNoMenu(botao);
+    });
+  }
+  document.addEventListener('click',async e=>{
+    const b=e.target.closest?.('.quiz-copiar-inline');
+    if(!b)return;
+    try {await navigator.clipboard.writeText(b.dataset.codigo);b.textContent='✓ Copiado';}
+    catch {b.textContent='Selecione o código';}
+  });
 
   // Histórico privado de autorizações: leitura sob demanda, sem apagar registros anteriores.
   // Códigos nunca são inseridos em boletins ou certificados entregues aos alunos.
