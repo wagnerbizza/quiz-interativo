@@ -13,3 +13,6 @@ Arquivos de Recuperação/
 *.zip
 *.ZIP
 /Arquivos de Recuper*/
+*.zip
+*.zip.tmp
+*.7z
