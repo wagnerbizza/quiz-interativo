@@ -2715,26 +2715,32 @@ window.addEventListener("resize",()=>{
         .trim();
     }
 
-    function filtrarLixeira() {
-      const termo = normalizar(pesquisa.value);
+    
+function filtrarLixeira() {
+  const termo = normalizar(pesquisa.value);
 
-      tabela.querySelectorAll("tr").forEach(function (linha) {
-        const colunas = linha.querySelectorAll("td");
+  const linhas = tabela.querySelectorAll("tr");
 
-        // Ignora mensagens de tabela vazia.
-        if (colunas.length < 6) return;
+  linhas.forEach(function (linha) {
+    const colunas = linha.querySelectorAll("td");
 
-        // Coluna 2: nome do aluno.
-        const nomeAluno = normalizar(
-          colunas[2].textContent
-        );
+    // Mantém mensagens de tabela vazia.
+    if (colunas.length < 6) return;
 
-        const encontrado = nomeAluno.includes(termo);
+    // Pesquisa em todas as colunas da linha.
+    const conteudo = normalizar(linha.textContent);
 
-        linha.hidden = !encontrado;
-        linha.style.display = encontrado ? "" : "none";
-      });
-    }
+    // Exibe apenas registros que correspondem à pesquisa.
+    const encontrado = termo === "" ||
+      conteudo.includes(termo);
+
+    linha.style.setProperty(
+      "display",
+      encontrado ? "" : "none",
+      "important"
+    );
+  });
+}
 
     pesquisa.addEventListener("input", filtrarLixeira);
 
