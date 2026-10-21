@@ -2595,6 +2595,78 @@ window.addEventListener("resize",()=>{
 </script>
 
 
+<!-- Pesquisa de alunos arquivados -->
+<script>
+(function () {
+  function iniciarPesquisaArquivados() {
+    const pesquisa = document.getElementById(
+      'pesquisa-alunos-arquivados'
+    );
+
+    const tabela = document.getElementById(
+      'corpo-tabela-ocultos'
+    );
+
+    if (!pesquisa || !tabela) return;
+
+    function normalizar(texto) {
+      return String(texto || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    function filtrarArquivados() {
+      const termo = normalizar(pesquisa.value);
+
+      tabela.querySelectorAll('tr').forEach(function (linha) {
+        const colunas = linha.querySelectorAll('td');
+
+        // Ignora mensagens de tabela vazia.
+        if (colunas.length < 6) return;
+
+        // Coluna 2 = nome do aluno.
+        const nomeAluno = normalizar(
+          colunas[2].textContent
+        );
+
+        const encontrado = nomeAluno.includes(termo);
+
+        linha.hidden = !encontrado;
+        linha.style.display = encontrado ? '' : 'none';
+      });
+    }
+
+    pesquisa.addEventListener(
+      'input',
+      filtrarArquivados
+    );
+
+    // Mantém a pesquisa após atualizar a tabela.
+    const observador = new MutationObserver(
+      filtrarArquivados
+    );
+
+    observador.observe(tabela, {
+      childList: true
+    });
+
+    filtrarArquivados();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      iniciarPesquisaArquivados
+    );
+  } else {
+    iniciarPesquisaArquivados();
+  }
+})();
+</script>
+
+
 </body>
 </html>
 <style id="quiz-monitoramento-status-textual-20261012">
