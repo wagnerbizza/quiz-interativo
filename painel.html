@@ -2461,12 +2461,16 @@ window.addEventListener("resize",()=>{
   .quiz-cabecalho-ordenavel:hover {
     color: #93c5fd;
   }
-  .quiz-seta-ordem {
-    display: inline-block;
-    margin-left: 5px;
-    font-size: 11px;
-    opacity: .65;
-  }
+  
+.quiz-seta-ordem {
+  display: inline-block;
+  margin-left: 7px;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  opacity: .85;
+  vertical-align: middle;
+}
+
   .quiz-cabecalho-ordenavel[aria-sort="ascending"] .quiz-seta-ordem,
   .quiz-cabecalho-ordenavel[aria-sort="descending"] .quiz-seta-ordem {
     opacity: 1;
@@ -2542,7 +2546,7 @@ window.addEventListener("resize",()=>{
   function prepararTabela(config) {
     const elemento = document.querySelector(config.seletor);
     const tabela = elemento?.closest("table") || elemento;
-    
+
     if (!tabela) return;
 
     const cabecalhos = tabela.querySelectorAll("thead th");
