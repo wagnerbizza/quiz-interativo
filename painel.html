@@ -2439,6 +2439,148 @@ window.addEventListener("resize",()=>{
 .quiz-copiar-inline:hover{background:#3b6089;}
 </style>
 
+<style>
+  .quiz-cabecalho-ordenavel {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .quiz-cabecalho-ordenavel:hover {
+    color: #93c5fd;
+  }
+  .quiz-seta-ordem {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 11px;
+    opacity: .65;
+  }
+  .quiz-cabecalho-ordenavel[aria-sort="ascending"] .quiz-seta-ordem,
+  .quiz-cabecalho-ordenavel[aria-sort="descending"] .quiz-seta-ordem {
+    opacity: 1;
+    color: #60a5fa;
+  }
+</style>
+
+<script>
+(function () {
+  const tabelas = [
+    {
+      seletor: ".tabela-monitoramento",
+      colunas: [1, 2, 3, 4, 5, 6, 7, 8]
+    },
+    {
+      seletor: ".tabela-resultados",
+      colunas: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    }
+  ];
+
+  const normalizar = valor =>
+    (valor || "").trim().toLocaleLowerCase("pt-BR");
+
+  function comparar(a, b) {
+    const textoA = normalizar(a);
+    const textoB = normalizar(b);
+
+    const numeroA = Number(textoA.replace(",", "."));
+    const numeroB = Number(textoB.replace(",", "."));
+
+    if (
+      textoA !== "" && textoB !== "" &&
+      Number.isFinite(numeroA) &&
+      Number.isFinite(numeroB)
+    ) {
+      return numeroA - numeroB;
+    }
+
+    return textoA.localeCompare(textoB, "pt-BR", {
+      numeric: true,
+      sensitivity: "base"
+    });
+  }
+
+  function ordenarTabela(tabela, coluna, crescente) {
+    const tbody = tabela.querySelector("tbody");
+    if (!tbody) return;
+
+    const linhas = Array.from(tbody.rows)
+      .filter(linha => linha.cells.length > coluna);
+
+    linhas.sort((a, b) => {
+      const valorA = a.cells[coluna]?.innerText || "";
+      const valorB = b.cells[coluna]?.innerText || "";
+
+      return comparar(valorA, valorB) * (crescente ? 1 : -1);
+    });
+
+    const fragmento = document.createDocumentFragment();
+    linhas.forEach(linha => fragmento.appendChild(linha));
+    tbody.appendChild(fragmento);
+  }
+
+  function prepararTabela(config) {
+    const tabela = document.querySelector(config.seletor);
+    if (!tabela) return;
+
+    const cabecalhos = tabela.querySelectorAll("thead th");
+
+    config.colunas.forEach(indice => {
+      const th = cabecalhos[indice];
+      if (!th || th.dataset.quizOrdenavel) return;
+
+      th.dataset.quizOrdenavel = "1";
+      th.classList.add("quiz-cabecalho-ordenavel");
+      th.setAttribute("role", "button");
+      th.setAttribute("tabindex", "0");
+      th.setAttribute("aria-sort", "none");
+
+      const seta = document.createElement("span");
+      seta.className = "quiz-seta-ordem";
+      seta.textContent = "↕";
+      th.appendChild(seta);
+
+      function alternarOrdem() {
+        const crescente = th.getAttribute("aria-sort") !== "ascending";
+
+        cabecalhos.forEach(cabecalho => {
+          if (cabecalho.dataset.quizOrdenavel) {
+            cabecalho.setAttribute("aria-sort", "none");
+            const icone = cabecalho.querySelector(".quiz-seta-ordem");
+            if (icone) icone.textContent = "↕";
+          }
+        });
+
+        th.setAttribute(
+          "aria-sort",
+          crescente ? "ascending" : "descending"
+        );
+        seta.textContent = crescente ? "↑" : "↓";
+
+        ordenarTabela(tabela, indice, crescente);
+      }
+
+      th.addEventListener("click", alternarOrdem);
+
+      th.addEventListener("keydown", evento => {
+        if (evento.key === "Enter" || evento.key === " ") {
+          evento.preventDefault();
+          alternarOrdem();
+        }
+      });
+    });
+  }
+
+  function iniciarOrdenacao() {
+    tabelas.forEach(prepararTabela);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", iniciarOrdenacao);
+  } else {
+    iniciarOrdenacao();
+  }
+})();
+</script>
+
 </body>
 </html>
 <style id="quiz-monitoramento-status-textual-20261012">
