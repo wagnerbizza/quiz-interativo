@@ -2477,15 +2477,26 @@ window.addEventListener("resize",()=>{
 <script>
 (function () {
   const tabelas = [
-    {
-      seletor: ".tabela-monitoramento",
-      colunas: [1, 2, 3, 4, 5, 6, 7, 8]
-    },
-    {
-      seletor: ".tabela-resultados",
-      colunas: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    }
-  ];
+    
+const tabelas = [
+  {
+    seletor: ".tabela-monitoramento",
+    colunas: [1, 2, 3, 4, 5, 6, 7, 8]
+  },
+  {
+    seletor: ".tabela-resultados",
+    colunas: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  },
+  {
+    seletor: "#corpo-tabela-ocultos",
+    colunas: [1, 2, 3, 4, 5]
+  },
+  {
+    seletor: "#corpo-tabela-lixeira",
+    colunas: [1, 2, 3, 4, 5]
+  }
+];
+
 
   const normalizar = valor =>
     (valor || "").trim().toLocaleLowerCase("pt-BR");
