@@ -2541,7 +2541,7 @@ window.addEventListener("resize",()=>{
 
   function prepararTabela(config) {
     const elemento = document.querySelector(config.seletor);
-const tabela = elemento?.closest("table") || elemento;
+    const tabela = elemento?.closest("table") || elemento;
     if (!tabela) return;
 
     const cabecalhos = tabela.querySelectorAll("thead th");
