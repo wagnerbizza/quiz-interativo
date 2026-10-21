@@ -2693,6 +2693,72 @@ window.addEventListener("resize",()=>{
 })();
 </script>
 
+<!-- Pesquisa de alunos na Lixeira -->
+<script>
+(function () {
+  function iniciarPesquisaLixeira() {
+    const pesquisa = document.getElementById(
+      "pesquisa-alunos-lixeira"
+    );
+
+    const tabela = document.getElementById(
+      "corpo-tabela-lixeira"
+    );
+
+    if (!pesquisa || !tabela) return;
+
+    function normalizar(texto) {
+      return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function filtrarLixeira() {
+      const termo = normalizar(pesquisa.value);
+
+      tabela.querySelectorAll("tr").forEach(function (linha) {
+        const colunas = linha.querySelectorAll("td");
+
+        // Ignora mensagens de tabela vazia.
+        if (colunas.length < 6) return;
+
+        // Coluna 2: nome do aluno.
+        const nomeAluno = normalizar(
+          colunas[2].textContent
+        );
+
+        const encontrado = nomeAluno.includes(termo);
+
+        linha.hidden = !encontrado;
+        linha.style.display = encontrado ? "" : "none";
+      });
+    }
+
+    pesquisa.addEventListener("input", filtrarLixeira);
+
+    // Reaplica o filtro quando a tabela é atualizada.
+    const observador = new MutationObserver(filtrarLixeira);
+
+    observador.observe(tabela, {
+      childList: true
+    });
+
+    filtrarLixeira();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      iniciarPesquisaLixeira
+    );
+  } else {
+    iniciarPesquisaLixeira();
+  }
+})();
+</script>
+
 </body>
 </html>
 <style id="quiz-monitoramento-status-textual-20261012">
