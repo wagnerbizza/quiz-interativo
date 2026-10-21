@@ -2540,8 +2540,7 @@ window.addEventListener("resize",()=>{
   }
 
   function prepararTabela(config) {
-    const elemento = document.querySelector(config.seletor);
-const tabela = elemento?.closest("table") || elemento;
+    const tabela = document.querySelector(config.seletor);
     if (!tabela) return;
 
     const cabecalhos = tabela.querySelectorAll("thead th");
