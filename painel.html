@@ -1908,7 +1908,24 @@ body.light-mode #aba-banco-dados > p {
         <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn-acao" style="background:#22c55e;" onclick="restaurarAlunosSelecionadosLixeira()">♻️ Restaurar Selecionados</button>
           <button type="button" class="btn-acao btn-danger" onclick="excluirPermanentementeSelecionados()">🔥 Excluir Permanentemente</button>
+       
         </div>
+
+        <!-- Pesquisa de alunos na Lixeira -->
+        <div style="margin-bottom:12px;">
+          <input
+            type="search"
+            id="pesquisa-alunos-lixeira"
+            placeholder="🔍 Pesquisar aluno na Lixeira..."
+            aria-label="Pesquisar aluno na Lixeira"
+            autocomplete="off"
+            style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #475569;border-radius:8px;background:#1e293b;color:#ffffff;font-size:13px;"
+          >
+        </div>
+
+        <table>
+          <thead>
+
         <table>
           <thead>
             <tr>
