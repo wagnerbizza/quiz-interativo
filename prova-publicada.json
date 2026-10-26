@@ -1,21 +1,406 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
-  "escolaAtiva": "EE Caran Apparecido Gonçalves Professor",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "ativa": true,
+  "idAvaliacao": "av_1793033499130",
+  "escolaAtiva": "EE José Lins do Rego",
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Tarde",
+  "quantidadeQuestoes": 30,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1792701956344,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1792701956344",
-  "publicadoEm": "2026-10-22T20:45:56.344Z",
-  "encerradoEm": "2026-10-22T20:45:56.344Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoMaximoMinutos": 0,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1793044299130,
+  "turmasAtivas": [
+    "3B",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1793033499130",
+  "publicadoEm": "2026-10-26T16:51:39.929Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "xKrINaL3vp338YF9Sr7k",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 23 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "ae1hmyDfjmb55vJ9JiUj",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é uma rede neural artificial?",
+      "opcoes": [
+        "Um sistema de cabos de rede físicos em uma escola",
+        "Um modelo computacional inspirado no sistema nervoso biológico",
+        "Um tipo de vírus de computador",
+        "Uma linguagem de programação obsoleta"
+      ]
+    },
+    {
+      "idQuestao": "BC6n03fG9JCtAeAshRzT",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 42 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "Jzh89KZDiSz610lFY2xg",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o aprendizado semi-supervisionado?",
+      "opcoes": [
+        "Abordagem que utiliza uma pequena quantidade de dados rotulados e muitos não rotulados",
+        "Treinamento realizado sem nenhum tipo de dado ou intervenção",
+        "Sistema que utiliza apenas dados perfeitamente limpos e rotulados",
+        "Processo de exclusão de dados corrompidos por vírus",
+        "Método de validação cruzada sem divisão de bases"
+      ]
+    },
+    {
+      "idQuestao": "Ph2yefvXlTM5Hvl7I5dt",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que são Redes Neurais Convolucionais (CNNs)?",
+      "opcoes": [
+        "Redes especializadas no processamento de dados em grade, como imagens e vídeos",
+        "Redes voltadas exclusivamente para a tradução de textos longos",
+        "Algoritmos de ordenação rápida de vetores multidimensionais",
+        "Protocolos de criptografia avançada baseados em blocos",
+        "Sistemas de banco de dados relacionais distribuídos"
+      ]
+    },
+    {
+      "idQuestao": "GTHMDjNJZy7osQ3qCxpi",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual método JavaScript testa se pelo menos um elemento do array passa no teste implementado pela função fornecida?",
+      "opcoes": [
+        "every()",
+        "some()",
+        "filter()",
+        "find()",
+        "includes()"
+      ]
+    },
+    {
+      "idQuestao": "IwQ6tOxDblV8B7RLzrIH",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual linguagem de programação é atualmente a mais popular e amplamente utilizada em Inteligência Artificial e Data Science?",
+      "opcoes": [
+        "Python",
+        "HTML",
+        "CSS",
+        "SQL puro"
+      ]
+    },
+    {
+      "idQuestao": "CL4phODqli7kYwNqZmYJ",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual comando do Git envia as alterações locais para um repositório remoto (como o GitHub)?",
+      "opcoes": [
+        "git push",
+        "git pull",
+        "git commit",
+        "git status"
+      ]
+    },
+    {
+      "idQuestao": "sSdSgOneToczdajYQmiO",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o reconhecimento de padrões de fala (Speech Recognition)?",
+      "opcoes": [
+        "A tecnologia que traduz sinais acústicos de voz em palavras e frases compreensíveis por máquinas",
+        "A gravação de áudio em estúdio",
+        "O ajuste de volume de caixas de som",
+        "A reprodução de músicas em formato MP3"
+      ]
+    },
+    {
+      "idQuestao": "hQc5FC5MJAuLKd3aKId5",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual propriedade CSS define o estilo de transição suave entre propriedades CSS?",
+      "opcoes": [
+        "animation",
+        "transition",
+        "transform",
+        "smooth",
+        "effect"
+      ]
+    },
+    {
+      "idQuestao": "bAS1iYkqDFRDktGqe0zQ",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é um chatbot?",
+      "opcoes": [
+        "Um programa de computador projetado para simular conversas com usuários humanos",
+        "Um tipo de robô físico que limpa a casa",
+        "Um cabo de rede de alta velocidade",
+        "Um programa de edição de imagens"
+      ]
+    },
+    {
+      "idQuestao": "Kx5aD1FtnNq0vsmeJNKk",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 75 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "UNYDWDHPzrbUpEyvCGvP",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 15] O que é o algoritmo K-Means?",
+      "opcoes": [
+        "A) Um algoritmo de agrupamento (clustering) não supervisionado",
+        "B) Uma ferramenta de segurança em nuvem",
+        "C) Um compilador de inteligência artificial",
+        "D) Um framework mobile"
+      ]
+    },
+    {
+      "idQuestao": "LH0uuWTslGt39QEqe7aT",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual propriedade CSS define o modelo de cálculo de largura e altura (incluindo padding e border)?",
+      "opcoes": [
+        "box-sizing: border-box;",
+        "box-model: full;",
+        "sizing: inclusive;",
+        "box-display: border;",
+        "model: box;"
+      ]
+    },
+    {
+      "idQuestao": "t1YpGN6J3ib6QBmW2kzw",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual seletor CSS é utilizado para selecionar um elemento pelo seu ID?",
+      "opcoes": [
+        ". (ponto)",
+        "# (cerquilha)",
+        "* (asterisco)",
+        "@ (arroba)",
+        "& (e comercial)"
+      ]
+    },
+    {
+      "idQuestao": "uWFHrHPgi5ix5YKC5XFt",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 50 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "OudDmfduCLfHOv1Y511v",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 18 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "ZW4zTBh5lc6v6F3iU4tb",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o aprendizado por transferência (Transfer Learning)?",
+      "opcoes": [
+        "O reaproveitamento de um modelo de IA pré-treinado em um novo problema relacionado",
+        "A transferência de arquivos pesados via pen drive",
+        "O envio de dados para a nuvem",
+        "A troca de computadores em uma sala de aula"
+      ]
+    },
+    {
+      "idQuestao": "f7nEKybOTWeL6q3ULWSB",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Como se declara uma constante em JavaScript moderno (ES6+)?",
+      "opcoes": [
+        "var x = 10;",
+        "let x = 10;",
+        "const x = 10;",
+        "static x = 10;",
+        "final x = 10;"
+      ]
+    },
+    {
+      "idQuestao": "bBNTMtdQdUIwXQlocX31",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a detecção de anomalias por IA?",
+      "opcoes": [
+        "A identificação de itens, eventos ou observações que não se ajustam a um padrão esperado",
+        "A busca por palavras repetidas em um texto",
+        "A contagem de arquivos em uma pasta",
+        "A atualização de softwares de segurança"
+      ]
+    },
+    {
+      "idQuestao": "cPlkVgVfHZErNOqPdI9Q",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual técnica de IA é especialmente famosa por imitar o funcionamento do cérebro humano com múltiplas camadas?",
+      "opcoes": [
+        "Deep Learning",
+        "HTML Básico",
+        "Processamento Manual",
+        "Redes Estáticas"
+      ]
+    },
+    {
+      "idQuestao": "hdL60KVSKf9QSrT2VAvt",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 38 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "gjEzNJBLWlcoPhoITc2U",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que é uma Arrow Function (função de seta) introduzida no ES6?",
+      "opcoes": [
+        "Uma sintaxe mais curta e concisa para escrever expressões de funções em JavaScript",
+        "Uma função que apaga códigos antigos",
+        "Um erro de sintaxe do navegador",
+        "Uma animação em CSS"
+      ]
+    },
+    {
+      "idQuestao": "YpjqpKAQnuX3H7q4rpyC",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a computação cognitiva?",
+      "opcoes": [
+        "Sistemas que simulam o processo de pensamento humano em um modelo complexo e computadorizado",
+        "O uso de calculadoras científicas",
+        "A memorização de senhas complexas",
+        "A execução de planilhas eletrônicas"
+      ]
+    },
+    {
+      "idQuestao": "CPOHfMGbBCqOr79sqqxX",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que é o npm?",
+      "opcoes": [
+        "O gerenciador de pacotes padrão para o ecossistema Node.js / JavaScript",
+        "Um framework de estilização",
+        "Um navegador web mobile",
+        "Um compilador de HTML"
+      ]
+    },
+    {
+      "idQuestao": "0OMnnpgncsT0BQagUU39",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 90 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "WakSW8sf8Hon1ITtSX39",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 91 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "80Q9NBtgekmGENntgAus",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 72 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "D2X06I8QCtON9ix5ZyRs",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual atributo do <input> exibe um texto de dica cinza dentro da caixa antes do usuário digitar?",
+      "opcoes": [
+        "placeholder",
+        "value",
+        "label",
+        "alt"
+      ]
+    },
+    {
+      "idQuestao": "0ws2dQPMuhomnLkLSCCN",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML é utilizada para criar botões clicáveis?",
+      "opcoes": [
+        "<btn>",
+        "<button>",
+        "<click>",
+        "<input type=\"submit\">",
+        "<action>"
+      ]
+    }
+  ]
 }
