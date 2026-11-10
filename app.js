@@ -4088,9 +4088,8 @@ if (window.location.pathname.includes("painel.html")) {
         }
       }catch(e){console.warn("Pasta de backup indisponível; usando download.",e);}
     }
-    if(window.showDirectoryPicker && confirm(`Há ${lista.length} relatório(s).\n\nDeseja selecionar agora a pasta backup-local/relatorios do projeto?`)){
-      if(await vincularPastaBackupRelatorios()) return exportarBackupLocalRelatorios();
-    }
+    // Sem pasta autorizada, baixa o JSON. O seletor fica no botão Pasta backup,
+    // que o abre diretamente no clique exigido pelo navegador.
     const blob=new Blob([conteudo],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
     a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
   }
@@ -4189,6 +4188,30 @@ if (window.location.pathname.includes("painel.html")) {
     } catch (erro) {
       erroHistorico = erro;
       console.error("FASE 10C.4 - erro no histórico:", erro);
+    }
+
+    // Inclui entregas anteriores à sessão: o listener ao vivo só acompanha as novas.
+    // Consulta novamente cada pendência antes de corrigir; preserva notas existentes.
+    if (atuaisOK) {
+      for (const [caminho, item] of mapa) {
+        if (!/^avaliacoes\/[^/]+$/.test(caminho) || item.pontuacao !== null ||
+            !Array.isArray(item.questoesIds) || exclusoesConfirmadas.has(caminho)) continue;
+        try {
+          const atual = await getDoc(doc(db, caminho));
+          if (!atual.exists()) continue;
+          const recebido = { ...item, ...atual.data(), idDoc: atual.id, refPath: caminho };
+          if (recebido.pontuacao === null) {
+            const acertos = await corrigirResultadoPendente(atual.id, recebido);
+            if (Number.isFinite(acertos)) {
+              recebido.pontuacao = acertos;
+              recebido.correcaoPendente = false;
+            }
+          }
+          mapa.set(caminho, recebido);
+        } catch (erro) {
+          console.warn("Correção continua pendente; respostas preservadas.", caminho, erro?.code || erro);
+        }
+      }
     }
 
     // Garante que a tela sempre termine mostrando o cache preservado.
@@ -4385,10 +4408,11 @@ if (window.location.pathname.includes("painel.html")) {
       let dataFormatada = res.dataEnvio?.toDate
         ? res.dataEnvio.toDate().toLocaleString("pt-BR")
         : (Number(res.timestamp) ? new Date(Number(res.timestamp)).toLocaleString("pt-BR") : "Data recente");
-      let totalQ = res.totalQuestoes || 0;
-      let acertos = res.pontuacao || 0;
-      let erros = totalQ - acertos;
-      let notaCalculada = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
+      const metricas = metricasResultado(res);
+      let totalQ = metricas.total;
+      let acertos = metricas.acertos;
+      let erros = metricas.erros;
+      let notaCalculada = metricas.nota;
       let tempoGastoStr = res.tempoGastoFormatado || "N/D";
       let idAlunoAlvo = res.idAluno || obterIdAluno(res.nome, res.turma);
        
@@ -4442,7 +4466,11 @@ if (window.location.pathname.includes("painel.html")) {
   }
   function metricasResultado(res) {
     const total = Number(res?.totalQuestoes || 0);
-    const acertos = Number(res?.pontuacao || 0);
+    // Ausência de correção não significa que o aluno errou todas as questões.
+    if (res?.pontuacao == null || res?.correcaoPendente === true) {
+      return {total, acertos:"Pendente", erros:"—", nota:"Pendente"};
+    }
+    const acertos = Number(res.pontuacao);
     const erros = Math.max(0, total - acertos);
     const nota = total > 0 ? ((acertos / total) * 10).toFixed(1) : "0.0";
     return {total, acertos, erros, nota};
@@ -4676,7 +4704,8 @@ if (window.location.pathname.includes("painel.html")) {
       <td>${dataResultado(r)}</td><td>${r.escola||""}</td><td>${r.nome||""}</td><td>${r.turma||""}</td>
       <td>${r.materia||"Geral"}</td><td>${r.tempoGastoFormatado||"-"}</td><td>${m.acertos}/${m.total}</td><td><b>${m.nota}</b></td>
     </tr>`}).join("");
-    const media=lista.reduce((s,r)=>s+Number(metricasResultado(r).nota),0)/lista.length;
+    const notasCorrigidas=lista.map(r=>metricasResultado(r).nota).filter(n=>n!=="Pendente").map(Number);
+    const media=notasCorrigidas.length ? (notasCorrigidas.reduce((s,n)=>s+n,0)/notasCorrigidas.length).toFixed(1) : "Pendente";
     let historicoHtml='';
     for(const r of lista){
       try {const itens=await carregarAutorizacoesAluno(r.idAluno||r.idDoc,true);
@@ -4685,7 +4714,7 @@ if (window.location.pathname.includes("painel.html")) {
       }catch(e){historicoHtml+=`<p>${escaparHistorico(r.nome||'Aluno')}: histórico indisponível (${escaparHistorico(e.message||'erro')}).</p>`;}
     }
     abrirDocumentoImpressao("Relatório de Avaliações",`
-      <div class="cab"><h1>Relatório de Avaliações</h1><div class="sub">Emitido em ${new Date().toLocaleString("pt-BR")} • ${lista.length} resultado(s) • Média ${media.toFixed(1)}/10</div></div>
+      <div class="cab"><h1>Relatório de Avaliações</h1><div class="sub">Emitido em ${new Date().toLocaleString("pt-BR")} • ${lista.length} resultado(s) • Média ${media}/10</div></div>
       <table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr>
       <th>Data/Hora</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo</th><th>Acertos</th><th>Nota</th>
       </tr></thead><tbody>${linhas}</tbody></table>
