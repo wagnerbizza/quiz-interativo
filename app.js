@@ -533,7 +533,7 @@ function render() {
   resetTeamProfileContext();
   resetRemovedContext();
   hideContextHelp();
-  document.documentElement.style.setProperty("--accent", state.settings.color);
+  document.documentElement.style.setProperty("--accent", state.settings?.color || "#2563eb");
   document.title = systemDisplayName()+" — "+(admin?panelDisplayName():"Jogos e Resultados");
   renderBrandAndIdentity();
   document.body.classList.toggle("report-mode", admin && section === "reports");
