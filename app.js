@@ -176,7 +176,7 @@ const canCreateMatches = () => role === "admin" || (role === "operator" && opera
 const accountRole = () => C.demo ? "Demonstração local" : role === "admin" ? "Administrador principal" : role === "operator" ? "Operador" : "Aguardando autorização";
 const accountName = () => user?.displayName || (state.users || []).find((p) => p.id === user?.uid)?.name || user?.email?.split("@")[0] || "Conta conectada";
 // Títulos por contexto, sem alterar a identidade personalizada salva.
-function systemDisplayName(){
+function systemDisplayName()
 // ANTES (Causava o erro):
 function systemDisplayName(){
  const title=String(state.settings.title||'').trim();
