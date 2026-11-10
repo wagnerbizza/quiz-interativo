@@ -3,33 +3,33 @@
    Nunca acrescente senhas neste arquivo. Dados externos são escapados antes da exibição. */
 // Arquivo sem ferramenta de compilação: funciona no GitHub Pages.
 const trainingMode = new URLSearchParams(location.search).get("demonstracao") === "1";
-const D = window.Domain,
-  C = trainingMode ? { ...window.CONFIG, demo: true } : window.CONFIG,
-  M = window.SparkModel,
-  admin = document.body.dataset.admin === "true";
-const $ = (s) => document.querySelector(s),
-  esc = (v) =>
-    String(v ?? "").replace(
-      /[&<>"']/g,
-      (c) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        })[c],
-    );
+const D = window.CONFIG ? (trainingMode ? { ...window.CONFIG, demo: true } : window.CONFIG) : { fresh: {} };
+
+const $ = (s) => document.querySelector(s);
+const esc = (v) =>
+  String(v ?? "").replace(
+    /[&<>"]/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[c]),
+  );
+
+// Utiliza o encadeamento opcional para evitar quebras se D ou D.fresh forem undefined
 let state = D?.fresh || {},
-  section = "overview",
-  selected = "",
-  user = null,
-  role = "",
-  operatorPermissions = [],
-  pendingImport = null,
-  busy = false,
-  cloud = null,
-  unsubscribe = null;
+    section = "overview",
+    selected = "",
+    user = null,
+    role = "",
+    operatorPermissions = [],
+    pendingImport = null,
+    busy = false,
+    cloud = null,
+    unsubscribe = null;
 let accessStatus = "loading",
   authMode = new URLSearchParams(location.search).get("acesso") === "cadastro" ? "register" : "login",
   accessBusy = false,
