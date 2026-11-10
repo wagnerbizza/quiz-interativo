@@ -544,13 +544,13 @@ function render() {
     return;
   }
   if (!admin) {
-    app.innerHTML = `<section class="hero" id="hero"><span class="tag">CENTRAL DE RESULTADOS / TEMPORADA</span><h1>${esc(systemDisplayName())}</h1><p class="muted">${esc(state.settings.subtitle)}</p></section><div class="sectionhead"><h2>Acompanhe os jogos</h2><select id="filter" aria-label="Filtrar modalidade"><option value="">Todas as modalidades</option>${options(
+    app.innerHTML = `<section class="hero" id="hero"><span class="tag">CENTRAL DE RESULTADOS / TEMPORADA</span><h1>${esc(systemDisplayName())}</h1><p class="muted">${esc(state?.settings?.subtitle || "")}</p></section><div class="sectionhead"><h2>Acompanhe os jogos</h2><select id="filter" aria-label="Filtrar modalidade"><option value="">Todas as modalidades</option>${options(
       D.SPORTS,
       (x) => x,
       (x) => x,
     )}</select></div>${publicHub()}`;
     $("#filter").value = publicFilter;
-    if (state.settings.banner)
+    if (state?.settings?.banner)
       $("#hero").style.backgroundImage =
         `linear-gradient(90deg,#0c1014ed,#0c1014b0),url("${encodeURI(state.settings.banner).replace(/"/g, "%22")}")`;
     return;
