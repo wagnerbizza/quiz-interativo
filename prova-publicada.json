@@ -1,21 +1,522 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1794319126559",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 40,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1793035031849,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1793035031849",
-  "publicadoEm": "2026-10-26T17:17:11.849Z",
-  "encerradoEm": "2026-10-26T17:17:11.849Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoMaximoMinutos": 0,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1794329926559,
+  "turmasAtivas": [
+    "3B"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1794319126559",
+  "publicadoEm": "2026-11-10T13:58:46.816Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "PC0lEIfmoQyxpxmrRmMR",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "O que é a criptografia de dados em trânsito?",
+      "opcoes": [
+        "Proteção dos dados enquanto são transmitidos através de uma rede (ex: via HTTPS ou VPN)",
+        "Armazenamento criptografado de arquivos em discos rígidos locais",
+        "Ocultação de endereços IP em roteadores corporativos",
+        "Exclusão de logs de acesso em servidores web",
+        "Processamento de dados em memória RAM sem criptografia"
+      ]
+    },
+    {
+      "idQuestao": "47zD8ZdhBbUAjqkr0XQd",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML é utilizada para definir metadados sobre o documento dentro da seção <head>?",
+      "opcoes": [
+        "<meta>",
+        "<data>",
+        "<info>",
+        "<param>",
+        "<header-data>"
+      ]
+    },
+    {
+      "idQuestao": "86yA2B4JfEqsKdO4WekM",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é o Aprendizado Semi-Supervisionado em Grafos?",
+      "opcoes": [
+        "Classificação de nós em redes complexas utilizando poucos rótulos e a estrutura da rede",
+        "Conexão de computadores em rede local via cabos RJ45",
+        "Configuração de roteadores Wi-Fi em ambientes corporativos",
+        "Envio de e-mails em massa para campanhas de marketing",
+        "Backup incremental de arquivos em servidores remotos"
+      ]
+    },
+    {
+      "idQuestao": "lJxCcymoWpyaOLos8jVJ",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 74 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "08Res6tHRh2W8dpdgWXB",
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "pergunta": "[Técnico 4 - 1790258356467]O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "Entrega de softwares prontos via navegador",
+        "Ambiente exclusivo para programar sem gerenciar servidores",
+        "Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "FheVX7Vc8RFPwLSlux0Z",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 24] O que é reconhecimento de padrões?",
+      "opcoes": [
+        "A) Capacidade do sistema de identificar regularidades e tendências nos dados",
+        "B) Conferência de senhas digitadas",
+        "C) Impressão de etiquetas padronizadas",
+        "D) Verificação de cabos de rede"
+      ]
+    },
+    {
+      "idQuestao": "EepnwRZ2jbKj1X4hzoup",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Análise de Sentimentos?",
+      "opcoes": [
+        "Técnica de PLN para identificar e extrair estados subjetivos e atitudes em textos",
+        "Medição da velocidade de processamento de um processador",
+        "Avaliação do consumo de energia elétrica de um data center",
+        "Criptografia de mensagens confidenciais trocadas na rede",
+        "Monitoramento de temperatura de servidores em nuvem"
+      ]
+    },
+    {
+      "idQuestao": "fRXw1mlTHiqJcESM1dmE",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 60 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "rMOq7A3SAeWByEkv4kvf",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 28] O que é o aprendizado semi-supervisionado?",
+      "opcoes": [
+        "A) Abordagem que utiliza uma pequena quantidade de dados rotulados e muitos não rotulados",
+        "B) Treinamento realizado apenas pela metade do dia",
+        "C) Sistemas que funcionam sem energia elétrica",
+        "D) Redes neurais com metade dos neurônios"
+      ]
+    },
+    {
+      "idQuestao": "rAlMjsvegK1vWL6nhi23",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 28 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "2ydUnP83JJOYy7I8Y2YC",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 8 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "DpR7Cu23ui6HZfhVA4GP",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a Inteligência Artificial Fraca (Narrow AI)?",
+      "opcoes": [
+        "IA projetada e treinada para realizar uma tarefa específica (ex: jogar xadrez ou reconhecimento facial)",
+        "Uma IA que desliga sozinha com frequência",
+        "Um computador com pouca memória RAM",
+        "Um robô que não consegue andar"
+      ]
+    },
+    {
+      "idQuestao": "BSMIQqXqS8EThqc2gMUB",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual tag HTML é usada para criar formulários de entrada de dados interativos para o usuário?",
+      "opcoes": [
+        "<form>",
+        "<input-group>",
+        "<user-box>",
+        "<data-entry>"
+      ]
+    },
+    {
+      "idQuestao": "B4yeHWRL3KLdOrwemwbe",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 30] O que são pesos sinápticos em uma rede neural?",
+      "opcoes": [
+        "A) Parâmetros numéricos ajustados durante o treinamento que determinam a força da conexão entre neurônios",
+        "B) O peso físico dos servidores em gramas",
+        "C) A carga da bateria do dispositivo",
+        "D) O tamanho do arquivo de código"
+      ]
+    },
+    {
+      "idQuestao": "JbZYf6xQVgHefZiYhk4X",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Questão oficial de nível avançado nº 7 abordando conceitos teóricos e práticos aplicados em Programação Front-End",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Programação Front-End",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "1oCWnCFt6rfOtRDac7Yf",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que é JSX no ecosistema React?",
+      "opcoes": [
+        "Uma extensão de sintaxe para JavaScript que se assemelha ao HTML",
+        "Uma linguagem de programação totalmente nova",
+        "Um formato de compactação de imagens",
+        "Um protocolo de rede"
+      ]
+    },
+    {
+      "idQuestao": "WJl1rxhw3dOnFFfGwjfS",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 26] O que é um modelo preditivo?",
+      "opcoes": [
+        "A) Um modelo matemático treinado para prever resultados futuros com base em dados históricos",
+        "B) Um relatório financeiro anual",
+        "C) Um cronograma de aulas",
+        "D) Uma ferramenta de previsão do tempo analógica"
+      ]
+    },
+    {
+      "idQuestao": "Ups0qktUJqy0xNf7HUXA",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual propriedade do CSS é utilizada para alterar a cor de fundo de um elemento?",
+      "opcoes": [
+        "background-color",
+        "color",
+        "font-color",
+        "bg-style"
+      ]
+    },
+    {
+      "idQuestao": "q3M4BNnB1rNP7lz5t0wi",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 3] O que é um Firewall?",
+      "opcoes": [
+        "A) Dispositivo ou software de segurança que monitora e filtra o tráfego de rede baseado em regras",
+        "B) Um sistema de arquivos criptografados",
+        "C) Um cabo de rede blindado de alta velocidade",
+        "D) Um protocolo de e-mail seguro"
+      ]
+    },
+    {
+      "idQuestao": "ShnvfWA5x4HfLnwPiRc3",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que são pseudo-elementos em CSS (ex: `::before`, `::after`)?",
+      "opcoes": [
+        "Permitem estilizar partes específicas ou inserir conteúdo gerado antes/depois de um elemento",
+        "Elementos HTML invisíveis criados pelo usuário",
+        "Funções de cálculo matemático",
+        "Comandos de banco de dados"
+      ]
+    },
+    {
+      "idQuestao": "hFoOyfX8ExE8A3dNO4H5",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que significa RNN em arquiteturas de redes neurais?",
+      "opcoes": [
+        "Recurrent Neural Network (Rede Neural Recorrente)",
+        "Rapid Numeric Network",
+        "Remote Node Name",
+        "Real Neural Number"
+      ]
+    },
+    {
+      "idQuestao": "NIIUCZIGSHWXD5kHJKLV",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual a função principal de uma Função de Ativação em uma rede neural?",
+      "opcoes": [
+        "Introduzir não-linearidade no modelo, permitindo aprender padrões complexos",
+        "Aumentar a velocidade do clock do processador",
+        "Criptografar os pesos sinápticos para evitar roubo de dados",
+        "Realizar a compactação dos arquivos de log gerados",
+        "Gerenciar o armazenamento em cache da memória"
+      ]
+    },
+    {
+      "idQuestao": "u0Dnh0J1MkA2wnDXHEaO",
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial",
+      "pergunta": "[Técnico 28] O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
+      "opcoes": [
+        "A) Dados sem rótulos descobertos automaticamente",
+        "B) Uso de dados de entrada juntamente com las respostas corretas desejadas",
+        "C) Tentativa e erro autônoma sem histórico",
+        "D) Regras fixas de lógica booleana"
+      ]
+    },
+    {
+      "idQuestao": "XXukM5MIteEDMxYaRO62",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a normalização de dados em Machine Learning?",
+      "opcoes": [
+        "O processo de dimensionar os valores numéricos para uma faixa padrão (ex: entre 0 e 1)",
+        "A padronização de nomes de arquivos",
+        "A correção de erros de ortografia em textos",
+        "A organização de ícones na área de trabalho"
+      ]
+    },
+    {
+      "idQuestao": "yVxHvJ1XoOy1j9bztUqu",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que significa a sigla SEO no contexto web?",
+      "opcoes": [
+        "Search Engine Optimization (Otimização para motores de busca)",
+        "System Error Output",
+        "Secure Encryption Online",
+        "Simple Element Operation"
+      ]
+    },
+    {
+      "idQuestao": "4AoCQpMR217yI9b9Wvdx",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 15 - 1790258364858]O que é uma Sprint no framework Scrum?",
+      "opcoes": [
+        "Um documento com requisitos estáticos",
+        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "Reunião final de homologação do cliente",
+        "Cargo de gestão tradicional de projetos"
+      ]
+    },
+    {
+      "idQuestao": "VzOrqNKsTTPyDJZNU3eO",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 30] O que caracteriza o modelo IaaS na computação em nuvem?",
+      "opcoes": [
+        "A) Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
+        "B) Entrega de softwares prontos via navegador",
+        "C) Ambiente exclusivo para programar sem gerenciar servidores",
+        "D) Armazenamento local em HDs físicos"
+      ]
+    },
+    {
+      "idQuestao": "FDyOHebDdRrDLIZ95ZF6",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Qual é o objetivo do aprendizado por reforço (Reinforcement Learning)?",
+      "opcoes": [
+        "Fazer com que um agente aprenda a tomar decisões maximizando uma recompensa em um ambiente",
+        "Apagar arquivos duplicados",
+        "Enviar e-mails automáticos",
+        "Compactar arquivos grandes"
+      ]
+    },
+    {
+      "idQuestao": "UKUCNyVRujnMNBszAi9a",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 35] O que faz o protocolo SSH (Secure Shell)?",
+      "opcoes": [
+        "A) Permite acesso remoto seguro a sistemas através de linha de comando criptografada",
+        "B) Transfere arquivos de texto sem segurança",
+        "C) Gerencia endereços IP",
+        "D) Navega em páginas web"
+      ]
+    },
+    {
+      "idQuestao": "P2FBhS1eABaSJ56NxtRp",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que significa o termo \"Deep Learning\" (Aprendizado Profundo)?",
+      "opcoes": [
+        "Subcampo do Machine Learning baseado em redes neurais artificiais com múltiplas camadas",
+        "Processo de exclusão permanente de dados antigos do sistema",
+        "Técnica de recuperação de arquivos após falha de energia",
+        "Criptografia de ponta a ponta em mensagens de texto",
+        "Análise estatística básica em planilhas eletrônicas"
+      ]
+    },
+    {
+      "idQuestao": "ReV35JbppFnnXVmoj4KD",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "O que é o Webpack?",
+      "opcoes": [
+        "Um empacotador de módulos JavaScript para aplicações web modernas",
+        "Um servidor de banco de dados",
+        "Um navegador web voltado para desenvolvedores",
+        "Um framework CSS"
+      ]
+    },
+    {
+      "idQuestao": "1ssoZbfaw2noX7yDWsdx",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é robótica inteligente?",
+      "opcoes": [
+        "A integração da inteligência artificial com sistemas robóticos físicos",
+        "A construção de carros sem motor",
+        "A criação de planilhas eletrônicas",
+        "O reparo de telas de celulares"
+      ]
+    },
+    {
+      "idQuestao": "HNgWgXSCUtntnZB3KSny",
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End",
+      "pergunta": "Qual propriedade CSS controla se um elemento é visível ou oculto, mantendo ou não o seu espaço no layout?",
+      "opcoes": [
+        "visibility (ou display)",
+        "opacity",
+        "screen-state",
+        "show-hide"
+      ]
+    },
+    {
+      "idQuestao": "AbCVsgMovsJ51Qu2HNqV",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é um sistema especialista?",
+      "opcoes": [
+        "Um sistema de IA que emula a tomada de decisão humana de um especialista em uma área específica",
+        "Um computador que consome muita energia",
+        "Um técnico de suporte de informática",
+        "Um antivírus avançado"
+      ]
+    },
+    {
+      "idQuestao": "2I7kKaCDWi528uFa6Xb7",
+      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+      "pergunta": "[Técnico 2] O que é uma Sprint no framework Scrum?",
+      "opcoes": [
+        "A) Um documento com requisitos estáticos",
+        "B) Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
+        "C) Reunião final de homologação do cliente",
+        "D) Cargo de gestão tradicional de projetos"
+      ]
+    },
+    {
+      "idQuestao": "E8vp7K5ZpRp06LdjtOM5",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "Questão oficial de nível avançado nº 59 abordando conceitos teóricos e práticos aplicados em Inteligência Artificial",
+      "opcoes": [
+        "Diretriz fundamental e parâmetro otimizado aplicado a Inteligência Artificial",
+        "Processamento autônomo baseado em regras estáticas locais",
+        "Conversão estruturada de metadados em arquivos compactados",
+        "Execução direta de rotinas em camada de hardware isolada",
+        "Indexação sequencial de logs e repositórios desatualizados"
+      ]
+    },
+    {
+      "idQuestao": "X1Ze6vnK8Gj1yAAVcgj3",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a robustez de um modelo de IA?",
+      "opcoes": [
+        "A capacidade do modelo de manter seu desempenho mesmo diante de dados corrompidos ou ruídos",
+        "A resistência física do gabinete do computador",
+        "A velocidade da conexão de rede",
+        "A durabilidade da bateria do notebook"
+      ]
+    },
+    {
+      "idQuestao": "ex29aFLCfjYVKyhFQFaY",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é um dataset (conjunto de dados)?",
+      "opcoes": [
+        "Uma coleção de dados estruturados usada para treinar e testar modelos de IA",
+        "Um banco de peças de hardware",
+        "Um conjunto de cabos de conexão",
+        "Um antivírus corporativo"
+      ]
+    },
+    {
+      "idQuestao": "nBP3WzrWoLdcTQ4WVfdQ",
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem",
+      "pergunta": "[Técnico 5] Qual a função do protocolo HTTPS?",
+      "opcoes": [
+        "A) Garantir navegação segura e criptografada entre navegador e servidor web",
+        "B) Acelerar downloads de arquivos pesados",
+        "C) Gerenciar endereços IP dinâmicos",
+        "D) Bloquear vírus em mídias removíveis"
+      ]
+    },
+    {
+      "idQuestao": "a5KYm1wAnsiLeCuTfz2l",
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial",
+      "pergunta": "O que é a segmentação de imagens em Visão Computacional?",
+      "opcoes": [
+        "O processo de dividir uma imagem digital em múltiples segmentos ou regiões (ex: separar fundo de objeto)",
+        "A divisão de uma foto em vários arquivos menores",
+        "O aumento da resolução de uma imagem",
+        "A conversão de imagens coloridas para preto e branco"
+      ]
+    }
+  ]
 }

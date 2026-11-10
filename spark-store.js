@@ -1,0 +1,666 @@
+/* PASSO 2 — Conexão Firebase gratuita: Authentication + Cloud Firestore.
+   Nenhuma função de servidor, Storage ou conta de faturamento é utilizada.
+   NÃO altere as permissões para "allow write: if true"; publique firestore.rules. */
+export async function connectSpark({
+  config,
+  privateView,
+  onData,
+  onSession,
+  onError,
+  onConnection,
+}) {
+  // A mesma identidade está protegida nas regras do Firestore.
+  const OWNER_UID = "mwYVHBGiEJSYfKimTiBUMzcWHhn1";
+  const isOwner = () => session?.uid === OWNER_UID;
+  const authorized = () => isOwner() || (profile?.role === "operator" && profile.enabled !== false && session?.emailVerified === true);
+  // Permissão parcial de cadastro: não dá acesso à administração.
+  const canManageRosters = () => isOwner() || (authorized() && Array.isArray(profile?.permissions) && profile.permissions.includes("rosters"));
+  const canCreateMatches = () => isOwner() || (authorized() && Array.isArray(profile?.permissions) && profile.permissions.includes("matchesCreate"));
+  const version = "11.0.2";
+  const [fb, auth, F] = await Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${version}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${version}/firebase-auth.js`),
+    import(
+      `https://www.gstatic.com/firebasejs/${version}/firebase-firestore.js`
+    ),
+  ]);
+  const app = fb.initializeApp(config.firebase),
+    database = F.getFirestore(app),
+    authentication = auth.getAuth(app),
+    M = window.SparkModel,
+    D = window.Domain;
+  authentication.languageCode = "pt-BR";
+  const emulator = config.emulators;
+  if (emulator?.enabled) {
+    F.connectFirestoreEmulator(
+      database,
+      emulator.host || "127.0.0.1",
+      emulator.firestorePort || 8080,
+    );
+    auth.connectAuthEmulator(
+      authentication,
+      `http://${emulator.host || "127.0.0.1"}:${emulator.authPort || 9099}`,
+      { disableWarnings: true },
+    );
+  }
+  let publicBranding = null;
+  let brandingStop = () => {};
+  let authStop = () => {};
+  let profileStop = () => {};
+  let dataEpoch = 0;
+  let state = D.fresh(),
+    session = null,
+    profile = null,
+    stops = [],
+    historyStop = null,
+    historyId = "",
+    cache = new Map(),
+    generation = 0;
+  const stop = () => {
+    dataEpoch++;
+    stops.forEach((f) => f());
+    stops = [];
+    historyStop?.();
+    historyStop = null;
+    historyId = "";
+    cache.clear();
+  };
+  const message = (e) => {
+    onConnection(
+      e.code === "resource-exhausted"
+        ? "COTA GRATUITA ATINGIDA • aguarde a renovação ou confira Uso no Firestore."
+        : "FIREBASE • conexão ou permissão indisponível.",
+    );
+    onError(e);
+  };
+  function publish() {
+    for (const m of state.matches) m.events = cache.get(m.id) || [];
+    onData(state);
+  }
+  function watchDoc(path, assign) {
+    const epoch = dataEpoch;
+    stops.push(
+      F.onSnapshot(
+        F.doc(database, path),
+        { includeMetadataChanges: true },
+        (snap) => {
+          if (epoch !== dataEpoch) return;
+          assign(snap.exists() ? snap.data() : null);
+          onConnection(
+            snap.metadata.fromCache
+              ? "FIREBASE SPARK • cache local; aguardando conexão com servidor."
+              : "FIREBASE SPARK • conectado",
+          );
+          publish();
+        },
+        message,
+      ),
+    );
+  }
+  function watchCollection(name, assign, constraints = []) {
+    const epoch = dataEpoch;
+    stops.push(
+      F.onSnapshot(
+        constraints.length ? F.query(F.collection(database, name), ...constraints) : F.collection(database, name),
+        (snap) => {
+          if (epoch !== dataEpoch) return;
+          assign(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+          publish();
+        },
+        message,
+      ),
+    );
+  }
+  function listen(full) {
+    state = D.fresh();
+    if (publicBranding) state.settings = publicBranding;
+    const ownerView = full && isOwner();
+    watchDoc(ownerView ? "settings/main" : "publicSettings/main",
+      (d) => (state.settings = d || D.fresh().settings));
+    watchCollection(ownerView || (full && canManageRosters()) ? "teams" : "publicTeams", (d) => (state.teams = d));
+    if (ownerView) {
+      watchCollection("championships", (d) => (state.championships = d));
+      watchCollection("players", (d) => (state.players = d));
+      watchCollection("matches", (d) => (state.matches = d));
+      watchCollection("users", (d) => (state.users = d));
+      watchCollection("accessAudit", (d) => (state.accessAudit = d), [F.orderBy("at", "desc"), F.limit(50)]);
+    } else if (!full) {
+      watchCollection("publicMatches", (d) => (state.matches = d));
+    } else {
+      // Operador não consulta a coleção privada inteira: recebe cada partida autorizada.
+      // Os jogadores disponíveis são os elencos congelados nessas partidas.
+      if(canManageRosters())watchCollection("players",d=>state.players=d);
+      if(canCreateMatches())watchCollection("publicMatches",d=>{state.matches=[...new Map([...d,...state.matches].map(m=>[m.id,m])).values()]});
+      const ids = [...new Set(profile?.matches || [])];
+      for (const id of ids) {
+        watchDoc("matches/" + id, (d) => {
+          state.matches = state.matches.filter((m) => m.id !== id);
+          if (d) state.matches.push(d);
+          if(!canManageRosters())state.players = [...new Map(state.matches.flatMap((m) => m.roster || [])
+            .map((p) => [p.id, p])).values()];
+        });
+      }
+    }
+  }
+  const events = (snap) =>
+    snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => a.revision - b.revision)
+      .map((a) => ({
+        ...a.detail,
+        id: a.id,
+        actor: a.actor,
+        at: a.at?.toDate?.().toISOString() || "",
+        revision: a.revision,
+        gameMs: a.after?.clock
+          ? M.elapsed(a.after, a.at?.toMillis?.() || Date.now())
+          : null,
+      }));
+  async function loadHistory(ids, { live = false } = {}) {
+    if (!isOwner()) throw Error("Histórico e auditoria são exclusivos do administrador principal.");
+    historyStop?.();
+    historyStop = null;
+    historyId = "";
+    const epoch=generation;
+    for (const id of ids) {
+      const q = F.query(
+        F.collection(database, "audit"),
+        F.where("target", "==", id),
+      );
+      const snap = await F.getDocsFromServer(q);
+      if(!isOwner()||epoch!==generation)return;
+      cache.set(id, events(snap));
+    }
+    publish();
+    if (live && ids.length === 1) {
+      historyId = ids[0];
+      const id = historyId,
+        q = F.query(
+          F.collection(database, "audit"),
+          F.where("target", "==", id),
+        );
+      historyStop = F.onSnapshot(
+        q,
+        (snap) => {
+          cache.set(id, events(snap));
+          publish();
+        },
+        message,
+      );
+    }
+  }
+  function stopHistory() {
+    historyStop?.();
+    historyStop = null;
+    historyId = "";
+  }
+  async function auditRows() {
+    if (!isOwner()) throw Error("Auditoria exclusiva do administrador principal.");
+    const snap = await F.getDocsFromServer(F.collection(database, "audit"));
+    const removed=await F.getDocsFromServer(F.collection(database,"cleanupAudit"));
+    return [...snap.docs.map(d=>({ID:d.id,...d.data()})),...removed.docs.map(d=>{
+      const r=d.data();return {ID:"limpeza-"+d.id,...r,revision:(r.before._revision||0)+1,
+        detail:{type:"exclusão de teste",text:"Partida removida da central e do público. Histórico preservado.",reason:r.reason}};
+    })]
+      .sort((a, b) => (a.at?.toMillis?.() || 0) - (b.at?.toMillis?.() || 0));
+  }
+  // 17 — Limpeza de UMA partida, com cópia e log imutável na mesma transação.
+  const cleanupBlocked = m => ["Ao vivo","Pausada","Suspensa"].includes(m.status) || m.clock?.running;
+  async function previewCleanup(matchId) {
+    if (!isOwner()) throw Error("Limpeza exclusiva do administrador principal.");
+    const snap = await F.getDocFromServer(F.doc(database,"matches",matchId));
+    if (!snap.exists()) throw Error("A partida já não existe. Atualize a lista.");
+    const before=snap.data();
+    if(cleanupBlocked(before))throw Error("Encerre ou cancele a partida antes da limpeza.");
+    const history=await F.getDocsFromServer(F.query(F.collection(database,"audit"),F.where("target","==",matchId)));
+    return {matchId,revision:before._revision,before,createdAt:Date.now(),
+      backup:{format:"arena-limpeza-partida-v1",exportedAt:new Date().toISOString(),
+        match:before,teams:state.teams.filter(t=>[before.home,before.away].includes(t.id)),
+        players:state.players.filter(p=>[before.home,before.away].includes(p.team)),
+        audit:history.docs.map(d=>({ID:d.id,...d.data()}))}};
+  }
+  async function deleteTestMatch(plan,reason,confirmation) {
+    if(!isOwner())throw Error("Limpeza exclusiva do administrador principal.");
+    reason=String(reason||"").trim();
+    if(confirmation!=="EXCLUIR"||reason.length<5||reason.length>500)throw Error("Digite EXCLUIR e informe um motivo de 5 a 500 caracteres.");
+    if(!plan||Date.now()-plan.createdAt>600000)throw Error("Prévia expirada. Gere uma nova prévia e cópia.");
+    const ref=F.doc(database,"matches",plan.matchId), log=F.doc(database,"cleanupAudit",plan.matchId);
+    await F.runTransaction(database,async tx=>{
+      const snap=await tx.get(ref),oldLog=await tx.get(log);
+      if(!snap.exists())throw Error("Partida já excluída. Nenhuma outra partida foi alterada.");
+      const before=snap.data();
+      if(oldLog.exists())throw Error("Este identificador já tem registro de limpeza.");
+      if(before._revision!==plan.revision||JSON.stringify(before)!==JSON.stringify(plan.before))throw Error("A partida mudou após a prévia. Gere nova prévia e cópia antes de excluir.");
+      if(cleanupBlocked(before))throw Error("Partida em operação. Limpeza bloqueada.");
+      tx.set(log,{target:plan.matchId,entity:"matches",actor:session.uid,at:F.serverTimestamp(),reason,before,after:null});
+      tx.delete(ref);tx.delete(F.doc(database,"publicMatches",plan.matchId));
+    });
+    cache.delete(plan.matchId);
+  }
+  const uid = () =>
+    crypto.randomUUID
+      ? crypto.randomUUID()
+      : F.doc(F.collection(database, "audit")).id;
+  async function send(action) {
+    if (!session || !authorized()) throw Error("Faça login com uma conta autorizada.");
+    const rosterAction=canManageRosters()&&(["team","player"].includes(action.type)||(action.type==="import"&&["team","player"].includes(action.kind)));
+    const matchCreation = action.type === "match" && !action.data?.id && canCreateMatches();
+    if (!isOwner() && !rosterAction && !matchCreation && (["team", "player", "settings", "match", "import", "correct", "championship", "championshipLink","teamArchive"].includes(action.type) ||
+      !profile?.matches?.includes(action.matchId))) {
+      throw Error("Sua conta não tem permissão para esta ação ou partida.");
+    }
+    if (!navigator.onLine)
+      throw Error("Sem conexão. Aguarde antes de lançar novamente.");
+    if (action.type === "import") {
+      // Cada linha tem transação e auditoria próprias; evita estourar o limite de regras por lote.
+      let count = 0;
+      for (const row of action.rows) {
+        try {
+          const data = { ...row };
+          if (action.kind === "player") {
+            const t = state.teams.find(
+              (t) => t.name.toLowerCase() === data.teamName.toLowerCase(),
+            );
+            if (!t) throw Error("Equipe não encontrada: " + data.teamName);
+            data.team = t.id;
+          }
+          await send({
+            type: action.kind,
+            data,
+            importLabel: action.importLabel || "Importação manual",
+          });
+          count++;
+        } catch (e) {
+          throw Error(
+            `Importação interrompida: ${count} de ${action.rows.length} linhas gravadas. ${e.message} Prepare outra prévia; os cadastros já salvos serão reconhecidos.`,
+          );
+        }
+      }
+      return;
+    }
+    let entity,
+      target,
+      prepared = null;
+    if (["team", "player", "settings", "match", "championship"].includes(action.type)) {
+      const checked = D.reduce(state, action, session.uid);
+      entity = {
+        championship: "championships",
+        team: "teams",
+        player: "players",
+        settings: "settings",
+        match: "matches",
+      }[action.type];
+      if (entity === "settings") {
+        target = "main";
+        prepared = { id: target, ...checked.settings };
+      } else {
+        const list = checked[entity];
+        prepared = action.data.id
+          ? list.find((x) => x.id === action.data.id)
+          : list[list.length - 1];
+        target = prepared.id;
+      }
+      if (entity === "matches") {
+        prepared.score = [0, 0];
+        prepared.clock = M.emptyClock();
+        prepared.publicNotice = "";
+        prepared.rosterTeams = Object.fromEntries(
+          prepared.roster.map((p) => [p.id, p.team]),
+        );
+        delete prepared.events;
+      }
+    } else if(action.type==="teamArchive"){
+      if(!isOwner())throw Error("Somente o administrador principal arquiva ou reativa equipes.");
+      if(typeof action.archived!=="boolean"||String(action.reason||"").trim().length<5||String(action.reason||"").trim().length>500)throw Error("Informe o motivo (5 a 500 caracteres).");
+      entity="teams";target=action.teamId;
+    } else {
+      entity = "matches";
+      target = action.matchId;
+    }
+    const actionId = uid(),
+      reference = F.doc(database, entity, target),
+      auditRef = F.doc(database, "audit", actionId),
+      originalRef =
+        action.type === "correct"
+          ? F.doc(database, "audit", action.eventId)
+          : null,
+      correctionRef =
+        action.type === "correct"
+          ? F.doc(database, "corrections", action.eventId)
+          : null;
+    // O mesmo ID é reutilizado nas tentativas internas da transação; nunca some pontos fora da transação.
+    let attemptedRevision = -1;
+    const commit = () =>
+      F.runTransaction(database, async (tx) => {
+        const beforeSnap = await tx.get(reference);
+        const before = beforeSnap.exists() ? beforeSnap.data() : null;
+        attemptedRevision = before?._revision || 0;
+        let original = null;
+        if (originalRef) {
+          const o = await tx.get(originalRef),
+            c = await tx.get(correctionRef);
+          if (c.exists()) throw Error("Este ponto já foi estornado.");
+          original = o.data();
+        }
+        // Releitura na transação evita usar uma edição desatualizada do campeonato.
+        const championshipId = prepared?.championshipId || (action.type === "championshipLink" ? action.championshipId : "");
+        let championship = null;
+        if (championshipId) {
+          const snap = await tx.get(F.doc(database, "championships", championshipId));
+          if (!snap.exists()) throw Error("Campeonato não encontrado.");
+          championship = { ...snap.data(), id: snap.id };
+          const sport = prepared?.sport || before?.sport;
+          if (championship.sport !== sport) throw Error("Modalidades diferentes.");
+          if (prepared && championship.status === "Encerrado") throw Error("O campeonato está encerrado para novas partidas.");
+        }
+        let next, detail;
+        if (prepared) {
+          if (action.type === "match" && before)
+            throw Error("Partida já existe.");
+          if (action.type !== "settings" && action.data.id && !before)
+            throw Error("Cadastro não encontrado.");
+          if (!action.data.id && action.type !== "settings" && before)
+            throw Error("Cadastro já existe.");
+          next = { ...prepared };
+          if (entity === "matches" && championship) next.competition = championship.name + " • " + championship.season;
+          for (const k of Object.keys(next))
+            if (k.startsWith("_")) delete next[k];
+          detail = M.detail(before ? "edição" : "cadastro");
+          detail.text = String(action.importLabel || "Cadastro manual").slice(
+            0,
+            500,
+          );
+        } else if(action.type==="teamArchive"){
+          if(!before)throw Error("Equipe não encontrada.");
+          if((before.archived||false)===action.archived)throw Error("A equipe já está nesta situação.");
+          next={...before,archived:action.archived};detail=M.detail(action.archived?"arquivamento":"reativação");detail.reason=String(action.reason).trim();detail.text=action.archived?"Equipe retirada de novos cadastros e jogos":"Equipe disponível novamente";
+        } else {
+          if (!before) throw Error("Partida não encontrada.");
+          const result = M.applyMatch(
+            before,
+            { ...action, championship },
+            original,
+            F.serverTimestamp(),
+          );
+          next = result.match;
+          detail = result.detail;
+        }
+        next._revision = (before?._revision || 0) + 1;
+        next._audit = actionId;
+        next._updatedBy = session.uid;
+        next._updatedAt = F.serverTimestamp();
+        // Uma partida não carrega o histórico inteiro. A súmula consulta audit sob demanda.
+        if (JSON.stringify(next).length > 200000)
+          throw Error("Cadastro muito grande para esta edição.");
+        tx.set(reference, next);
+        if (entity === "teams")
+          tx.set(F.doc(database, "publicTeams", target), M.publicTeam(next));
+        if (entity === "settings")
+          tx.set(
+            F.doc(database, "publicSettings", target),
+            M.publicSettings(next),
+          );
+        if (entity === "matches")
+          tx.set(F.doc(database, "publicMatches", target), M.publicMatch(next));
+        tx.set(auditRef, {
+          entity,
+          target,
+          actor: session.uid,
+          at: F.serverTimestamp(),
+          revision: next._revision,
+          detail,
+          before,
+          after: next,
+        });
+        if (correctionRef)
+          tx.set(correctionRef, {
+            matchId: target,
+            eventId: action.eventId,
+            actionId,
+            actor: session.uid,
+            at: F.serverTimestamp(),
+          });
+      });
+    // Uma regra pode rejeitar uma revisão antiga durante uma disputa entre dispositivos.
+    // Só repetimos se o servidor confirmar que outra revisão foi gravada entretanto.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await commit();
+        break;
+      } catch (error) {
+        if (
+          error.code !== "permission-denied" ||
+          attempt >= 2 ||
+          entity !== "matches" ||
+          prepared
+        )
+          throw error;
+        const latest = await F.getDocFromServer(reference);
+        if (!latest.exists() || latest.data()._revision <= attemptedRevision)
+          throw error;
+      }
+    }
+  }
+  // 7 — Cadastro e permissões: nenhuma senha é gravada no Firestore.
+  const mainUID = OWNER_UID;
+  async function requestAccess(name) {
+    const u = authentication.currentUser;
+    if (!u || u.uid === OWNER_UID) throw Error("Use uma conta de operador para solicitar acesso.");
+    name = String(name || u.displayName || "").trim();
+    if (!name || name.length > 100) throw Error("Informe seu nome, com até 100 caracteres.");
+    const ref = F.doc(database, "users", u.uid);
+    const aid = uid();
+    await F.runTransaction(database, async (tx) => {
+      const existing = await tx.get(ref);
+      if (existing.exists()) return;
+      const after = { id: u.uid, name, email: u.email || "", role: "pending",
+        enabled: false, matches: [], createdAt: F.serverTimestamp(),
+        updatedAt: F.serverTimestamp(), revision: 1, auditId: aid };
+      tx.set(ref, after);
+      tx.set(F.doc(database, "accessAudit", aid), { actor: u.uid, target: u.uid,
+        at: F.serverTimestamp(), action: "cadastro", reason: "Solicitação de acesso pelo próprio usuário",
+        before: null, after });
+    });
+  }
+  async function register({name, email, password}) {
+    if (authentication.currentUser) throw Error("Saia da conta atual antes de criar outra conta.");
+    name = String(name || "").trim();
+    email = String(email || "").trim();
+    if (!name || name.length > 100) throw Error("Informe seu nome, com até 100 caracteres.");
+    if (String(password || "").length < 8) throw Error("Use uma senha com pelo menos 8 caracteres.");
+    const {user: u} = await auth.createUserWithEmailAndPassword(authentication, email, password);
+    // Se uma etapa falhar, o usuário pode entrar e concluir seu pedido sem criar outra conta.
+    await auth.updateProfile(u, { displayName: name });
+    await requestAccess(name);
+    await auth.sendEmailVerification(u);
+  }
+  async function resendVerification() {
+    const u = authentication.currentUser;
+    if (!u) throw Error("Entre com seu e-mail e senha.");
+    await auth.reload(u);
+    if (u.emailVerified) return;
+    await auth.sendEmailVerification(u);
+  }
+  async function refreshAccess() {
+    const u = authentication.currentUser;
+    if (!u) throw Error("Entre com seu e-mail e senha.");
+    await auth.reload(u);
+    await auth.getIdToken(u, true);
+  }
+  async function recoverPassword(email) {
+    email = String(email || "").trim();
+    if (!email) throw Error("Informe seu e-mail.");
+    try { await auth.sendPasswordResetEmail(authentication, email); }
+    catch (e) { if (e.code !== "auth/user-not-found") throw e; }
+  }
+  // 8 — GOOGLE. Popup para evitar dependência de redirecionamento entre domínios.
+  // Nunca exclui/mescla contas nem troca o UID durante uma vinculação.
+  const googleProvider = () => {
+    const provider = new auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account", ...(authentication.currentUser?.email ? {login_hint: authentication.currentUser.email} : {}) });
+    return provider;
+  };
+  let googleBusy = false;
+  async function enterGoogle({register: registerIntent = false} = {}) {
+    if (!privateView) throw Error("Use a central para entrar com Google.");
+    if (googleBusy) throw Error("Aguarde a janela do Google.");
+    if (authentication.currentUser) throw Error("Você já está conectado. Para adicionar Google, use Vincular Google na sua conta.");
+    googleBusy = true;
+    try {
+      const result = await auth.signInWithPopup(authentication, googleProvider());
+      const u = result.user;
+      await auth.reload(u);
+      await auth.getIdToken(u, true);
+      // O login não cria permissões. O cadastro cria apenas solicitação pendente auditada.
+      if (registerIntent && u.uid !== OWNER_UID) {
+        if (!u.email) throw Error("O Google não informou um e-mail. Conclua a solicitação com outra forma de entrada.");
+        await requestAccess(String(u.displayName || u.email.split("@")[0]).trim().slice(0,100));
+      }
+      return { uid: u.uid, isNewUser: auth.getAdditionalUserInfo(result)?.isNewUser === true };
+    } finally { googleBusy = false; }
+  }
+  async function linkGoogle() {
+    if (!privateView) throw Error("Use a central para vincular sua conta.");
+    if (googleBusy) throw Error("Aguarde a janela do Google.");
+    const u = authentication.currentUser;
+    if (!u) throw Error("Entre na sua conta existente antes de vincular Google.");
+    if (u.providerData.some((p) => p.providerId === "google.com")) return {uid:u.uid, alreadyLinked:true};
+    const beforeUID = u.uid;
+    googleBusy = true;
+    try {
+      const result = await auth.linkWithPopup(u, googleProvider());
+      if (result.user.uid !== beforeUID || authentication.currentUser?.uid !== beforeUID) {
+        await auth.signOut(authentication);
+        throw Error("A sessão mudou durante a vinculação. Entre novamente com a conta original.");
+      }
+      await auth.reload(result.user);
+      await auth.getIdToken(result.user, true);
+      // Não escreve users: aprovação, bloqueio e partidas atribuídas são preservados.
+      return {uid:beforeUID, alreadyLinked:false};
+    } finally { googleBusy = false; }
+  }
+  async function manageUser({ userId, access, matches, reason, permissions }) {
+    if (!isOwner()) throw Error("Somente o administrador principal gerencia usuários.");
+    if (userId === OWNER_UID) throw Error("A conta principal está protegida e não pode ser alterada.");
+    if (!["active", "blocked", "pending"].includes(access)) throw Error("Situação de acesso inválida.");
+    reason = String(reason || "").trim();
+    if (!reason || reason.length > 500) throw Error("Informe o motivo, com até 500 caracteres.");
+    matches = access === "pending" ? [] : [...new Set(matches || [])];
+    if (matches.length > 100 || matches.some((id) => !state.matches.some((m) => m.id === id)))
+      throw Error("Selecione até 100 partidas existentes.");
+    const ref = F.doc(database, "users", userId), aid = uid();
+    await F.runTransaction(database, async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw Error("Solicitação não encontrada.");
+      const before = snap.data();
+      const granted=access==="active"?[...new Set(permissions===undefined?(before.permissions||[]):permissions)]:[];
+      if(granted.some(p=>!["rosters","matchesCreate"].includes(p)))throw Error("Permissão específica inválida.");
+      const after = { id: userId, name: before.name || "Operador cadastrado", email: before.email || "",
+        role: access === "pending" ? "pending" : "operator", enabled: access === "active", matches, permissions:granted,
+        createdAt: before.createdAt || F.serverTimestamp(), updatedAt: F.serverTimestamp(),
+        revision: (before.revision || 0) + 1, auditId: aid };
+      const action = access === "blocked" ? "bloqueio" : access === "pending" ? "pendente" :
+        before.role !== "operator" || before.enabled === false ? "aprovação" : "permissões";
+      tx.set(ref, after);
+      tx.set(F.doc(database, "accessAudit", aid), { actor: session.uid, target: userId,
+        at: F.serverTimestamp(), action, reason, before, after });
+    });
+  }
+  if (!privateView) listen(false);
+  else authStop = auth.onIdTokenChanged(authentication, (u) => {
+    const current = ++generation;
+    profileStop();
+    profileStop = () => {};
+    stop();
+    session = u;
+    profile = null;
+    state = D.fresh();
+    if (publicBranding) state.settings = publicBranding;
+    onSession(u, "", {status: "loading"});
+    onData(state);
+    if (!u) { onConnection("FIREBASE SPARK • pronto para entrar"); return; }
+    if (u.uid === OWNER_UID) {
+      // O titular não depende de um campo editável no documento users.
+      onSession(u, "admin", {status: "owner"});
+      listen(true);
+      return;
+    }
+    profileStop = F.onSnapshot(F.doc(database, "users", u.uid), (snap) => {
+      if (current !== generation) return;
+      stop();
+      state = D.fresh();
+    if (publicBranding) state.settings = publicBranding;
+      profile = snap.exists() ? snap.data() : null;
+      onConnection(snap.metadata.fromCache ? "FIREBASE SPARK • aguardando confirmação do servidor" : "FIREBASE SPARK • conectado");
+      const ids = profile?.matches;
+      const valid = u.emailVerified === true && profile?.role === "operator" && profile.enabled !== false &&
+        (ids === undefined || (Array.isArray(ids) && ids.every((id) =>
+          typeof id === "string" && id.length > 0 && !id.includes("/"))));
+      const status = !profile ? "incomplete" : profile.role === "operator" && profile.enabled === false ? "blocked" :
+        !u.emailVerified ? "verify" : profile.role === "pending" ? "pending" : valid ? "operator" : "unauthorized";
+      onSession(u, valid ? "operator" : "", {status,permissions:valid?(profile?.permissions||[]):[]});
+      onData(state);
+      if (valid) listen(true);
+
+    }, (e) => {
+      if (current !== generation) return;
+      stop();
+      profile = null;
+      state = D.fresh();
+    if (publicBranding) state.settings = publicBranding;
+      onSession(u, "");
+      onData(state);
+      message(e);
+    });
+  });
+  // Aparência pública também nas telas de entrada e cadastro.
+  if (privateView) brandingStop = F.onSnapshot(F.doc(database, "publicSettings", "main"), (snap) => {
+    publicBranding = snap.exists() ? snap.data() : D.fresh().settings;
+    if (!isOwner()) { state.settings = publicBranding; publish(); }
+  }, message);
+  return {
+    auth,
+    authentication,
+    database,
+    F,
+    send,
+    mainUID,
+    register,
+    requestAccess,
+    resendVerification,
+    refreshAccess,
+    recoverPassword,
+    manageUser,
+    canManageRosters,
+    enterGoogle,
+    linkGoogle,
+    loadHistory,
+    stopHistory,
+    auditRows,
+    teamHistory: async teamId => {
+      if(!isOwner())throw Error("Histórico exclusivo do administrador principal.");
+      const epoch=generation;
+      const snapshots=await Promise.all([
+        F.getDocsFromServer(F.query(F.collection(database,"audit"),F.where("target","==",teamId))),
+        F.getDocsFromServer(F.query(F.collection(database,"audit"),F.where("entity","==","players")))
+      ]);
+      if(!isOwner()||epoch!==generation)throw Error("A sessão mudou. Consulte novamente.");
+      return [...new Map(snapshots.flatMap(s=>s.docs.map(d=>({ID:d.id,...d.data()}))).map(r=>[r.ID,r])).values()].filter(r=>(r.entity==="teams"&&r.target===teamId)||(r.entity==="players"&&(r.before?.team===teamId||r.after?.team===teamId))).sort((a,b)=>(b.at?.toMillis?.()||0)-(a.at?.toMillis?.()||0));
+    },
+    cleanupHistory: async () => {
+      if(!isOwner())throw Error("Histórico exclusivo do administrador principal.");
+      const snap=await F.getDocsFromServer(F.collection(database,"cleanupAudit"));
+      return snap.docs.map(d=>({ID:d.id,...d.data()}));
+    },
+    previewCleanup,
+    deleteTestMatch,
+    canOperate: (id) =>
+      isOwner() || (authorized() && profile?.matches?.includes(id)),
+    close: () => {
+      stop();
+      profileStop();
+      authStop();
+      brandingStop();
+    },
+  };
+}

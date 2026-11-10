@@ -1,6253 +1,2558 @@
-/*
- * ================================================================
- * GUIA RÁPIDO DO PROJETO
- * ================================================================
- * Este arquivo é compartilhado pelas telas index.html, escola.html
- * e painel.html. Para facilitar a manutenção, procure pelos títulos
- * "PASSO" e pelos blocos "MÓDULO" abaixo.
- *
- * PRINCIPAIS ÁREAS:
- * 1) Firebase e estado global
- * 2) Tela inicial / aluno
- * 3) Escola
- * 4) Painel do professor
- * 5) Banco de questões e lixeira
- * 6) Monitoramento em tempo real
- * 7) Resultados / avaliações
- *
- * IMPORTANTE: altere primeiro a função existente nesta seção; evite
- * criar uma segunda função com o mesmo nome.
- * ================================================================
- */
+/* APLICAÇÃO — seções numeradas para facilitar futuras alterações.
+   1 conexão | 2 visualização | 3 cadastros | 4 partida | 5 importação | 6 relatórios.
+   Nunca acrescente senhas neste arquivo. Dados externos são escapados antes da exibição. */
+// Arquivo sem ferramenta de compilação: funciona no GitHub Pages.
+const trainingMode = new URLSearchParams(location.search).get("demonstracao") === "1";
+const D = window.Domain,
+  C = trainingMode ? { ...window.CONFIG, demo: true } : window.CONFIG,
+  M = window.SparkModel,
+  admin = document.body.dataset.admin === "true";
+const $ = (s) => document.querySelector(s),
+  esc = (v) =>
+    String(v ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+let state = D.fresh(),
+  section = "overview",
+  selected = "",
+  user = null,
+  role = "",
+  operatorPermissions = [],
+  pendingImport = null,
+  busy = false,
+  cloud = null,
+  unsubscribe = null;
+let accessStatus = "loading",
+  authMode = new URLSearchParams(location.search).get("acesso") === "cadastro" ? "register" : "login",
+  accessBusy = false,
+  managedUserId = "";
+const key = trainingMode ? "arena-treinamento-isolado-v1" : "arena-demo-v1",
+  app = $("#app");
+let reportFilter = "",
+  publicFilter = "";
 
-// ==========================================
-// PASSO 1: IMPORTAÇÃO DOS MÓDULOS DO FIREBASE
-// ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-  getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where, orderBy, limit 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut, getIdTokenResult }
-  from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-// ==========================================
-// PASSO 2: CONFIGURAÇÃO DE CREDENCIAIS E CONEXÃO
-// ==========================================
-const firebaseConfig = {
-  apiKey: "AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",
-  authDomain: "quiz-interativo-8a98c.firebaseapp.com",
-  databaseURL: "https://quiz-interativo-8a98c-default-rtdb.firebaseio.com",
-  projectId: "quiz-interativo-8a98c",
-  storageBucket: "quiz-interativo-8a98c.firebasestorage.app",
-  messagingSenderId: "948601017774",
-  appId: "1:948601017774:web:bd0e038611ff6d2148643f"
+// 2.1 — FILTROS DA CENTRAL. Apenas consulta: não altera cadastros nem permissões.
+// Para mudar a visualização inicial de partidas, altere group: "active" abaixo.
+const listDefaults = {
+  teams: { query: "", category: "", sport:"",status:"active" },
+  players: { query: "", team: "", position: "", reserve: "" },
+  matches: { query: "", sport: "", group: "active", status: "", championshipId: "" },
 };
+const listFilters = Object.fromEntries(Object.entries(listDefaults).map(([k, v]) => [k, { ...v }]));
+const finalStatuses = ["Encerrada", "Homologada", "Cancelada"];
+const matchStatuses = ["Agendada", "Adiada", "Ao vivo", "Pausada", "Suspensa", ...finalStatuses];
+const searchText = (v) => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+const alphabetical = (a, b) => String(a.name || "").localeCompare(String(b.name || ""), "pt-BR", { numeric: true });
+function filteredRecords(kind) {
+  const f = listFilters[kind], q = searchText(f.query);
+  return state[kind].filter((r) => {
+    if (kind === "teams") return (!f.sport||teamSports(r).includes(f.sport))&&(!f.status||(f.status==="archived"?r.archived===true:r.archived!==true))&&(!q || searchText([r.name, r.short, r.coach].join(" ")).includes(q)) && (!f.category || (r.category || "") === f.category);
+    if (kind === "players") return (!q || searchText([r.name, r.number].join(" ")).includes(q)) && (!f.team || r.team === f.team) && (!f.position || (r.position || "") === f.position) && (!f.reserve || String(Boolean(r.reserve)) === f.reserve);
+    return (!q || searchText([name(r.home), name(r.away), r.competition, r.place].join(" ")).includes(q)) && (!f.championshipId || (f.championshipId === "__unlinked" ? !r.championshipId : r.championshipId === f.championshipId)) && (!f.sport || r.sport === f.sport) && (!f.status || r.status === f.status) && (f.group === "all" || (f.group === "finished" ? finalStatuses.includes(r.status) : !finalStatuses.includes(r.status)));
+  }).sort(kind === "matches" ? (a, b) => {
+    // Ao vivo primeiro; próximas em ordem de data, finalizadas mais recentes primeiro.
+    if (f.group !== "finished") {
+      const priority = (m) => m.status === "Ao vivo" ? 0 : m.status === "Pausada" ? 1 : 2;
+      if (priority(a) !== priority(b)) return priority(a) - priority(b);
+    }
+    const date = (m) => Number(new Date(m.date)) || 0;
+    return f.group === "finished" ? date(b) - date(a) : date(a) - date(b);
+  } : alphabetical);
+}
+function filterSelect(kind, key, label, values, allLabel) {
+  const f = listFilters[kind];
+  const entries = values.map((v) => Array.isArray(v) ? v : [v, v]);
+  // Preserva o filtro se um cadastro for alterado enquanto a lista está aberta.
+  if (f[key] && !entries.some(([v]) => v === f[key])) entries.push([f[key], f[key]]);
+  return `<label>${label}<select data-list-filter="${kind}" data-filter-key="${key}">${[["", allLabel], ...entries].map(([v, title]) => `<option value="${esc(v)}" ${f[key] === v ? "selected" : ""}>${esc(title)}</option>`).join("")}</select></label>`;
+}
+function listPanel(kind) {
+  const unique = (rows, key) => [...new Set(rows.map((r) => r[key]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const f = listFilters[kind];
+  const titles = { teams: "Equipes cadastradas", players: "Jogadores cadastrados", matches: role === "admin" ? "Partidas cadastradas" : "Partidas atribuídas" };
+  let controls = `<label class="list-search">${kind === "matches" ? "Buscar equipe, competição ou local" : kind === "players" ? "Buscar nome ou número" : "Buscar equipe, sigla ou técnico"}<input type="search" data-list-filter="${kind}" data-filter-key="query" value="${esc(f.query)}" placeholder="Digite para buscar…" autocomplete="off"></label>`;
+  if (kind === "teams") controls += filterSelect(kind, "category", "Categoria", unique(state.teams, "category"), "Todas as categorias")+filterSelect(kind,"sport","Modalidade",D.SPORTS,"Todas as modalidades")+filterSelect(kind,"status","Situação da equipe",[["active","Ativas"],["archived","Arquivadas"]],"Todas as equipes");
+  if (kind === "players") controls += filterSelect(kind, "team", "Equipe", state.teams.slice().sort(alphabetical).map((t) => [t.id, t.name]), "Todas as equipes") + filterSelect(kind, "position", "Posição", unique(state.players, "position"), "Todas as posições") + filterSelect(kind, "reserve", "Escalação", [["false", "Titular"], ["true", "Reserva / banco"]], "Todos");
+  if (kind === "matches") controls += filterSelect(kind, "sport", "Modalidade", D.SPORTS, "Todas as modalidades") + filterSelect(kind, "status", "Situação específica", matchStatuses, "Todas as situações") + filterSelect(kind, "championshipId", "Campeonato / temporada", championshipFilterOptions(), "Todos os campeonatos");
+  const groups = kind === "matches" ? `<div class="list-groups" aria-label="Visualização das partidas">${[["active", "Em andamento e próximas"], ["finished", "Finalizadas"], ["all", "Todas"]].map(([v, title]) => `<button type="button" data-list-group="${v}" aria-pressed="${f.group === v}" class="${f.group === v ? "primary" : ""}">${title}</button>`).join("")}</div>` : "";
+  return `<section class="card list-filters" aria-label="Filtros de ${titles[kind]}"><h2>${titles[kind]}</h2>${groups}<div class="list-controls">${controls}<button type="button" data-list-reset="${kind}">Limpar filtros</button></div><p class="muted list-count" id="list-count-${kind}" role="status">${listCount(kind)}</p>${kind === "matches" ? '<small>Finalizadas inclui encerradas, homologadas e canceladas. Adiadas e suspensas continuam em andamento e próximas.</small>' : ""}</section><div id="list-results-${kind}" class="${kind === "players" ? "card" : "grid"}">${listResults(kind)}</div>`;
+}
+function listCount(kind) {
+  return `${filteredRecords(kind).length} de ${state[kind].length} ${ { teams: "equipes", players: "jogadores", matches: "partidas" }[kind]} nesta visualização`;
+}
+function listResults(kind) {
+  const rows = filteredRecords(kind);
+  if (!rows.length) return empty(state[kind].length ? "Nenhum resultado com estes filtros. Use Limpar filtros ou, em Partidas, selecione Todas." : { teams: "Nenhuma equipe cadastrada.", players: "Nenhum jogador cadastrado.", matches: "Nenhuma partida disponível para sua conta." }[kind]);
+  if (kind === "matches") return rows.map((m) => matchCard(m, true)).join("");
+  if (kind === "teams") return rows.map(teamDirectoryCard).join("");
+  return table(["Nome", "Equipe", "Número", "Posição", "Escalação", "Ação"], rows.map((p) => tr([p.name, name(p.team), p.number, p.position, p.reserve ? "Reserva" : "Titular"]).replace("</tr>", `<td><button data-edit-player="${esc(p.id)}">Editar</button></td></tr>`)));
+}
+function updateList(kind) {
+  const results = document.getElementById(`list-results-${kind}`);
+  if (results) results.innerHTML = listResults(kind);
+  const count = document.getElementById(`list-count-${kind}`);
+  if (count) count.textContent = listCount(kind);
+}
+function handleListFilter(e) {
+  const el = e.target, kind = el.dataset?.listFilter, key = el.dataset?.filterKey;
+  if (!listFilters[kind] || !Object.hasOwn(listFilters[kind], key)) return;
+  listFilters[kind][key] = el.value;
+  // Uma situação específica também abre o grupo correspondente automaticamente.
+  if (kind === "matches" && key === "status" && el.value) {
+    listFilters.matches.group = finalStatuses.includes(el.value) ? "finished" : "active";
+    document.querySelectorAll("[data-list-group]").forEach((b) => {
+      const active = b.dataset.listGroup === listFilters.matches.group;
+      b.classList.toggle("primary", active); b.setAttribute("aria-pressed", String(active));
+    });
+  }
+  updateList(kind);
+}
+document.addEventListener("input", (e) => { if (e.target.matches('[data-list-filter][type="search"]')) handleListFilter(e); });
+document.addEventListener("change", (e) => { if (e.target.matches('select[data-list-filter]')) handleListFilter(e); });
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app); // 🔐 FASE 10A — autenticação do professor
 
-// ==========================================
-// PASSO 3: VARIÁVEIS DE ESTADO E CACHE GLOBAL
-// ==========================================
-let resultadosGlobaisCache = [];
-let resultadosFiltradosCache = []; // 🔵 FASE 10B.4 — exatamente o que está visível/filtrado
-let alunosOnlineCache = [];
-let questoesBancoCache = [];
-let ordemAtualMonitoramento = "inicio-desc"; // 🔧 FASE 10B.1 — aluno/prova mais recente primeiro
-let ordemAtualResultados = "data-desc"; // resultados mais recentes aparecem primeiro por padrão
-let escolaAtivaSelecionadaIndependente = ""; 
-let alunosOcultosCache = new Set(JSON.parse(localStorage.getItem("alunos_ocultos_painel") || "[]")); 
-let alunosLixeiraCache = new Set(JSON.parse(localStorage.getItem("alunos_lixeira_painel") || "[]"));
-let escolaPrincipalFixadaId = localStorage.getItem("escola_principal_fixada_id") || "";
-let temaAtualSistema = localStorage.getItem("tema_sistema_escolar") || "dark";
+// 2.2 — CAMPEONATOS E TEMPORADAS. Somente o administrador gerencia o cadastro.
+// Cada edição tem seu próprio ID. Não são migrados nem apagados jogos antigos.
+let editedChampionshipId = "", championshipQuery = "", championshipStatus = "";
+const championshipTitle = (c) => `${c.name} • ${c.season}`;
+function championshipFilterOptions() {
+  const choices = new Map((state.championships || []).map((c) => [c.id, championshipTitle(c) + (c.category ? " • " + c.category : "")]));
+  // Operadores usam apenas os vínculos presentes nas partidas já autorizadas.
+  for (const m of state.matches) if (m.championshipId && !choices.has(m.championshipId)) choices.set(m.championshipId, m.competition || "Campeonato vinculado");
+  return [["__unlinked", "Sem vínculo de campeonato"], ...[...choices].sort((a,b) => a[1].localeCompare(b[1], "pt-BR"))];
+}
+function championshipSelectForCreate() {
+  const rows = (state.championships || []).filter((c) => c.status !== "Encerrado").sort(alphabetical);
+  return `<label>Campeonato / temporada<select name="championshipId"><option value="">Sem vínculo — partida avulsa</option>${rows.map((c) => `<option value="${esc(c.id)}">${esc(championshipTitle(c) + " • " + c.sport + (c.category ? " • " + c.category : ""))}</option>`).join("")}</select><small>Ao escolher, a modalidade e o nome da competição são preenchidos. Cadastre edições na aba Campeonatos.</small></label>`;
+}
+function syncChampionshipDraft() {
+  const f = $("#match"); if (!f) return;
+  const c = (state.championships || []).find((c) => c.id === f.elements.championshipId.value);
+  if (c) { f.elements.sport.value = c.sport; f.elements.competition.value = championshipTitle(c); }
+  f.elements.competition.readOnly = Boolean(c);
+}
+function championshipsView() {
+  const c = (state.championships || []).find((c) => c.id === editedChampionshipId);
+  const value = (key) => esc(c?.[key] || "");
+  return `<div class="card"><h2>${c ? "Editar campeonato / temporada" : "Cadastrar campeonato / temporada"}</h2><p class="muted">Crie um cadastro para cada edição, modalidade e categoria. Equipes e jogadores continuam disponíveis nos seus cadastros.</p><form id="championship"><input type="hidden" name="recordId" value="${value("id")}"><div class="formgrid">${field("Nome do campeonato", "name", "text", `required maxlength="100" value="${value("name")}"`)}${field("Edição / temporada", "season", "text", `required maxlength="40" placeholder="Ex.: 2026 ou 2º semestre de 2026" value="${value("season")}"`)}<label>Modalidade<select name="sport" required>${D.SPORTS.map((sport) => `<option ${c?.sport === sport ? "selected" : ""} ${c && c.sport !== sport ? "disabled" : ""}>${esc(sport)}</option>`).join("")}</select><small>A modalidade fica fixa após o cadastro. Para outra modalidade, crie um novo campeonato.</small></label>${field("Categoria", "category", "text", `maxlength="150" placeholder="Ex.: Livre, Sub-17, Feminino" value="${value("category")}"`)}<label>Situação<select name="status">${["Planejado","Em andamento","Encerrado"].map((status) => `<option ${c?.status === status ? "selected" : ""}>${status}</option>`).join("")}</select></label></div><button class="primary">${c ? "Salvar alterações" : "Cadastrar campeonato"}</button> ${c ? '<button type="button" data-new-championship>Cancelar edição / novo cadastro</button>' : ""}</form><p class="muted">Encerrar o campeonato impede criar novas partidas vinculadas; não encerra partidas automaticamente. Alterações do nome ou da edição não reescrevem súmulas existentes.</p></div><section class="card list-filters"><h2>Campeonatos cadastrados</h2><div class="list-controls"><label class="list-search">Buscar campeonato, edição, modalidade ou categoria<input type="search" data-championship-filter="query" value="${esc(championshipQuery)}" placeholder="Digite para buscar…"></label><label>Situação<select data-championship-filter="status"><option value="">Todas as situações</option>${["Planejado","Em andamento","Encerrado"].map((status) => `<option ${championshipStatus === status ? "selected" : ""}>${status}</option>`).join("")}</select></label><button type="button" data-clear-championship-filters>Limpar filtros</button></div><p id="championship-count" class="muted" role="status">${championshipCount()}</p></section><div class="grid" id="championship-results">${championshipCards()}</div>`;
+}
+function visibleChampionships() {
+  const q = searchText(championshipQuery);
+  return (state.championships || []).filter((c) => (!championshipStatus || c.status === championshipStatus) && (!q || searchText([c.name,c.season,c.sport,c.category].join(" ")).includes(q))).sort(alphabetical);
+}
+function championshipCount() { return `${visibleChampionships().length} de ${(state.championships || []).length} campeonatos nesta visualização`; }
+function championshipCards() {
+  return visibleChampionships().map((c) => {
+    const games = state.matches.filter((m) => m.championshipId === c.id);
+    return `<article class="card championship-card"><div class="match-top"><span class="tag">${esc(c.sport)}</span><span class="status">${esc(c.status)}</span></div><h3>${esc(c.name)}</h3><p><strong>${esc(c.season)}</strong><br><span class="muted">${esc(c.category || "Sem categoria")}</span></p><p>${games.length} partidas vinculadas • ${games.filter((m) => ["Encerrada","Homologada","Cancelada"].includes(m.status)).length} finalizadas</p><div class="toolbar"><button data-edit-championship="${esc(c.id)}">Editar campeonato</button><button data-championship-games="${esc(c.id)}">Ver partidas</button></div></article>`;
+  }).join("") || empty((state.championships || []).length ? "Nenhum campeonato corresponde aos filtros." : "Cadastre seu primeiro campeonato acima. As partidas antigas continuam na aba Partidas.");
+}
+function updateChampionshipList() {
+  if ($("#championship-results")) $("#championship-results").innerHTML = championshipCards();
+  if ($("#championship-count")) $("#championship-count").textContent = championshipCount();
+}
+function championshipLinkForm(m) {
+  const rows = (state.championships || []).filter((c) => c.sport === m.sport).sort(alphabetical);
+  return `<div class="card"><details><summary>Campeonato / temporada desta partida</summary><p class="muted">Vínculo atual: ${esc(m.championshipId ? ((state.championships || []).find((c) => c.id === m.championshipId) ? championshipTitle(state.championships.find((c) => c.id === m.championshipId)) : m.competition) : "Sem vínculo")}. O vínculo não altera placar, elenco ou cronômetro. Remover mantém o nome histórico da competição.</p><form id="championship-link"><label>Campeonato de ${esc(m.sport)}<select name="championshipId"><option value="">Sem vínculo</option>${rows.map((c) => `<option value="${esc(c.id)}" ${m.championshipId === c.id ? "selected" : ""}>${esc(championshipTitle(c) + (c.category ? " • " + c.category : "") + " — " + c.status)}</option>`).join("")}</select></label>${field("Justificativa (registrada no histórico)", "reason", "text", 'required maxlength="500"')}<p><button>Salvar vínculo com justificativa</button></p></form></details></div>`;
+}
+document.addEventListener("input", (e) => {
+  if (e.target.dataset.championshipFilter === "query") { championshipQuery = e.target.value; updateChampionshipList(); }
+});
 
-// ==========================================
-// PASSO 4: EVENTO DE INICIALIZAÇÃO DO DOM
-// ==========================================
 
-// ========================================
-// 🛡️ GUARDA DOS BOTÕES DE PUBLICAÇÃO
-// ========================================
-// Os botões abaixo não podem agir como submit nem propagar o clique para
-// controles antigos de navegação. A captura ocorre antes dos handlers legados.
-document.addEventListener("click", (ev) => {
-  const alvo = ev.target.closest?.(
-    "#btn-publicar-prova-escola-profissional, .btn-reembaralhar-prova, .btn-testar-publicacao, .btn-encerrar-prova"
+// 2.3 — IDENTIDADE VISUAL E CONTA. Dados da sessão aparecem apenas na central.
+// O logo é compactado e gravado nas configurações existentes, sem Firebase Storage.
+let systemLogoBusy = false, systemLogoVersion = 0;
+const canManageRosters = () => role === "admin" || (role === "operator" && operatorPermissions.includes("rosters"));
+const canCreateMatches = () => role === "admin" || (role === "operator" && operatorPermissions.includes("matchesCreate"));
+const accountRole = () => C.demo ? "Demonstração local" : role === "admin" ? "Administrador principal" : role === "operator" ? "Operador" : "Aguardando autorização";
+const accountName = () => user?.displayName || (state.users || []).find((p) => p.id === user?.uid)?.name || user?.email?.split("@")[0] || "Conta conectada";
+// Títulos por contexto, sem alterar a identidade personalizada salva.
+function systemDisplayName(){
+ const title=String(state.settings.title||'').trim();
+ return !title || /^(arena|arena esportiva)\s*[•—–-]?\s*(esporte|esportes) ao vivo$/i.test(title) ? 'Arena Esportiva' : title;
+}
+function panelDisplayName(){return trainingMode?'Treinamento — dados fictícios':role==='admin'?'Painel do Administrador':role==='operator'?'Painel do Operador':'Acesso à organização';}
+function renderBrandAndIdentity() {
+  updateArenaFavicon();
+  renderConnectionStatus();
+  const brand = $("#systemBrand");
+  if (brand) brand.innerHTML = `<span class="system-logo">${state.settings.logo ? `<img src="${esc(state.settings.logo)}" alt="Logo da organização" onerror="this.hidden=true">` : '<span aria-hidden="true">◈</span>'}</span><span class="brand-copy"><b>${esc(systemDisplayName())}</b><small>CENTRAL ESPORTIVA</small></span>`;
+  const identity = $("#sessionIdentity");
+  if (!identity) return;
+  identity.hidden = !admin || (!user && !C.demo);
+  document.body.classList.toggle("has-account-menu",!identity.hidden);
+  const signature=JSON.stringify([identity.hidden,user?.uid,user?.email,accountName(),accountRole(),role,C.demo]);
+  if(identity.dataset.signature!==signature){identity.dataset.signature=signature;identity.innerHTML=identity.hidden?"":accountMenuMarkup();}
+  renderConnectionStatus();
+}
+function settingsView() {
+  const s = state.settings;
+  return `<div class="card"><h2>Identidade visual e configurações</h2><p class="muted">A aparência é compartilhada pelo painel público e pela central. Somente o administrador principal pode alterá-la.</p><form id="settings"><div class="formgrid">${field("Título do sistema", "title", "text", `value="${esc(s.title)}" required maxlength="100"`)}${field("Subtítulo", "subtitle", "text", `value="${esc(s.subtitle)}" maxlength="200"`)}${field("Cor de destaque", "color", "color", `value="${esc(s.color)}"`)}${field("Endereço HTTPS da imagem de capa", "banner", "url", `value="${esc(s.banner)}" maxlength="1500"`)}<label>Logo do sistema (PNG, JPG ou WebP)<input id="systemLogoFile" type="file" accept="image/png,image/jpeg,image/webp"><small>Escolha uma imagem de até 5 MB. Ela será reduzida automaticamente.</small></label><label>Ou endereço HTTPS do logo<input name="logoURL" type="url" maxlength="1500" placeholder="https://..." value="${esc(s.logo?.startsWith("https://") ? s.logo : "")}"></label><input type="hidden" name="logo" value="${esc(s.logo || "")}"><div class="system-logo-preview" id="systemLogoPreview">${systemLogoPreview(s.logo || "")}</div></div><p><button class="primary">Salvar aparência</button></p></form><p class="muted">Escolher ou remover uma imagem só muda a prévia. Clique em Salvar aparência para publicar. O logo salvo também será usado como ícone da aba do navegador. Os escudos dos times são alterados na aba Equipes. A assinatura WagnerBIZZA é preservada.</p></div>`;
+}
+function systemLogoPreview(value) {
+  return `<div class="system-logo-sample">${value ? `<img src="${esc(value)}" alt="Prévia do logo do sistema" onerror="this.hidden=true">` : '<span class="muted">Sem logo personalizado</span>'}</div><button type="button" data-remove-system-logo>Remover logo</button>`;
+}
+function setSystemLogoDraft(value) {
+  const f = $("#settings"); if (!f) return;
+  f.elements.logo.value = value;
+  f.elements.logoURL.value = value.startsWith("https://") ? value : "";
+  $("#systemLogoPreview").innerHTML = systemLogoPreview(value);
+}
+function googleLinkPanel() {
+  if (!user || C.demo) return "";
+  const linked = (user.providerData || []).find((p) => p.providerId === "google.com");
+  return `<section class="google-account"><h3>Entrada com Google</h3>${linked ? `<p><strong>Google vinculado</strong>${linked.email ? "<br>" + esc(linked.email) : ""}</p><p class="muted">Você pode entrar pelo Google usando esta identidade. Suas permissões continuam as mesmas.</p>` : `<p>Conta atual: <strong>${esc(user.email || accountName())}</strong>. Adicione o Google mantendo esta conta e seus acessos.</p><p class="muted">Na janela do Google, selecione preferencialmente o mesmo e-mail desta conta. Se já existir outra conta cadastrada com essa identidade Google, a vinculação será recusada.</p><button type="button" class="google-button" data-google-link ${accessBusy ? "disabled" : ""}>${googleSymbol()}<span>Vincular Google à minha conta atual</span></button>`}</section>`;
+}
+function googleEntryButton(registerIntent = false) {
+  return `<div class="google-entry"><button type="button" class="google-button" data-google-entry="${registerIntent ? "register" : "login"}" ${!cloud || accessBusy ? "disabled" : ""}>${googleSymbol()}<span>${registerIntent ? "Cadastrar com Google" : "Entrar com Google"}</span></button><p class="muted">${registerIntent ? "Use seu nome e e-mail do Google. Não precisa preencher uma senha neste formulário. O acesso depende da aprovação do administrador." : "Já tem conta por e-mail e senha? Entre por ela primeiro e vincule o Google em Minha conta."}</p></div>`;
+}
+function accountView() {
+  if (C.demo) return `<section class="card"><h2>Minha conta</h2><p>Você está na demonstração local. Nome, e-mail e recuperação de senha aparecem ao entrar com uma conta do Firebase.</p></section>`;
+  if (!user) return "";
+  const providers = [...new Set((user.providerData || []).map((p) => ({password:"E-mail e senha", "google.com":"Google", "microsoft.com":"Microsoft"})[p.providerId] || p.providerId))];
+  return `<section class="card"><h2>Minha conta</h2><p class="muted">Confira a conta que está usando nesta sessão.</p><dl class="account-details"><div><dt>Nome</dt><dd>${esc(accountName())}</dd></div><div><dt>E-mail</dt><dd>${esc(user.email || "Não informado")}</dd></div><div><dt>Perfil de acesso</dt><dd>${esc(accountRole())}</dd></div><div><dt>Permissão de cadastros</dt><dd>${canManageRosters()?"Autorizado a gerenciar equipes e jogadores":"Não concedida"}</dd></div><div><dt>Confirmação do e-mail</dt><dd>${user.emailVerified ? "Confirmado" : "Ainda não confirmado"}</dd></div><div><dt>Formas de entrada já vinculadas</dt><dd>${esc(providers.join(", ") || "Não informado")}</dd></div></dl>${role === "admin" ? '<p class="public-notice">Sua conta continua como administrador principal. Nenhuma opção desta tela altera suas permissões.</p>' : '<p class="muted">Seu acesso às partidas é definido pelo administrador principal.</p>'}<div class="toolbar"><button type="button" data-account-recover ${!user.email ? "disabled" : ""}>Alterar minha senha</button><button type="button" data-account-exit>Sair desta conta</button></div><p class="muted">Para quem entra com e-mail e senha: clique em Alterar minha senha para receber um link em <strong>${esc(user.email)}</strong>. Abra esse e-mail para escolher a nova senha; confira também o spam. Não é necessário vincular o Google. O administrador não vê sua senha.</p>${googleLinkPanel()}</section>`;
+}
+
+// Atualizações ao vivo preservam o formulário ainda não enviado.
+function refresh() {
+  const focused = document.activeElement;
+  const championshipFocus = focused?.dataset?.championshipFilter ? { key: focused.dataset.championshipFilter, start: focused.selectionStart, end: focused.selectionEnd } : null;
+  const filterFocus = focused?.dataset?.listFilter ? {
+    kind: focused.dataset.listFilter, key: focused.dataset.filterKey,
+    start: focused.selectionStart, end: focused.selectionEnd,
+  } : null;
+  const importDraft =
+    section === "imports" && $("#preview")
+      ? {
+          preview: $("#preview").innerHTML,
+          kind: $("[name=importKind]").value,
+          paste: $("#paste").value,
+        }
+      : null;
+  const forms = [...app.querySelectorAll("form")].map((f) => ({
+    id: f.id,
+    checks: [...f.elements].filter(e=>e.name&&["checkbox","radio"].includes(e.type)).map(e=>({name:e.name,value:e.value,checked:e.checked})),
+    multi: [...f.querySelectorAll("select[multiple]")].map((e) => [e.name, [...e.selectedOptions].map((o) => o.value)]),
+    values: [...f.elements]
+      .filter((e) => e.name && e.type !== "password" && !e.hasAttribute("data-private-password"))
+      .map((e) => [e.name, e.value]),
+  }));
+  render();
+  for (const f of forms) {
+    const target = document.getElementById(f.id);
+    if (target)
+      for (const [name, value] of f.values)
+        if (target.elements[name]) target.elements[name].value = value;
+    if(target)for(const check of f.checks)for(const el of target.elements)if(el.name===check.name&&el.value===check.value&&["checkbox","radio"].includes(el.type))el.checked=check.checked;
+    if (target) for (const [name, values] of f.multi) {
+      const select = target.elements[name];
+      if (select) for (const option of select.options) option.selected = values.includes(option.value);
+    }
+  }
+  if ($("#event") && $("[name=side]")) {
+    const m = state.matches.find((m) => m.id === selected),
+      side = Number($("[name=side]").value),
+      saved =
+        forms
+          .find((f) => f.id === "event")
+          ?.values.find(([n]) => n === "player")?.[1] || "";
+    if (m) {
+      $("[name=player]").innerHTML =
+        '<option value="">Sem atleta</option>' +
+        options(
+          m.roster.filter((p) => p.team === [m.home, m.away][side]),
+          (p) => p.id,
+          (p) => p.number + " • " + p.name,
+        );
+      $("[name=player]").value = saved;
+    }
+  }
+  if (importDraft && $("#preview")) {
+    $("[name=importKind]").value = importDraft.kind;
+    $("#paste").value = importDraft.paste;
+    $("#preview").innerHTML = importDraft.preview;
+  }
+  if ($("#settings")?.elements.logo) setSystemLogoDraft($("#settings").elements.logo.value);
+  if (championshipFocus) {
+    const el = document.querySelector(`[data-championship-filter="${championshipFocus.key}"]`);
+    if (el) { el.focus({preventScroll:true}); if (el.type === "search") el.setSelectionRange(championshipFocus.start, championshipFocus.end); }
+  }
+  if (filterFocus) {
+    const el = document.querySelector(`[data-list-filter="${filterFocus.kind}"][data-filter-key="${filterFocus.key}"]`);
+    if (el) {
+      el.focus({ preventScroll: true });
+      if (el.type === "search") el.setSelectionRange(filterFocus.start, filterFocus.end);
+    }
+  }
+}
+function toast(t, error = false) {
+  const n = $("#notice");
+  n.textContent = t;
+  n.className = error ? "error" : "";
+  n.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => (n.hidden = true), 6500);
+}
+const team = (id) =>
+  state.teams.find((t) => t.id === id) || {
+    name: "Equipe",
+    short: "?",
+    badge: "",
+  };
+const name = (id) => team(id).name;
+const format = (d) => new Date(d).toLocaleString("pt-BR");
+const options = (arr, value, label) =>
+  arr
+    .map((x) => `<option value="${esc(value(x))}">${esc(label(x))}</option>`)
+    .join("");
+const teamOptions = () =>
+  options(
+    state.teams.filter(t=>!t.archived),
+    (x) => x.id,
+    (x) => x.name,
   );
-  if (!alvo) return;
-  ev.preventDefault();
-  // Não usamos stopImmediatePropagation: o handler funcional do próprio sistema
-  // ainda precisa receber o evento. O bloqueio de navegação é reforçado abaixo.
-}, true);
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.body.style.opacity = "1";
-  aplicarTemaSistema(temaAtualSistema);
-  garantirBancoCompleto100Questoes();
-  forcarMenuClassificarCompleto();
-  injetarEstilosGlobaisAjustados();
-  injetarBarraNavegacaoGlobalTopo();
-  removerAbaConfiguracoesGeraisDoDom();
-  inicializarReordenacaoAbasDinamica();
-
-  if (window.location.pathname.includes("escola.html")) {
-    inicializarPaginaEscola();
-  } else if (!window.location.pathname.includes("painel.html")) {
-    inicializarTelaAlunoQuiz();
-  }
-});
-
-// ==========================================
-// GERENCIADOR DE REORDENAÇÃO LIVRE DAS ABAS
-// ==========================================
-function inicializarReordenacaoAbasDinamica() {
-  const barraAbas = document.getElementById("barra-navegacao-abas");
-  if (!barraAbas) return;
-
-  // Restaurar ordem salva no localStorage, se houver
-  const ordemSalva = JSON.parse(localStorage.getItem("ordem_abas_painel_professor") || "[]");
-  if (ordemSalva.length > 0) {
-    ordemSalva.forEach(abaId => {
-      const btn = barraAbas.querySelector(`[data-aba="${abaId}"]`);
-      if (btn) barraAbas.appendChild(btn);
-    });
-  }
-
-  let botaoArrastadoAba = null;
-
-  barraAbas.querySelectorAll(".btn-aba").forEach(botao => {
-    botao.addEventListener("dragstart", (e) => {
-      botaoArrastadoAba = botao;
-      botao.classList.add("dragging");
-    });
-
-    botao.addEventListener("dragend", () => {
-      botao.classList.remove("dragging");
-      botaoArrastadoAba = null;
-      
-      // Salvar nova ordem no localStorage
-      const novaOrdem = Array.from(barraAbas.querySelectorAll(".btn-aba")).map(b => b.getAttribute("data-aba"));
-      localStorage.setItem("ordem_abas_painel_professor", JSON.stringify(novaOrdem));
-      mostrarNotificacao("📌 Ordem das abas atualizada!");
-    });
-
-    botao.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      const alvo = e.target.closest(".btn-aba");
-      if (alvo && alvo !== botaoArrastadoAba && botaoArrastadoAba) {
-        const bounding = alvo.getBoundingClientRect();
-        const offset = e.clientX - bounding.left;
-        if (offset > bounding.width / 2) {
-          barraAbas.insertBefore(botaoArrastadoAba, alvo.nextSibling);
-        } else {
-          barraAbas.insertBefore(botaoArrastadoAba, alvo);
-        }
-      }
-    });
-  });
+function badge(t) {
+  const fallback = esc(t.short || t.name.slice(0, 2).toUpperCase());
+  return `<span class="crest"><span class="crest-fallback">${fallback}</span>${t.badge ? `<img src="${esc(t.badge)}" alt="Escudo de ${esc(t.name)}" loading="lazy" onerror="this.remove()">` : ""}</span>`;
 }
-
-// ==========================================
-// PASSO 5: TEMA DIA / NOITE (CLARO / ESCURO)
-// ==========================================
-window.alternarTemaSistema = function() {
-  temaAtualSistema = temaAtualSistema === "dark" ? "light" : "dark";
-  localStorage.setItem("tema_sistema_escolar", temaAtualSistema);
-  aplicarTemaSistema(temaAtualSistema);
-};
-
-function aplicarTemaSistema(tema) {
-  const root = document.documentElement;
-  if (tema === "light") {
-    root.style.setProperty("--bg-dark", "#f8fafc");
-    root.style.setProperty("--card-bg", "#ffffff");
-    root.style.setProperty("--border-color", "#cbd5e1");
-    root.style.setProperty("--text", "#0f172a");
-    root.style.setProperty("--text-muted", "#475569");
-    document.body.classList.add("tema-claro-ativo");
-  } else {
-    root.style.setProperty("--bg-dark", "#0b0f19");
-    root.style.setProperty("--card-bg", "#111827");
-    root.style.setProperty("--border-color", "#1f2937");
-    root.style.setProperty("--text", "#f3f4f6");
-    root.style.setProperty("--text-muted", "#9ca3af");
-    document.body.classList.remove("tema-claro-ativo");
+let quickPlayers = ["", ""];
+const gameResult = (m) =>
+  m.sport.startsWith("Vôlei")
+    ? [
+        m.sets.filter((s) => s.score[0] > s.score[1]).length,
+        m.sets.filter((s) => s.score[1] > s.score[0]).length,
+      ]
+    : D.score(m);
+function prettyTime(ms) {
+  return M.clockText({ clock: { ...M.emptyClock(), baseMs: ms || 0 } });
+}
+function clockMarkup(m) {
+  return `<div class="game-clock"><span class="clock-caption">${m.clock?.mode === "down" ? "Tempo restante" : "Tempo de jogo"}</span><strong data-clock="${esc(m.id)}">${m.clock ? M.clockText(m) : "—"}</strong><small>${m.clock?.running ? "EM CONTAGEM" : m.clock ? "PARADO" : "Aguardando ativação do cronômetro"}</small></div>`;
+}
+function updateClocks() {
+  for (const el of document.querySelectorAll("[data-clock]")) {
+    const m = state.matches.find((m) => m.id === el.dataset.clock);
+    if (m) el.textContent = m.clock ? M.clockText(m) : "—";
   }
 }
-
-function salvarAlunosOcultosLocalStorage() {
-  localStorage.setItem("alunos_ocultos_painel", JSON.stringify(Array.from(alunosOcultosCache)));
+// Um intervalo apenas na tela: nenhum acesso ao Firestore a cada segundo.
+setInterval(updateClocks, 250);
+function eventLabel(e, m) {
+  if (e.type === "ponto")
+    return e.correctionOf
+      ? "Estorno (" + e.value + ")"
+      : (m.sport === "Futebol" || m.sport === "Futsal" ? "Gol" : "Ponto") +
+          " +" +
+          e.value;
+  return (
+    {
+      cadastro: "Partida criada",
+      status: "Situação da partida",
+      etapa: "Mudança de etapa",
+      súmula: "Observações",
+      cronômetro: "Cronômetro",
+      aviso: "Aviso ao público",
+      set: "Set encerrado",
+    }[e.type] || e.type
+  );
 }
-
-// Exclusões confirmadas: impede que o cache histórico (que faz merge) ressuscite registros.
-// Os identificadores incluem o caminho completo para não confundir avaliações homônimas.
-const CHAVE_EXCLUSOES_CONFIRMADAS = "quiz_resultados_excluidos_confirmados_v1";
-let exclusoesConfirmadas = new Set(JSON.parse(localStorage.getItem(CHAVE_EXCLUSOES_CONFIRMADAS) || "[]"));
-function chaveRegistroResultado(item) {
-  return item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "");
-}
-function resultadoExcluido(item) { return exclusoesConfirmadas.has(chaveRegistroResultado(item)); }
-function salvarExclusoesConfirmadas() {
-  localStorage.setItem(CHAVE_EXCLUSOES_CONFIRMADAS, JSON.stringify([...exclusoesConfirmadas]));
-}
-
-function salvarAlunosLixeiraLocalStorage() {
-  localStorage.setItem("alunos_lixeira_painel", JSON.stringify(Array.from(alunosLixeiraCache)));
-}
-
-function removerAbaConfiguracoesGeraisDoDom() {
-  const botoesAba = document.querySelectorAll('.btn-aba, button');
-  botoesAba.forEach(btn => {
-    if (btn.textContent.includes("Configurações Gerais")) {
-      btn.remove();
-    }
-  });
-
-  const conteudoConfig = document.getElementById("aba-configuracoes") || document.querySelector('[id*="configuracoes"]');
-  if (conteudoConfig && !conteudoConfig.tagName.toLowerCase().includes('body')) {
-    conteudoConfig.remove();
+// Mostra o acontecimento e sua justificativa juntos em todos os relatórios.
+// Apenas apresentação: não altera eventos, placares ou a auditoria gravada.
+function eventDescription(e) {
+  const text = String(
+    e.type === "cadastro" ? "Partida cadastrada na central" : e.text || "",
+  ).trim();
+  const reason = String(e.reason || "").trim();
+  if (text && reason && text !== reason) {
+    return `${text} — Motivo: ${reason}`;
   }
+  return text || reason || "—";
 }
 
-// ==========================================
-// PASSO 6: ESTILOS GLOBAIS E NAVEGAÇÃO COMPACTA
-// ==========================================
-function injetarEstilosGlobaisAjustados() {
-  if (!document.getElementById("estilo-global-ajustado")) {
-    const st = document.createElement("style");
-    st.id = "estilo-global-ajustado";
-    st.innerHTML = `
-      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-        filter: invert(1) brightness(1.8);
-        cursor: pointer;
-        opacity: 0.9;
-      }
-      body.tema-claro-ativo input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-        filter: none;
-      }
-      .aba-conteudo {
-        display: flex;
-        flex-direction: column !important;
-        gap: 25px !important;
-        padding-top: 25px !important;
-      }
-      .aba-conteudo h2 {
-        margin-top: 0 !important;
-        margin-bottom: 20px !important;
-        padding-bottom: 10px !important;
-      }
-
-      /* SEPARAÇÃO VISUAL EXATA DAS BOXES DE ESCOLAS E ATIVAÇÃO */
-      #aba-escolas {
-        display: flex;
-        flex-direction: column;
-        gap: 20px !important;
-      }
-      
-      /* Caixa 1: Formulário de Cadastro */
-      #aba-escolas h2:nth-of-type(1) {
-        background: rgba(30, 41, 59, 0.7);
-        padding: 14px 18px;
-        border-radius: 10px;
-        border: 1px solid #3b82f6;
-        margin-bottom: 10px !important;
-      }
-      #aba-escolas > div:has(#input-nome-escola),
-      #aba-escolas > form:has(#input-nome-escola) {
-        background: rgba(15, 23, 42, 0.85);
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      }
-
-      /* Caixa 2: Lista de Escolas Cadastradas */
-      #aba-escolas h2:nth-of-type(2) {
-        background: rgba(30, 41, 59, 0.7);
-        padding: 14px 18px;
-        border-radius: 10px;
-        border: 1px solid #3b82f6;
-        margin-top: 15px !important;
-        margin-bottom: 10px !important;
-      }
-      #aba-escolas > div:has(#lista-escolas-cadastradas-container) {
-        background: rgba(15, 23, 42, 0.85);
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      }
-
-      body.tema-claro-ativo #aba-escolas h2:nth-of-type(1),
-      body.tema-claro-ativo #aba-escolas h2:nth-of-type(2) {
-        background: #e2e8f0 !important;
-        border-color: #0284c7 !important;
-        color: #0f172a !important;
-      }
-      body.tema-claro-ativo #aba-escolas > div:has(#input-nome-escola),
-      body.tema-claro-ativo #aba-escolas > form:has(#input-nome-escola),
-      body.tema-claro-ativo #aba-escolas > div:has(#lista-escolas-cadastradas-container) {
-        background: #ffffff !important;
-        border-color: #cbd5e1 !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-      }
-
-      .acoes-topo-bloco, .barra-controles-relatorios, div:has(> .acoes-topo-bloco) {
-        position: relative !important;
-        margin-top: 15px !important;
-        margin-bottom: 25px !important;
-        flex-shrink: 0 !important;
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 12px !important;
-        align-items: center !important;
-      }
-      .table-responsive, .table-container, div:has(> table) {
-        width: 100% !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch;
-        margin-top: 20px !important;
-      }
-      table {
-        border-collapse: collapse !important;
-        width: 100% !important;
-        border: 1px solid rgba(51, 65, 85, 0.7) !important;
-      }
-      body.tema-claro-ativo table { border: 1px solid #cbd5e1 !important; }
-      table tr { border-bottom: 1px solid rgba(51, 65, 85, 0.7) !important; }
-      body.tema-claro-ativo table tr { border-bottom: 1px solid #cbd5e1 !important; }
-      
-      table td, table th {
-        padding: 10px 12px !important;
-        border-right: 2px solid rgba(59, 130, 246, 0.4) !important;
-        border-left: 1px solid rgba(51, 65, 85, 0.2) !important;
-        border-bottom: 1px solid rgba(51, 65, 85, 0.7) !important;
-        text-align: center !important;
-        vertical-align: middle !important;
-        font-size: 13px;
-        resize: both !important;
-        overflow: auto !important;
-        display: table-cell !important;
-        min-height: 45px !important;
-      }
-      body.tema-claro-ativo table td, body.tema-claro-ativo table th {
-        border-right: 2px solid #0284c7 !important;
-        border-left: 1px solid #e2e8f0 !important;
-        border-bottom: 1px solid #cbd5e1 !important;
-      }
-
-      .grupo-botoes-acoes {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 4px !important;
-        width: 100% !important;
-        max-width: 120px !important;
-        margin: 0 auto !important;
-      }
-      .grupo-botoes-acoes .btn-acao {
-        width: 100% !important;
-        padding: 6px 8px !important;
-        font-size: 11.5px !important;
-        font-weight: bold !important;
-        text-align: center !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 5px !important;
-        white-space: nowrap !important;
-        border-radius: 6px !important;
-        margin: 0 !important;
-      }
-      .checkbox-item-compacto {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 8px !important;
-        padding: 6px 10px !important;
-        background: rgba(15, 23, 42, 0.5) !important;
-        border: 1px solid #334155 !important;
-        border-radius: 6px !important;
-        margin-bottom: 4px !important;
-        font-size: 13px !important;
-      }
-      body.tema-claro-ativo .checkbox-item-compacto {
-        background: #f8fafc !important;
-        border-color: #cbd5e1 !important;
-        color: #0f172a !important;
-      }
-      /* 🔵 FASE 10C.1 — mantém todos os quadrados de seleção alinhados à esquerda. */
-      .checkbox-item-compacto { justify-content: flex-start !important; }
-      .checkbox-item-compacto > input[type="checkbox"] {
-        flex: 0 0 18px !important; width: 18px !important; height: 18px !important;
-        margin: 0 10px 0 0 !important; align-self: center !important; cursor: pointer !important;
-      }
-      .checkbox-item-compacto span > input[type="checkbox"] {
-        flex: 0 0 18px !important; width: 18px !important; height: 18px !important; margin: 0 !important;
-      }
-      .checkbox-item-compacto span {
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        flex: 1 !important;
-        word-break: break-word !important;
-        color: inherit !important;
-      }
-      .btn-acao-mini {
-        padding: 3px 8px !important;
-        font-size: 11px !important;
-        font-weight: bold !important;
-        border-radius: 4px !important;
-        cursor: pointer !important;
-        border: none !important;
-      }
-      .dropdown-menu-win {
-        display: none;
-        position: absolute;
-        background: #1e293b !important;
-        border: 1px solid #334155 !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-        border-radius: 8px;
-        z-index: 99999;
-        padding: 6px;
-      }
-      body.tema-claro-ativo .dropdown-menu-win {
-        background: #ffffff !important;
-        border-color: #cbd5e1 !important;
-      }
-      .dropdown-menu-win.show { display: block !important; }
-      .btn-escola-clicavel {
-        background: #1e293b;
-        color: #f8fafc;
-        border: 2px solid #334155;
-        padding: 8px 14px;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: left;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-      }
-      .btn-escola-clicavel.ativo {
-        border-color: #3b82f6 !important;
-        background: rgba(59, 130, 246, 0.2) !important;
-      }
-      body.tema-claro-ativo .btn-escola-clicavel {
-        background: #ffffff;
-        color: #0f172a;
-        border-color: #cbd5e1;
-      }
-      body.tema-claro-ativo .btn-escola-clicavel.ativo {
-        background: #e0f2fe !important;
-        border-color: #0284c7 !important;
-      }
-      .card-escola-dinamico {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: rgba(15, 23, 42, 0.7);
-        border: 1px solid #334155;
-        padding: 12px 16px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        gap: 15px;
-        flex-wrap: wrap;
-        cursor: grab;
-        color: #f8fafc;
-        transition: background 0.2s, border-color 0.2s;
-      }
-      .card-escola-dinamico:hover {
-        border-color: #3b82f6;
-        background: rgba(30, 41, 59, 0.9);
-      }
-      .card-escola-dinamico.dragging {
-        opacity: 0.4;
-        cursor: grabbing;
-      }
-      .card-escola-dinamico.fixada {
-        border: 2px solid #eab308 !important;
-        background: rgba(234, 179, 8, 0.1) !important;
-        cursor: default !important;
-      }
-      body.tema-claro-ativo .card-escola-dinamico {
-        background: #ffffff !important;
-        border-color: #cbd5e1 !important;
-        color: #0f172a !important;
-      }
-      body.tema-claro-ativo .card-escola-dinamico.fixada {
-        border: 2px solid #ca8a04 !important;
-        background: #fef9c3 !important;
-        cursor: default !important;
-      }
-      .barra-nav-global {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #0f172a;
-        border-bottom: 1px solid #334155;
-        padding: 10px 20px;
-        margin-bottom: 20px;
-        border-radius: 8px;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-      body.tema-claro-ativo .barra-nav-global {
-        background: #e2e8f0;
-        border-color: #cbd5e1;
-        color: #0f172a;
-      }
-      .btn-nav-icone {
-        background: #1e293b;
-        color: #f8fafc;
-        border: 1px solid #334155;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 13px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        text-decoration: none;
-      }
-      body.tema-claro-ativo .btn-nav-icone {
-        background: #ffffff;
-        color: #0f172a;
-        border-color: #cbd5e1;
-      }
-    `;
-    document.head.appendChild(st);
+function field(label, name, type = "text", extra = "") {
+  // Senhas nunca entram na cópia de formulários, mesmo quando visíveis.
+  if (type === "password") {
+    const id = "credential-" + name;
+    return `<div class="password-field"><label for="${esc(id)}">${label}</label><div class="password-control"><input id="${esc(id)}" name="${esc(name)}" type="password" data-private-password ${extra}><button type="button" data-toggle-password aria-controls="${esc(id)}" aria-pressed="false" aria-label="Mostrar ${esc(label.toLowerCase())}">${passwordEye(false)}<span>Mostrar</span></button></div></div>`;
   }
+  return `<label>${label}<input name="${name}" type="${type}" ${extra}></label>`;
 }
-
-function injetarBarraNavegacaoGlobalTopo() {
-  if (document.getElementById("barra-nav-topo-global")) return;
-   
-  const barra = document.createElement("div");
-  barra.id = "barra-nav-topo-global";
-  barra.className = "barra-nav-global";
-   
-  barra.innerHTML = `
-    <div class="nav-botoes-grupo" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-      <a href="painel.html" class="btn-nav-icone">🏠 Home / Painel</a>
-      <button type="button" class="btn-nav-icone" onclick="if(window.history.length > 1) { window.history.back(); } else { window.location.href='painel.html'; }">⬅️ Voltar</button>
-      <button type="button" class="btn-nav-icone" onclick="window.history.forward()">➡️ Avançar</button>
-    </div>
-    <div style="display:flex; align-items:center; gap:12px;">
-      <button type="button" class="btn-nav-icone" onclick="alternarTemaSistema()" title="Alternar Tema Claro / Escuro">🌓 Modo Dia/Noite</button>
-      <span style="font-size: 12px; font-weight: bold; display:flex; align-items:center; gap:8px;">⚡ Sistema de Avaliações</span>
-    </div>
-  `;
-
-  const containerPrincipal = document.querySelector(".container") || document.querySelector("body");
-  if (containerPrincipal.firstChild) {
-    containerPrincipal.insertBefore(barra, containerPrincipal.firstChild);
-  } else {
-    containerPrincipal.appendChild(barra);
-  }
+function select(label, name, opts) {
+  return `<label>${label}<select name="${name}" ${name === "player" ? "" : "required"}>${opts}</select></label>`;
 }
-
-window.addEventListener("click", (e) => {
-  if (!e.target.closest('.dropdown-win')) {
-    document.querySelectorAll('.dropdown-menu-win').forEach(menu => menu.classList.remove('show'));
-  }
-});
-
-window.addEventListener("scroll", () => {
-  atualizarPosicoesDropdownsAbertos();
-}, { passive: true });
-
-window.addEventListener("resize", () => {
-  atualizarPosicoesDropdownsAbertos();
-});
-
-function atualizarPosicoesDropdownsAbertos() {
-  document.querySelectorAll('.dropdown-menu-win.show').forEach(menu => {
-    const parent = menu.closest('.dropdown-win');
-    if (parent) {
-      const btn = parent.querySelector('.btn-dropdown-win');
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        const espacoAbaixo = window.innerHeight - rect.bottom;
-        if (espacoAbaixo < menu.offsetHeight + 10 && rect.top > menu.offsetHeight) {
-          menu.style.top = `${rect.top - menu.offsetHeight - 6}px`;
-        } else {
-          menu.style.top = `${rect.bottom + 6}px`;
-        }
-
-        let leftPos = rect.left;
-        if (leftPos + menu.offsetWidth > window.innerWidth - 15) {
-          leftPos = window.innerWidth - menu.offsetWidth - 15;
-        }
-        if (leftPos < 15) leftPos = 15;
-         
-        menu.style.left = `${leftPos}px`;
-      }
-    }
-  });
+function data(form) {
+  return Object.fromEntries(new FormData(form));
 }
-
-window.toggleDropdown = function(event, idMenu, idBtn) {
-  event.stopPropagation();
-  const menu = document.getElementById(idMenu);
-  if (!menu) return;
-  const estaMostrando = menu.classList.contains('show');
-   
-  document.querySelectorAll('.dropdown-menu-win').forEach(m => m.classList.remove('show'));
-   
-  if (!estaMostrando) {
-    menu.classList.add('show');
-  }
-};
-
-function forcarMenuClassificarCompleto() {
-  const menuResultados = document.getElementById("dropdown-menu-resultados");
-  if (menuResultados) {
-    menuResultados.style.minWidth = "260px";
-    menuResultados.innerHTML = `
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nenhum')">⚙️ Nenhum (Padrão)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('data-desc')">📅 Data/Hora (Mais Recente)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('data-asc')">📅 Data/Hora (Mais Antiga)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nome-asc')">🔤 Nome Aluno (A-Z)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nome-desc')">🔤 Nome Aluno (Z-A)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('turma-asc')">🏫 Turma (Crescente)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('escola-asc')">🏛️ Escola (A-Z)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nota-desc')">⭐ Maior Nota</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoResultados('nota-asc')">⭐ Menor Nota</button>
-    `;
-  }
-
-  const menuMonitoramento = document.getElementById("dropdown-menu-monitoramento");
-  if (menuMonitoramento) {
-    menuMonitoramento.style.minWidth = "240px";
-    menuMonitoramento.innerHTML = `
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('nenhum')">⚙️ Nenhum (Padrão)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('inicio-desc')">📅 Início (Mais Recente)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('nome-asc')">🔤 Nome Aluno (A-Z)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('escola-asc')">🏛️ Escola (A-Z)</button>
-      <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px;" onclick="aplicarOrdenacaoMonitoramento('tempo-desc')">⏱️ Maior Tempo Gasto</button>
-    `;
-  }
+function table(headers, rows) {
+  return `<div class="tablewrap"><table><thead><tr>${headers.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
 }
-
-document.addEventListener("click", (e) => {
-  const link = e.target.closest("a");
-  if (link && link.href && link.href.startsWith(window.location.origin) && !link.getAttribute("target")) {
-    e.preventDefault();
-    const destino = link.href;
-    window.location.href = destino;
-  }
-});
-
-function mostrarNotificacao(mensagem) {
-  const toast = document.getElementById("toast-notification");
-  if (!toast) { alert(mensagem); return; }
-  toast.textContent = mensagem;
-  toast.style.display = "block";
-  setTimeout(() => { toast.style.display = "none"; }, 3500);
+const tr = (values) =>
+  `<tr>${values.map((v) => `<td>${esc(v)}</td>`).join("")}</tr>`;
+function empty(text) {
+  return `<div class="empty">${text}</div>`;
 }
-
-function animarBotaoSucesso(btn) {
-  if (!btn) return;
-  const textoOriginal = btn.textContent;
-  btn.textContent = "✅ Salvo com Sucesso!";
-  btn.classList.add("btn-sucesso-animado");
-  setTimeout(() => {
-    btn.textContent = textoOriginal;
-    btn.classList.remove("btn-sucesso-animado");
-  }, 2500);
-}
-
-function obterIdAluno(nome, turma) {
-  const norm = (str) => str ? str.toUpperCase().trim().replace(/[^A-Z0-9]/g, "_").replace(/_+/g, "_") : "ANONIMO";
-  return `${norm(nome)}_${norm(turma)}`;
-}
-
-
-// ==========================================================
-// 🔐 FASE 10C — PUBLICAÇÃO SEGURA DO BANCO PARA OS ALUNOS
-// Copia somente enunciado/alternativas/matéria para questoes_publicas.
-// O campo "correta" NUNCA é copiado.
-// ==========================================================
-async function sincronizarQuestoesPublicas() {
-  // 🔐 Lê o banco privado principal. Em versões antigas também pode existir banco_questoes.
-  // Unimos as duas fontes sem duplicar IDs e publicamos SOMENTE dados sem gabarito.
-  const fontes = ["questoes", "banco_questoes"];
-  const privadas = new Map();
-  for (const nomeColecao of fontes) {
+// 1 — Conexão. Demonstração não exige login e NÃO protege os dados locais.
+async function boot() {
+  setConnectionStatus(C.demo?"DEMONSTRAÇÃO LOCAL":"conectando");
+  if (C.demo) {
     try {
-      const snap = await getDocs(collection(db, nomeColecao));
-      snap.forEach(s => { if (!privadas.has(s.id)) privadas.set(s.id, s.data()); });
-    } catch (erro) {
-      console.warn(`Coleção ${nomeColecao} não pôde ser lida:`, erro);
-    }
-  }
-  if (privadas.size === 0) throw new Error("Nenhuma questão foi encontrada no banco privado.");
-
-  const publicasAtuais = await getDocs(collection(db, "questoes_publicas"));
-  const tarefas = [];
-  privadas.forEach((d, id) => {
-    const opcoes = Array.isArray(d.opcoes) ? d.opcoes : (Array.isArray(d.alternativas) ? d.alternativas : (Array.isArray(d.respostas) ? d.respostas : []));
-    tarefas.push(setDoc(doc(db, "questoes_publicas", id), {
-      idQuestao: id,
-      pergunta: d.pergunta || d.questao || d.titulo || "Sem título",
-      opcoes: opcoes,
-      categoria: d.categoria || d.materia || "Geral",
-      materia: d.materia || d.categoria || "Geral",
-      atualizadoEm: serverTimestamp()
-    }));
-  });
-  publicasAtuais.forEach(s => { if (!privadas.has(s.id)) tarefas.push(deleteDoc(s.ref)); });
-  await Promise.all(tarefas);
-
-  // Confirma que a coleção usada pelo aluno realmente recebeu questões.
-  const verificacao = await getDocs(collection(db, "questoes_publicas"));
-  if (verificacao.empty) throw new Error("A coleção segura questoes_publicas ficou vazia após a sincronização.");
-  return verificacao.size;
-}
-
-function normalizarTexto(txt) {
-  if (!txt) return "";
-  return txt.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-}
-
-function limparPrefixoPergunta(pergunta) {
-  if (!pergunta) return "";
-  let limpa = pergunta.replace(/^\[.*?\]\s*/, "").trim();
-  limpa = limpa.replace(/^\d+[\)\.\-\s]+\s*/, "").trim();
-  return limpa;
-}
-
-function limparPrefixoOpcao(opcaoStr) {
-  if (!opcaoStr) return "";
-  // A alternativa E é válida; removemos somente o marcador A), B., E - etc.
-  return opcaoStr.toString().replace(/^[A-Ea-e][\)\.\-\s]+\s*/, "").trim();
-}
-
-function normalizarDocumentoQuestao(d, idDoc = null) {
-  let perguntaBruta = d.pergunta || d.questao || d.titulo || "Pergunta Sem Título";
-  let perguntaLimpa = limparPrefixoPergunta(perguntaBruta);
-   
-  let opcoesBrutas = d.opcoes || d.alternativas || d.respostas || [];
-  
-  let opcoesLimpas = opcoesBrutas
-    .map(op => limparPrefixoOpcao(op))
-    .filter(op => !!op)
-    .slice(0, 5);
-
-  let letraOriginal = (d.correta || d.resposta || d.correto || "A").toString().trim().toUpperCase();
-  let indiceOriginal = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}[letraOriginal] || 0;
-
-  if (indiceOriginal >= opcoesLimpas.length) {
-    indiceOriginal = 0;
-  }
-
-  let alternativasMapeadas = opcoesLimpas.map((texto, idx) => ({
-    texto: texto,
-    ehCorreta: (idx === indiceOriginal)
-  }));
-
-  // Mantém exatamente a quantidade cadastrada (A–D ou A–E).
-  // Não cria alternativas artificiais.
-
-  for (let i = alternativasMapeadas.length - 1; i > 0; i--) {
-    const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-    const j = Math.floor((aleatorio / 4294967295) * (i + 1));
-    [alternativasMapeadas[i], alternativasMapeadas[j]] = [alternativasMapeadas[j], alternativasMapeadas[i]];
-  }
-
-  let novoIndiceCorreto = alternativasMapeadas.findIndex(alt => alt.ehCorreta);
-  if (novoIndiceCorreto === -1) novoIndiceCorreto = 0;
-
-  let letrasNovas = ["A", "B", "C", "D", "E"];
-  let letraCorretaFinal = letrasNovas[novoIndiceCorreto];
-
-  return {
-    idDoc: idDoc,
-    pergunta: perguntaLimpa,
-    opcoes: alternativasMapeadas.map(alt => alt.texto),
-    correta: letraCorretaFinal,
-    categoria: d.categoria || d.materia || d.disciplina || "Geral"
-  };
-}
-
-let estruturaGlobalBoxes = [
-  { 
-    id: "materias", 
-    titulo: "📚 Disciplinas e Matérias", 
-    itens: [
-      "Inteligência Artificial", "Programação Front-End", "Redes de Computadores e Segurança da Informação", 
-      "Processos de Desenvolvimento de Software e Metodologias Ágeis", "Matemática", "Língua Portuguesa", 
-      "Ciências", "História", "Geografia", "Física", "Química", "Biologia", "Inglês", "Espanhol", 
-      "Educação Física", "Artes", "Filosofia", "Sociologia", "Pensamento Computacional", "Robótica Educativa"
-    ]
-  },
-  { 
-    id: "periodos", 
-    titulo: "🏫 Períodos e Turnos", 
-    itens: ["Manhã", "Tarde", "Noite", "Integral", "Noturno EJA", "Geral"] 
-  },
-  { 
-    id: "bimestres", 
-    titulo: "📅 Bimestres, Trimestres e Semestres", 
-    itens: ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre", "1º Trimestre", "2º Trimestre", "3º Trimestre", "1º Semestre", "2º Semestre", "Ano Letivo Completo"] 
-  }
-];
-
-let turmasCadastradasDiretas = ["1A", "2A", "3A", "1B", "2B", "3B"];
-
-let listaEscolasCache = [];
-
-
-// PUBLICAÇÃO AUTOMÁTICA SEGURA
-// O professor vincula UMA VEZ o prova-publicada.json existente na pasta do projeto.
-// O navegador grava diretamente nesse arquivo, sem GitHub token e sem acumular Downloads.
-// Se o navegador não permitir o acesso, o sistema mantém o download tradicional como fallback.
-const DB_PUBLICACAO_LOCAL = "quiz_publicacao_local_v1";
-const STORE_PUBLICACAO_LOCAL = "handles";
-const CHAVE_ARQUIVO_PUBLICACAO = "prova-publicada";
-
-function abrirDbPublicacaoLocal() {
-  return new Promise((resolve,reject)=>{
-    const req=indexedDB.open(DB_PUBLICACAO_LOCAL,1);
-    req.onupgradeneeded=()=>req.result.createObjectStore(STORE_PUBLICACAO_LOCAL);
-    req.onsuccess=()=>resolve(req.result);
-    req.onerror=()=>reject(req.error);
-  });
-}
-async function salvarHandlePublicacao(handle) {
-  const dbLocal=await abrirDbPublicacaoLocal();
-  return new Promise((resolve,reject)=>{
-    const tx=dbLocal.transaction(STORE_PUBLICACAO_LOCAL,"readwrite");
-    tx.objectStore(STORE_PUBLICACAO_LOCAL).put(handle,CHAVE_ARQUIVO_PUBLICACAO);
-    tx.oncomplete=()=>resolve();
-    tx.onerror=()=>reject(tx.error);
-  });
-}
-async function obterHandlePublicacao() {
-  try {
-    const dbLocal=await abrirDbPublicacaoLocal();
-    return await new Promise((resolve,reject)=>{
-      const req=dbLocal.transaction(STORE_PUBLICACAO_LOCAL,"readonly")
-        .objectStore(STORE_PUBLICACAO_LOCAL).get(CHAVE_ARQUIVO_PUBLICACAO);
-      req.onsuccess=()=>resolve(req.result||null);
-      req.onerror=()=>reject(req.error);
-    });
-  } catch (_) { return null; }
-}
-async function atualizarStatusVinculoPublicacao() {
-  const el=document.getElementById("status-vinculo-publicacao");
-  if (!el) return;
-  const h=await obterHandlePublicacao();
-  el.textContent=h ? `✅ Vinculado: ${h.name}` : "⚠ Ainda não vinculado";
-  el.style.color=h ? "#22c55e" : "#f59e0b";
-}
-window.vincularArquivoPublicacao = async function() {
-  if (!window.showOpenFilePicker) {
-    alert("Este navegador não permite vincular o arquivo diretamente. Use Chrome ou Edge atualizado.");
-    return false;
-  }
-  try {
-    const [handle]=await window.showOpenFilePicker({
-      multiple:false,
-      types:[{description:"Arquivo JSON da avaliação",accept:{"application/json":[".json"]}}]
-    });
-    if (!handle || handle.name!=="prova-publicada.json") {
-      alert('Selecione exatamente o arquivo "prova-publicada.json" que está na pasta principal do projeto.');
-      return false;
-    }
-    const perm=await handle.requestPermission({mode:"readwrite"});
-    if (perm!=="granted") {
-      alert("A permissão de gravação não foi concedida.");
-      return false;
-    }
-    await salvarHandlePublicacao(handle);
-    await atualizarStatusVinculoPublicacao();
-    alert("✅ Arquivo vinculado.\n\nA partir de agora Ativar, Reembaralhar e Encerrar podem atualizar este mesmo arquivo sem acumular cópias em Downloads.");
-    return true;
-  } catch(err) {
-    if (err?.name!=="AbortError") alert("Não foi possível vincular o arquivo: "+(err?.message||err));
-    return false;
-  }
-};
-
-
-// GESTO DIRETO DO USUÁRIO:
-// O navegador só permite abrir o seletor de arquivo enquanto ainda estamos
-// dentro do clique original. Por isso este preparo acontece ANTES de Firebase/await.
-async function garantirVinculoPublicacaoNoClique() {
-  let handle=await obterHandlePublicacao();
-  if (handle) {
-    try {
-      const perm=await handle.queryPermission({mode:"readwrite"});
-      if (perm==="granted") return true;
-      // requestPermission também deve ocorrer no gesto do usuário.
-      const novaPerm=await handle.requestPermission({mode:"readwrite"});
-      if (novaPerm==="granted") return true;
-    } catch(_) {}
-  }
-  return await window.vincularArquivoPublicacao();
-}
-
-async function escreverPacoteNoArquivoVinculado(pacote) {
-  const handle=await obterHandlePublicacao();
-  if (!handle) return false;
-  try {
-    let perm=await handle.queryPermission({mode:"readwrite"});
-    if (perm!=="granted") perm=await handle.requestPermission({mode:"readwrite"});
-    if (perm!=="granted") return false;
-    const gravador=await handle.createWritable();
-    await gravador.write(JSON.stringify(pacote,null,2));
-    await gravador.close();
-    return true;
-  } catch(err) {
-    console.warn("Arquivo vinculado indisponível:",err);
-    return false;
-  }
-}
-
-async function baixarArquivoProvaPublicada(pacote) {
-  // Nunca abre seletor aqui: esta função normalmente roda após awaits.
-  // O vínculo precisa ter sido garantido no clique original.
-  if (await escreverPacoteNoArquivoVinculado(pacote)) {
-    mostrarNotificacao("✅ prova-publicada.json atualizado no projeto.");
-    return "vinculado";
-  }
-  throw new Error('O prova-publicada.json não está vinculado. Clique novamente na ação e selecione o arquivo quando solicitado.');
-}
-
-async function gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento="Avaliação encerrada pelo professor.") {
-  const pacote = {
-    versaoPacote: 1, ativa: false, idAvaliacao: "", escolaAtiva: escolaNome || "",
-    materiasAtivas: [], disciplinasAtivas: [], periodoAtivo: "",
-    quantidadeQuestoes: 0, tempoMinimoMinutos: 0, tempoLimiteMinutos: 0,
-    tempoAtivacaoMinutos: 0, expiraEmMillis: Date.now(), turmasAtivas: [],
-    token: "", seedReordenacao: Date.now().toString(),
-    publicadoEm: new Date().toISOString(), encerradoEm: new Date().toISOString(),
-    motivoEncerramento, questoesPublicas: []
-  };
-  return await baixarArquivoProvaPublicada(pacote);
-}
-
-async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
-  const materias = dadosPublicacao.materiasAtivas || [];
-  let fonte = Array.isArray(questoesBancoCache) ? [...questoesBancoCache] : [];
-  if (!fonte.length) {
-    try {
-      const snap = await getDocs(collection(db, "questoes_publicas"));
-      snap.forEach(d => fonte.push({ idDoc:d.id, ...d.data() }));
-    } catch (_) {
-      throw new Error("As questões ainda não estão carregadas neste computador. Abra o Banco de Dados com conexão antes de preparar a prova offline.");
-    }
-  }
-  const candidatas = fonte.filter(q => {
-    const cat = q.materia || q.categoria || "";
-    return !materias.length || materias.some(m => normalizarTexto(cat).includes(normalizarTexto(m)));
-  }).map(q => ({
-    idQuestao:q.idDoc || q.idQuestao || q.id || q.questaoId || "",
-    materia:q.materia || q.categoria || "", categoria:q.categoria || q.materia || "",
-    pergunta:q.pergunta || "", opcoes:Array.isArray(q.opcoes) ? q.opcoes : []
-  }));
-  for (let i=candidatas.length-1;i>0;i--) {
-    const n=crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;
-    const j=Math.floor(n*(i+1)); [candidatas[i],candidatas[j]]=[candidatas[j],candidatas[i]];
-  }
-  const qtd=Math.max(1,parseInt(dadosPublicacao.quantidadeQuestoes)||10);
-  const selecionadas=candidatas.slice(0,qtd);
-  if (!selecionadas.length) throw new Error("Nenhuma questão compatível foi encontrada.");
-  const pacote={
-    versaoPacote:1, ativa:true, idAvaliacao:dadosPublicacao.idAvaliacao || "",
-    escolaAtiva:dadosPublicacao.escolaAtiva,
-    materiasAtivas:dadosPublicacao.materiasAtivas||[],
-    disciplinasAtivas:dadosPublicacao.disciplinasAtivas||[],
-    periodoAtivo:dadosPublicacao.periodoAtivo||"", quantidadeQuestoes:selecionadas.length,
-    // TEMPOS: números explícitos + compatibilidade com nomes antigos.
-    tempoMinimoMinutos:Number(dadosPublicacao.tempoMinimoMinutos ?? dadosPublicacao.tempoMinimo ?? 0) || 0,
-    tempoLimiteMinutos:Number(dadosPublicacao.tempoLimiteMinutos ?? dadosPublicacao.tempoMaximoMinutos ?? dadosPublicacao.tempoMaximo ?? 0) || 0,
-    tempoMaximoMinutos:Number(dadosPublicacao.tempoLimiteMinutos ?? dadosPublicacao.tempoMaximoMinutos ?? dadosPublicacao.tempoMaximo ?? 0) || 0,
-    tempoAtivacaoMinutos:Number(dadosPublicacao.tempoAtivacaoMinutos ?? 180) || 180,
-    expiraEmMillis:dadosPublicacao.expiraEmMillis||0, turmasAtivas:dadosPublicacao.turmasAtivas||[],
-    token:dadosPublicacao.token||"", seedReordenacao:dadosPublicacao.seedReordenacao||Date.now().toString(),
-    publicadoEm:new Date().toISOString(), questoesPublicas:selecionadas
-  };
-  const modo=await baixarArquivoProvaPublicada(pacote);
-  return {total:selecionadas.length,modo};
-}
-
-async function carregarEscolasCache() {
-  try {
-    const snap = await getDocs(collection(db, "escolas_cadastradas"));
-    listaEscolasCache = [];
-    snap.forEach(docSnap => { listaEscolasCache.push({ idDoc: docSnap.id, ...docSnap.data() }); });
-  } catch (e) { console.error(e); }
-}
-
-async function carregarEstruturaGlobalFirebase() {
-  try {
-    const docSnap = await getDoc(doc(db, "configuracoes", "estrutura_global_v2"));
-    if (docSnap.exists()) {
-      const dados = docSnap.data();
-      if (dados.boxes) estruturaGlobalBoxes = dados.boxes;
-      if (dados.turmasDiretas) turmasCadastradasDiretas = dados.turmasDiretas;
-    }
-  } catch (e) { console.error(e); }
-}
-
-async function garantirBancoCompleto100Questoes() {
-  try {
-    await carregarEstruturaGlobalFirebase();
-    const snap = await getDocs(collection(db, "questoes"));
-    let totalBanco = snap.size;
-    if (totalBanco < 900) {
-      const materiasCompletas = [
-        "Inteligência Artificial", 
-        "Programação Front-End", 
-        "Redes de Computadores e Segurança da Informação", 
-        "Processos de Desenvolvimento de Software e Metodologias Ágeis",
-        "Matemática", "Língua Portuguesa", "História", "Geografia", "Biologia", "Física", "Química", "Inglês"
-      ];
-
-      for (let mat of materiasCompletas) {
-        for (let i = 1; i <= 100; i++) {
-          await addDoc(collection(db, "questoes"), {
-            materia: mat,
-            categoria: mat,
-            pergunta: `Questão oficial de nível avançado nº ${i} abordando conceitos teóricos e práticos aplicados em ${mat}`,
-            opcoes: [
-              `Diretriz fundamental e parâmetro otimizado aplicado a ${mat}`,
-              "Processamento autônomo baseado em regras estáticas locais",
-              "Conversão estruturada de metadados em arquivos compactados",
-              "Execução direta de rotinas em camada de hardware isolada",
-              "Indexação sequencial de logs e repositórios desatualizados"
-            ],
-            correta: "A",
-            criadoEm: serverTimestamp()
-          });
-        }
-      }
-    }
-  } catch (e) { console.error(e); }
-}
-
-// ==========================================
-// TELA DO ALUNO (index.html) - EMBARALHAMENTO ROBUSTO COM POUCAS QUESTÕES
-// ==========================================
-function inicializarTelaAlunoQuiz() {
-  const telaQuiz = document.getElementById("tela-quiz") || document.querySelector(".quiz-container") || document.querySelector("#quiz");
-  if (!telaQuiz) return;
-
-  const btnEntrar = document.getElementById("btn-entrar") || document.querySelector("button[type='submit']");
-  if (btnEntrar) {
-    btnEntrar.addEventListener("click", async (e) => {
-      e.preventDefault();
-      await iniciarQuizAluno();
-    });
-  }
-}
-
-async function iniciarQuizAluno() {
-  const inputNome = document.getElementById("input-nome-aluno") || document.querySelector("input[name='nome']");
-  const inputTurma = document.getElementById("input-turma-aluno") || document.querySelector("input[name='turma']");
-  
-  const nomeAluno = inputNome ? inputNome.value.trim() : "Estudante";
-  const turmaAluno = inputTurma ? inputTurma.value.trim() : "1A";
-
-  if (!nomeAluno) {
-    alert("Por favor, digite seu nome.");
-    return;
-  }
-
-  try {
-    const configDoc = await getDoc(doc(db, "configuracoes", "prova_ativa"));
-    let configProva = configDoc.exists() ? configDoc.data() : { quantidadeQuestoes: 10, materiasAtivas: ["Inteligência Artificial"] };
-
-    const snapshot = await getDocs(collection(db, "questoes"));
-    let bancoBruto = [];
-    snapshot.forEach(docSnap => bancoBruto.push(normalizarDocumentoQuestao(docSnap.data(), docSnap.id)));
-
-    let materiasAlvo = configProva.materiasAtivas || [];
-    let questoesFiltradas = [];
-
-    if (materiasAlvo.length > 0 && !materiasAlvo.includes("TODAS")) {
-      questoesFiltradas = bancoBruto.filter(q => 
-        materiasAlvo.some(m => normalizarTexto(q.categoria).includes(normalizarTexto(m)) || normalizarTexto(m).includes(normalizarTexto(q.categoria)))
+      state = JSON.parse(localStorage.getItem(key)) || (trainingMode ? trainingSeed() : D.fresh());
+      if (trainingMode) trainingStore(state);
+    } catch {
+      toast(
+        "Dados locais inválidos. Limpe o armazenamento para reiniciar.",
+        true,
       );
     }
-
-    if (questoesFiltradas.length === 0) {
-      questoesFiltradas = bancoBruto; 
-    }
-
-    for (let i = questoesFiltradas.length - 1; i > 0; i--) {
-      const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-      const j = Math.floor((aleatorio / 4294967295) * (i + 1));
-      [questoesFiltradas[i], questoesFiltradas[j]] = [questoesFiltradas[j], questoesFiltradas[i]];
-    }
-
-    let qtdDesejada = configProva.quantidadeQuestoes || 10;
-    let listaQuestoesFinal = [];
-
-    if (questoesFiltradas.length >= qtdDesejada) {
-      listaQuestoesFinal = questoesFiltradas.slice(0, qtdDesejada);
-    } else if (questoesFiltradas.length > 0) {
-      while (listaQuestoesFinal.length < qtdDesejada && questoesFiltradas.length > 0) {
-        listaQuestoesFinal.push(...questoesFiltradas);
+    role = "admin";
+    if (trainingMode) setConnectionStatus("DEMONSTRAÇÃO ISOLADA");
+    render();
+    window.addEventListener("storage", (e) => {
+      if (e.key === key) {
+        state = e.newValue ? JSON.parse(e.newValue) : (trainingMode ? trainingSeed() : D.fresh());
+        render();
       }
-      listaQuestoesFinal = listaQuestoesFinal.slice(0, qtdDesejada);
-    } else {
-      for (let i = 1; i <= qtdDesejada; i++) {
-        listaQuestoesFinal.push({
-          pergunta: `Questão dinâmica de reforço ${i}: Qual parâmetro se aplica a esta avaliação?`,
-          opcoes: ["Parâmetro padrão correto", "Opção incorreta A", "Opção incorreta B", "Opção incorreta C"],
-          correta: "A",
-          categoria: "Geral"
-        });
-      }
-    }
-
-    window.listaQuestoesQuizAtivo = listaQuestoesFinal;
-    window.indiceQuizAtual = 0;
-    window.pontosQuizAtual = 0;
-
-    const telaLogin = document.getElementById("tela-login") || document.querySelector(".login-container");
-    const telaQuiz = document.getElementById("tela-quiz") || document.querySelector(".quiz-container");
-    if (telaLogin) telaLogin.classList.add("hidden");
-    if (telaQuiz) telaQuiz.classList.remove("hidden");
-
-    exibirQuestaoQuizAtual();
-  } catch (err) {
-    alert("Erro ao iniciar prova: " + err.message);
-  }
-}
-
-window.exibirQuestaoQuizAtual = function() {
-  const lista = window.listaQuestoesQuizAtivo || [];
-  const idx = window.indiceQuizAtual || 0;
-  if (idx >= lista.length) {
-    finalizarQuizAlunoAtivo();
+    });
     return;
   }
-
-  const q = lista[idx];
-  const containerPergunta = document.getElementById("pergunta-txt") || document.querySelector(".enunciado-questao");
-  const containerOpcoes = document.getElementById("opcoes-container") || document.querySelector(".opcoes-lista");
-  const progressoTxt = document.getElementById("progresso-txt");
-
-  if (containerPergunta) containerPergunta.textContent = `Questão ${idx + 1}: ${q.pergunta}`;
-  if (progressoTxt) progressoTxt.textContent = `Questão ${idx + 1} de ${lista.length}`;
-  if (containerOpcoes) {
-    containerOpcoes.innerHTML = "";
-    let letras = ["A", "B", "C", "D", "E"];
-    q.opcoes.forEach((op, i) => {
-      if (!op) return;
-      let btn = document.createElement("button");
-      btn.className = "opcao-btn";
-      btn.style.cssText = "display: block; width: 100%; text-align: left; padding: 10px 14px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #fff; cursor: pointer;";
-      btn.textContent = `${letras[i]}) ${op}`;
-      btn.onclick = () => verificarRespostaQuizAluno(letras[i], q.correta);
-      containerOpcoes.appendChild(btn);
-    });
-  }
-};
-
-window.verificarRespostaQuizAluno = function(letraEscolhida, letraCorreta) {
-  if (letraEscolhida === letraCorreta) {
-    window.pontosQuizAtual = (window.pontosQuizAtual || 0) + 1;
-    mostrarNotificacao("✅ Resposta Correta!");
-  } else {
-    mostrarNotificacao("❌ Resposta Incorreta.");
-  }
-  window.indiceQuizAtual++;
-  setTimeout(() => {
-    exibirQuestaoQuizAtual();
-  }, 1000);
-};
-
-window.finalizarQuizAlunoAtivo = function() {
-  const telaQuiz = document.getElementById("tela-quiz") || document.querySelector(".quiz-container");
-  const telaResultado = document.getElementById("tela-resultado") || document.querySelector(".resultado-container");
-  if (telaQuiz) telaQuiz.classList.add("hidden");
-  if (telaResultado) telaResultado.classList.remove("hidden");
-  mostrarNotificacao("🎉 Avaliação finalizada com sucesso!");
-};
-
-window.selecionarTodosOnline = function(marcar) {
-  document.querySelectorAll(".chk-item-online").forEach(chk => chk.checked = marcar);
-};
-
-window.excluirOnlineSelecionados = async function() {
-  const selecionados = Array.from(document.querySelectorAll(".chk-item-online:checked")).map(c => c.value);
-  if (selecionados.length === 0) {
-    alert("⚠️ Selecione pelo menos um aluno na tabela de monitoramento.");
-    return;
-  }
-  if (confirm(`Deseja remover os ${selecionados.length} aluno(s) selecionado(s) do monitoramento?`)) {
-    try {
-      for (const idDoc of selecionados) {
-        await deleteDoc(doc(db, "alunos_online", idDoc));
-      }
-      mostrarNotificacao(`🗑 ${selecionados.length} registro(s) removido(s) com sucesso!`);
-    } catch (err) {
-      alert("Erro ao excluir: " + err.message);
-    }
-  }
-};
-
-window.selecionarTodosResultados = function(marcar) {
-  document.querySelectorAll(".chk-item-resultado").forEach(chk => chk.checked = marcar);
-};
-
-// ==========================================
-// PASSO 7: LÓGICA DA PÁGINA ESCOLA.HTML
-// ==========================================
-function inicializarPaginaEscola() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const nomeEscola = urlParams.get("escola") || "";
-
-  const bannerTitulo = document.getElementById("banner-escola-ativa-isolada");
-  if (bannerTitulo) bannerTitulo.textContent = `🏫 Configurando Unidade: ${nomeEscola || 'Geral'}`;
-  
-  const resumoAntigo = document.getElementById("texto-resumo-escolhas") || document.querySelector('[id*="resumo-escolhas"]');
-  if (resumoAntigo) {
-    resumoAntigo.remove();
-  }
-
-  injetarPainelResumoConsolidadoTopo(nomeEscola);
-  injetarContainerBoxesEscolaDinamicoCompleto();
-  injetarGerenciadorTurmasIndividual();
-
-  window.adicionarTurmaIndividualDireta = function() {
-    const input = document.getElementById("input-nova-turma-individual");
-    if (!input || !input.value.trim()) {
-      alert("⚠ Digite o nome da turma!");
-      return;
-    }
-    const nomeTurma = input.value.trim().toUpperCase();
-    if (!turmasCadastradasDiretas.includes(nomeTurma)) {
-      turmasCadastradasDiretas.push(nomeTurma);
-    }
-    input.value = "";
-    renderizarListaTurmasIndividuais();
-    atualizarPainelResumoConsolidado();
-    mostrarNotificacao(`➕ Turma "${nomeTurma}" adicionada com sucesso!`);
-  };
-
-  window.removerTurmaIndividualDireta = function(index) {
-    turmasCadastradasDiretas.splice(index, 1);
-    renderizarListaTurmasIndividuais();
-    atualizarPainelResumoConsolidado();
-    mostrarNotificacao("🗑️ Turma removida!");
-  };
-
-  window.editarTurmaIndividualDireta = function(index) {
-    const atual = turmasCadastradasDiretas[index];
-    const novoNome = prompt("Editar nome da turma:", atual);
-    if (novoNome !== null && novoNome.trim() !== "") {
-      turmasCadastradasDiretas[index] = novoNome.trim().toUpperCase();
-      renderizarListaTurmasIndividuais();
-      atualizarPainelResumoConsolidado();
-      mostrarNotificacao("✏ Turma atualizada com sucesso!");
-    }
-  };
-
-  window.marcarLimparTodasTurmas = function(marcar) {
-    const chks = document.querySelectorAll(".chk-turma-direta-val");
-    chks.forEach(c => c.checked = marcar);
-    atualizarPainelResumoConsolidado();
-  };
-
-  window.ordenarTurmasDiretasAZ = function() {
-    turmasCadastradasDiretas.sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
-    renderizarListaTurmasIndividuais();
-    mostrarNotificacao("🔤 Turmas ordenadas de A a Z!");
-  };
-
-  window.excluirTodasTurmasDiretas = function() {
-    if (confirm("Deseja zerar/limpar todas as turmas cadastradas?")) {
-      turmasCadastradasDiretas = [];
-      renderizarListaTurmasIndividuais();
-      atualizarPainelResumoConsolidado();
-      mostrarNotificacao("🗑 Turmas limpas!");
-    }
-  };
-
-  window.adicionarNovaBoxEspecificaEscola = function() {
-    const input = document.getElementById("input-nome-nova-box-especifica");
-    if (!input || !input.value.trim()) {
-      alert("⚠ Digite o título da nova box!");
-      return;
-    }
-    const tituloBox = input.value.trim();
-    const idBox = normalizarTexto(tituloBox) + "_" + Date.now();
-    
-    const containerBoxes = document.getElementById("container-boxes-escola");
-    if (containerBoxes) {
-      let divNova = document.createElement("div");
-      divNova.className = "card-box";
-      divNova.setAttribute("data-box-id", idBox);
-      divNova.style.cssText = "background: rgba(30, 41, 59, 0.7); border: 1px solid #334155; padding: 14px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;";
-      
-      let itensHtml = `
-        <label class="checkbox-item-compacto">
-          <span><input type="checkbox" class="chk-item-box-val" value="Item Exemplo 1" onchange="atualizarPainelResumoConsolidado()" checked> Item Exemplo 1</span>
-          <div style="display:flex; gap:3px;">
-            <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
-          </div>
-        </label>
-      `;
-
-      divNova.innerHTML = `
-        <div class="box-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-          <h4 style="font-size:14px; margin:0; color:#f8fafc;">${tituloBox}</h4>
-          <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
-            <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparCard(this, true)" title="Marcar Tudo">☑️ Marcar</button>
-            <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparCard(this, false)" title="Desmarcar Tudo">🔲 Limpar</button>
-            <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarCardAZ(this)" title="Ordenar A-Z">🔤</button>
-            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑 Box removida!');" title="Excluir Box Inteira">🗑️ Excluir Box</button>
-          </div>
-        </div>
-        <div style="display:flex; gap:6px;">
-          <input type="text" class="input-add-card-item" placeholder="Adicionar novo item..." style="flex:1; padding:5px 8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:12px;">
-          <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarItemCardDinamico(this)">➕ Adicionar</button>
-        </div>
-        <div class="grid-checkboxes" style="display:flex; flex-direction:column; max-height:180px; overflow-y:auto; gap:4px;">
-          ${itensHtml}
-        </div>
-      `;
-      containerBoxes.appendChild(divNova);
-      input.value = "";
-      atualizarPainelResumoConsolidado();
-      mostrarNotificacao(`➕ Box "${tituloBox}" adicionada com sucesso!`);
-    }
-  };
-
-  function injetarGerenciadorTurmasIndividual(turmasSalvas = null) {
-    const containerBoxes = document.getElementById("container-boxes-escola");
-    if (!containerBoxes || document.getElementById("card-turmas-individual-custom")) return;
-
-    const divCardTurmas = document.createElement("div");
-    divCardTurmas.id = "card-turmas-individual-custom";
-    divCardTurmas.className = "card-box";
-    divCardTurmas.setAttribute("data-box-id", "turmas_diretas");
-    divCardTurmas.style.cssText = "background: rgba(30, 41, 59, 0.7); border: 1px solid #334155; padding: 14px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;";
-    
-    divCardTurmas.innerHTML = `
-      <div class="box-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <h4 style="font-size:14px; margin:0; color:#f8fafc;">🎒 Turmas Ativas (Escolha e Adição Individual)</h4>
-        <div style="display:flex; gap:4px; flex-wrap:wrap;">
-          <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparTodasTurmas(true)" title="Marcar Tudo">☑️️ Marcar</button>
-          <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparTodasTurmas(false)" title="Desmarcar Tudo">🔲 Limpar</button>
-          <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarTurmasDiretasAZ()" title="Ordenar A-Z">🔤</button>
-          <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="excluirTodasTurmasDiretas()" title="Excluir Todas">🗑️</button>
-        </div>
-      </div>
-      <div style="display:flex; gap:6px;">
-        <input type="text" id="input-nova-turma-individual" placeholder="Nome da turma (Ex: 1º Ano A, 9º B)..." style="flex:1; padding:5px 8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:12px;">
-        <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarTurmaIndividualDireta()">➕ Adicionar</button>
-      </div>
-      <div id="grid-turmas-individuais-lista" class="grid-checkboxes" style="display:flex; flex-direction:column; max-height:180px; overflow-y:auto; gap:4px;"></div>
-    `;
-
-    containerBoxes.insertBefore(divCardTurmas, containerBoxes.firstChild);
-    renderizarListaTurmasIndividuais(turmasSalvas);
-  }
-
-  function renderizarListaTurmasIndividuais(turmasSalvas = null) {
-    const listaDiv = document.getElementById("grid-turmas-individuais-lista");
-    if (!listaDiv) return;
-
-    if (turmasCadastradasDiretas.length === 0) {
-      listaDiv.innerHTML = `<p style="color: #94a3b8; font-size: 12px; font-style: italic; padding: 4px;">Nenhuma turma cadastrada.</p>`;
-      return;
-    }
-
-    let html = "";
-    turmasCadastradasDiretas.forEach((turma, idx) => {
-      let estaMarcado = turmasSalvas ? turmasSalvas.includes(turma) : true;
-      let checkedAttr = estaMarcado ? "checked" : "";
-
-      html += `
-        <label class="checkbox-item-compacto">
-          <span>
-            <input type="checkbox" class="chk-turma-direta-val" value="${turma}" onchange="atualizarPainelResumoConsolidado()" ${checkedAttr}> ${turma}
-          </span>
-          <div style="display:flex; gap:3px;">
-            <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
-          </div>
-        </label>
-      `;
-    });
-    listaDiv.innerHTML = html;
-    atualizarPainelResumoConsolidado();
-  }
-
-  function injetarPainelResumoConsolidadoTopo(escolaNome) {
-    if (document.getElementById("painel-resumo-topo-consolidado")) return;
-    
-    const bannerAtivo = document.getElementById("banner-escola-ativa-isolada") || document.querySelector(".container")?.firstChild;
-    const divResumo = document.createElement("div");
-    divResumo.id = "painel-resumo-topo-consolidado";
-    divResumo.style.cssText = "background: rgba(30, 41, 59, 0.9); border: 1px solid #3b82f6; padding: 15px 20px; border-radius: 10px; margin-top: 15px; margin-bottom: 20px; color: #f8fafc;";
-    
-    divResumo.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 8px;">
-        <h4 style="margin: 0; color: #60a5fa; font-size: 15px; display:flex; align-items:center; gap:6px;">📊 Resumo Consolidado das Configurações Atuais (${escolaNome})</h4>
-        <div style="display:flex; gap:8px;">
-          <button type="button" onclick="if(window.history.length > 1) { window.history.back(); } else { window.location.href='painel.html'; }" class="btn-acao-mini" style="background:#475569; color:white; padding:6px 12px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center;">🏠 Retornar à Tela Anterior</button>
-        </div>
-      </div>
-      <div id="conteudo-resumo-consolidado" style="font-size: 13px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; color: #cbd5e1;">
-        <div>🏫 <strong>Unidade:</strong> <span id="resumo-unidade">${escolaNome}</span></div>
-        <div>🎒 <strong>Turmas:</strong> <span id="resumo-turmas">Nenhuma selecionada</span></div>
-        <div id="bloco-resumo-dinamico-boxes" style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin-top: 4px;"></div>
-      </div>
-    `;
-
-    if (bannerAtivo && bannerAtivo.parentNode) {
-      bannerAtivo.parentNode.insertBefore(divResumo, bannerAtivo.nextSibling);
-    } else {
-      document.body.prepend(divResumo);
-    }
-    atualizarPainelResumoConsolidado();
-  }
-
-  function atualizarPainelResumoConsolidado() {
-    const spanTurmas = document.getElementById("resumo-turmas");
-    const blocoDinamicoBoxes = document.getElementById("bloco-resumo-dinamico-boxes");
-
-    if (!spanTurmas) return;
-
-    const turmasSelecionadas = Array.from(document.querySelectorAll(".chk-turma-direta-val:checked")).map(c => c.value);
-    spanTurmas.textContent = turmasSelecionadas.length > 0 ? turmasSelecionadas.join(", ") : "Nenhuma selecionada";
-
-    if (!blocoDinamicoBoxes) return;
-    let htmlDinamico = "";
-
-    document.querySelectorAll(".card-box").forEach(card => {
-      let idBox = card.getAttribute("data-box-id");
-      if (idBox === "turmas_diretas") return;
-
-      let tituloBox = card.querySelector("h4")?.textContent || "Box";
-      let selecionados = Array.from(card.querySelectorAll(".chk-item-box-val:checked")).map(c => c.value);
-      let itensStr = selecionados.length > 0 ? selecionados.join(", ") : "Nenhum selecionado";
-
-      htmlDinamico += `<div>📌 <strong>${tituloBox}:</strong> <span>${itensStr}</span></div>`;
-    });
-
-    blocoDinamicoBoxes.innerHTML = htmlDinamico;
-  }
-
-  window.atualizarPainelResumoConsolidado = atualizarPainelResumoConsolidado;
-
-  function injetarContainerBoxesEscolaDinamicoCompleto() {
-    const containerPrincipal = document.querySelector(".container") || document.querySelector("body");
-    if (document.getElementById("container-boxes-escola")) return;
-
-    const wrapperBoxes = document.createElement("div");
-    wrapperBoxes.style.cssText = "margin-top: 25px; margin-bottom: 25px;";
-    
-    wrapperBoxes.innerHTML = `
-      <div id="container-boxes-escola" style="display: flex; flex-direction: column; gap: 14px;"></div>
-      <div id="bloco-criar-box-especifica" style="background: rgba(30, 41, 59, 0.5); border: 1px dashed #3b82f6; padding: 15px; border-radius: 8px; margin-top: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-        <input type="text" id="input-nome-nova-box-especifica" placeholder="Nome da Nova Box Específica (Ex: Laboratórios)..." style="flex:1; min-width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-        <button type="button" class="btn-acao" style="background: #2563eb; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none;" onclick="adicionarNovaBoxEspecificaEscola()">➕ Adicionar Box Específica</button>
-      </div>
-    `;
-
-    const botaoSalvarRef = document.getElementById("btn-salvar-isolada")?.closest("div") || containerPrincipal.lastElementChild;
-    containerPrincipal.insertBefore(wrapperBoxes, botaoSalvarRef);
-
-    renderizarBoxesEscola();
-  }
-
-  function renderizarBoxesEscola(dadosSalvosBoxes = null) {
-    const containerBoxes = document.getElementById("container-boxes-escola");
-    if (!containerBoxes) return;
-
-    let boxesParaRenderizar = dadosSalvosBoxes && dadosSalvosBoxes.length > 0 ? dadosSalvosBoxes : estruturaGlobalBoxes;
-
-    let htmlBoxes = "";
-    boxesParaRenderizar.forEach((box, indexBox) => {
-      let itensAtivosSalvos = box.itensMarcados !== undefined ? box.itensMarcados : box.itens;
-
-      let itensHtml = "";
-      box.itens.forEach((item) => {
-        let estaMarcado = itensAtivosSalvos ? itensAtivosSalvos.includes(item) : true;
-        let checkedAttr = estaMarcado ? "checked" : "";
-
-        itensHtml += `
-          <label class="checkbox-item-compacto">
-            <span>
-              <input type="checkbox" class="chk-item-box-val" data-box-idx="${indexBox}" value="${item}" onchange="atualizarPainelResumoConsolidado()" ${checkedAttr}> ${item}
-            </span>
-            <div style="display:flex; gap:3px;">
-              <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
-            </div>
-          </label>
-        `;
-      });
-
-      htmlBoxes += `
-        <div class="card-box" data-box-id="${box.id || ('box_' + indexBox)}" style="background: rgba(30, 41, 59, 0.7); border: 1px solid #334155; padding: 14px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;">
-          <div class="box-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-            <h4 style="font-size:14px; margin:0; color:#f8fafc;">${box.titulo}</h4>
-            <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
-              <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparCard(this, true)" title="Marcar Tudo">☑️ Marcar</button>
-              <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparCard(this, false)" title="Desmarcar Tudo">🔲 Limpar</button>
-              <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarCardAZ(this)" title="Ordenar A-Z">🔤</button>
-              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑️ Box removida!');" title="Excluir Box Inteira">🗑 Excluir Box</button>
-            </div>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <input type="text" class="input-add-card-item" placeholder="Adicionar novo item..." style="flex:1; padding:5px 8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:12px;">
-            <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarItemCardDinamico(this)">➕ Adicionar</button>
-          </div>
-          <div class="grid-checkboxes" style="display:flex; flex-direction:column; max-height:180px; overflow-y:auto; gap:4px;">
-            ${itensHtml}
-          </div>
-        </div>
-      `;
-    });
-
-    const elementoTurmas = document.getElementById("card-turmas-individual-custom");
-    containerBoxes.innerHTML = htmlBoxes;
-    if (elementoTurmas) {
-      containerBoxes.prepend(elementoTurmas);
-    }
-    atualizarPainelResumoConsolidado();
-  }
-
-  window.adicionarItemCardDinamico = function(btn) {
-    const card = btn.closest('.card-box');
-    const input = card.querySelector('.input-add-card-item');
-    if (!input || !input.value.trim()) return;
-    const val = input.value.trim();
-    const grid = card.querySelector('.grid-checkboxes');
-
-    const novaLabel = document.createElement('label');
-    novaLabel.className = "checkbox-item-compacto";
-    novaLabel.innerHTML = `
-      <span>
-        <input type="checkbox" class="chk-item-box-val" value="${val}" onchange="atualizarPainelResumoConsolidado()" checked> ${val}
-      </span>
-      <div style="display:flex; gap:3px;">
-        <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-        <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
-      </div>
-    `;
-    grid.appendChild(novaLabel);
-    input.value = "";
-    atualizarPainelResumoConsolidado();
-    mostrarNotificacao(`➕ Item "${val}" adicionado!`);
-  };
-
-  window.editarItemBoxEscolaCard = function(btn) {
-    const label = btn.closest('.checkbox-item-compacto');
-    const span = label.querySelector('span');
-    const chk = span.querySelector('input');
-    const valorAntigo = chk.value;
-    const novoValor = prompt("Editar nome do item:", valorAntigo);
-    if (novoValor !== null && novoValor.trim() !== "") {
-      const valTrim = novoValor.trim();
-      chk.value = valTrim;
-      span.innerHTML = `<input type="checkbox" class="chk-item-box-val" value="${valTrim}" onchange="atualizarPainelResumoConsolidado()" ${chk.checked ? 'checked' : ''}> ${valTrim}`;
-      atualizarPainelResumoConsolidado();
-      mostrarNotificacao("✏️ Item atualizado com sucesso!");
-    }
-  };
-
-  window.removerItemBoxEscolaCard = function(btn) {
-    btn.closest('.checkbox-item-compacto').remove();
-    atualizarPainelResumoConsolidado();
-    mostrarNotificacao("🗑 Item removido!");
-  };
-
-  window.marcarLimparCard = function(btn, marcar) {
-    const card = btn.closest('.card-box');
-    card.querySelectorAll('.chk-item-box-val').forEach(c => c.checked = marcar);
-    atualizarPainelResumoConsolidado();
-  };
-
-  window.ordenarCardAZ = function(btn) {
-    const card = btn.closest('.card-box');
-    const grid = card.querySelector('.grid-checkboxes');
-    const labels = Array.from(grid.querySelectorAll('.checkbox-item-compacto'));
-    
-    labels.sort((a, b) => {
-      let txtA = a.querySelector('span').textContent.trim();
-      let txtB = b.querySelector('span').textContent.trim();
-      return txtA.localeCompare(txtB, undefined, {numeric: true});
-    });
-
-    labels.forEach(l => grid.appendChild(l));
-    atualizarPainelResumoConsolidado();
-    mostrarNotificacao("🔤 Itens ordenados de A a Z!");
-  };
-
-  function carregarDadosSalvosEscola() {
-    // 10C.7: leitura única da configuração; evita listener permanente.
-    getDoc(doc(db, "escolas_configuracoes", normalizarTexto(nomeEscola))).then((docSnap) => {
-      if (docSnap.exists()) {
-        const dados = docSnap.data();
-        if (dados.turmasDiretas) {
-          turmasCadastradasDiretas = dados.turmasDiretas;
-        }
-        let turmasSalvas = dados.tabelasConfirmadas?.turmas || null;
-        renderizarListaTurmasIndividuais(turmasSalvas);
-
-        if (dados.boxesPersonalizadas && dados.boxesPersonalizadas.length > 0) {
-          renderizarBoxesEscola(dados.boxesPersonalizadas);
-          return;
-        }
-      }
-      renderizarListaTurmasIndividuais();
-      renderizarBoxesEscola();
-    });
-  }
-
-  const btnSalvarIsolada = document.getElementById("btn-salvar-isolada");
-  if (btnSalvarIsolada) {
-    btnSalvarIsolada.addEventListener("click", async (e) => {
-      e.preventDefault(); 
-      const turmasConfirmadas = Array.from(document.querySelectorAll(".chk-turma-direta-val:checked")).map(c => c.value);
-      
-      let boxesSalvar = [];
-      let materiasColetadas = [];
-
-      document.querySelectorAll(".card-box").forEach(card => {
-        let tituloBox = card.querySelector("h4")?.textContent || "Box";
-        let idBox = card.getAttribute("data-box-id") || "box";
-        if (idBox !== "turmas_diretas") {
-          let itensBox = Array.from(card.querySelectorAll(".chk-item-box-val")).map(chk => chk.value);
-          let itensMarcadosBox = Array.from(card.querySelectorAll(".chk-item-box-val:checked")).map(chk => chk.value);
-          
-          boxesSalvar.push({ 
-            id: idBox, 
-            titulo: tituloBox, 
-            itens: itensBox, 
-            itensMarcados: itensMarcadosBox 
-          });
-
-          if (tituloBox.toLowerCase().includes("disciplina") || tituloBox.toLowerCase().includes("matéria")) {
-            materiasColetadas.push(...itensMarcadosBox);
-          }
-        }
-      });
-
-      try {
-        await setDoc(doc(db, "escolas_configuracoes", normalizarTexto(nomeEscola)), {
-          escolaNome: nomeEscola,
-          turmasDiretas: turmasCadastradasDiretas,
-          boxesPersonalizadas: boxesSalvar,
-          tabelasConfirmadas: {
-            turmas: turmasConfirmadas,
-            materias: [...new Set(materiasColetadas)],
-            periodos: boxesSalvar.find(b => b.titulo.toLowerCase().includes("período") || b.titulo.toLowerCase().includes("turno"))?.itensMarcados || [],
-            bimestres: boxesSalvar.find(b => b.titulo.toLowerCase().includes("bimestre") || b.titulo.toLowerCase().includes("trimestre") || b.titulo.toLowerCase().includes("semestre"))?.itensMarcados || []
-          },
-          atualizadoEm: serverTimestamp()
-        }, { merge: true });
-
-        animarBotaoSucesso(e.target);
-        mostrarNotificacao(`✅ Configurações completas da unidade "${nomeEscola}" salvas com sincronização instantânea!`);
-        setTimeout(() => {
-          window.history.back();
-        }, 1200);
-      } catch (err) {
-        alert("Erro ao salvar: " + err.message);
-      }
-    });
-  }
-
-  carregarDadosSalvosEscola();
-  setTimeout(() => { document.body.classList.add("fade-in"); }, 100);
-}
-
-// ==========================================
-// ================================================================
-// PAINEL DO PROFESSOR — administração, banco, monitoramento e resultados
-// ================================================================
-// PASSO 8: PAINEL DO PROFESSOR (painel.html)
-// ==========================================
-if (window.location.pathname.includes("painel.html")) {
-  // Momento em que esta página do painel foi aberta.
-  // Usado para distinguir resultados novos dos registros históricos.
-  const inicioSessaoResultadosPainel = Date.now();
-
-  // ==========================================================
-  // 💰 FASE 10C.7 — ECONOMIA DE LEITURAS DO FIREBASE
-  // ==========================================================
-  // Listeners em tempo real ficam ativos SOMENTE nas abas que precisam deles.
-  // Ao sair da aba, o listener é cancelado. Isso evita leituras contínuas
-  // enquanto o professor está trabalhando em outra parte do painel.
-  let unsubscribeMonitoramentoPainel = null;
-  let unsubscribeProvasAtivasPainel = null;
-  let unsubscribeNovosResultadosPainel = null;
-  let bancoQuestoesCarregadoNestaSessao = false;
-
-  function pararListenerMonitoramento() {
-    if (unsubscribeMonitoramentoPainel) {
-      unsubscribeMonitoramentoPainel();
-      unsubscribeMonitoramentoPainel = null;
-    }
-  }
-
-  function pararListenerProvasAtivas() {
-    if (unsubscribeProvasAtivasPainel) {
-      unsubscribeProvasAtivasPainel();
-      unsubscribeProvasAtivasPainel = null;
-    }
-  }
-
-  // ==========================================================
-  // RESULTADOS — RECEPÇÃO AUTOMÁTICA E ECONÔMICA
-  // ==========================================================
-  // O painel NÃO abre um listener para os 130+ relatórios antigos.
-  // Ele observa somente documentos criados depois que esta sessão do
-  // professor foi aberta. Assim, cada nova entrega chega ao cache local
-  // sem exigir o botão "Sincronizar relatórios" e sem reler o histórico.
-  function iniciarListenerNovosResultados() {
-    if (unsubscribeNovosResultadosPainel ||
-        document.documentElement.dataset.modoOfflineProfessor === "1") return;
-
-    // Observamos somente uma pequena janela dos resultados mais recentes.
-    // Custo inicial: no máximo 10 documentos, e depois apenas mudanças.
-    // Isso evita reler os 130+ relatórios históricos e é mais robusto que
-    // depender de uma consulta criada somente depois dos carregamentos do painel.
-    const consultaRecentes = query(
-      collection(db, "avaliacoes"),
-      orderBy("timestamp", "desc"),
-      limit(10)
-    );
-
-    unsubscribeNovosResultadosPainel = onSnapshot(
-      consultaRecentes,
-      async (snapshot) => {
-        let houveResultadoNovo = false;
-
-        for (const mudanca of snapshot.docChanges()) {
-          if (mudanca.type === "removed") continue;
-
-          const docSnap = mudanca.doc;
-          const dados = docSnap.data();
-          const timestamp = Number(dados.timestamp) || 0;
-
-          // Na primeira fotografia o Firebase devolve até 10 documentos antigos.
-          // Eles NÃO são reprocessados: só interessam entregas desta sessão.
-          if (timestamp < inicioSessaoResultadosPainel) continue;
-
-          houveResultadoNovo = true;
-          if (exclusoesConfirmadas.has(docSnap.ref.path)) continue;
-          const recebido = {
-            idDoc: docSnap.id,
-            refPath: docSnap.ref.path,
-            ...dados
-          };
-
-          // Atualiza/insere sem duplicar e nunca apaga o histórico local.
-          resultadosGlobaisCache =
-            resultadosGlobaisCache.filter(r =>
-              (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
-            );
-          resultadosGlobaisCache.unshift(recebido);
-          salvarCacheLocalRelatorios(resultadosGlobaisCache);
-          await limparMonitoramentoAposResultado(recebido);
-
-          // Correção privada do professor. O gabarito não vai para o aluno.
-          if (recebido.pontuacao === null && Array.isArray(recebido.questoesIds)) {
-            const acertos = await corrigirResultadoPendente(docSnap.id, recebido);
-            if (Number.isFinite(acertos)) {
-              recebido.pontuacao = acertos;
-              resultadosGlobaisCache =
-                resultadosGlobaisCache.filter(r =>
-                  (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
-                );
-              resultadosGlobaisCache.unshift(recebido);
-              salvarCacheLocalRelatorios(resultadosGlobaisCache);
-            }
-          }
-        }
-
-        if (houveResultadoNovo &&
-            !document.getElementById("aba-relatorios")?.classList.contains("hidden")) {
-          renderizarTabelaResultadosFiltrada();
-        }
-
-        atualizarStatusCacheRelatorios("🟢 Aguardando novos resultados");
+  render();
+  try {
+    const { connectSpark } = await import("./spark-store.js");
+    cloud = await connectSpark({
+      config: C,
+      privateView: admin,
+      onData: (s) => {
+        state = s;
+        refresh();
       },
-      (erro) => {
-        console.error(
-          "Recebimento automático de resultados indisponível:",
-          erro?.code || erro,
-          erro?.message || ""
-        );
-        atualizarStatusCacheRelatorios(
-          `🟡 Recebimento automático indisponível (${erro?.code || "Firebase"})`
-        );
-      }
-    );
-  }
-
-  function pararListenerNovosResultados() {
-    if (unsubscribeNovosResultadosPainel) {
-      unsubscribeNovosResultadosPainel();
-      unsubscribeNovosResultadosPainel = null;
-    }
-  }
-
-  let timerResultadosRecentes = null;
-  let ultimoTimestampConsultado = inicioSessaoResultadosPainel - 5000;
-
-  async function incorporarResultadoNovoNoCache(docSnap) {
-    if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
-    const recebido = {
-      idDoc: docSnap.id,
-      refPath: docSnap.ref.path,
-      ...docSnap.data()
-    };
-
-    resultadosGlobaisCache = resultadosGlobaisCache.filter(r =>
-      (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
-    );
-    resultadosGlobaisCache.unshift(recebido);
-    salvarCacheLocalRelatorios(resultadosGlobaisCache);
-    await limparMonitoramentoAposResultado(recebido);
-
-    if (recebido.pontuacao === null && Array.isArray(recebido.questoesIds)) {
-      const acertos = await corrigirResultadoPendente(docSnap.id, recebido);
-      if (Number.isFinite(acertos)) {
-        recebido.pontuacao = acertos;
-        resultadosGlobaisCache = resultadosGlobaisCache.filter(r =>
-          (r.refPath || `avaliacoes/${r.idDoc}`) !== docSnap.ref.path
-        );
-        resultadosGlobaisCache.unshift(recebido);
-        salvarCacheLocalRelatorios(resultadosGlobaisCache);
-      }
-    }
-
-    if (!document.getElementById("aba-relatorios")?.classList.contains("hidden")) {
-      renderizarTabelaResultadosFiltrada();
-    }
-    atualizarStatusCacheRelatorios("🟢 Novo resultado recebido automaticamente");
-  }
-
-  async function buscarResultadosNovosComoFallback() {
-    if (!navigator.onLine ||
-        document.documentElement.dataset.modoOfflineProfessor === "1") return;
-
-    const marcoConsulta = Date.now();
-    try {
-      const consulta = query(
-        collection(db, "avaliacoes"),
-        where("timestamp", ">", ultimoTimestampConsultado)
-      );
-      const snap = await getDocs(consulta);
-      for (const docSnap of snap.docs) {
-        await incorporarResultadoNovoNoCache(docSnap);
-      }
-      // Só avança o marco depois de uma consulta bem-sucedida.
-      ultimoTimestampConsultado = marcoConsulta;
-    } catch (erro) {
-      console.warn("Fallback de novos resultados indisponível:", erro?.code || erro);
-    }
-  }
-
-  function iniciarFallbackResultadosRecentes() {
-    if (timerResultadosRecentes ||
-        document.documentElement.dataset.modoOfflineProfessor === "1") return;
-    setTimeout(buscarResultadosNovosComoFallback, 3000);
-    timerResultadosRecentes = setInterval(buscarResultadosNovosComoFallback, 20000);
-  }
-
-  function pararFallbackResultadosRecentes() {
-    if (timerResultadosRecentes) {
-      clearInterval(timerResultadosRecentes);
-      timerResultadosRecentes = null;
-    }
-  }
-
-  function gerenciarLeiturasPorAba(abaId) {
-    if (abaId === "aba-monitoramento") inicializarTabelaTempoReal();
-    else pararListenerMonitoramento();
-
-    if (abaId === "aba-ativacao") carregarResumoProvaAtivaNoPainel();
-    else pararListenerProvasAtivas();
-  }
-
-  window.addEventListener("beforeunload", () => {
-    pararListenerMonitoramento();
-    pararListenerProvasAtivas();
-    pararListenerNovosResultados();
-    pararFallbackResultadosRecentes();
-  });
-
-  // ==========================================================
-  // 📴 FASE 10C.9 — ACESSO OFFLINE SEGURO
-  // ==========================================================
-  // Guarda somente a confirmação de que este navegador já teve um login
-  // ONLINE válido de professor. A senha nunca é salva.
-  const CHAVE_PROFESSOR_OFFLINE = "quiz_professor_offline_v10c9";
-
-  function registrarProfessorOffline(usuario) {
-    if (!usuario?.email || !usuario?.uid) return;
-    localStorage.setItem(CHAVE_PROFESSOR_OFFLINE, JSON.stringify({
-      email: usuario.email,
-      uid: usuario.uid,
-      validadoEm: Date.now()
-    }));
-  }
-
-  function obterProfessorOffline() {
-    try {
-      const d = JSON.parse(localStorage.getItem(CHAVE_PROFESSOR_OFFLINE) || "null");
-      return (d?.email && d?.uid && d?.validadoEm) ? d : null;
-    } catch (_) { return null; }
-  }
-
-  function aplicarModoOfflineProfessor() {
-    document.documentElement.dataset.modoOfflineProfessor = "1";
-    document.body.classList.add("modo-offline-professor");
-
-    // 10C.10.1: indicadores fixos do cabeçalho recebem estado OFFLINE real.
-    // Usamos IDs específicos para não depender da estrutura interna do texto.
-    const statusConexao = document.getElementById("status-conexao-professor");
-    if (statusConexao) statusConexao.textContent = "🟠 OFFLINE";
-
-    const statusUsuario = document.getElementById("status-usuario-professor");
-    if (statusUsuario) statusUsuario.textContent = "Consulta local autorizada";
-
-    const statusFirebase = document.getElementById("status-firebase-tempo-real");
-    if (statusFirebase) {
-      statusFirebase.textContent = "📴 Firebase desconectado — utilizando dados salvos neste navegador";
-      statusFirebase.classList.add("status-offline-firebase");
-    }
-
-    // 10D: qualquer ação remota fica realmente indisponível no modo offline.
-    // Consulta/CSV/PDF/backup/restauração continuam locais.
-    ["btn-sincronizar-relatorios", "btn-diagnostico-auth"].forEach(id => {
-      const botao = document.getElementById(id);
-      if (botao) {
-        botao.disabled = true;
-        botao.setAttribute("aria-disabled", "true");
-      }
+      onSession: (u, r, access = {}) => {
+        accessStatus = access.status || "loading";
+        user = u;
+        role = r;
+        operatorPermissions = Array.isArray(access.permissions)?access.permissions:[];
+        render();
+      },
+      onError: (e) => toast(admin?e.message:"Não foi possível atualizar os resultados. Confira a conexão.", true),
+      onConnection: setConnectionStatus,
     });
-
-    // Bloqueia todas as áreas que dependem do Firebase.
-    document.querySelectorAll(".btn-aba").forEach(btn => {
-      const permitido = btn.getAttribute("data-aba") === "aba-relatorios";
-      btn.disabled = !permitido;
-      if (!permitido) btn.title = "Indisponível sem internet. Reconecte para usar esta área.";
-    });
-
-    // Abre diretamente Relatórios, que usa o cache local da fase 10C.8.
-    document.querySelectorAll(".btn-aba").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".aba-conteudo").forEach(c => c.classList.add("hidden"));
-    document.querySelector('.btn-aba[data-aba="aba-relatorios"]')?.classList.add("active");
-    document.getElementById("aba-relatorios")?.classList.remove("hidden");
-
-    // 10C.10: deixa os indicadores coerentes com o estado real.
-    // Não pode aparecer "Conectado" ou "Tempo Real" durante o modo offline.
-    document.querySelectorAll("body *").forEach(el => {
-      if (el.children.length) return;
-      const texto = (el.textContent || "").trim();
-
-      if (/^CONECTADO$/i.test(texto)) el.textContent = "📴 OFFLINE";
-      else if (/Verificando usuário/i.test(texto)) el.textContent = "Consulta local autorizada";
-      else if (/Sincronizado com Firebase em Tempo Real/i.test(texto))
-        el.textContent = "📴 Modo offline — usando dados locais";
-    });
-
-    const sync = document.getElementById("btn-sincronizar-relatorios");
-    if (sync) {
-      sync.disabled = true;
-      sync.title = "Sincronização indisponível sem internet.";
-    }
-
-    // Diagnóstico e recarga remota dependem do Firebase.
-    const diagnostico = document.getElementById("btn-diagnostico-auth");
-    if (diagnostico) {
-      diagnostico.disabled = true;
-      diagnostico.title = "Diagnóstico do Firebase indisponível no modo offline.";
-    }
-
-    document.querySelectorAll("button").forEach(btn => {
-      const texto = (btn.textContent || "").toLowerCase();
-      if (texto.includes("recarregar")) {
-        btn.disabled = true;
-        btn.title = "Indisponível no modo offline.";
-      }
-    });
-
-    let aviso = document.getElementById("aviso-modo-offline-professor");
-    if (!aviso) {
-      aviso = document.createElement("div");
-      aviso.id = "aviso-modo-offline-professor";
-      aviso.className = "aviso-modo-offline-professor";
-      aviso.textContent = "📴 Modo offline: relatórios locais disponíveis. Recursos do Firebase estão bloqueados.";
-      (document.querySelector("main") || document.body).prepend(aviso);
-    }
+    render();
+  } catch (e) {
+    setConnectionStatus("conexão indisponível");
+    toast(admin?"Não foi possível conectar: " + e.message:"Não foi possível carregar os resultados. Tente novamente em instantes.", true);
   }
-
-  // 10D: se a internet voltar durante uma sessão offline, não sincronizamos
-  // automaticamente (economia de leituras). O professor decide quando voltar online.
-  window.addEventListener("online", () => {
-    if (document.documentElement.dataset.modoOfflineProfessor !== "1") return;
-    const aviso = document.getElementById("aviso-modo-offline-professor");
-    if (aviso) aviso.textContent =
-      "🌐 Internet disponível novamente. Para reativar o Firebase com segurança, saia e entre normalmente.";
-  });
-
-  function inicializarPainelOffline() {
-    // IMPORTANTE: não chama carregarEscolasCache/carregarEstruturaGlobalFirebase,
-    // portanto não tenta consultar o Firebase.
-    inicializarTabelaResultados();
-    organizarLayoutAbaRelatorios();
-    forcarMenuClassificarCompleto();
-    aplicarModoOfflineProfessor();
-  }
-
-  async function inicializarPainel() {
-    await carregarEscolasCache();
-    await carregarEstruturaGlobalFirebase();
-    renderizarSeletorEscolasTopo();
-    popularFiltroEscolaRelatorio();
-    carregarListaEscolas();
-    renderizarSeletorEscolasAtivacaoIndependente();
-    inicializarTabelaResultados();
-    // O recebimento de novos resultados já foi iniciado logo após a autenticação.
-    // 10C.7: monitoramento em tempo real só inicia quando a aba for aberta.
-    popularSelectMateriasQuestao();
-    organizarLayoutAbaRelatorios();
-    inicializarGerenciadorBancoDados();
-    setTimeout(() => {
-      forcarMenuClassificarCompleto();
-      // 10C.7: prova ativa em tempo real só é observada dentro da aba Ativação.
-    }, 400);
-
-    const btnEscolasAba = document.querySelector('.btn-aba[data-aba="aba-escolas"]');
-    if (btnEscolasAba) {
-      btnEscolasAba.click();
-    }
-
-    if (window.location.hash) {
-      const abaHash = window.location.hash.replace("#", "aba-");
-      const btnAlvo = document.querySelector(`.btn-aba[data-aba="${abaHash}"]`);
-      if (btnAlvo) btnAlvo.click();
-    }
-  }
-
-  // ==========================================
-  // MÓDULO: CATÁLOGO INTERATIVO DE BANCO DE DADOS
-  // ==========================================
-  function inicializarGerenciadorBancoDados() {
-    carregarBancoDadosCompleto();
-    
-    const btnAbaBanco = document.querySelector('.btn-aba[data-aba="aba-banco-dados"]');
-    if (btnAbaBanco) {
-      btnAbaBanco.addEventListener("click", () => {
-        carregarBancoDadosCompleto();
-      });
-    }
-  }
-
-  async function carregarBancoDadosCompleto(forcarAtualizacao = false) {
-    // 10C.7: evita baixar novamente todas as questões a cada clique na aba.
-    if (bancoQuestoesCarregadoNestaSessao && !forcarAtualizacao) {
-      renderizarBancoDadosCompleto();
-      return;
-    }
-    try {
-      const snap = await getDocs(collection(db, "questoes"));
-      bancoQuestoesCarregadoNestaSessao = true;
-      questoesBancoCache = [];
-      snap.forEach(docSnap => {
-        questoesBancoCache.push({
-          idDoc: docSnap.id,
-          refPath: docSnap.ref.path,
-          ...docSnap.data()
-        });
-      });
-      popularFiltroMateriaCatalogo();
-      renderizarCatalogoBancoDados();
-    } catch (err) {
-      console.error("Erro ao carregar banco de dados:", err);
-    }
-  }
-
-  // Exposição explícita para os onclick/onchange do painel.html.
-  window.carregarBancoDadosCompleto = carregarBancoDadosCompleto;
-
-  function popularFiltroMateriaCatalogo() {
-    const selectFiltro = document.getElementById("select-filtro-materia-db");
-    if (!selectFiltro) return;
-
-    let materiasSet = new Set();
-    questoesBancoCache.forEach(q => {
-      if (q.materia) materiasSet.add(q.materia);
-      if (q.categoria) materiasSet.add(q.categoria);
-    });
-
-    let html = `<option value="TODAS">📚 Todas as Matérias (${questoesBancoCache.length})</option>`;
-    Array.from(materiasSet).sort().forEach(mat => {
-      let qtd = questoesBancoCache.filter(q => (q.materia === mat || q.categoria === mat)).length;
-      html += `<option value="${mat}">${mat} (${qtd})</option>`;
-    });
-    selectFiltro.innerHTML = html;
-  }
-
-
-  // ==========================================
-  // FUNÇÕES DE COMPATIBILIDADE DO MODAL DE EDIÇÃO
-  // ==========================================
-  window.fecharModalEditarQuestao = function() {
-    const modal = document.getElementById("modal-editar-questao");
-    if (modal) modal.classList.remove("show");
-  };
-
-  window.adicionarNovaAlternativaEdicao = function() {
-    const container = document.getElementById("edit-container-alternativas");
-    if (!container) return;
-
-    const indice = container.querySelectorAll(".linha-alternativa-estatica").length;
-    const letra = String.fromCharCode(65 + indice);
-
-    const linha = document.createElement("div");
-    linha.className = "linha-alternativa-estatica";
-    linha.style.cssText = "display:flex;gap:8px;align-items:center;margin-bottom:8px;";
-
-    linha.innerHTML = `
-      <span style="font-weight:bold;min-width:25px;">${letra})</span>
-      <input type="text" class="input-alternativa-estatica"
-             placeholder="Alternativa ${letra}"
-             style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:#0f172a;color:#fff;">
-      <button type="button" class="btn-acao-mini"
-              style="background:#ef4444;color:#fff;padding:6px 10px;border-radius:4px;border:none;cursor:pointer;"
-              onclick="this.closest('.linha-alternativa-estatica').remove()">🗑️</button>
-    `;
-    container.appendChild(linha);
-  };
-
-  window.salvarEdicaoQuestaoModal = async function() {
-    const idDoc = document.getElementById("edit-id-questao")?.value?.trim();
-    const materia = document.getElementById("edit-materia-questao")?.value?.trim();
-    const pergunta = document.getElementById("edit-pergunta-questao")?.value?.trim();
-    const container = document.getElementById("edit-container-alternativas");
-
-    if (!idDoc) {
-      alert("⚠️ ID da questão não encontrado.");
-      return;
-    }
-
-    const linhas = container
-      ? Array.from(container.querySelectorAll(".linha-alternativa-estatica"))
-      : [];
-
-    const opcoes = linhas
-      .map(linha => linha.querySelector(".input-alternativa-estatica")?.value?.trim() || "")
-      .filter(Boolean);
-
-    let correta = "A";
-    const radio = container?.querySelector('input[name="edit-correta"]:checked');
-    const select = document.getElementById("edit-correta");
-    if (radio) correta = radio.value.toUpperCase();
-    else if (select) correta = select.value.toUpperCase();
-
-    if (!materia || !pergunta || opcoes.length < 2) {
-      alert("⚠️ Preencha matéria, enunciado e pelo menos 2 alternativas.");
-      return;
-    }
-
-    if (!/^[A-Z]$/.test(correta) || opcoes[correta.charCodeAt(0) - 65] === undefined) {
-      correta = "A";
-    }
-
-    try {
-      await setDoc(doc(db, "questoes", idDoc), {
-        materia,
-        categoria: materia,
-        pergunta,
-        opcoes,
-        correta,
-        atualizadoEm: serverTimestamp()
-      }, { merge: true });
-
-      const idx = questoesBancoCache.findIndex(q => q.idDoc === idDoc);
-      if (idx >= 0) {
-        questoesBancoCache[idx] = {
-          ...questoesBancoCache[idx],
-          materia,
-          categoria: materia,
-          pergunta,
-          opcoes,
-          correta
+}
+async function dispatch(a) {
+  if (busy) throw Error("Aguarde a operação anterior.");
+  busy = true;
+  app.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  try {
+    if (C.demo) {
+      if (trainingMode && role === "operator" && !((canManageRosters()&&(["team","player"].includes(a.type)||(a.type==="import"&&["team","player"].includes(a.kind))))||(canCreateMatches()&&a.type==="match"&&!a.data?.id)) && ["team","player","match","settings","import","championship","championshipLink","correct","teamArchive"].includes(a.type)) throw Error("Esta ação é do administrador na simulação. Troque o perfil para treinar essa função.");
+      const latest = JSON.parse(localStorage.getItem(key)) || D.fresh();
+      if (!["team", "player", "match", "settings", "import", "championship","teamArchive"].includes(a.type)) {
+        const old = latest.matches.find((m) => m.id === a.matchId);
+        if (!old) throw Error("Partida não encontrada.");
+        const current = {
+          ...old,
+          score: D.score(old),
+          rosterTeams:
+            old.rosterTeams ||
+            Object.fromEntries(old.roster.map((p) => [p.id, p.team])),
         };
-      }
-
-      window.fecharModalEditarQuestao();
-      if (typeof popularFiltroMateriaCatalogo === "function") popularFiltroMateriaCatalogo();
-      if (typeof renderizarCatalogoBancoDados === "function") renderizarCatalogoBancoDados();
-      mostrarNotificacao("✅ Questão atualizada com sucesso!");
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao salvar a questão: " + err.message);
-    }
-  };
-
-  // ==========================================
-  // COMPATIBILIDADE DA BOX GLOBAL
-  // ==========================================
-  window.criarNovaBoxGlobal = function() {
-    const input = document.getElementById("nova-box-titulo");
-    if (!input) return;
-
-    const titulo = input.value.trim();
-    if (!titulo) {
-      alert("⚠️ Digite o nome da nova Box.");
-      return;
-    }
-
-    const idBase = titulo
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "") || "box";
-
-    let id = idBase;
-    let n = 2;
-    while (estruturaGlobalBoxes.some(box => box.id === id)) {
-      id = `${idBase}_${n++}`;
-    }
-
-    estruturaGlobalBoxes.push({
-      id,
-      titulo,
-      itens: []
-    });
-
-    input.value = "";
-
-    const container = document.getElementById("container-boxes-globais");
-    if (container) {
-      const box = document.createElement("div");
-      box.style.cssText = "background:#0f172a;border:1px solid var(--border);padding:14px;border-radius:8px;margin-top:10px;";
-      box.innerHTML = `<strong style="color:#60a5fa;">${titulo}</strong><div style="color:#94a3b8;font-size:12px;margin-top:5px;">Nova Box criada. Adicione itens pela configuração correspondente.</div>`;
-      container.appendChild(box);
-    }
-
-    mostrarNotificacao(`✅ Box "${titulo}" criada com sucesso.`);
-  };
-
-  // ==========================================
-  // GERENCIADOR COMPLETO DO CATÁLOGO DE BANCO DE DADOS
-  // ==========================================
-// [REMOVIDA DUPLICAÇÃO] renderizarCatalogoBancoDados: mantida a implementação final mais abaixo.
-
-// [REMOVIDA DUPLICAÇÃO] selecionarTodasQuestoesBanco: mantida a implementação final mais abaixo.
-
-// [REMOVIDA DUPLICAÇÃO] excluirQuestoesSelecionadasEmMassa: mantida a implementação final mais abaixo.
-
-// [REMOVIDA DUPLICAÇÃO] abrirModalEditarQuestaoBanco: mantida a implementação final mais abaixo.
-
-// [REMOVIDA DUPLICAÇÃO] adicionarAlternativaModalEdicao: mantida a implementação final mais abaixo.
-
-  function organizarLayoutAbaRelatorios() {
-    const abaRelatorios = document.getElementById("aba-relatorios");
-    if (!abaRelatorios) return;
-
-    let blocoTopo = abaRelatorios.querySelector(".acoes-topo-bloco") || abaRelatorios.querySelector(".barra-controles-relatorios") || abaRelatorios.querySelector("div");
-    if (blocoTopo) {
-      blocoTopo.style.display = "flex";
-      blocoTopo.style.flexWrap = "wrap";
-      blocoTopo.style.gap = "12px";
-      blocoTopo.style.alignItems = "center";
-      blocoTopo.style.justifyContent = "space-between";
-      blocoTopo.style.marginBottom = "25px";
-      blocoTopo.style.marginTop = "20px";
-
-      let inputBuscaRes = document.getElementById("input-busca-resultados") || abaRelatorios.querySelector('input[type="text"], input[type="search"]');
-      let selectEscolaRes = document.getElementById("select-filtro-escola-relatorio") || abaRelatorios.querySelector('select');
-       
-      let divEsquerda = document.getElementById("bloco-esquerda-relatorios");
-      let divDireita = document.getElementById("bloco-direita-relatorios");
-
-      if (!divEsquerda) {
-        divEsquerda = document.createElement("div");
-        divEsquerda.id = "bloco-esquerda-relatorios";
-        divEsquerda.style.display = "flex";
-        divEsquerda.style.gap = "10px";
-        divEsquerda.style.alignItems = "center";
-        divEsquerda.style.flexWrap = "wrap";
-        divEsquerda.style.flex = "1";
-      }
-
-      if (!divDireita) {
-        divDireita = document.createElement("div");
-        divDireita.id = "bloco-direita-relatorios";
-        divDireita.style.display = "flex";
-        divDireita.style.gap = "10px";
-        divDireita.style.alignItems = "center";
-        divDireita.style.flexWrap = "wrap";
-        divDireita.style.justifyContent = "flex-end";
-      }
-
-      if (inputBuscaRes) divEsquerda.appendChild(inputBuscaRes);
-      if (selectEscolaRes) divEsquerda.appendChild(selectEscolaRes);
-
-      const elementosParaDireita = Array.from(blocoTopo.children).filter(el => el !== divEsquerda && el !== divDireita);
-      elementosParaDireita.forEach(el => divDireita.appendChild(el));
-
-
-      blocoTopo.innerHTML = "";
-      blocoTopo.appendChild(divEsquerda);
-      blocoTopo.appendChild(divDireita);
-    }
-  }
-
-  window.ocultarAlunosSelecionados = function() {
-    const checkboxes = document.querySelectorAll(".chk-item-resultado:checked");
-    if (checkboxes.length === 0) {
-      alert("⚠️ Selecione pelo menos um aluno na tabela para arquivar/ocultar.");
-      return;
-    }
-     
-    checkboxes.forEach(chk => {
-      if (chk.value) {
-        alunosOcultosCache.add(chk.value);
-      }
-    });
-
-    salvarAlunosOcultosLocalStorage();
-    renderizarTabelaResultadosFiltrada();
-    mostrarNotificacao(`📁 ${checkboxes.length} aluno(s) arquivado(s)!`);
-  };
-
-  window.abrirModalOcultos = function() {
-    renderizarTabelaOcultos(); 
-    const modal = document.getElementById("modal-ocultos");
-    if (modal) {
-      modal.classList.add("show");
-    }
-  };
-
-  window.fecharModalOcultos = function() {
-    const modal = document.getElementById("modal-ocultos");
-    if (modal) {
-      modal.classList.remove("show");
-    }
-  };
-
-  window.alternarTodosModalOcultos = function(marcar) {
-    document.querySelectorAll(".chk-modal-oculto").forEach(chk => chk.checked = marcar);
-  };
-
-  function renderizarTabelaOcultos() {
-    const corpoOcultos = document.getElementById("corpo-tabela-ocultos");
-    if (!corpoOcultos) return;
-
-    const listaOcultos = resultadosGlobaisCache.filter(res => alunosOcultosCache.has(res.idDoc));
-
-    if (listaOcultos.length === 0) {
-      corpoOcultos.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding: 15px;">Nenhum registro oculto no momento.</td></tr>`;
-      return;
-    }
-
-    let html = "";
-    listaOcultos.forEach(res => {
-      let dataFormatada = res.dataEnvio?.toDate
-        ? res.dataEnvio.toDate().toLocaleString('pt-BR')
-        : (Number(res.timestamp) ? new Date(Number(res.timestamp)).toLocaleString('pt-BR') : "Data recente");
-      let totalQ = res.totalQuestoes || 0;
-      let acertos = res.pontuacao || 0;
-      let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
-
-      html += `
-        <tr>
-          <td style="text-align: center;"><input type="checkbox" class="chk-modal-oculto" value="${res.idDoc}"></td>
-          <td>${dataFormatada}</td>
-          <td><strong>${res.nome || 'Aluno'}</strong></td>
-          <td>${res.turma || 'N/D'}</td>
-          <td>${res.materia || 'Geral'}</td>
-          <td><strong style="color: #60a5fa;">${nota} / 10</strong></td>
-        </tr>
-      `;
-    });
-    corpoOcultos.innerHTML = html;
-  }
-
-  window.abrirModalLixeira = function() {
-    renderizarTabelaLixeira();
-    const modal = document.getElementById("modal-lixeira");
-    if (modal) {
-      modal.classList.add("show");
-    }
-  };
-
-  window.fecharModalLixeira = function() {
-    const modal = document.getElementById("modal-lixeira");
-    if (modal) {
-      modal.classList.remove("show");
-    }
-  };
-
-  window.alternarTodosModalLixeira = function(marcar) {
-    document.querySelectorAll(".chk-modal-lixeira").forEach(chk => chk.checked = marcar);
-  };
-
-  function renderizarTabelaLixeira() {
-    const corpoLixeira = document.getElementById("corpo-tabela-lixeira");
-    if (!corpoLixeira) return;
-
-    const listaLixeira = resultadosGlobaisCache.filter(res => alunosLixeiraCache.has(res.idDoc));
-
-    if (listaLixeira.length === 0) {
-      corpoLixeira.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding: 15px;">A lixeira está vazia.</td></tr>`;
-      return;
-    }
-
-    let html = "";
-    listaLixeira.forEach(res => {
-      let dataFormatada = res.dataEnvio?.toDate
-        ? res.dataEnvio.toDate().toLocaleString("pt-BR")
-        : (Number(res.timestamp) ? new Date(Number(res.timestamp)).toLocaleString("pt-BR") : "Data recente");
-      let totalQ = res.totalQuestoes || 0;
-      let acertos = res.pontuacao || 0;
-      let nota = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
-
-      html += `
-        <tr>
-          <td style="text-align: center;"><input type="checkbox" class="chk-modal-lixeira" value="${res.idDoc}"></td>
-          <td>${dataFormatada}</td>
-          <td><strong>${res.nome || 'Aluno'}</strong></td>
-          <td>${res.turma || 'N/D'}</td>
-          <td>${res.materia || 'Geral'}</td>
-          <td><strong style="color: #60a5fa;">${nota} / 10</strong></td>
-        </tr>
-      `;
-    });
-    corpoLixeira.innerHTML = html;
-  }
-
-  window.restaurarAlunosSelecionadosLixeira = function() {
-    const selecionados = Array.from(document.querySelectorAll(".chk-modal-lixeira:checked")).map(c => c.value);
-    if (selecionados.length === 0) {
-      alert("⚠ Selecione pelo menos um aluno para restaurar.");
-      return;
-    }
-    selecionados.forEach(id => alunosLixeiraCache.delete(id));
-     
-    salvarAlunosLixeiraLocalStorage();
-    renderizarTabelaResultadosFiltrada();
-    renderizarTabelaLixeira();
-    mostrarNotificacao(`♻️ ${selecionados.length} aluno(s) restaurado(s) para a tabela principal!`);
-  };
-
-  window.excluirPermanentementeSelecionados = async function() {
-    const selecionados = Array.from(document.querySelectorAll(".chk-modal-lixeira:checked"));
-    if (selecionados.length === 0) {
-      alert("⚠️ Selecione pelo menos um aluno para exclusão permanente.");
-      return;
-    }
-
-    if (confirm(`🔥 Tem certeza que deseja apagar permanentemente do banco de dados ${selecionados.length} registro(s)? Esta ação não pode ser desfeita.`)) {
-      try {
-        for (const chk of selecionados) {
-          let idDoc = chk.value;
-          let resObj = resultadosGlobaisCache.find(r => r.idDoc === idDoc);
-          if (resObj && resObj.refPath) {
-            await deleteDoc(doc(db, resObj.refPath));
-          } else {
-            await deleteDoc(doc(db, "avaliacoes", idDoc));
-          }
-          // Só registra exclusão permanente após confirmação do Firebase.
-          // Limpa também o cache local, que antes recolocava os registros no relatório.
-          exclusoesConfirmadas.add(resObj?.refPath || `avaliacoes/${idDoc}`);
-          salvarExclusoesConfirmadas();
-          alunosLixeiraCache.delete(idDoc);
-          resultadosGlobaisCache = resultadosGlobaisCache.filter(r => chaveRegistroResultado(r) !== (resObj?.refPath || `avaliacoes/${idDoc}`));
-          const cacheLimpo = carregarCacheLocalRelatorios();
-          localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(cacheLimpo));
-        }
-        salvarAlunosLixeiraLocalStorage();
-        renderizarTabelaResultadosFiltrada();
-        renderizarTabelaLixeira();
-        mostrarNotificacao(`🔥 Registros excluídos permanentemente!`);
-      } catch (err) {
-        alert("Erro ao excluir: " + err.message);
-      }
-    }
-  };
-
-  window.resgatarAlunosSelecionados = function() {
-    const selecionados = Array.from(document.querySelectorAll(".chk-modal-oculto:checked")).map(c => c.value);
-    if (selecionados.length === 0) {
-      alert("⚠️ Selecione pelo menos um aluno para resgatar.");
-      return;
-    }
-    selecionados.forEach(id => alunosOcultosCache.delete(id));
-     
-    salvarAlunosOcultosLocalStorage();
-    renderizarTabelaResultadosFiltrada();
-    renderizarTabelaOcultos();
-    mostrarNotificacao(`♻️ ${selecionados.length} aluno(s) resgatado(s) para a tabela principal!`);
-  };
-
-  window.irParaMonitoramentoTab = function() {
-    const btnMonitoramento = document.querySelector('.btn-aba[data-aba="aba-monitoramento"]');
-    if (btnMonitoramento) {
-      btnMonitoramento.click();
-    } else {
-      window.location.href = "painel.html#monitoramento";
-    }
-  };
-
-  function renderizarSeletorEscolasAtivacaoIndependente() {
-    const containerAtivacao = document.getElementById("aba-ativacao");
-    if (!containerAtivacao) return;
-
-    let wrapperSeletor = document.getElementById("wrapper-escola-ativacao-profissional");
-    if (!wrapperSeletor) {
-      wrapperSeletor = document.createElement("div");
-      wrapperSeletor.id = "wrapper-escola-ativacao-profissional";
-      containerAtivacao.insertBefore(wrapperSeletor, containerAtivacao.children[1] || containerAtivacao.firstChild);
-    }
-
-    let escolasOrdenadasAtivacao = [...listaEscolasCache];
-    escolasOrdenadasAtivacao.sort((a, b) => {
-      if (a.idDoc === escolaPrincipalFixadaId) return -1;
-      if (b.idDoc === escolaPrincipalFixadaId) return 1;
-      return 0;
-    });
-
-    let html = `
-      <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 20px;">
-        <h4 style="margin: 0 0 10px 0; color: #60a5fa; font-size: 15px; background: rgba(30, 41, 59, 0.7); padding: 12px 16px; border-radius: 10px; border: 1px solid #3b82f6;">🏫 Selecione a Unidade Escolar para Configurar</h4>
-        <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 12px;">Clique na escola desejada para carregar e ativar independentemente (A escola fixada fica travada no topo e as demais podem ser arrastadas):</p>
-        <div id="container-botoes-escola-ativacao" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-    `;
-
-    if (escolasOrdenadasAtivacao.length === 0) {
-      html += `<p style="color: #94a3b8; font-size: 13px;">Nenhuma escola cadastrada.</p>`;
-    } else {
-      escolasOrdenadasAtivacao.forEach(esc => {
-        let ehFixada = esc.idDoc === escolaPrincipalFixadaId;
-        let classeFixada = ehFixada ? "fixada" : "";
-        let classeAtiva = escolaAtivaSelecionadaIndependente === esc.nome ? "ativo" : "";
-        let textoPin = ehFixada ? "📌 Fixada" : "📌 Fixar";
-        let draggableAttr = ehFixada ? "false" : "true";
-
-        html += `
-          <div class="card-escola-dinamico ${classeFixada} ${classeAtiva}" draggable="${draggableAttr}" data-id="${esc.idDoc}" data-nome-escola="${esc.nome}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; max-width: 320px; padding: 10px 14px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer;" onclick="selecionarEscolaAtivacaoDireta('${esc.nome}', this)">
-              <span style="font-size: 14px; font-weight: bold;">🏫 ${esc.nome} ${ehFixada ? '<span style="font-size:10px; color:#eab308; background:rgba(234,179,8,0.2); padding:2px 4px; border-radius:3px;">⭐ Principal</span>' : ''}</span>
-            </div>
-            <button type="button" class="btn-fixar-escola-ativacao btn-acao-mini" data-id="${esc.idDoc}" style="background:${ehFixada ? '#eab308' : '#334155'}; color:white;" title="Fixar Escola Principal">${textoPin}</button>
-          </div>
-        `;
-      });
-    }
-
-    html += `
-        </div>
-      </div>
-    `;
-
-    wrapperSeletor.innerHTML = html;
-
-    window.selecionarEscolaAtivacaoDireta = function(nomeEscola, el) {
-      escolaAtivaSelecionadaIndependente = nomeEscola;
-      wrapperSeletor.querySelectorAll(".card-escola-dinamico").forEach(b => b.classList.remove("ativo"));
-      el.closest(".card-escola-dinamico").classList.add("ativo");
-      carregarConfiguracoesEscolaParaAtivacao(nomeEscola);
-    };
-
-    const containerBotoesAtivacao = wrapperSeletor.querySelector("#container-botoes-escola-ativacao");
-    if (containerBotoesAtivacao) {
-      let cardArrastadoAtivacao = null;
-      containerBotoesAtivacao.querySelectorAll(".card-escola-dinamico").forEach(card => {
-        if (!card.classList.contains("fixada")) {
-          card.addEventListener("dragstart", () => {
-            cardArrastadoAtivacao = card;
-            card.classList.add("dragging");
-          });
-          card.addEventListener("dragend", () => {
-            card.classList.remove("dragging");
-            cardArrastadoAtivacao = null;
-          });
-        }
-
-        card.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          const cardAbaixo = e.target.closest(".card-escola-dinamico");
-          if (cardAbaixo && cardAbaixo !== cardArrastadoAtivacao && !cardAbaixo.classList.contains("fixada") && cardArrastadoAtivacao) {
-            const bounding = cardAbaixo.getBoundingClientRect();
-            const offset = e.clientY - bounding.top;
-            if (offset > bounding.height / 2) {
-              containerBotoesAtivacao.insertBefore(cardArrastadoAtivacao, cardAbaixo.nextSibling);
-            } else {
-              containerBotoesAtivacao.insertBefore(cardArrastadoAtivacao, cardAbaixo);
-            }
-          }
-        });
-      });
-    }
-
-    wrapperSeletor.querySelectorAll(".btn-fixar-escola-ativacao").forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute("data-id");
-        if (escolaPrincipalFixadaId === id) {
-          escolaPrincipalFixadaId = "";
-          localStorage.removeItem("escola_principal_fixada_id");
-          mostrarNotificacao("📌 Escola desfixada.");
-        } else {
-          escolaPrincipalFixadaId = id;
-          localStorage.setItem("escola_principal_fixada_id", id);
-          mostrarNotificacao("⭐ Escola definida como principal e fixada no topo!");
-        }
-        renderizarSeletorEscolasAtivacaoIndependente();
-        carregarListaEscolas();
-      };
-    });
-  }
-
-  let requisicaoConfiguracaoAtivacao = 0;
-  const rascunhosTokenAtivacao = new Map();
-  function carregarConfiguracoesEscolaParaAtivacao(escolaNome) {
-    const numeroRequisicao = ++requisicaoConfiguracaoAtivacao;
-    const containerAtivacao = document.getElementById("aba-ativacao");
-    if (!containerAtivacao) return;
-
-    let painelDinamico = document.getElementById("painel-ativacao-configurado-dinamico");
-    if (!painelDinamico) {
-      painelDinamico = document.createElement("div");
-      painelDinamico.id = "painel-ativacao-configurado-dinamico";
-      containerAtivacao.appendChild(painelDinamico);
-    }
-
-    // 10C.7: leitura única da configuração para ativação.
-    getDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaNome))).then((docSnap) => {
-      // Ignora resposta antiga quando o professor já selecionou outra escola.
-      if (numeroRequisicao !== requisicaoConfiguracaoAtivacao) return;
-      let tab = {};
-      let turmasCarregadas = ["1A", "2A", "3A"];
-      let materiasMarcadasSalvas = [];
-      let disciplinasMarcadasSalvas = [];
-      let periodosMarcadosSalvos = [];
-      let turmasMarcadasSalvas = [];
-      let boxesPersonalizadas = [];
-
-      if (docSnap.exists()) {
-        const dadosEscola = docSnap.data();
-        tab = dadosEscola.tabelasConfirmadas || {};
-        if (dadosEscola.turmasDiretas && dadosEscola.turmasDiretas.length > 0) {
-          turmasCarregadas = dadosEscola.turmasDiretas;
-        }
-        if (dadosEscola.boxesPersonalizadas) {
-          boxesPersonalizadas = dadosEscola.boxesPersonalizadas;
-          boxesPersonalizadas.forEach(b => {
-            let tBox = b.titulo.toLowerCase();
-            let itensM = b.itensMarcados || [];
-            if (tBox.includes("matéria")) {
-              materiasMarcadasSalvas.push(...itensM);
-            } else if (tBox.includes("disciplina")) {
-              disciplinasMarcadasSalvas.push(...itensM);
-            } else if (tBox.includes("período") || tBox.includes("turno")) {
-              periodosMarcadosSalvos.push(...itensM);
-            }
-          });
-        }
-        turmasMarcadasSalvas = tab.turmas || [];
-      }
-
-      let listaMat = materiasMarcadasSalvas.length > 0 ? [...new Set(materiasMarcadasSalvas)] : (tab.materias || ["Inteligência Artificial", "Programação Front-End"]);
-      let listaDisc = disciplinasMarcadasSalvas.length > 0 ? [...new Set(disciplinasMarcadasSalvas)] : (tab.disciplinas || ["Redes de Computadores", "Metodologias Ágeis"]);
-      let listaPer = periodosMarcadosSalvos.length > 0 ? [...new Set(periodosMarcadosSalvos)] : (tab.periodos || ["Geral"]);
-      let turmasParaExibir = turmasMarcadasSalvas.length > 0 ? turmasMarcadasSalvas : turmasCarregadas;
-
-      let htmlMat = "";
-      listaMat.forEach(m => {
-        htmlMat += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-materia-ativacao" value="${m}" checked> ${m}</label>`;
-      });
-
-      let htmlDisc = "";
-      listaDisc.forEach(d => {
-        htmlDisc += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-disciplina-ativacao" value="${d}" checked> ${d}</label>`;
-      });
-
-      let htmlPeriodos = "";
-      listaPer.forEach(p => {
-        htmlPeriodos += `<option value="${p}">${p}</option>`;
-      });
-
-      let htmlTurmas = "";
-      if (turmasParaExibir.length === 0) {
-        htmlTurmas = `<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhuma turma cadastrada.</p>`;
-      } else {
-        turmasParaExibir.forEach(t => {
-          htmlTurmas += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-turma-ativacao" value="${t}" checked> ${t}</label>`;
-        });
-      }
-
-      const campoTokenAnterior = painelDinamico.querySelector("#input-token-ativacao");
-      if (campoTokenAnterior && escolaAtivaSelecionadaIndependente === escolaNome) {
-        rascunhosTokenAtivacao.set(escolaNome, campoTokenAnterior.value);
-      }
-      painelDinamico.innerHTML = `
-        <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid #3b82f6; padding: 24px; border-radius: 12px; margin-top: 15px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-          
-          <div style="background: rgba(30, 41, 59, 0.9); border: 1px solid #1e293b; padding: 16px; border-radius: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
-              <h5 style="margin: 0; color: #60a5fa; font-size: 14px;">📋 Resumo Geral da Unidade: <strong>${escolaNome}</strong></h5>
-              <a href="escola.html?escola=${encodeURIComponent(escolaNome)}&retorno=ativacao" class="btn-acao-mini" style="background: #0d9488; color: white; padding: 6px 12px; text-decoration: none; border-radius: 6px;">⚙ Ir para Configuração do Cadastro</a>
-            </div>
-            <div style="font-size: 13px; color: #cbd5e1; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
-              <div>📚 <strong>Matérias:</strong> ${listaMat.join(', ') || 'Nenhuma'}</div>
-              <div>📖 <strong>Disciplinas:</strong> ${listaDisc.join(', ') || 'Nenhuma'}</div>
-              <div>🏫 <strong>Períodos:</strong> ${listaPer.join(', ') || 'Nenhum'}</div>
-              <div>🎒 <strong>Turmas:</strong> ${turmasParaExibir.join(', ') || 'Nenhuma'}</div>
-            </div>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
-            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">📚 Matérias para Ativação <span style="color:#f87171" title="Campo obrigatório">*</span></h5>
-            <div style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
-              ${htmlMat}
-            </div>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
-            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">📖 Disciplinas para Ativação</h5>
-            <div style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
-              ${htmlDisc}
-            </div>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
-            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">🏫 Período / Turno</h5>
-            <select id="select-periodo-ativacao" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-              ${htmlPeriodos}
-            </select>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px;">
-            <h5 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 13px;">🎒 Turmas que Vão Fazer a Prova <span style="color:#f87171" title="Campo obrigatório">*</span></h5>
-            <div style="max-height: 160px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px;">
-              ${htmlTurmas}
-            </div>
-          </div>
-
-          <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 12px;">
-            <h5 style="margin: 0; color: #f8fafc; font-size: 13px;">⏱️ Parâmetros de Ativação, Tempo e Segurança</h5>
-            <div style="font-size: 12px; color: #cbd5e1;"><span style="color:#f87171; font-weight:bold">*</span> Campos obrigatórios para ativar a avaliação.</div>
-            <div class="grid-campos-ativacao" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-              <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Qtd. de Questões: <span style="color:#f87171" title="Campo obrigatório">*</span></label>
-                <input type="number" id="qtd-questoes-ativacao" min="1" required aria-required="true" value="10" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-              </div>
-              <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo Mínimo (minutos): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
-                <input type="number" id="tempo-minimo-ativacao" value="0" min="0" step="1" required aria-required="true" title="Preenchimento obrigatório. Use 0 para indicar sem limite." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-              </div>
-              <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo máximo por aluno (min): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
-                <input type="number" id="tempo-prova-ativacao" value="0" min="0" step="1" required aria-required="true" title="Preenchimento obrigatório. Use 0 para indicar sem limite." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-              </div>
-              <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Tempo para novos alunos entrarem após a ativação (min): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
-                <input type="number" id="tempo-ativacao-prova" required aria-required="true" value="180" min="1" step="1" title="Prazo para iniciar a prova. Após esse prazo, novos alunos não entram; tentativas em andamento continuam até seu limite individual ou encerramento pelo professor." style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-              </div>
-              <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Token / Senha de Acesso (obrigatório): <span style="color:#f87171" title="Campo obrigatório">*</span></label>
-                <input type="text" id="input-token-ativacao" required aria-required="true" autocomplete="off" placeholder="Obrigatório — Ex: PROVA123" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-              </div>
-              <div>
-                <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px;">Agendar Início Simultâneo:</label>
-                <input type="datetime-local" id="input-agendamento-ativacao" style="width: 100%; padding: 7px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-              </div>
-            </div>
-          </div>
-
-          <div style="background: rgba(15, 23, 42, 0.95); border: 1px dashed #38bdf8; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px;">
-            <h5 style="margin: 0; color: #38bdf8; font-size: 14px;">🔍 Pré-visualização Geral e Confirmação</h5>
-            <div id="bloco-preview-ativacao-geral" style="font-size: 13px; color: #e2e8f0; display: flex; flex-direction: column; gap: 4px;">
-              <div>🏫 <strong>Unidade Selecionada:</strong> ${escolaNome}</div>
-              <div>📚 <strong>Matérias:</strong> <span id="prev-mat">Nenhuma</span></div>
-              <div>📖 <strong>Disciplinas:</strong> <span id="prev-disc">Nenhuma</span></div>
-              <div>🏫 <strong>Período:</strong> <span id="prev-per">Geral</span></div>
-              <div>🎒 <strong>Turmas Destino:</strong> <span id="prev-tur">Nenhuma</span></div>
-              <div>⏱️ <strong>Parâmetros:</strong> Qtd: <span id="prev-qtd">10</span> | Mín: <span id="prev-tmin">0</span>m | Máx: <span id="prev-tlim">0</span>m</div>
-            </div>
-          </div>
-
-          <div style="margin:10px 0;padding:10px;border:1px solid #334155;border-radius:8px;">
-            <button type="button" onclick="vincularArquivoPublicacao()" style="background:#0ea5e9;color:white;border:none;padding:8px 12px;border-radius:7px;font-weight:bold;cursor:pointer;">🔗 Vincular publicação automática</button>
-            <span id="status-vinculo-publicacao" style="margin-left:8px;font-size:12px;">Verificando vínculo...</span>
-            <div style="font-size:11px;color:#94a3b8;margin-top:5px;">Faça isto uma única vez e selecione o prova-publicada.json da pasta principal do projeto.</div>
-          </div>
-          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px;">
-            <button type="button" id="btn-publicar-prova-escola-profissional" style="background: #22c55e; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);">🚀 Confirmar e Publicar Avaliação para os Alunos</button>
-          </div>
-
-        </div>
-      `;
-
-      function atualizarPreviewDinamicoAtivacao() {
-        const matSel = Array.from(painelDinamico.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
-        const discSel = Array.from(painelDinamico.querySelectorAll(".chk-disciplina-ativacao:checked")).map(c => c.value);
-        const perSel = painelDinamico.querySelector("#select-periodo-ativacao")?.value || "Geral";
-        const turSel = Array.from(painelDinamico.querySelectorAll(".chk-turma-ativacao:checked")).map(c => c.value);
-        const qtdVal = painelDinamico.querySelector("#qtd-questoes-ativacao")?.value || "10";
-        const tMinVal = painelDinamico.querySelector("#tempo-minimo-ativacao")?.value || "0";
-        const tLimVal = painelDinamico.querySelector("#tempo-prova-ativacao")?.value || "0";
-
-        if (document.getElementById("prev-mat")) document.getElementById("prev-mat").textContent = matSel.join(", ") || "Nenhuma";
-        if (document.getElementById("prev-disc")) document.getElementById("prev-disc").textContent = discSel.join(", ") || "Nenhuma";
-        if (document.getElementById("prev-per")) document.getElementById("prev-per").textContent = perSel;
-        if (document.getElementById("prev-tur")) document.getElementById("prev-tur").textContent = turSel.join(", ") || "Nenhuma";
-        if (document.getElementById("prev-qtd")) document.getElementById("prev-qtd").textContent = qtdVal;
-        if (document.getElementById("prev-tmin")) document.getElementById("prev-tmin").textContent = tMinVal;
-        if (document.getElementById("prev-tlim")) document.getElementById("prev-tlim").textContent = tLimVal;
-      }
-
-      // Preserva o token enquanto o Firestore atualiza configurações do formulário.
-      const campoTokenAtual = painelDinamico.querySelector("#input-token-ativacao");
-      if (campoTokenAtual) {
-        campoTokenAtual.value = rascunhosTokenAtivacao.get(escolaNome) || "";
-        campoTokenAtual.addEventListener("input", () => {
-          rascunhosTokenAtivacao.set(escolaNome, campoTokenAtual.value);
-        });
-      }
-      painelDinamico.addEventListener("change", atualizarPreviewDinamicoAtivacao);
-      painelDinamico.addEventListener("input", atualizarPreviewDinamicoAtivacao);
-      atualizarPreviewDinamicoAtivacao();
-      atualizarStatusVinculoPublicacao();
-
-      document.getElementById("btn-publicar-prova-escola-profissional")?.addEventListener("click", async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (history.replaceState) history.replaceState(null, "", "#ativacao"); 
-        const materiasSelecionadas = Array.from(painelDinamico.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
-        const disciplinasSelecionadas = Array.from(painelDinamico.querySelectorAll(".chk-disciplina-ativacao:checked")).map(c => c.value);
-        const periodoEscolhido = painelDinamico.querySelector("#select-periodo-ativacao")?.value || "Geral";
-        const turmasSelecionadas = Array.from(painelDinamico.querySelectorAll(".chk-turma-ativacao:checked")).map(c => c.value);
-        const tokenProva = painelDinamico.querySelector("#input-token-ativacao")?.value.trim() || "";
-        const agendamentoData = painelDinamico.querySelector("#input-agendamento-ativacao")?.value || "";
-        const qtdQ = parseInt(painelDinamico.querySelector("#qtd-questoes-ativacao")?.value) || 10;
-        const tempoMin = Number(painelDinamico.querySelector("#tempo-minimo-ativacao")?.value);
-        const tempoLim = Number(painelDinamico.querySelector("#tempo-prova-ativacao")?.value);
-        // 🔵 FASE 10C.1 — duração total da publicação; diferente do tempo individual do aluno.
-        const tempoAtivacao = Math.max(1, parseInt(painelDinamico.querySelector("#tempo-ativacao-prova")?.value) || 180);
-
-        // Campos obrigatórios devem ter valores válidos, mesmo com publicação via GitHub.
-        const campoQtd = painelDinamico.querySelector("#qtd-questoes-ativacao");
-        const campoDuracao = painelDinamico.querySelector("#tempo-ativacao-prova");
-        if (!campoQtd?.value.trim() || !Number.isInteger(Number(campoQtd.value)) || Number(campoQtd.value) < 1) {
-          alert("⚠ Informe uma quantidade válida de questões (mínimo de 1).");
-          campoQtd?.focus();
-          return;
-        }
-        if (!campoDuracao?.value.trim() || !Number.isFinite(Number(campoDuracao.value)) || Number(campoDuracao.value) < 1) {
-          alert("⚠ Informe a duração da ativação (mínimo de 1 minuto).");
-          campoDuracao?.focus();
-          return;
-        }
-
-        // Tempo mínimo e máximo são campos obrigatórios; 0 é um valor válido (livre/sem limite).
-        for (const [seletor, descricao] of [
-          ["#tempo-minimo-ativacao", "tempo mínimo"],
-          ["#tempo-prova-ativacao", "tempo máximo por aluno"]
-        ]) {
-          const campo = painelDinamico.querySelector(seletor);
-          const valor = campo?.value?.trim() ?? "";
-          if (valor === "" || !Number.isInteger(Number(valor)) || Number(valor) < 0) {
-            alert(`⚠ Preencha o ${descricao} com um número inteiro igual ou maior que 0.`);
-            campo?.focus();
-            return;
-          }
-        }
-        if (tempoLim > 0 && tempoMin > tempoLim) {
-          alert("⚠ O tempo mínimo não pode ser maior que o tempo máximo por aluno.");
-          painelDinamico.querySelector("#tempo-minimo-ativacao")?.focus();
-          return;
-        }
-
-        // Não permitir publicar avaliações sem token, inclusive pelo modo de contingência.
-        if (!tokenProva) {
-          alert("⚠ Informe o token de acesso antes de ativar a avaliação. O token é obrigatório.");
-          const campoToken = painelDinamico.querySelector("#input-token-ativacao");
-          campoToken?.focus();
-          return;
-        }
-
-        if (materiasSelecionadas.length === 0 || turmasSelecionadas.length === 0) {
-          alert("⚠ Selecione pelo menos uma matéria e uma turma para publicar a prova!");
-          return;
-        }
-
-        if (!confirm(`Deseja realmente confirmar e publicar a avaliação para a unidade "${escolaNome}"?`)) return;
-
-        let timestampAgendamento = agendamentoData ? new Date(agendamentoData).getTime() : 0;
-
-        try {
-          // Identificador estável desta ATIVAÇÃO. Reembaralhar não cria uma nova tentativa.
-          const idAvaliacao = `av_${Date.now()}`;
-          const dadosPublicacao = {
-            idAvaliacao,
-            escolaAtiva: escolaNome,
-            materiasAtivas: materiasSelecionadas,
-            disciplinasAtivas: disciplinasSelecionadas,
-            periodoAtivo: periodoEscolhido,
-            quantidadeQuestoes: qtdQ,
-            tempoMinimoMinutos: tempoMin,
-            tempoLimiteMinutos: tempoLim,
-            tempoAtivacaoMinutos: tempoAtivacao,
-            expiraEmMillis: Date.now() + (tempoAtivacao * 60 * 1000),
-            turmasAtivas: turmasSelecionadas,
-            token: tokenProva,
-            agendamento: timestampAgendamento,
-            seedReordenacao: Date.now().toString(),
-            publicadoEm: serverTimestamp()
-          };
-
-          // VERSÃO ESTÁVEL FINAL — ativação realmente rápida.
-          // A publicação não varre mais questoes_publicas e não relê o documento.
-          // O próprio setDoc só retorna após o Firebase aceitar a gravação.
-          const idProvaAtiva = normalizarTexto(escolaNome);
-          const refProvaAtiva = doc(db, "provas_ativas", idProvaAtiva);
-
-          let firebasePublicado=false;
-          try {
-            await setDoc(refProvaAtiva,{...dadosPublicacao,ativa:true});
-            firebasePublicado=true;
-          } catch(erroFirebase) {
-            console.warn("Firebase indisponível na ativação:",erroFirebase?.code||erroFirebase);
-          }
-
-          const pubLocal=await gerarPacoteEstaticoAvaliacao(dadosPublicacao);
-          animarBotaoSucesso(e.target);
-          alert(
-            `✅ Avaliação preparada para "${escolaNome}".\n\n`+
-            `${firebasePublicado?"Firebase: publicado.":"Firebase: indisponível/sem cota."}\n`+
-            `Pacote: ${pubLocal.total} questões.\n`+
-            `${pubLocal.modo==="vinculado" ? "Publicação local: arquivo do projeto atualizado automaticamente." : "Publicação local: arquivo baixado como alternativa."}`
-          );
-        } catch (err) {
-          console.error("10D.3 — publicação interrompida:", err);
-          alert(
-            "❌ A avaliação NÃO foi confirmada.\n\n" +
-            (err?.message || String(err)) +
-            "\n\nNenhum dado existente foi apagado automaticamente."
-          );
-        }
-      });
-    });
-  }
-
-  async function carregarResumoProvaAtivaNoPainel() {
-    // 🟢 Mostra TODAS as provas ativas, uma por escola.
-    // 10D.1: ao abrir a aba fazemos UMA leitura controlada primeiro.
-    // Depois mantemos somente UM listener enquanto a aba estiver aberta.
-    if (unsubscribeProvasAtivasPainel) return;
-
-    const processarSnapshotProvasAtivas = (snapshot) => {
-      const abaAtivacao = document.getElementById("aba-ativacao");
-      if (!abaAtivacao) return;
-
-      let blocoTopoAtiva = document.getElementById("bloco-prova-ativa-topo");
-      if (!blocoTopoAtiva) {
-        blocoTopoAtiva = document.createElement("div");
-        blocoTopoAtiva.id = "bloco-prova-ativa-topo";
-        blocoTopoAtiva.style.marginBottom = "20px";
-        abaAtivacao.prepend(blocoTopoAtiva);
-      }
-
-      const provas = [];
-      snapshot.forEach(d => {
-        const dados = d.data();
-        const expirada = Number(dados.expiraEmMillis || 0) > 0 && Date.now() >= Number(dados.expiraEmMillis);
-        // O fim do prazo de entrada não encerra tentativas que já começaram.
-        // Somente o professor (ou o limite individual do aluno) encerra a prova em andamento.
-        if (dados.ativa !== false && dados.escolaAtiva) provas.push({ idDoc: d.id, ...dados });
-      });
-      provas.sort((a,b) => (a.escolaAtiva || "").localeCompare(b.escolaAtiva || "", "pt-BR"));
-
-      if (provas.length === 0) {
-        blocoTopoAtiva.innerHTML = `
-          <div style="background:rgba(15,23,42,.95);border:2px dashed #ef4444;padding:20px;border-radius:12px;margin-bottom:20px;">
-            <div style="color:#ef4444;font-weight:bold;font-size:15px;">🚨 NENHUMA AVALIAÇÃO ATIVA</div>
-            <p style="color:#cbd5e1;font-size:13px;margin-top:6px;">Selecione uma escola abaixo e publique uma avaliação.</p>
-          </div>`;
-        return;
-      }
-
-      blocoTopoAtiva.innerHTML = `
-        <div style="margin-bottom:10px;color:#4ade80;font-weight:bold;">🟢 ${provas.length} escola(s) com avaliação ativa</div>
-        ${provas.map(dados => {
-          const materiasStr = (dados.materiasAtivas || []).join(", ");
-          const turmasStr = (dados.turmasAtivas || []).join(", ");
-          const escolaEsc = (dados.escolaAtiva || "").replace(/'/g, "\\'");
-          return `
-            <div style="background:rgba(15,23,42,.95);border:2px solid #22c55e;padding:16px;border-radius:12px;margin-bottom:12px;">
-              <div style="color:#fff;font-weight:bold;font-size:18px;">🏫 ${dados.escolaAtiva}</div>
-              <div style="color:#cbd5e1;font-size:13px;margin-top:8px;">📚 <strong>Matérias:</strong> ${materiasStr || "Geral"}</div>
-              <div style="color:#cbd5e1;font-size:13px;">🎒 <strong>Turmas:</strong> ${turmasStr || "Nenhuma"}</div>
-              <!-- 🔵 FASE 8 — RESUMO PROFISSIONAL DA AVALIAÇÃO -->
-              <div class="resumo-prova-metricas">
-                <div class="metrica-prova">
-                  <span class="metrica-icone">📝</span>
-                  <div><small>QUESTÕES</small><strong>${parseInt(dados.quantidadeQuestoes) || 0}</strong></div>
-                </div>
-                <div class="metrica-prova">
-                  <span class="metrica-icone">⏱️</span>
-                  <div><small>TEMPO MÍNIMO</small><strong>${parseInt(dados.tempoMinimoMinutos) > 0 ? parseInt(dados.tempoMinimoMinutos) + " min" : "Livre"}</strong></div>
-                </div>
-                <div class="metrica-prova">
-                  <span class="metrica-icone">⌛</span>
-                  <div><small>TEMPO MÁXIMO</small><strong>${parseInt(dados.tempoLimiteMinutos) > 0 ? parseInt(dados.tempoLimiteMinutos) + " min" : "Sem limite"}</strong></div>
-                </div>
-                <div class="metrica-prova">
-                  <span class="metrica-icone">🔐</span>
-                  <div><small>ACESSO</small><strong>${dados.token ? "Com token" : "Livre"}</strong></div>
-                </div>
-              </div>
-              <div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.45);color:#fde68a;font-size:12px;">
-                ${Number(dados.expiraEmMillis||0)>0 && Date.now()>=Number(dados.expiraEmMillis) ? '⛔ <strong>Prazo para novas entradas encerrado.</strong> Alunos que já iniciaram continuam com seu tempo individual.' : `🟢 <strong>Entradas liberadas.</strong> ${Number(dados.expiraEmMillis||0)>0 ? `Novas entradas até: ${new Date(Number(dados.expiraEmMillis)).toLocaleString("pt-BR")}.` : ''}`} Use <strong>Encerrar</strong> para finalizar a avaliação e as tentativas em andamento.
-              </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-                <a href="https://wagnerbizza.github.io/quiz-interativo/" target="_blank" rel="noopener" style="background:#22c55e;color:white;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;" title="Abre exatamente a versão publicada que os alunos usam">👁️ Testar publicação</a>
-                <button type="button" onclick="gerarCopiaProvaAtivaPDF('${escolaEsc}')" style="background:#0284c7;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">📄 Cópia</button>
-                <button type="button" class="btn-reembaralhar-escola" data-escola="${dados.escolaAtiva}" style="background:#8b5cf6;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🔀 Reembaralhar</button>
-                <button type="button" class="btn-liberar-atrasado" data-escola="${dados.escolaAtiva}" data-avaliacao="${dados.idAvaliacao || dados.publicadoEm || ''}" data-turmas="${(dados.turmasAtivas||[]).join(' | ')}" style="background:#d97706;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;" title="Gerar código individual para um aluno iniciar após o prazo">🔑 Entrada atrasada</button>
-                <button type="button" onclick="encerrarProvaAtivaAgora('${escolaEsc}')" style="background:#ef4444;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;">🛑 Encerrar</button>
-              </div>
-            </div>`;
-        }).join("")}
-      `;
-    };
-
-    try {
-      const snapshotInicial = await getDocs(collection(db, "provas_ativas"));
-      processarSnapshotProvasAtivas(snapshotInicial);
-    } catch (erro) {
-      console.error("10D.1 — falha ao verificar prova ativa:", erro);
-      const bloco = document.getElementById("bloco-prova-ativa-topo");
-      if (bloco) bloco.innerHTML = `
-        <div style="border:2px dashed #f59e0b;padding:20px;border-radius:12px;margin-bottom:20px;">
-          <div style="color:#f59e0b;font-weight:bold;">⚠️ NÃO FOI POSSÍVEL VERIFICAR A AVALIAÇÃO ATIVA</div>
-          <p style="margin-top:6px;">Verifique a conexão e abra novamente esta aba.</p>
-        </div>`;
-    }
-
-    // Listener único: recebe mudanças somente enquanto a aba Ativação estiver aberta.
-    if (!unsubscribeProvasAtivasPainel) {
-      unsubscribeProvasAtivasPainel = onSnapshot(
-        collection(db, "provas_ativas"),
-        processarSnapshotProvasAtivas,
-        (erro) => console.error("10D.1 — listener de provas ativas:", erro)
-      );
-    }
-  }
-
-  document.addEventListener("click", async (e) => {
-    const btnEmbaralhar = e.target.closest(".btn-reembaralhar-escola");
-    if (btnEmbaralhar) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (history.replaceState) history.replaceState(null, "", "#ativacao");
-      // IMPORTANTE: vínculo/permissão antes de qualquer operação assíncrona.
-      // Isso mantém o "user gesture" exigido pelo Chrome/Edge.
-      const vinculoOk = await garantirVinculoPublicacaoNoClique();
-      if (!vinculoOk) return;
-      const escolaNome = btnEmbaralhar.dataset.escola;
-      if (confirm(`🔀 Deseja reembaralhar a prova de "${escolaNome}"?`)) {
-        try {
-          let dadosAtivos = null;
-          try {
-            const snap = await getDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)));
-            if (snap.exists()) dadosAtivos = snap.data();
-          } catch (erroLeitura) {
-            console.warn("Firebase indisponível ao ler configuração para reembaralhar:", erroLeitura?.code || erroLeitura);
-          }
-
-          if (!dadosAtivos) {
-            alert("⚠ Não foi possível recuperar a configuração atual da prova para gerar o novo pacote. Nenhum arquivo existente foi apagado.");
-            return;
-          }
-
-          const pacoteAnterior = await (async()=>{ try {
-            const h=await obterHandlePublicacao(); if(!h) return null;
-            return JSON.parse(await (await h.getFile()).text());
-          } catch(_) { return null; }})();
-          const novaSeed = Date.now().toString();
-          const novosDados = {
-            ...dadosAtivos,
-            idAvaliacao: dadosAtivos.idAvaliacao || pacoteAnterior?.idAvaliacao || `av_${Date.now()}`,
-            ativa:true, seedReordenacao:novaSeed, publicadoEm:new Date().toISOString()
-          };
-
-          try {
-            await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
-              seedReordenacao: novaSeed,
-              atualizadoEm: serverTimestamp()
-            }, { merge: true });
-          } catch (erroFirebase) {
-            console.warn("Firebase indisponível ao reembaralhar:", erroFirebase?.code || erroFirebase);
-          }
-
-          const pubLocal = await gerarPacoteEstaticoAvaliacao(novosDados);
-          if (history.replaceState) history.replaceState(null, "", "#ativacao");
-          mostrarNotificacao("✅ Reembaralhamento concluído e arquivo do projeto atualizado.");
-          alert(`✅ Reembaralhamento concluído com ${pubLocal.total} questões.\n\nO prova-publicada.json foi atualizado. Aguarde a mensagem "QUIZ: GitHub atualizado." no terminal do VS Code.`);
-        } catch(err) { alert("Erro ao reembaralhar: " + err.message); }
-      }
-    }
-  });
-
-  window.gerarCopiaProvaAtivaPDF = async function(escolaNome) {
-    try {
-      if (!escolaNome) { alert("⚠ Selecione uma escola."); return; }
-      const snap = await getDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)));
-      if (!snap.exists()) { alert("⚠ Nenhuma prova ativa."); return; }
-      const pData = snap.data();
-      const escola = pData.escolaAtiva || 'Rede de Ensino';
-      const materias = pData.materiasAtivas || [];
-      const dataHoraAtual = new Date().toLocaleString('pt-BR');
-      const periodo = pData.periodoAtivo || 'Geral';
-       
-      // A cópia oficial deve usar a seleção exata do pacote publicado.
-      // Nunca sortear questões novamente ao imprimir.
-      const handlePublicado = await obterHandlePublicacao();
-      if (!handlePublicado) throw new Error('Vincule prova-publicada.json antes de gerar a Cópia Geral.');
-      const pacotePublicado = JSON.parse(await (await handlePublicado.getFile()).text());
-      if (!pacotePublicado.ativa || !Array.isArray(pacotePublicado.questoesPublicas) || !pacotePublicado.questoesPublicas.length) {
-        throw new Error('O arquivo vinculado não contém uma avaliação ativa com questões.');
-      }
-      if (normalizarTexto(pacotePublicado.escolaAtiva || '') !== normalizarTexto(escolaNome)) {
-        throw new Error('O pacote vinculado pertence a outra escola.');
-      }
-      if (pacotePublicado.idAvaliacao && pData.idAvaliacao && pacotePublicado.idAvaliacao !== pData.idAvaliacao) {
-        throw new Error('A avaliação publicada não corresponde à avaliação do painel.');
-      }
-      const selecionadas = pacotePublicado.questoesPublicas.map(q => ({
-        idQuestao: q.idQuestao || q.id || '',
-        pergunta: String(q.pergunta || ''),
-        opcoes: Array.isArray(q.opcoes) ? q.opcoes.map(op => String(op)) : []
-      }));
-      // Gabarito exclusivo do professor: localizar a resposta no banco privado
-      // pelo identificador da questão, sem expor respostas no pacote público.
-      const qSnap = await getDocs(collection(db, 'questoes'));
-      const respostasPrivadas = new Map();
-      qSnap.forEach(d => {
-        const dados = d.data();
-        const id = String(d.id);
-        const letra = String(dados.correta || dados.resposta || dados.correto || '').trim().toUpperCase();
-        const opcoesOriginais = (dados.opcoes || dados.alternativas || dados.respostas || []).map(op => limparPrefixoOpcao(op));
-        const pos = 'ABCDE'.indexOf(letra);
-        if (pos >= 0 && opcoesOriginais[pos]) respostasPrivadas.set(id, opcoesOriginais[pos]);
-      });
-      selecionadas.forEach(q => {
-        const textoCorreto = respostasPrivadas.get(String(q.idQuestao));
-        const pos = textoCorreto ? q.opcoes.findIndex(op => limparPrefixoOpcao(op) === textoCorreto) : -1;
-        q.correta = pos >= 0 ? 'ABCDE'[pos] : 'Não disponível (verificar ID da questão)';
-      });
-
-      let janelaImpressao = window.open('', '_blank');
-      let html = `
-      <html>
-      <head>
-        <title>Avaliação Oficial - ${escola}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 30px; color: #000; line-height: 1.6; }
-          .cabecalho { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
-          .questao { margin-bottom: 30px; page-break-inside: avoid; border-bottom: 1px solid #ccc; padding-bottom: 15px; }
-          .questao p.enunciado { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #000; }
-          .opcoes { margin-left: 20px; font-size: 14px; }
-          .opcoes div { margin-bottom: 6px; }
-          .gabarito { margin-top: 50px; border-top: 2px dashed #000; padding-top: 25px; page-break-before: always; }
-          .gabarito h3 { margin-bottom: 15px; font-size: 18px; }
-          .gabarito ul { list-style-type: none; padding: 0; }
-          .gabarito li { padding: 6px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="cabecalho">
-          <h2>AVALIAÇÃO DE SISTEMA - ${escola}</h2>
-          <p><strong>Aluno(a):</strong> _________________________________________________ <strong>Turma:</strong> ________</p>
-          <p><strong>Matéria(s):</strong> ${materias.join(', ')} | <strong>Período/Turno:</strong> ${periodo}</p>
-          <p><strong>Data e Horário de Emissão:</strong> ${dataHoraAtual}</p>
-        </div>
-      `;
-
-      selecionadas.forEach((q, idx) => {
-        let letras = ['A', 'B', 'C', 'D', 'E'];
-        let htmlOpcoes = '';
-        letras.forEach((letra, i) => {
-          if (q.opcoes[i] && q.opcoes[i].trim() !== "") {
-            htmlOpcoes += `<div>${letra}) ${q.opcoes[i]}</div>`;
-          }
-        });
-
-        html += `
-          <div class="questao">
-            <p class="enunciado">Questão ${idx + 1}: ${q.pergunta}</p>
-            <div class="opcoes">
-              ${htmlOpcoes}
-            </div>
-          </div>
-        `;
-      });
-
-      html += `<div class="gabarito"><h3>GABARITO OFICIAL (USO EXCLUSIVO DO PROFESSOR)</h3><ul>`;
-      selecionadas.forEach((q, idx) => {
-        html += `<li><strong>Questão ${idx + 1}:</strong> Resposta Correta: <strong>${q.correta}</strong></li>`;
-      });
-      html += `</ul></div>`;
-
-      html += `</body></html>`;
-      janelaImpressao.document.write(html);
-      janelaImpressao.document.close();
-      janelaImpressao.print();
-    } catch(err) {
-      alert("Erro ao gerar cópia: " + err.message);
-    }
-  };
-
-  window.gerarCopiaProvaIndividual = async function(nomeAluno, turmaAluno, materiaAluno, periodoAluno = 'Geral', dataEnvioAluno = null, escolaAluno = '') {
-    try {
-      const snapProva = escolaAluno
-        ? await getDoc(doc(db, "provas_ativas", normalizarTexto(escolaAluno)))
-        : null;
-      const pData = snapProva && snapProva.exists() ? snapProva.data() : { quantidadeQuestoes: 10 };
-       
-      const qSnap = await getDocs(collection(db, "questoes"));
-      let banco = [];
-      qSnap.forEach(s => banco.push(normalizarDocumentoQuestao(s.data(), s.id)));
-
-      let filtradas = banco.filter(q => normalizarTexto(q.categoria).includes(normalizarTexto(materiaAluno)) || normalizarTexto(materiaAluno).includes(normalizarTexto(q.categoria)));
-      if (filtradas.length === 0) filtradas = banco;
-
-      for (let i = filtradas.length - 1; i > 0; i--) {
-        const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-        const j = Math.floor((aleatorio / 4294967295) * (i + 1));
-        [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
-      }
-
-      let qtdQ = pData.quantidadeQuestoes || 10;
-      let questoesAluno = filtradas.slice(0, qtdQ);
-
-      let dataImpressaoStr = dataEnvioAluno ? dataEnvioAluno : new Date().toLocaleString('pt-BR');
-
-      let win = window.open('', '_blank');
-      let html = `
-        <html>
-        <head>
-          <title>Caderno de Prova - ${nomeAluno}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 30px; color: #000; line-height: 1.6; }
-            .cabecalho { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
-            .questao { margin-bottom: 30px; page-break-inside: avoid; border-bottom: 1px solid #ccc; padding-bottom: 15px; }
-            .questao p.enunciado { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #000; }
-            .opcoes { margin-left: 20px; font-size: 14px; }
-            .opcoes div { margin-bottom: 6px; }
-            .gabarito { margin-top: 50px; border-top: 2px dashed #000; padding-top: 25px; page-break-before: always; }
-            .gabarito h3 { margin-bottom: 15px; font-size: 18px; }
-            .gabarito ul { list-style-type: none; padding: 0; }
-            .gabarito li { padding: 6px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="cabecalho">
-            <h2>CADERNO DE PROVA INDIVIDUAL ${escolaAluno ? '- ' + escolaAluno : ''}</h2>
-            <p><strong>Aluno(a):</strong> ${nomeAluno} | <strong>Turma:</strong> ${turmaAluno}</p>
-            <p><strong>Matéria:</strong> ${materiaAluno} | <strong>Período/Turno:</strong> ${periodoAluno}</p>
-            <p><strong>Data e Horário da Prova/Emissão:</strong> ${dataImpressaoStr}</p>
-          </div>
-      `;
-
-      questoesAluno.forEach((q, idx) => {
-        let letras = ['A', 'B', 'C', 'D', 'E'];
-        let htmlOpcoes = '';
-        letras.forEach((letra, i) => {
-          if (q.opcoes[i] && q.opcoes[i].trim() !== "") {
-            htmlOpcoes += `<div>${letra}) ${q.opcoes[i]}</div>`;
-          }
-        });
-
-        html += `
-          <div class="questao">
-            <p class="enunciado">Questão ${idx + 1}: ${q.pergunta}</p>
-            <div class="opcoes">
-              ${htmlOpcoes}
-            </div>
-          </div>
-        `;
-      });
-
-      html += `<div class="gabarito"><h3>GABARITO DA AVALIAÇÃO</h3><ul>`;
-      questoesAluno.forEach((q, idx) => {
-        html += `<li><strong>Questão ${idx + 1}:</strong> Resposta Correta: <strong>${q.correta}</strong></li>`;
-      });
-      html += `</ul></div>`;
-
-      html += `</body></html>`;
-      win.document.write(html);
-      win.document.close();
-      win.print();
-    } catch (err) {
-      alert("Erro ao gerar prova individual: " + err.message);
-    }
-  };
-
-  function renderizarSeletorEscolasTopo() {
-    const select = document.getElementById("select-escola-geral-topo");
-    const btnIr = document.getElementById("btn-ir-config-escola");
-    if (!select) return;
-
-    if (listaEscolasCache.length === 0) {
-      select.innerHTML = `<option value="" disabled selected>Nenhuma escola cadastrada</option>`;
-      if (btnIr) btnIr.onclick = () => alert("Cadastre uma escola na aba 'Cadastro de Escolas' primeiro!");
-      return;
-    }
-
-    let html = "";
-    listaEscolasCache.forEach(esc => { html += `<option value="${esc.nome}">${esc.nome}</option>`; });
-    select.innerHTML = html;
-
-    if (btnIr) {
-      btnIr.onclick = () => {
-        const escolaEscolhida = select.value;
-        if (escolaEscolhida) { window.location.href = `escola.html?escola=${encodeURIComponent(escolaEscolhida)}&retorno=escolas`; }
-      };
-    }
-  }
-
-  function popularFiltroEscolaRelatorio() {
-    const selectFiltro = document.getElementById("select-filtro-escola-relatorio");
-    if (!selectFiltro) return;
-
-    let html = `<option value="TODAS">🏫 Escolas (Todas)</option>`;
-    listaEscolasCache.forEach(esc => {
-      html += `<option value="${esc.nome}">${esc.nome}</option>`;
-    });
-    selectFiltro.innerHTML = html;
-
-    selectFiltro.onchange = () => {
-      renderizarTabelaResultadosFiltrada();
-    };
-  }
-
-  const botoesAba = document.querySelectorAll(".btn-aba");
-  const conteudosAba = document.querySelectorAll(".aba-conteudo");
-  botoesAba.forEach(btn => {
-    btn.addEventListener("click", () => {
-      botoesAba.forEach(b => b.classList.remove("active"));
-      conteudosAba.forEach(c => c.classList.add("hidden"));
-      btn.classList.add("active");
-      const abaId = btn.getAttribute("data-aba");
-
-      // 10C.9: sem internet, somente a aba de relatórios locais é permitida.
-      if (document.documentElement.dataset.modoOfflineProfessor === "1" && abaId !== "aba-relatorios") return;
-
-      const alvo = document.getElementById(abaId);
-      if (alvo) alvo.classList.remove("hidden");
-       
-      const hashNome = abaId.replace("aba-", "");
-      if (history.replaceState) {
-        history.replaceState(null, null, `#${hashNome}`);
-      }
-
-      // 10C.7: liga/desliga consultas em tempo real conforme a aba visível.
-      gerenciarLeiturasPorAba(abaId);
-
-      if(abaId === "aba-questoes") { popularSelectMateriasQuestao(); }
-      if(abaId === "aba-banco-dados") { carregarBancoDadosCompleto(); }
-      if(abaId === "aba-relatorios") { forcarMenuClassificarCompleto(); organizarLayoutAbaRelatorios(); }
-    });
-  });
-
-  // 10D.1: se a página já abrir diretamente em uma aba ativa,
-  // inicia a leitura correspondente sem exigir um segundo clique.
-  const abaInicialAtiva = document.querySelector(".btn-aba.active")?.getAttribute("data-aba");
-  if (abaInicialAtiva && document.documentElement.dataset.modoOfflineProfessor !== "1") {
-    gerenciarLeiturasPorAba(abaInicialAtiva);
-  }
-
-  const inputNomeEscola = document.getElementById("input-nome-escola");
-  const inputGestorEscola = document.getElementById("input-gestor-escola");
-  const inputCidadeEscola = document.getElementById("input-cidade-escola");
-  const inputEscolaIdEditando = document.getElementById("input-escola-id-editando");
-  const btnSalvarNovaEscola = document.getElementById("btn-salvar-nova-escola");
-  const btnCancelarEdicao = document.getElementById("btn-cancelar-edicao");
-  const listaEscolasContainer = document.getElementById("lista-escolas-cadastradas-container");
-
-  async function carregarListaEscolas() {
-    try {
-      const snap = await getDocs(collection(db, "escolas_cadastradas"));
-      let escolas = [];
-      snap.forEach(docSnap => { escolas.push({ idDoc: docSnap.id, ...docSnap.data() }); });
-      
-      escolas.sort((a, b) => {
-        if (a.idDoc === escolaPrincipalFixadaId) return -1;
-        if (b.idDoc === escolaPrincipalFixadaId) return 1;
-        return 0;
-      });
-
-      listaEscolasCache = escolas;
-      renderizarSeletorEscolasTopo();
-      popularFiltroEscolaRelatorio();
-      renderizarSeletorEscolasAtivacaoIndependente();
-
-      if (listaEscolasContainer) {
-        let htmlCadastradas = "";
-        if (escolas.length === 0) {
-          htmlCadastradas = `<p style="text-align:center; color:#94a3b8; padding: 10px;">Nenhuma escola cadastrada.</p>`;
-        } else {
-          escolas.forEach(esc => {
-            let ehFixada = esc.idDoc === escolaPrincipalFixadaId;
-            let classeFixada = ehFixada ? "fixada" : "";
-            let textoPin = ehFixada ? "📌 Fixada" : "📌 Fixar Principal";
-            let draggableAttr = ehFixada ? "false" : "true";
-
-            htmlCadastradas += `
-              <div class="card-escola-dinamico ${classeFixada}" draggable="${draggableAttr}" data-id="${esc.idDoc}" onclick="window.location.href='escola.html?escola=${encodeURIComponent(esc.nome)}&retorno=escolas';">
-                <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
-                  <strong style="font-size: 15px; color: inherit; display: block;">🏫 ${esc.nome} ${ehFixada ? '<span style="font-size:11px; color:#eab308; background:rgba(234,179,8,0.2); padding:2px 6px; border-radius:4px; margin-left:6px;">⭐ Principal</span>' : ''}</strong>
-                  <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; opacity: 0.85;">
-                    <span>Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
-                    <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚙️ Configurar Unidade</span>
-                  </div>
-                </div>
-                <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;" onclick="event.stopPropagation();">
-                  <button type="button" class="btn-fixar-escola btn-acao-mini" data-id="${esc.idDoc}" style="background:${ehFixada ? '#eab308' : '#334155'}; color:white;" title="Fixar Escola Principal">${textoPin}</button>
-                  <button type="button" class="btn-editar-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white;" title="Editar">✏️</button>
-                  <button type="button" class="btn-excluir-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white;" title="Excluir">🗑️</button>
-                </div>
-              </div>
-            `;
-          });
-        }
-        listaEscolasContainer.innerHTML = htmlCadastradas;
-
-        let cardArrastado = null;
-        listaEscolasContainer.querySelectorAll(".card-escola-dinamico").forEach(card => {
-          if (!card.classList.contains("fixada")) {
-            card.addEventListener("dragstart", (e) => {
-              cardArrastado = card;
-              card.classList.add("dragging");
-            });
-            card.addEventListener("dragend", () => {
-              card.classList.remove("dragging");
-              cardArrastado = null;
-            });
-          }
-
-          card.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            const cardAbaixo = e.target.closest(".card-escola-dinamico");
-            if (cardAbaixo && cardAbaixo !== cardArrastado && !cardAbaixo.classList.contains("fixada") && cardArrastado) {
-              const bounding = cardAbaixo.getBoundingClientRect();
-              const offset = e.clientY - bounding.top;
-              if (offset > bounding.height / 2) {
-                listaEscolasContainer.insertBefore(cardArrastado, cardAbaixo.nextSibling);
-              } else {
-                listaEscolasContainer.insertBefore(cardArrastado, cardAbaixo);
+        if (
+          a.type === "correct" &&
+          old.events.some((e) => e.correctionOf === a.eventId)
+        )
+          throw Error("Ponto já estornado.");
+        const original =
+          a.type === "correct"
+            ? {
+                entity: "matches",
+                target: old.id,
+                detail: old.events.find((e) => e.id === a.eventId),
               }
-            }
-          });
-        });
-
-        document.querySelectorAll(".btn-fixar-escola").forEach(btn => {
-          btn.onclick = (e) => {
-            e.stopPropagation();
-            const id = btn.getAttribute("data-id");
-            if (escolaPrincipalFixadaId === id) {
-              escolaPrincipalFixadaId = "";
-              localStorage.removeItem("escola_principal_fixada_id");
-              mostrarNotificacao("📌 Escola desfixada.");
-            } else {
-              escolaPrincipalFixadaId = id;
-              localStorage.setItem("escola_principal_fixada_id", id);
-              mostrarNotificacao("⭐ Escola definida como principal e fixada no topo!");
-            }
-            carregarListaEscolas();
+            : null;
+        const r = M.applyMatch(current, { ...a, championship: a.championshipId ? (latest.championships || []).find((c) => c.id === a.championshipId) : null }, original),
+          event = {
+            ...r.detail,
+            id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+            actor: "demo",
+            at: new Date().toISOString(),
+            gameMs: M.elapsed(r.match),
           };
-        });
-
-        document.querySelectorAll(".btn-editar-escola").forEach(btn => {
-          btn.onclick = (e) => {
-            e.stopPropagation();
-            const b = e.target.closest("button");
-            inputEscolaIdEditando.value = b.getAttribute("data-id");
-            inputNomeEscola.value = b.getAttribute("data-nome");
-            inputGestorEscola.value = b.getAttribute("data-gestor");
-            inputCidadeEscola.value = b.getAttribute("data-cidade");
-            btnSalvarNovaEscola.textContent = "💾 Atualizar Escola";
-            btnCancelarEdicao.classList.remove("hidden");
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          };
-        });
-
-        document.querySelectorAll(".btn-excluir-escola").forEach(btn => {
-          btn.onclick = async (e) => {
-            e.stopPropagation();
-            const b = e.target.closest("button");
-            const id = b.getAttribute("data-id");
-            const nomeEscola = b.getAttribute("data-nome");
-            if (confirm(`Deseja excluir a escola "${nomeEscola}"?`)) {
-              await deleteDoc(doc(db, "escolas_cadastradas", id));
-              await deleteDoc(doc(db, "escolas_configuracoes", normalizarTexto(nomeEscola)));
-              mostrarNotificacao("🗑️ Escola excluída!");
-              carregarListaEscolas();
-            }
-          };
-        });
-      }
-    } catch (e) { console.error(e); }
-  }
-
-  btnCancelarEdicao?.addEventListener("click", () => {
-    inputEscolaIdEditando.value = "";
-    inputNomeEscola.value = "";
-    inputGestorEscola.value = "";
-    inputCidadeEscola.value = "";
-    btnSalvarNovaEscola.textContent = "➕ Cadastrar Escola";
-    btnCancelarEdicao.classList.add("hidden");
-  });
-
-  btnSalvarNovaEscola?.addEventListener("click", async (e) => {
-    e.preventDefault(); 
-    const idEditando = inputEscolaIdEditando?.value;
-    const nome = inputNomeEscola?.value.trim();
-    const gestor = inputGestorEscola?.value.trim();
-    const cidade = inputCidadeEscola?.value.trim();
-    if (!nome) { mostrarNotificacao("⚠ Digite o nome da escola!"); return; }
-    try {
-      const docId = idEditando || normalizarTexto(nome);
-      await setDoc(doc(db, "escolas_cadastradas", docId), { nome, gestor, cidade, atualizadoEm: serverTimestamp() });
-      animarBotaoSucesso(e.target);
-      mostrarNotificacao(`✅ Escola "${nome}" salva!`);
-      inputEscolaIdEditando.value = ""; inputNomeEscola.value = ""; inputGestorEscola.value = ""; inputCidadeEscola.value = "";
-      btnSalvarNovaEscola.textContent = "➕ Cadastrar Escola";
-      btnCancelarEdicao.classList.add("hidden");
-      await carregarListaEscolas();
-    } catch (err) { mostrarNotificacao("Erro: " + err.message); }
-  });
-
-  window.encerrarProvaAtivaAgora = async function(escolaNome) {
-    if (!escolaNome) { alert("⚠ Escola não informada."); return; }
-    if (!confirm(`⚠️ Deseja encerrar a prova ativa de "${escolaNome}"?`)) return;
-
-    // IMPORTANTE: a permissão do arquivo precisa ser confirmada ainda no clique do usuário.
-    // Fazemos isso ANTES de prompt/Firebase para impedir que o navegador bloqueie a gravação
-    // e deixe uma avaliação antiga publicada no GitHub.
-    const vinculoOk = await garantirVinculoPublicacaoNoClique();
-    if (!vinculoOk) {
-      alert('⚠️ Encerramento cancelado. Vincule o arquivo "prova-publicada.json" do projeto para garantir que a prova seja retirada do GitHub.');
-      return;
-    }
-
-    const motivoEncerramento = (prompt(
-      "Informe o motivo do encerramento da avaliação:",
-      "Avaliação encerrada pelo professor."
-    ) || "Avaliação encerrada pelo professor.").trim();
-
-    // PRIMEIRO encerra o pacote público. Assim GitHub é a referência de entrada/saída
-    // e a prova não permanece disponível caso o Firebase esteja lento ou sem cota.
-    let modoPublicacaoEncerramento = "";
-    try {
-      modoPublicacaoEncerramento = await gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento);
-    } catch (err) {
-      console.error("Falha ao tornar prova-publicada.json inativo:", err);
-      alert("⚠️ Não foi possível atualizar prova-publicada.json como INATIVO. A prova NÃO será encerrada no Firebase para evitar estados diferentes. Tente Encerrar novamente.");
-      return;
-    }
-
-    let firebaseEncerrado = false;
-    try {
-      await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
-        ativa: false,
-        encerradoEm: serverTimestamp(),
-        motivoEncerramento
-      }, { merge: true });
-      firebaseEncerrado = true;
-    } catch(err) {
-      console.warn("Firebase indisponível no encerramento:", err?.code || err);
-    }
-
-    mostrarNotificacao(`🛑 Encerramento de "${escolaNome}" preparado.`);
-    alert(
-      `🛑 Encerramento preparado.\n\n` +
-      `GitHub: arquivo do projeto marcado como INATIVO.\n` +
-      `${firebaseEncerrado ? "Firebase: encerrado.\n" : "Firebase: indisponível/sem cota.\n"}` +
-      `A sincronização automática do VS Code publicará a alteração.`
-    );
-  };
-
-  function popularSelectMateriasQuestao() {
-    const sel = document.getElementById("cad-materia");
-    if (!sel) return;
-    let materias = ["Inteligência Artificial", "Programação Front-End", "Matemática", "Língua Portuguesa"];
-    estruturaGlobalBoxes.forEach(b => {
-      if (b.id === "materias" || b.titulo.toLowerCase().includes("disciplina") || b.titulo.toLowerCase().includes("matéria")) {
-        materias = b.itens;
-      }
-    });
-    let html = "";
-    materias.forEach(m => { html += `<option value="${m}">${m}</option>`; });
-    sel.innerHTML = html;
-  }
-
-  document.getElementById("form-cadastrar-questao")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const materia = document.getElementById("cad-materia").value;
-    const pergunta = document.getElementById("cad-pergunta").value.trim();
-    const opA = document.getElementById("cad-op-a").value.trim();
-    const opB = document.getElementById("cad-op-b").value.trim();
-    const opC = document.getElementById("cad-op-c").value.trim();
-    const opD = document.getElementById("cad-op-d").value.trim();
-    const opE = document.getElementById("cad-op-e") ? document.getElementById("cad-op-e").value.trim() : "";
-    const correta = document.getElementById("cad-correta").value.toUpperCase();
-
-    if (!pergunta || !materia) { mostrarNotificacao("⚠ Preencha todos os campos!"); return; }
-
-    try {
-      const novaQuestaoRef = await addDoc(collection(db, "questoes"), {
-        materia: materia,
-        categoria: materia,
-        pergunta: pergunta,
-        opcoes: [opA, opB, opC, opD, opE].filter(Boolean),
-        correta: correta,
-        criadoEm: serverTimestamp()
-      });
-
-      // Mantém a cópia segura do aluno no momento do cadastro.
-      // Nunca envia o campo "correta".
-      await setDoc(doc(db, "questoes_publicas", novaQuestaoRef.id), {
-        materia: materia,
-        categoria: materia,
-        pergunta: pergunta,
-        opcoes: [opA, opB, opC, opD, opE].filter(Boolean),
-        origem: "questoes",
-        atualizadoEm: serverTimestamp()
-      });
-
-      animarBotaoSucesso(e.submitter);
-      mostrarNotificacao("✅ Questão cadastrada com sucesso!");
-      document.getElementById("form-cadastrar-questao").reset();
-      popularSelectMateriasQuestao();
-    } catch (err) { mostrarNotificacao("Erro ao cadastrar: " + err.message); }
-  });
-
-  window.processarArquivoImportacao = async function(event) {
-    const arquivo = event.target.files[0];
-    if (!arquivo) return;
-
-    const extensao = arquivo.name.split('.').pop().toLowerCase();
-    const textarea = document.getElementById("input-massa-questoes");
-
-    if (extensao === 'txt') {
-      const leitor = new FileReader();
-      leitor.onload = function(e) {
-        textarea.value = e.target.result;
-        mostrarNotificacao("📄 Arquivo TXT carregado na caixa de texto!");
-      };
-      leitor.readAsText(arquivo);
-    } 
-    else if (extensao === 'docx') {
-      const leitor = new FileReader();
-      leitor.onload = async function(e) {
-        try {
-          const resultado = await mammoth.extractRawText({ arrayBuffer: e.target.result });
-          textarea.value = resultado.value;
-          mostrarNotificacao("📄 Arquivo Word (.docx) convertido e carregado!");
-        } catch (err) {
-          alert("⚠️ Erro ao ler arquivo Word: " + err.message);
-        }
-      };
-      leitor.readAsArrayBuffer(arquivo);
-    } 
-    else if (extensao === 'xlsx' || extensao === 'xls') {
-      const leitor = new FileReader();
-      leitor.onload = function(e) {
-        try {
-          const dadosBinarios = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(dadosBinarios, { type: 'array' });
-          const primeiraAba = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[primeiraAba];
-          const linhasJson = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-          let textoFormatado = "";
-          linhasJson.forEach(linha => {
-            if (linha && linha.length >= 6) {
-              textoFormatado += linha.join(" | ") + "\n";
-            }
-          });
-
-          textarea.value = textoFormatado;
-          mostrarNotificacao("📊 Planilha Excel lida e convertida com sucesso!");
-        } catch (err) {
-          alert("⚠️ Erro ao ler planilha Excel: " + err.message);
-        }
-      };
-      leitor.readAsArrayBuffer(arquivo);
-    } else {
-      alert("⚠️ Formato de arquivo não suportado.");
-    }
-  };
-
-  window.importarQuestoesEmMassa = async function() {
-    const texto = document.getElementById("input-massa-questoes").value.trim();
-    const materiaPadrao = document.getElementById("cad-materia").value || "Geral";
-    if (!texto) { alert("⚠️ Cole o texto ou envie um arquivo com as questões para importar."); return; }
-
-    let linhas = texto.split("\n");
-    let importadas = 0;
-
-    for (let linha of linhas) {
-      if (!linha.trim()) continue;
-      let partes = linha.split("|").map(p => p.trim());
-       
-      try {
-        if (partes.length >= 8) {
-          await addDoc(collection(db, "questoes"), {
-            materia: partes[0],
-            categoria: partes[0],
-            pergunta: partes[1],
-            opcoes: [partes[2], partes[3], partes[4], partes[5], partes[6]].filter(Boolean),
-            correta: partes[7].toUpperCase(),
-            criadoEm: serverTimestamp()
-          });
-          importadas++;
-        } else if (partes.length >= 7) {
-          await addDoc(collection(db, "questoes"), {
-            materia: materiaPadrao,
-            categoria: materiaPadrao,
-            pergunta: partes[0],
-            opcoes: [partes[1], partes[2], partes[3], partes[4], partes[5]].filter(Boolean),
-            correta: partes[6].toUpperCase(),
-            criadoEm: serverTimestamp()
-          });
-          importadas++;
-        }
-      } catch(e) {}
-    }
-
-    if (importadas > 0) {
-      document.getElementById("input-massa-questoes").value = "";
-      document.getElementById("input-arquivo-questoes").value = "";
-      mostrarNotificacao(`✅ ${importadas} questões importadas em massa com sucesso!`);
-    } else {
-      alert("⚠️ Formato inválido.");
-    }
-  };
-
-  // ==========================================================
-  // 💾 FASE 10C.3 — RELATÓRIOS RESILIENTES / ECONOMIA DE FIREBASE
-  // ==========================================================
-  // Os relatórios NÃO ficam mais com listener em tempo real.
-  // Isso evita reler milhares de documentos repetidamente.
-  //
-  // O navegador guarda uma cópia local dos relatórios já sincronizados.
-  // Assim, se a cota do Firebase acabar ou a internet cair, os dados
-  // previamente sincronizados continuam disponíveis neste computador.
-  //
-  // IMPORTANTE:
-  // - esta rotina NÃO apaga documentos do Firebase;
-  // - não move resultados antigos;
-  // - não altera resultados históricos;
-  // - a sincronização completa só ocorre quando o professor clicar.
-  // ==========================================================
-  const CHAVE_CACHE_RELATORIOS = "quiz_relatorios_cache_v10c3";
-  const CHAVE_CACHE_RELATORIOS_DATA = "quiz_relatorios_cache_data_v10c3";
-
-  function salvarCacheLocalRelatorios(lista) {
-    try {
-      // Proteção: novas entregas são mescladas ao histórico existente.
-      const entrada = Array.isArray(lista) ? lista : [];
-      let existente = [];
-      try {
-        const p = JSON.parse(localStorage.getItem(CHAVE_CACHE_RELATORIOS) || "[]");
-        existente = Array.isArray(p) ? p : [];
-      } catch (_) {}
-      const mapa = new Map();
-      const chave = (item,i) => item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "") ||
-        item?.id || `${item?.nome || item?.aluno || "resultado"}|${item?.timestamp || item?.dataEnvio || i}`;
-      existente.filter(item => !resultadoExcluido(item)).forEach((item,i)=>mapa.set(chave(item,i),item));
-      entrada.filter(item => !resultadoExcluido(item)).forEach((item,i)=>mapa.set(chave(item,i),item));
-      localStorage.setItem(CHAVE_CACHE_RELATORIOS, JSON.stringify(Array.from(mapa.values())));
-      localStorage.setItem(CHAVE_CACHE_RELATORIOS_DATA, new Date().toISOString());
-      return true;
-    } catch (erro) {
-      console.error("Não foi possível salvar o cache local dos relatórios:", erro);
-      return false;
-    }
-  }
-
-  function carregarCacheLocalRelatorios() {
-    try {
-      const bruto = localStorage.getItem(CHAVE_CACHE_RELATORIOS);
-      const lista = bruto ? JSON.parse(bruto) : [];
-      return Array.isArray(lista) ? lista.filter(item => !resultadoExcluido(item)) : [];
-    } catch (erro) {
-      console.error("Cache local de relatórios inválido:", erro);
-      return [];
-    }
-  }
-
-  function formatarUltimaSincronizacao() {
-    const iso = localStorage.getItem(CHAVE_CACHE_RELATORIOS_DATA);
-    if (!iso) return "Nunca sincronizado neste navegador";
-    const data = new Date(iso);
-    return Number.isNaN(data.getTime()) ? "Data desconhecida" : data.toLocaleString("pt-BR");
-  }
-
-  function atualizarStatusCacheRelatorios(textoExtra = "") {
-    const status = document.getElementById("status-cache-relatorios");
-    if (!status) return;
-    const qtd = carregarCacheLocalRelatorios().length;
-    status.innerHTML = `💾 <strong>${qtd}</strong> relatório(s) salvo(s) neste navegador · Última sincronização: <strong>${formatarUltimaSincronizacao()}</strong>${textoExtra ? " · " + textoExtra : ""}`;
-  }
-
-  function criarControlesCacheRelatorios() {
-    if (document.getElementById("controles-cache-relatorios")) return;
-
-    const corpo = document.getElementById("corpo-tabela");
-    if (!corpo) return;
-
-    const painelResultados = document.getElementById("aba-resultados") || corpo.closest("section") || corpo.parentElement;
-    if (!painelResultados) return;
-
-    const caixa = document.createElement("div");
-    caixa.id = "controles-cache-relatorios";
-    caixa.style.cssText = "margin:12px 0;padding:12px;border:1px solid #334155;border-radius:10px;background:#0f172a;display:flex;gap:10px;align-items:center;flex-wrap:wrap;";
-    caixa.innerHTML = `
-      <div id="status-cache-relatorios" style="flex:1;min-width:260px;color:#cbd5e1;font-size:13px;">
-        💾 Preparando relatórios locais...
-      </div>
-      <button id="btn-diagnostico-auth" type="button" class="btn-acao btn-secondary"
-        title="Mostra como o Firebase está reconhecendo o professor. Não lê documentos do Firestore.">
-        🔐 Diagnóstico
-      </button>
-      <button id="btn-sincronizar-relatorios" type="button" class="btn-acao btn-primary"
-        title="Busca os resultados no Firebase somente quando você clicar. Use após a cota diária voltar.">
-        🔄 Sincronizar relatórios
-      </button>
-      <button id="btn-backup-relatorios-local" type="button" class="btn-acao btn-secondary"
-        title="Salva uma cópia JSON datada dos relatórios.">💾 Backup local</button>
-      <button id="btn-vincular-backup-local" type="button" class="btn-acao btn-secondary"
-        title="Vincula backup-local/relatorios. Nenhum arquivo é apagado automaticamente.">🔗 Pasta backup</button>
-      <button id="btn-restaurar-backup-local" type="button" class="btn-acao btn-secondary"
-        title="Restaura um backup JSON somente neste navegador. Não altera o Firebase.">
-        📥 Restaurar backup
-      </button>
-      <input id="arquivo-backup-relatorios" type="file" accept=".json,application/json" style="display:none;">
-    `;
-
-    const tabela = corpo.closest("table");
-    const destino = tabela?.parentElement || corpo.parentElement;
-    destino.parentElement.insertBefore(caixa, destino);
-
-    document.getElementById("btn-diagnostico-auth")?.addEventListener("click", diagnosticarAutenticacaoProfessor);
-    document.getElementById("btn-sincronizar-relatorios")?.addEventListener("click", sincronizarRelatoriosSobDemanda);
-    document.getElementById("btn-backup-relatorios-local")?.addEventListener("click", async (evento) => {
-      evento.preventDefault(); evento.stopPropagation();
-      await exportarBackupLocalRelatorios();
-      history.replaceState(null, "", "#relatorios");
-    });
-    document.getElementById("btn-vincular-backup-local")?.addEventListener("click", async (evento) => {
-      evento.preventDefault(); evento.stopPropagation();
-      await vincularPastaBackupRelatorios();
-      history.replaceState(null, "", "#relatorios");
-    });
-
-    const seletorBackup = document.getElementById("arquivo-backup-relatorios");
-    document.getElementById("btn-restaurar-backup-local")?.addEventListener("click", () => {
-      if (seletorBackup) {
-        seletorBackup.value = "";
-        seletorBackup.click();
-      }
-    });
-    seletorBackup?.addEventListener("change", (evento) => {
-      importarBackupLocalRelatorios(evento.target.files?.[0]);
-    });
-
-    // Detecta queda/retorno da internet sem apagar ou recarregar os relatórios.
-    window.addEventListener("online", atualizarEstadoConexaoRelatorios);
-    window.addEventListener("offline", atualizarEstadoConexaoRelatorios);
-    atualizarEstadoConexaoRelatorios();
-  }
-
-  // ==========================================================
-  // 🔐 FASE 10C.5 — DIAGNÓSTICO DE AUTENTICAÇÃO DO PROFESSOR
-  // ==========================================================
-  // Esta função NÃO consulta documentos do Firestore e, portanto,
-  // não gasta leituras de relatórios. Ela apenas verifica o usuário
-  // e o token que o Firebase Authentication entregou ao navegador.
-  async function diagnosticarAutenticacaoProfessor(mostrarJanela = true) {
-    const usuario = auth.currentUser;
-    const status = document.getElementById("status-cache-relatorios");
-
-    if (!usuario) {
-      const msg = "🔴 Firebase Authentication: nenhum usuário autenticado.";
-      if (status) status.innerHTML = msg;
-      if (mostrarJanela) alert(msg + "\n\nFaça login novamente no Painel do Professor.");
-      return { ok: false, provider: "nenhum" };
-    }
-
-    try {
-      // true força a renovação do token para evitar claims antigos em cache.
-      const token = await getIdTokenResult(usuario, true);
-      const provider = token?.signInProvider || token?.claims?.firebase?.sign_in_provider || "desconhecido";
-      const esperado = provider === "password";
-      const email = usuario.email || "(sem e-mail)";
-      const uid = usuario.uid || "(sem UID)";
-
-      const resumo =
-        `${esperado ? "🟢" : "🔴"} Auth: ${email} · provedor: ${provider} · ` +
-        `UID: ${uid.slice(0, 8)}…`;
-
-      if (status) {
-        const qtd = carregarCacheLocalRelatorios().length;
-        status.innerHTML =
-          `💾 <strong>${qtd}</strong> relatório(s) local(is) · ${resumo} · ` +
-          `Última sincronização: <strong>${formatarUltimaSincronizacao()}</strong>`;
-      }
-
-      if (mostrarJanela) {
-        alert(
-          "🔐 DIAGNÓSTICO DE AUTENTICAÇÃO — FASE 10C.5\n\n" +
-          `E-mail: ${email}\n` +
-          `UID: ${uid}\n` +
-          `Provedor reconhecido pelo Firebase: ${provider}\n\n` +
-          (esperado
-            ? "✅ O token está identificado como “password”.\n" +
-              "Pelas regras que você mostrou, este usuário deveria ser reconhecido como professor.\n\n" +
-              "Se a leitura continuar com permission-denied, o próximo ponto a conferir são as regras que estão REALMENTE publicadas no projeto Firebase."
-            : "❌ O token NÃO está identificado como “password”.\n" +
-              "As regras atuais não reconhecerão esta sessão como professor.\n" +
-              "Saia do painel e entre novamente pelo login de e-mail e senha.")
-        );
-      }
-
-      return { ok: esperado, provider, email, uid };
-    } catch (erro) {
-      console.error("FASE 10C.5 - diagnóstico de autenticação:", erro);
-      const codigo = erro?.code || erro?.name || "erro-desconhecido";
-      if (mostrarJanela) {
-        alert(
-          "⚠️ Não foi possível renovar/verificar o token do professor.\n\n" +
-          `Código: ${codigo}\n` +
-          `Detalhe: ${erro?.message || "sem detalhe"}`
-        );
-      }
-      return { ok: false, provider: "erro", erro };
-    }
-  }
-
-  // ==========================================================
-  // 📴 FASE 10C.8 — MODO OFFLINE / RESTAURAÇÃO DE BACKUP
-  // ==========================================================
-  // O sistema continua exibindo os relatórios já sincronizados mesmo sem
-  // internet. O backup JSON também pode ser restaurado para ESTE navegador.
-  // Restaurar backup NÃO grava, altera ou apaga documentos no Firebase.
-
-  function atualizarEstadoConexaoRelatorios() {
-    const online = navigator.onLine;
-    const extra = online
-      ? "🟢 Navegador online"
-      : "📴 Sem internet — usando dados locais";
-    atualizarStatusCacheRelatorios(extra);
-
-    const btnSync = document.getElementById("btn-sincronizar-relatorios");
-    if (btnSync) {
-      btnSync.disabled = !online;
-      btnSync.title = online
-        ? "Busca os resultados no Firebase somente quando você clicar."
-        : "Sem internet: os relatórios locais continuam disponíveis; sincronize quando a conexão voltar.";
-    }
-  }
-
-  function importarBackupLocalRelatorios(arquivo) {
-    if (!arquivo) return;
-    const leitor = new FileReader();
-
-    leitor.onload = () => {
-      try {
-        const pacote = JSON.parse(String(leitor.result || ""));
-        const lista = Array.isArray(pacote) ? pacote : pacote?.resultados;
-
-        if (!Array.isArray(lista)) {
-          throw new Error("O arquivo não contém uma lista válida de resultados.");
-        }
-
-        // Mescla backup + cache atual. Não apaga o que já existe localmente.
-        const atuais = carregarCacheLocalRelatorios();
-        const mapa = new Map();
-
-        const chave = (item, indice) =>
-          item?.refPath ||
-          item?.idDoc ||
-          item?.id ||
-          `${item?.aluno || item?.nomeAluno || "resultado"}|${item?.dataHora || item?.data || ""}|${indice}`;
-
-        atuais.forEach((item, i) => mapa.set(chave(item, i), item));
-        lista.forEach((item, i) => mapa.set(chave(item, i), item));
-
-        const mesclados = Array.from(mapa.values());
-        salvarCacheLocalRelatorios(mesclados);
-        resultadosGlobaisCache = mesclados;
-        renderizarTabelaResultadosFiltrada();
-        atualizarEstadoConexaoRelatorios();
-
-        alert(
-          `✅ Backup restaurado localmente.\n\n` +
-          `${mesclados.length} relatório(s) disponíveis neste navegador.\n\n` +
-          "Nenhum documento do Firebase foi alterado ou apagado."
-        );
-      } catch (erro) {
-        console.error("Falha ao restaurar backup local:", erro);
-        alert("⚠️ Não foi possível restaurar esse backup.\n\n" + (erro?.message || "Arquivo inválido."));
-      }
-    };
-
-    leitor.onerror = () => alert("⚠️ Não foi possível ler o arquivo de backup.");
-    leitor.readAsText(arquivo, "utf-8");
-  }
-
-  const DB_BACKUP_LOCAL = "quiz_backup_local_handles_v1";
-  const STORE_BACKUP_LOCAL = "handles";
-  const CHAVE_PASTA_BACKUP_RELATORIOS = "pasta-relatorios";
-
-  function abrirDbBackupLocal() {
-    return new Promise((resolve,reject)=>{
-      const req=indexedDB.open(DB_BACKUP_LOCAL,1);
-      req.onupgradeneeded=()=>req.result.createObjectStore(STORE_BACKUP_LOCAL);
-      req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error);
-    });
-  }
-  async function salvarHandlePastaBackup(handle) {
-    const dbLocal=await abrirDbBackupLocal();
-    return new Promise((resolve,reject)=>{
-      const tx=dbLocal.transaction(STORE_BACKUP_LOCAL,"readwrite");
-      tx.objectStore(STORE_BACKUP_LOCAL).put(handle,CHAVE_PASTA_BACKUP_RELATORIOS);
-      tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error);
-    });
-  }
-  async function obterHandlePastaBackup() {
-    try {
-      const dbLocal=await abrirDbBackupLocal();
-      return await new Promise((resolve,reject)=>{
-        const req=dbLocal.transaction(STORE_BACKUP_LOCAL,"readonly").objectStore(STORE_BACKUP_LOCAL).get(CHAVE_PASTA_BACKUP_RELATORIOS);
-        req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
-      });
-    } catch (_) { return null; }
-  }
-  async function vincularPastaBackupRelatorios() {
-    if (!window.showDirectoryPicker) { alert("Navegador sem vínculo direto de pasta. O backup por download continua disponível."); return false; }
-    try {
-      const handle=await window.showDirectoryPicker({mode:"readwrite"});
-      const perm=await handle.requestPermission({mode:"readwrite"});
-      if (perm!=="granted") return false;
-      await salvarHandlePastaBackup(handle);
-      alert(`✅ Pasta vinculada: ${handle.name}`);
-      return true;
-    } catch(err) { if(err?.name!=="AbortError") alert("Não foi possível vincular: "+(err?.message||err)); return false; }
-  }
-  function nomeArquivoBackupRelatorios() {
-    const d=new Date(),p=n=>String(n).padStart(2,"0");
-    return `backup-relatorios-${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.json`;
-  }
-  async function exportarBackupLocalRelatorios() {
-    const lista=Array.isArray(resultadosGlobaisCache)?resultadosGlobaisCache:carregarCacheLocalRelatorios();
-    if(!lista.length){alert("Ainda não há relatórios no cache local.");return;}
-    const conteudo=JSON.stringify({versaoBackup:2,tipo:"quiz-relatorios-backup-local",criadoEm:new Date().toISOString(),total:lista.length,resultados:lista},null,2);
-    const nome=nomeArquivoBackupRelatorios();
-    const pasta=await obterHandlePastaBackup();
-    if(pasta){
-      try{
-        let perm=await pasta.queryPermission({mode:"readwrite"});
-        if(perm!=="granted") perm=await pasta.requestPermission({mode:"readwrite"});
-        if(perm==="granted"){
-          let nomeFinal=nome,n=1;
-          while(true){try{await pasta.getFileHandle(nomeFinal);nomeFinal=nome.replace(".json",`-${n++}.json`);}catch(_){break;}}
-          const arq=await pasta.getFileHandle(nomeFinal,{create:true}),w=await arq.createWritable();
-          await w.write(conteudo);await w.close();
-          alert(`✅ Backup concluído.\n\nArquivo: ${nomeFinal}\nRelatórios salvos: ${lista.length}\n\nNenhum backup anterior foi apagado.`);
-          const status=document.getElementById("status-cache-relatorios");
-          if(status) status.textContent=`💾 Backup concluído: ${nomeFinal} · ${lista.length} relatório(s)`;
-          return;
-        }
-      }catch(e){console.warn("Pasta de backup indisponível; usando download.",e);}
-    }
-    if(window.showDirectoryPicker && confirm(`Há ${lista.length} relatório(s).\n\nDeseja selecionar agora a pasta backup-local/relatorios do projeto?`)){
-      if(await vincularPastaBackupRelatorios()) return exportarBackupLocalRelatorios();
-    }
-    const blob=new Blob([conteudo],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
-    a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
-  }
-
-
-  async function sincronizarRelatoriosSobDemanda() {
-    if (document.documentElement.dataset.modoOfflineProfessor === "1") {
-      alert("📴 O painel está em modo offline. Saia e entre novamente com internet para sincronizar.");
-      return;
-    }
-    const btn = document.getElementById("btn-sincronizar-relatorios");
-    const corpo = document.getElementById("corpo-tabela");
-    if (!corpo) return;
-
-    // 10C.8: sem internet não tentamos consultar o Firebase.
-    // Os relatórios locais permanecem funcionando normalmente.
-    if (!navigator.onLine) {
-      resultadosGlobaisCache = carregarCacheLocalRelatorios();
-      renderizarTabelaResultadosFiltrada();
-      atualizarEstadoConexaoRelatorios();
-      alert("📴 Sem internet. Exibindo os relatórios salvos neste navegador.\n\nSincronize somente quando a conexão voltar.");
-      return;
-    }
-
-    // FASE 10C.5: antes de consultar relatórios, confirma se o token
-    // satisfaz a condição "sign_in_provider == password" das regras.
-    const diagnostico = await diagnosticarAutenticacaoProfessor(false);
-    if (!diagnostico.ok) {
-      alert(
-        "⛔ Sincronização cancelada para evitar leituras desnecessárias.\n\n" +
-        `O Firebase reconheceu o provedor como: ${diagnostico.provider}.\n` +
-        "Clique em “🔐 Diagnóstico” para ver os detalhes."
-      );
-      return;
-    }
-
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "⏳ Sincronizando...";
-    }
-
-    // Começa com o que já existe no computador. Assim uma falha nunca
-    // substitui um cache válido por uma lista vazia.
-    const mapa = new Map();
-    carregarCacheLocalRelatorios().forEach((item) => {
-      const chave = item.refPath || `avaliacoes/${item.idDoc}`;
-      mapa.set(chave, item);
-    });
-
-    let atuaisOK = false;
-    let historicoOK = false;
-    let erroAtuais = null;
-    let erroHistorico = null;
-
-    try {
-      // ETAPA 1 — coleção atual. É independente do histórico antigo.
-      const atuais = await getDocs(collection(db, "avaliacoes"));
-      atuais.forEach((docSnap) => {
-        if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
-        mapa.set(docSnap.ref.path, {
-          idDoc: docSnap.id,
-          refPath: docSnap.ref.path,
-          ...docSnap.data()
-        });
-      });
-      atuaisOK = true;
-
-      // Salva IMEDIATAMENTE o que conseguiu recuperar.
-      resultadosGlobaisCache = Array.from(mapa.values());
-      salvarCacheLocalRelatorios(resultadosGlobaisCache);
-      renderizarTabelaResultadosFiltrada();
-      atualizarStatusCacheRelatorios(`🟢 Resultados atuais recuperados (${atuais.size})`);
-    } catch (erro) {
-      erroAtuais = erro;
-      console.error("FASE 10C.4 - erro nos resultados atuais:", erro);
-    }
-
-    try {
-      // ETAPA 2 — histórico. A falha desta etapa NÃO apaga a etapa 1.
-      // Esta consulta é feita apenas quando o professor clica em sincronizar.
-      const historico = await getDocs(collectionGroup(db, "avaliacoes"));
-      historico.forEach((docSnap) => {
-        if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
-        mapa.set(docSnap.ref.path, {
-          idDoc: docSnap.id,
-          refPath: docSnap.ref.path,
-          ...docSnap.data()
-        });
-      });
-      historicoOK = true;
-
-      resultadosGlobaisCache = Array.from(mapa.values());
-      salvarCacheLocalRelatorios(resultadosGlobaisCache);
-      renderizarTabelaResultadosFiltrada();
-      atualizarStatusCacheRelatorios(`🟢 Sincronizado: atuais + histórico (${resultadosGlobaisCache.length})`);
-    } catch (erro) {
-      erroHistorico = erro;
-      console.error("FASE 10C.4 - erro no histórico:", erro);
-    }
-
-    // Garante que a tela sempre termine mostrando o cache preservado.
-    resultadosGlobaisCache = Array.from(mapa.values());
-    if (resultadosGlobaisCache.length) {
-      salvarCacheLocalRelatorios(resultadosGlobaisCache);
-      renderizarTabelaResultadosFiltrada();
-    }
-
-    const codigo = (erro) => erro?.code || erro?.name || "erro-desconhecido";
-    const detalhe = (erro) => String(erro?.message || "Sem detalhe informado pelo Firebase").slice(0, 220);
-
-    if (atuaisOK && historicoOK) {
-      mostrarNotificacao(`✅ ${resultadosGlobaisCache.length} relatório(s) preservado(s) no cache local.`);
-    } else if (atuaisOK) {
-      atualizarStatusCacheRelatorios(`🟡 Atuais salvos; histórico não carregou: ${codigo(erroHistorico)}`);
-      alert(
-        "⚠️ Os resultados atuais foram recuperados e salvos localmente.\n\n" +
-        "O histórico antigo não pôde ser carregado nesta tentativa.\n" +
-        `Código: ${codigo(erroHistorico)}\n` +
-        `Detalhe: ${detalhe(erroHistorico)}\n\n` +
-        "Nenhum dado foi apagado."
-      );
-    } else {
-      atualizarStatusCacheRelatorios(`🔴 Consulta atual falhou: ${codigo(erroAtuais)}`);
-      alert(
-        "⚠️ O Firebase recusou a consulta dos resultados atuais.\n\n" +
-        `Código: ${codigo(erroAtuais)}\n` +
-        `Detalhe: ${detalhe(erroAtuais)}\n\n` +
-        (erroHistorico ? `Histórico: ${codigo(erroHistorico)}\n\n` : "") +
-        "Nenhum dado foi apagado e o cache local existente foi preservado."
-      );
-    }
-
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "🔄 Sincronizar relatórios";
-    }
-  }
-
-  function inicializarTabelaResultados() {
-    const corpoTabelaResultados = document.getElementById("corpo-tabela");
-    if (!corpoTabelaResultados) return;
-
-    criarControlesCacheRelatorios();
-
-    // PRIMEIRO abre o cache local. Isso não consome nenhuma leitura do Firebase.
-    resultadosGlobaisCache = carregarCacheLocalRelatorios();
-
-    if (resultadosGlobaisCache.length > 0) {
-      renderizarTabelaResultadosFiltrada();
-      atualizarStatusCacheRelatorios("🟡 Exibindo cópia local");
-
-      // FASE 10C.10 — atualização automática incremental e econômica.
-      // Escuta somente resultados posteriores ao mais novo já salvo neste
-      // navegador. Não relê os 155 relatórios nem substitui o histórico.
-      const ultimoTimestampLocal = resultadosGlobaisCache.reduce((maior, item) => {
-        const n = Number(item?.timestamp || 0);
-        return Number.isFinite(n) && n > maior ? n : maior;
-      }, 0);
-
-      if (ultimoTimestampLocal > 0) {
-        const consultaNovos = query(
-          collection(db, "avaliacoes"),
-          where("timestamp", ">", ultimoTimestampLocal)
-        );
-
-        onSnapshot(consultaNovos, (snapshot) => {
-          if (snapshot.empty) return;
-
-          const mapa = new Map();
-          resultadosGlobaisCache.forEach((item, i) => {
-            const chave = item?.refPath || (item?.idDoc ? `avaliacoes/${item.idDoc}` : "") ||
-              item?.id || `${item?.nome || "resultado"}|${item?.timestamp || i}`;
-            mapa.set(chave, item);
-          });
-
-          let adicionados = 0;
-          snapshot.docChanges().forEach((mudanca) => {
-            if (mudanca.type !== "added" && mudanca.type !== "modified") return;
-            const docSnap = mudanca.doc;
-            if (exclusoesConfirmadas.has(docSnap.ref.path)) return;
-            const item = { idDoc: docSnap.id, refPath: docSnap.ref.path, ...docSnap.data() };
-            const chave = item.refPath || `avaliacoes/${item.idDoc}`;
-            if (!mapa.has(chave)) adicionados++;
-            mapa.set(chave, item);
-          });
-
-          resultadosGlobaisCache = Array.from(mapa.values());
-          salvarCacheLocalRelatorios(resultadosGlobaisCache);
-          renderizarTabelaResultadosFiltrada();
-          atualizarStatusCacheRelatorios(
-            adicionados > 0
-              ? `🟢 ${adicionados} novo(s) resultado(s) recebido(s) automaticamente`
-              : "🟢 Resultado atualizado automaticamente"
-          );
-        }, (erro) => {
-          console.warn("Atualização incremental de relatórios indisponível:", erro?.code || erro);
-          atualizarStatusCacheRelatorios("🟡 Cópia local preservada; atualização automática temporariamente indisponível");
-        });
-      }
-    } else {
-      corpoTabelaResultados.innerHTML = `
-        <tr>
-          <td colspan="12" style="text-align:center;padding:24px;color:#fbbf24;">
-            💾 Ainda não há relatórios salvos neste navegador.<br>
-            <small style="color:#94a3b8;">
-              Seus dados do Firebase não foram apagados. Quando a cota diária voltar,
-              clique em “Sincronizar relatórios” uma única vez para criar a cópia local.
-            </small>
-          </td>
-        </tr>`;
-      atualizarStatusCacheRelatorios("🟡 Aguardando primeira sincronização");
-    }
-
-    // NÃO usamos onSnapshot() aqui.
-    // Portanto abrir a aba, pesquisar, classificar, gerar PDF/CSV e navegar
-    // pelos relatórios locais não provoca novas leituras no Firebase.
-  }
-
-  window.aplicarOrdenacaoResultados = function(criterio) {
-    ordemAtualResultados = criterio;
-    renderizarTabelaResultadosFiltrada();
-    const menuRes = document.getElementById('dropdown-menu-resultados');
-    if (menuRes) menuRes.classList.remove('show');
-  };
-
-  window.renderizarTabelaResultadosFiltrada = function() {
-    const corpoTabelaResultados = document.getElementById("corpo-tabela");
-    const selectFiltro = document.getElementById("select-filtro-escola-relatorio");
-    const selectFiltroPeriodo = document.getElementById("select-filtro-periodo-relatorio");
-    const inputBusca = document.getElementById("input-busca-resultados");
-    if (!corpoTabelaResultados) return;
-
-    const escolaSelecionada = selectFiltro ? selectFiltro.value : "TODAS";
-    const periodoSelecionado = selectFiltroPeriodo ? selectFiltroPeriodo.value : "TODOS";
-    const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
-
-    let dadosFiltrados = [...resultadosGlobaisCache];
-
-    dadosFiltrados = dadosFiltrados.filter(res => !resultadoExcluido(res) && !alunosOcultosCache.has(res.idDoc) && !alunosLixeiraCache.has(res.idDoc));
-
-    if (escolaSelecionada && escolaSelecionada !== "TODAS") {
-      dadosFiltrados = dadosFiltrados.filter(res => {
-        let escolaRes = (res.escola || "").trim();
-        return normalizarTexto(escolaRes) === normalizarTexto(escolaSelecionada) || escolaRes.toLowerCase() === escolaSelecionada.toLowerCase();
-      });
-    }
-
-    if (periodoSelecionado && periodoSelecionado !== "TODOS") {
-      dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.periodo) === normalizarTexto(periodoSelecionado));
-    }
-
-    if (termoBusca) {
-      dadosFiltrados = dadosFiltrados.filter(res => {
-        const textoConcatenado = normalizarTexto([
-          res.nome, res.escola, res.turma, res.materia, res.periodo,
-          res.tempoGastoFormatado, res.motivoFinalizacao,
-          res.pontuacao, res.totalQuestoes
-        ].filter(Boolean).join(" "));
-        return textoConcatenado.includes(termoBusca);
-      });
-    }
-
-    resultadosFiltradosCache = [...dadosFiltrados];
-    atualizarGraficosDesempenho(dadosFiltrados);
-
-    dadosFiltrados.sort((a, b) => {
-      let notaA = a.totalQuestoes > 0 ? (a.pontuacao / a.totalQuestoes) * 10 : 0;
-      let notaB = b.totalQuestoes > 0 ? (b.pontuacao / b.totalQuestoes) * 10 : 0;
-      let nomeA = (a.nome || "").trim();
-      let nomeB = (b.nome || "").trim();
-
-      switch (ordemAtualResultados || "data-desc") {
-        case "data-asc": return (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0);
-        case "nome-asc": return nomeA.localeCompare(nomeB);
-        case "nome-desc": return nomeB.localeCompare(nomeA);
-        case "turma-asc": return (a.turma || "").localeCompare(b.turma || "", undefined, {numeric: true});
-        case "escola-asc": return (a.escola || "").localeCompare(b.escola || "");
-        case "nota-desc": return notaB - notaA;
-        case "nota-asc": return notaA - notaB;
-        case "data-desc":
-        default: return (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0);
-      }
-    });
-
-    if (dadosFiltrados.length === 0) {
-      corpoTabelaResultados.innerHTML = `<tr><td colspan="12" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno encontrado.</td></tr>`;
-      return;
-    }
-
-    let htmlResultados = "";
-    dadosFiltrados.forEach(res => {
-      let dataFormatada = res.dataEnvio?.toDate
-        ? res.dataEnvio.toDate().toLocaleString("pt-BR")
-        : (Number(res.timestamp) ? new Date(Number(res.timestamp)).toLocaleString("pt-BR") : "Data recente");
-      let totalQ = res.totalQuestoes || 0;
-      let acertos = res.pontuacao || 0;
-      let erros = totalQ - acertos;
-      let notaCalculada = totalQ > 0 ? ((acertos / totalQ) * 10).toFixed(1) : "0.0";
-      let tempoGastoStr = res.tempoGastoFormatado || "N/D";
-      let idAlunoAlvo = res.idAluno || obterIdAluno(res.nome, res.turma);
-       
-      htmlResultados += `
-        <tr>
-          <td class="chk-col" style="text-align: center;">
-            <input type="checkbox" class="chk-item-resultado" value="${res.idDoc}" data-refpath="${res.refPath || ''}">
-          </td>
-          <td>
-            <span class="status-finalizado-limpo">✓ Finalizado</span>
-            ${motivoConclusaoRelatorio(res)
-              ? `<div class="motivo-finalizacao-limpo">🏁 ${motivoConclusaoRelatorio(res).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>` : ""}
-          </td>
-          <td>${dataFormatada}</td>
-          <td><strong>${res.escola || 'N/D'}</strong></td>
-          <td>${res.periodo || 'N/D'}</td>
-          <td>${res.nome || 'Aluno'}</td>
-          <td>${res.turma || 'N/D'}</td>
-          <td>${res.materia || 'Geral'}</td>
-          <td><span style="color: #facc15;">⏱ ${tempoGastoStr}</span></td>
-          <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
-          <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
-          <td style="text-align: center;">
-            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${idAlunoAlvo}" data-escopo="relatorios" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
-            <div class="grupo-botoes-acoes" hidden style="display:none;">
-              <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
-              <button type="button" class="btn-acao" style="background:#0284c7;" onclick="gerarBoletimPorId('${res.idDoc}')">📜 <span>Boletim</span></button>
-              <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova</span></button>
-              <button type="button" class="btn-acao" style="background:#10b981;" onclick="gerarCertificadoPorId('${res.idDoc}')">🎓 <span>Certificado</span></button>
-              <button type="button" class="btn-acao btn-secondary" data-id-aluno="${idAlunoAlvo}" data-nome-aluno="${String(res.nome||'Aluno').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onclick="consultarAutorizacoesAluno(this.dataset.idAluno,this.dataset.nomeAluno)">🔐 Autorizações</button>
-              <button type="button" class="btn-acao" style="background: #eab308;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome || 'Aluno'}')">🔄 Refazer</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    });
-    corpoTabelaResultados.innerHTML = htmlResultados;
-    restaurarMenusAbertos(corpoTabelaResultados);
-  };
-
-  // ==========================================================
-  // 🔵 FASE 10B.4 — DOCUMENTOS INDIVIDUAIS PRECISOS
-  // Os botões usam o registro real do resultado, evitando dados vagos.
-  // ==========================================================
-  function obterResultadoPorId(id) {
-    return resultadosGlobaisCache.find(r => r.idDoc === id);
-  }
-  function dataResultado(res) {
-    return res?.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString("pt-BR") :
-      (res?.timestamp?.toDate ? res.timestamp.toDate().toLocaleString("pt-BR") : "Não informado");
-  }
-  function metricasResultado(res) {
-    const total = Number(res?.totalQuestoes || 0);
-    const acertos = Number(res?.pontuacao || 0);
-    const erros = Math.max(0, total - acertos);
-    const nota = total > 0 ? ((acertos / total) * 10).toFixed(1) : "0.0";
-    return {total, acertos, erros, nota};
-  }
-  function abrirDocumentoImpressao(titulo, corpo) {
-    const w = window.open("", "_blank");
-    if (!w) { alert("⚠️ Permita pop-ups para gerar o documento."); return; }
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>
-    <style>
-      @page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111827;margin:0;font-size:12px}
-      h1{font-size:22px;margin:0 0 5px}h2{font-size:16px;margin:20px 0 8px}.sub{color:#475569;margin-bottom:18px}
-      .cab{border-bottom:2px solid #1e3a8a;padding-bottom:12px;margin-bottom:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
-      .campo{padding:7px 0;border-bottom:1px solid #e2e8f0}.campo b{color:#334155}.metricas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
-      .metrica{border:1px solid #cbd5e1;border-radius:7px;padding:10px;text-align:center}.metrica strong{display:block;font-size:18px;margin-top:3px}
-      .obs{border:1px solid #e2e8f0;background:#f8fafc;padding:10px;border-radius:7px;margin-top:14px}.assinaturas{display:flex;gap:50px;justify-content:center;margin-top:60px}
-      .assinaturas div{width:220px;text-align:center;border-top:1px solid #111;padding-top:5px}@media print{button{display:none}}
-    </style></head><body>${corpo}</body></html>`);
-    w.document.close(); setTimeout(()=>w.print(),180);
-  }
-
-  window.gerarBoletimPorId = function(id) {
-    const r=obterResultadoPorId(id); if(!r) return alert("Resultado não encontrado.");
-    const m=metricasResultado(r);
-    abrirDocumentoImpressao(`Boletim - ${r.nome||"Aluno"}`, `
-      <div class="cab"><h1>Boletim de Avaliação</h1><div class="sub">${r.escola||"Unidade escolar não informada"}</div></div>
-      <div class="grid">
-        <div class="campo"><b>Aluno(a):</b> ${r.nome||"Não informado"}</div><div class="campo"><b>Turma:</b> ${r.turma||"Não informada"}</div>
-        <div class="campo"><b>Matéria(s):</b> ${r.materia||"Geral"}</div><div class="campo"><b>Período:</b> ${r.periodo||"Não informado"}</div>
-        <div class="campo"><b>Data/Hora:</b> ${dataResultado(r)}</div><div class="campo"><b>Tempo:</b> ${r.tempoGastoFormatado||"Não informado"}</div>
-      </div>
-      <div class="metricas"><div class="metrica">Questões<strong>${m.total}</strong></div><div class="metrica">Acertos<strong>${m.acertos}</strong></div><div class="metrica">Erros<strong>${m.erros}</strong></div><div class="metrica">Nota<strong>${m.nota}/10</strong></div></div>
-      ${motivoConclusaoRelatorio(r)?`<div class="obs"><b>Finalização:</b> ${motivoConclusaoRelatorio(r).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`:""}
-      <div class="assinaturas"><div>Professor(a) / Responsável</div><div>Coordenação</div></div>`);
-  };
-
-  window.gerarCertificadoPorId = function(id) {
-    const r=obterResultadoPorId(id); if(!r) return alert("Resultado não encontrado.");
-    const m=metricasResultado(r);
-    abrirDocumentoImpressao(`Certificado - ${r.nome||"Aluno"}`, `
-      <div style="border:5px double #92400e;padding:35px;min-height:245mm;text-align:center">
-      <h1 style="font-family:Georgia,serif;font-size:30px;color:#92400e;margin-top:35px">CERTIFICADO DE CONCLUSÃO</h1>
-      <p style="font-size:15px;margin-top:35px">Certificamos que</p>
-      <h2 style="font-family:Georgia,serif;font-size:26px;border-bottom:1px solid #92400e;display:inline-block;padding:0 25px 8px">${r.nome||"Aluno(a)"}</h2>
-      <p style="font-size:15px;line-height:1.8;max-width:650px;margin:25px auto">concluiu a avaliação de <b>${r.materia||"Geral"}</b>, turma <b>${r.turma||"não informada"}</b>, na instituição <b>${r.escola||"não informada"}</b>, obtendo nota <b>${m.nota}/10</b> (${m.acertos} acerto(s) em ${m.total} questão(ões)).</p>
-      <p>Data do resultado: ${dataResultado(r)}</p>
-      <div class="assinaturas" style="margin-top:100px"><div>Professor(a) / Responsável</div><div>Direção / Coordenação</div></div></div>`);
-  };
-
-  window.gerarProvaPorId = function(id) {
-    const r=obterResultadoPorId(id); if(!r) return alert("Resultado não encontrado.");
-    gerarCopiaProvaIndividual(r.nome||"Aluno", r.turma||"", r.materia||"Geral", r.periodo||"Geral", dataResultado(r), r.escola||"");
-  };
-
-  window.gerarBoletimIndividual = function(nome, turma, escola, nota, materia) {
-    let win = window.open('', '_blank');
-    win.document.write(`
-      <html>
-      <head><title>Boletim - ${nome}</title></head>
-      <body style="font-family: Arial; padding: 30px; text-align: center; border: 5px solid #1e293b; margin: 20px;">
-        <h1>📜 BOLETIM DE AVALIAÇÃO ESCOLAR</h1>
-        <h3>${escola}</h3>
-        <hr style="margin: 20px 0;">
-        <p style="text-align: left; font-size: 16px;"><strong>Aluno(a):</strong> ${nome}</p>
-        <p style="text-align: left; font-size: 16px;"><strong>Turma:</strong> ${turma} | <strong>Matéria:</strong> ${materia}</p>
-        <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 30px 0;">
-          <h2>Nota Final: <span style="color: #2563eb;">${nota} / 10.0</span></h2>
-        </div>
-        <p style="margin-top: 60px;">___________________________________________________<br>Assinatura da Coordenação Pedagógica</p>
-      </body>
-      </html>
-    `);
-    win.document.close();
-    win.print();
-  };
-
-  window.gerarCertificadoIndividual = function(nome, escola, nota) {
-    let win = window.open('', '_blank');
-    win.document.write(`
-      <html>
-      <head><title>Certificado - ${nome}</title></head>
-      <body style="font-family: Georgia, serif; padding: 40px; text-align: center; border: 10px double #b45309; margin: 20px; background: #fffbeb;">
-        <h1 style="color: #b45309; font-size: 32px;">CERTIFICADO DE CONCLUSÃO</h1>
-        <p style="font-size: 18px; margin-top: 20px;">Certificamos para os devidos fins que</p>
-        <h2 style="font-size: 28px; color: #1e293b; border-bottom: 2px solid #b45309; display: inline-block; padding: 0 20px; margin: 15px 0;">${nome}</h2>
-        <p style="font-size: 18px; line-height: 1.6;">concluiu com êxito a avaliação oficial aplicada pela instituição <strong>${escola}</strong>, alcançando média <strong>${nota}</strong>.</p>
-        <div style="margin-top: 80px; display: flex; justify-content: space-around;">
-          <div>________________________________________<br>Direção Escolar</div>
-          <div>________________________________________<br>Coordenação</div>
-        </div>
-      </body>
-      </html>
-    `);
-    win.document.close();
-    win.print();
-  };
-
-  function atualizarGraficosDesempenho(lista) {
-    const contadorTotal = document.getElementById("contador-total-avaliacoes");
-    const barraAcertos = document.getElementById("grafico-barra-acertos");
-    const textoAcertos = document.getElementById("texto-media-acertos");
-    if (!contadorTotal) return;
-
-    contadorTotal.textContent = lista.length;
-
-    if (lista.length === 0) {
-      barraAcertos.style.width = "0%";
-      textoAcertos.textContent = "Nenhum dado disponível";
-      return;
-    }
-
-    let somaNotas = 0;
-    lista.forEach(res => {
-      let tQ = res.totalQuestoes || 10;
-      let ac = res.pontuacao || 0;
-      let nota = (ac / tQ) * 10;
-      somaNotas += nota;
-    });
-
-    let mediaGeral = somaNotas / lista.length;
-    let porcentagem = (mediaGeral / 10) * 100;
-
-    barraAcertos.style.width = `${porcentagem}%`;
-    textoAcertos.textContent = `Média Geral: ${mediaGeral.toFixed(1)} / 10.0`;
-  }
-
-  window.autorizarAlunoRefazer = async function(idAluno, nomeAluno) {
-    if (confirm(`Deseja autorizar o aluno(a) "${nomeAluno}" a refazer a prova?`)) {
-      try {
-        await setDoc(doc(db, "permissoes_alunos", idAluno), { podeFazer: true }, { merge: true });
-        mostrarNotificacao(`✅ Aluno(a) ${nomeAluno} autorizado(a) a refazer a prova!`);
-      } catch (err) {
-        mostrarNotificacao("Erro ao autorizar: " + err.message);
-      }
-    }
-  };
-
-  window.excluirResultadosSelecionados = function() {
-    const checkboxes = Array.from(document.querySelectorAll(".chk-item-resultado:checked"));
-    if (checkboxes.length === 0) { alert("⚠️ Selecione ao menos um resultado."); return; }
-    
-    if (confirm(`Mover os ${checkboxes.length} resultado(s) selecionado(s) para a lixeira?`)) {
-      try {
-        checkboxes.forEach(chk => {
-          if (chk.value) {
-            alunosLixeiraCache.add(chk.value);
-          }
-        });
-        salvarAlunosLixeiraLocalStorage();
-        renderizarTabelaResultadosFiltrada();
-        mostrarNotificacao(`🗑 ${checkboxes.length} resultado(s) movido(s) para a lixeira!`);
-      } catch (err) { 
-        mostrarNotificacao("Erro: " + err.message); 
-      }
-    }
-  };
-
-  function resultadosParaExportacao() {
-    return (resultadosFiltradosCache && resultadosFiltradosCache.length)
-      ? resultadosFiltradosCache : resultadosGlobaisCache.filter(r => !alunosOcultosCache.has(r.idDoc) && !alunosLixeiraCache.has(r.idDoc));
-  }
-  // Mantém o motivo registrado pelo aluno visível nos relatórios e exportações.
-  // Resultados antigos sem motivo explícito permanecem como finalizados, sem inferir a causa.
-  function motivoConclusaoRelatorio(r) {
-    const motivo = typeof r?.motivoFinalizacao === "string" ? r.motivoFinalizacao.trim() : "";
-    if (r?.finalizadoPeloProfessor === true) return "Encerrada pelo professor" + (motivo ? " — " + motivo : "");
-    if (/prazo geral|tempo máximo|tempo maximo|esgotado|expirad/i.test(motivo)) return "Encerrada por tempo limite" + (motivo ? " — " + motivo : "");
-    if (motivo) return motivo;
-    return "";
-  }
-
-  function csvSeguro(v) { return `"${String(v ?? "").replace(/"/g,'""').replace(/\r?\n/g," ")}"`; }
-
-  window.exportarResultadosCSV = async function() {
-    const lista=resultadosParaExportacao();
-    if(!lista.length) return alert("⚠️ Não há resultados para exportar.");
-    const cab=["Data/Hora","Escola","Período","Aluno","Turma","Matéria(s)","Tempo","Questões","Acertos","Erros","Nota","Motivo da finalização"];
-    const linhas=[cab.map(csvSeguro).join(";")];
-    lista.forEach(r=>{
-      const m=metricasResultado(r);
-      linhas.push([
-        dataResultado(r),r.escola||"",r.periodo||"",r.nome||"",r.turma||"",r.materia||"",
-        r.tempoGastoFormatado||"",m.total,m.acertos,m.erros,m.nota,motivoConclusaoRelatorio(r)
-      ].map(csvSeguro).join(";"));
-    });
-    // Seção separada por aluno, destinada apenas à exportação administrativa do professor.
-    linhas.push('');
-    linhas.push(['HISTÓRICO PRIVADO DE AUTORIZAÇÕES (PROFESSOR)'].map(csvSeguro).join(';'));
-    linhas.push(['Aluno','Escola','Turma','Avaliação','Tipo','Data/Hora','Situação','Código','Evento'].map(csvSeguro).join(';'));
-    for(const r of lista){
-      try { const itens=await carregarAutorizacoesAluno(r.idAluno||r.idDoc,true);
-        itens.forEach(a=>linhas.push([r.nome||'',r.escola||'',r.turma||'',a.idAvaliacao||'',/atrasada/.test(a.origem)?'Entrada atrasada':'Recuperação',dataHistorico(a.data||a.autorizadoEm),a.status||'Registrado',a.codigo||'',a.evento||''].map(csvSeguro).join(';')));
-      }catch(e){linhas.push([r.nome||'','Histórico indisponível',e.message||''].map(csvSeguro).join(';'));}
-    }
-    const blob=new Blob(["\uFEFF"+linhas.join("\r\n")],{type:"text/csv;charset=utf-8;"});
-    const url=URL.createObjectURL(blob),a=document.createElement("a");
-    a.href=url;a.download=`relatorio_avaliacoes_${new Date().toISOString().slice(0,10)}.csv`;a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),500);
-  };
-
-  // Excel administrativo: duas planilhas independentes, sem códigos em boletins/certificados.
-  window.exportarResultadosExcel = async function() {
-    if(typeof XLSX==='undefined') return alert('Biblioteca Excel indisponível. Utilize CSV.');
-    const lista=resultadosParaExportacao();
-    if(!lista.length)return alert('Não há resultados para exportar.');
-    const resultados=lista.map(r=>{const m=metricasResultado(r);return {
-      'Data/Hora':dataResultado(r),'Escola':r.escola||'','Período':r.periodo||'',
-      'Aluno':r.nome||'','Turma':r.turma||'','Matéria(s)':r.materia||'',
-      'Tempo':r.tempoGastoFormatado||'','Questões':m.total,'Acertos':m.acertos,
-      'Erros':m.erros,'Nota':m.nota,'Motivo da finalização':motivoConclusaoRelatorio(r)
-    }});
-    const historico=[];
-    for(const r of lista){try{
-      const itens=await carregarAutorizacoesAluno(r.idAluno||r.idDoc,true);
-      itens.forEach(a=>historico.push({'Aluno':r.nome||'','Escola':r.escola||'',
-        'Turma':r.turma||'','Avaliação':a.idAvaliacao||'',
-        'Tipo':/atrasada/.test(a.origem)?'Entrada atrasada':'Recuperação',
-        'Data/Hora':dataHistorico(a.data||a.autorizadoEm),
-        'Situação':a.status||a.evento||'Registrado','Código':a.codigo||'',
-        'Evento':a.evento||''}));
-    }catch(e){historico.push({'Aluno':r.nome||'','Situação':'Histórico indisponível: '+(e.message||'erro')});}}
-    const livro=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(livro,XLSX.utils.json_to_sheet(resultados),'Resultados');
-    XLSX.utils.book_append_sheet(livro,XLSX.utils.json_to_sheet(historico.length?historico:[{'Situação':'Sem autorizações registradas'}]),'Autorizações');
-    XLSX.writeFile(livro,`relatorio_avaliacoes_${new Date().toISOString().slice(0,10)}.xlsx`);
-  };
-
-  window.exportarResultadosPDF = async function() {
-    const lista=resultadosParaExportacao();
-    if(!lista.length) return alert("⚠️ Não há resultados para exportar.");
-    const linhas=lista.map(r=>{const m=metricasResultado(r);return `<tr>
-      <td>${dataResultado(r)}</td><td>${r.escola||""}</td><td>${r.nome||""}</td><td>${r.turma||""}</td>
-      <td>${r.materia||"Geral"}</td><td>${r.tempoGastoFormatado||"-"}</td><td>${m.acertos}/${m.total}</td><td><b>${m.nota}</b></td>
-    </tr>`}).join("");
-    const media=lista.reduce((s,r)=>s+Number(metricasResultado(r).nota),0)/lista.length;
-    let historicoHtml='';
-    for(const r of lista){
-      try {const itens=await carregarAutorizacoesAluno(r.idAluno||r.idDoc,true);
-        if(!itens.length)continue;
-        historicoHtml+=`<h3 style="margin-top:18px">${escaparHistorico(r.nome||'Aluno')} — ${escaparHistorico(r.turma||'')}</h3><table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr><th>Tipo</th><th>Data/Hora</th><th>Situação</th><th>Código</th><th>Avaliação</th></tr></thead><tbody>${itens.map(a=>`<tr><td>${/atrasada/.test(a.origem)?'Entrada atrasada':'Recuperação'}</td><td>${escaparHistorico(dataHistorico(a.data||a.autorizadoEm))}</td><td>${escaparHistorico(a.status||a.evento||'Registrado')}</td><td>${escaparHistorico(a.codigo||'-')}</td><td>${escaparHistorico(a.idAvaliacao||'')}</td></tr>`).join('')}</tbody></table>`;
-      }catch(e){historicoHtml+=`<p>${escaparHistorico(r.nome||'Aluno')}: histórico indisponível (${escaparHistorico(e.message||'erro')}).</p>`;}
-    }
-    abrirDocumentoImpressao("Relatório de Avaliações",`
-      <div class="cab"><h1>Relatório de Avaliações</h1><div class="sub">Emitido em ${new Date().toLocaleString("pt-BR")} • ${lista.length} resultado(s) • Média ${media.toFixed(1)}/10</div></div>
-      <table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr>
-      <th>Data/Hora</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo</th><th>Acertos</th><th>Nota</th>
-      </tr></thead><tbody>${linhas}</tbody></table>
-      <h2 style="margin-top:24px">Histórico privado de autorizações — uso exclusivo do professor</h2>${historicoHtml||"<p>Nenhum registro de autorização localizado.</p>"}
-      <style>th,td{border:1px solid #cbd5e1;padding:5px;text-align:left;vertical-align:top}th{background:#e2e8f0}</style>`);
-  };
-
-  window.ajustarDensidadeRelatorios=function(modo){
-    const tabela=document.querySelector(".tabela-resultados"); if(!tabela)return;
-    tabela.dataset.densidade=modo;
-    localStorage.setItem("densidadeRelatorios",modo);
-  };
-
-
-  // 🔐 FASE 10C — corrige resultados pendentes usando SOMENTE o banco privado do professor.
-  // O aluno envia IDs + letras escolhidas, mas nunca recebe a chave correta.
-  const correcoesEmAndamento = new Set();
-  function normalizarRespostaParaCorrecao(valor) {
-    return (valor ?? "").toString().normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/^[A-Ea-e][\)\.\-\:\s]+\s*/, "")
-      .replace(/\s+/g, " ").trim().toLowerCase();
-  }
-
-  // Ao receber um resultado confirmado, o professor também limpa o monitoramento.
-  // Isso resolve entradas "fantasma" caso o navegador do aluno tenha perdido a sessão
-  // antes de conseguir apagar seu próprio registro online.
-  async function limparMonitoramentoAposResultado(res) {
-    const idAluno = String(res?.idAluno || "").trim();
-    if (!idAluno) return;
-    try {
-      await deleteDoc(doc(db, "alunos_online", idAluno));
-      alunosOnlineCache = alunosOnlineCache.filter(a => a.idDoc !== idAluno);
-      if (!document.getElementById("aba-monitoramento")?.classList.contains("hidden")) {
-        renderizarTabelaTempoReal();
-      }
-    } catch (e) {
-      console.warn("Limpeza do monitoramento pendente:", e?.code || e);
-    }
-  }
-
-  async function corrigirResultadoPendente(idResultado, res) {
-    if (!res || res.pontuacao !== null || !Array.isArray(res.questoesIds) ||
-        correcoesEmAndamento.has(idResultado)) return;
-
-    correcoesEmAndamento.add(idResultado);
-    try {
-      let acertos = 0;
-      let questoesResolvidas = 0;
-
-      for (let i = 0; i < res.questoesIds.length; i++) {
-        const idQuestao = res.questoesIds[i];
-        if (!idQuestao) continue;
-
-        // Compatibilidade: algumas questões antigas vieram de banco_questoes.
-        let qSnap = await getDoc(doc(db, "questoes", idQuestao));
-        if (!qSnap.exists()) {
-          qSnap = await getDoc(doc(db, "banco_questoes", idQuestao));
-        }
-        if (!qSnap.exists()) continue;
-
-        questoesResolvidas++;
-
-        const dadosQuestao = qSnap.data() || {};
-        const opcoesPrivadas = Array.isArray(dadosQuestao.opcoes)
-          ? dadosQuestao.opcoes
-          : (Array.isArray(dadosQuestao.alternativas) ? dadosQuestao.alternativas : []);
-
-        const corretaBruta = String(
-          dadosQuestao.correta || dadosQuestao.resposta || dadosQuestao.correto || ""
-        ).trim();
-
-        let textoCorreto = "";
-        let letraCorreta = corretaBruta.toUpperCase();
-
-        if (/^[A-E]$/.test(letraCorreta)) {
-          const idxCorreto = "ABCDE".indexOf(letraCorreta);
-          textoCorreto = String(opcoesPrivadas[idxCorreto] || "");
-        } else {
-          // Bancos antigos podem guardar o próprio texto como resposta correta.
-          textoCorreto = corretaBruta;
-        }
-
-        const letraEscolhida = String(res.respostas?.[i] || "").trim().toUpperCase();
-        const textoEscolhido = String(res.respostasTexto?.[i] || "").trim();
-
-        // Para resultados novos, texto é a comparação mais robusta.
-        if (textoEscolhido && textoCorreto) {
-          if (normalizarRespostaParaCorrecao(textoEscolhido) ===
-              normalizarRespostaParaCorrecao(textoCorreto)) {
-            acertos++;
-          }
-        } else if (/^[A-E]$/.test(letraCorreta) && letraEscolhida === letraCorreta) {
-          // Compatibilidade com resultados anteriores que só possuem a letra.
-          if (letraEscolhida === letraCorreta) acertos++;
-        }
-      }
-
-      // Só grava nota quando todas as questões foram identificadas.
-      const totalEsperado = res.questoesIds.length;
-      if (totalEsperado === 0 || questoesResolvidas !== totalEsperado) {
-        console.warn(`Correção pendente: ${questoesResolvidas}/${totalEsperado} questões localizadas.`, idResultado);
-        await setDoc(doc(db, "avaliacoes", idResultado), {
-          correcaoPendente:true, questoesResolvidasCorrecao:questoesResolvidas,
-          totalQuestoesCorrecao:totalEsperado
-        }, {merge:true});
-        return;
-      }
-
-      await setDoc(doc(db, "avaliacoes", idResultado), {
-        pontuacao: acertos,
-        corrigidoEm: serverTimestamp(),
-        corrigidoPeloPainel: true,
-        correcaoPendente:false,
-        questoesResolvidasCorrecao:questoesResolvidas,
-        totalQuestoesCorrecao:totalEsperado
-      }, { merge: true });
-
-      return acertos;
-    } catch(e) {
-      console.error("Erro ao corrigir resultado pendente:", e?.code || e, e?.message || "");
-    } finally {
-      correcoesEmAndamento.delete(idResultado);
-    }
-  }
-
-  // Encerramentos confirmados nesta sessão: evita reaparecimento por snapshots atrasados.
-  // Um novo início posterior ao encerramento é tratado como nova tentativa.
-  const encerramentosConfirmados = new Map();
-  function millisMonitoramento(valor) {
-    if (valor?.toMillis) return valor.toMillis();
-    if (typeof valor?.seconds === "number") return valor.seconds * 1000;
-    if (typeof valor === "number") return valor < 1e11 ? valor * 1000 : valor;
-    if (typeof valor === "string") return Date.parse(valor) || 0;
-    return 0;
-  }
-  function alunoJaEncerradoNoMonitoramento(aluno) {
-    const inicio = millisMonitoramento(aluno.dataInicio);
-    const fechamentoLocal = encerramentosConfirmados.get(aluno.idDoc);
-    if (fechamentoLocal && (!inicio || inicio <= fechamentoLocal)) return true;
-    // Confere somente encerramentos explícitos do professor; não oculta
-    // novas tentativas legítimas nem confunde alunos com nomes semelhantes.
-    return resultadosGlobaisCache.some(res =>
-      res.finalizadoPeloProfessor === true &&
-      (String(res.idAluno || "") === String(aluno.idDoc || "") ||
-       (String(res.idAluno || "") === String(aluno.idAluno || "") && !!aluno.idAluno)) &&
-      Number(res.timestamp || 0) >= inicio && inicio > 0
-    );
-  }
-
-  function inicializarTabelaTempoReal() {
-    const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
-    if (!corpoTabelaTempoReal) return;
-     
-    // 💰 10C.7: apenas UM listener de monitoramento, somente enquanto
-    // a aba Monitoramento estiver aberta. Ao trocar de aba ele é cancelado.
-    if (unsubscribeMonitoramentoPainel) return;
-    unsubscribeMonitoramentoPainel = onSnapshot(
-      collection(db, "alunos_online"),
-      (snapshot) => {
-        alunosOnlineCache = [];
-        snapshot.forEach(docSnap => {
-          const registro = { idDoc: docSnap.id, ...docSnap.data() };
-          if (!alunoJaEncerradoNoMonitoramento(registro)) alunosOnlineCache.push(registro);
-        });
-        renderizarTabelaTempoReal();
-      },
-      (erro) => {
-        console.error("10E — monitoramento recusado/indisponível:", erro);
-        const corpo = document.getElementById("corpo-tabela-tempo-real");
-        if (corpo) {
-          corpo.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#fbbf24;padding:20px;">
-            ⚠️ Monitoramento temporariamente indisponível (${erro?.code || "Firebase"}).
-            Não recarregue repetidamente; verifique conexão, cota e regras 10E.
-          </td></tr>`;
-        }
-      }
-    );
-  }
-
-  window.aplicarOrdenacaoMonitoramento = function(criterio) {
-    ordemAtualMonitoramento = criterio;
-    renderizarTabelaTempoReal();
-    const menuMon = document.getElementById('dropdown-menu-monitoramento');
-    if (menuMon) menuMon.classList.remove('show');
-  };
-
-  window.renderizarTabelaTempoReal = function() {
-    const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
-    const inputBusca = document.getElementById("input-busca-monitoramento");
-    if (!corpoTabelaTempoReal) return;
-
-    const selecionadosAntes = new Set(
-      Array.from(document.querySelectorAll(".chk-item-online:checked")).map(c => c.value)
-    );
-
-    const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
-    let dadosFiltrados = alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a));
-
-    if (termoBusca) {
-      dadosFiltrados = dadosFiltrados.filter(aluno => {
-        const textoConcatenado = normalizarTexto(`${aluno.nome || ''} ${aluno.escola || ''} ${aluno.turma || ''} ${aluno.materia || ''}`);
-        return textoConcatenado.includes(termoBusca);
-      });
-    }
-
-    if (ordemAtualMonitoramento !== "nenhum") {
-      dadosFiltrados.sort((a, b) => {
-        let tA = a.dataInicio?.seconds || a.dataInicio || 0;
-        let tB = b.dataInicio?.seconds || b.dataInicio || 0;
-        switch (ordemAtualMonitoramento) {
-          case "inicio-asc": return tA - tB;
-          case "nome-asc": return (a.nome || "").localeCompare(b.nome || "");
-          case "escola-asc": return (a.escola || "").localeCompare(b.escola || "");
-          case "tempo-desc": return (b.segundosPassados || 0) - (a.segundosPassados || 0);
-          case "inicio-desc": default: return tB - tA;
-        }
-      });
-    }
-
-    if (dadosFiltrados.length === 0) {
-      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno online no momento.</td></tr>`;
-      return;
-    }
-
-    let htmlOnline = "";
-    dadosFiltrados.forEach(aluno => {
-      let min = Math.floor((aluno.segundosPassados || 0) / 60);
-      let seg = (aluno.segundosPassados || 0) % 60;
-      let tempoStr = `${min}m ${seg}s`;
-      let dataInicioStr = aluno.dataInicio?.toDate ? aluno.dataInicio.toDate().toLocaleString('pt-BR') : "Agora";
-      let estaMarcado = selecionadosAntes.has(aluno.idDoc) ? "checked" : "";
-      const ultimoContato = aluno.atualizadoEm?.toMillis?.() || 0;
-      const contatoAtrasado = ultimoContato > 0 && (Date.now() - ultimoContato > 45000);
-      const situacaoContato = contatoAtrasado ? "🟠 Sem atualização recente" : "🟢 Em acompanhamento";
-       
-      let questaoAtualProgresso = aluno.questaoAtual || 1;
-      let totalQProgresso = aluno.totalQuestoes || 10;
-
-      htmlOnline += `
-        <tr>
-          <td class="chk-col" style="text-align: center;">
-            <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}" ${estaMarcado}>
-          </td>
-          <td><span class="quiz-status-texto" style="color:${contatoAtrasado ? '#fbbf24' : '#4ade80'}">${situacaoContato}</span></td>
-          <td><span style="color: #cbd5e1; font-size: 12px;">📅 ${dataInicioStr}</span></td>
-          <td><strong>${aluno.escola || 'N/D'}</strong></td>
-          <td>${aluno.nome || 'Aluno'}</td>
-          <td>${aluno.turma || 'N/D'}</td>
-          <td>${aluno.materia || 'Geral'}</td>
-          <td><span class="quiz-questao-texto">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
-          <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
-          <td style="text-align: center;">
-            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${aluno.idAluno || aluno.idDoc}" data-escopo="monitoramento" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
-            <div class="grupo-botoes-acoes" hidden style="display:none;">
-              <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
-            <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="prepararRecuperacaoAluno(this)" title="Gerar código privado e registrar autorização de retomada">🔑 Recuperação</button>
-            <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="verHistoricoRecuperacaoAluno(this)" title="Consultar autorizações e registros de recuperação deste aluno">📋 Histórico</button>
-            <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11.5px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)">🏁 Finalizar</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    });
-    corpoTabelaTempoReal.innerHTML = htmlOnline;
-    restaurarMenusAbertos(corpoTabelaTempoReal);
-  };
-
-  // Menu individual compacto: preserva estado em atualizações em tempo real.
-  // Consultas de códigos são somente leitura; nunca interferem na sincronização Firebase.
-  const menusAbertosAluno = new Set();
-  function chaveMenuAluno(botao) { return `${botao.dataset.escopo}:${botao.dataset.alunoId}`; }
-  function renderizarCodigosInline(itens) {
-    const vistos=new Set();
-    const autorizacoes=itens.filter(a=>a.codigo && /bilhetes_|registros_(entrada_atrasada|recuperacao)/.test(a.origem)).filter(a=>{
-      const chave=`${a.codigo}|${a.origem.includes('atrasada')?'atrasada':'recuperacao'}`;
-      if(vistos.has(chave)) return false; vistos.add(chave); return true;
-    });
-    if(!autorizacoes.length) return '<span class="quiz-sem-codigos">Nenhum código registrado para este aluno.</span>';
-    return '<div class="quiz-codigos-titulo">🔐 Códigos registrados</div>'+autorizacoes.map(a=>{
-      const tipo=a.origem.includes('atrasada')?'Entrada atrasada':'Recuperação';
-      const codigo=escaparHistorico(a.codigo);
-      const status=escaparHistorico(a.status||'Registrado');
-      const data=escaparHistorico(dataHistorico(a.data||a.autorizadoEm));
-      return `<div class="quiz-codigo-item"><div><b>${tipo}</b><small>${status} · ${data}</small></div><div class="quiz-codigo-linha"><code>${codigo}</code><button type="button" class="quiz-copiar-inline" data-codigo="${codigo}" title="Copiar código ${tipo}">📋 Copiar</button></div></div>`;
-    }).join('');
-  }
-  async function carregarCodigosNoMenu(botao, forcar=false) {
-    const area=botao.nextElementSibling?.querySelector('.quiz-codigos-aluno');
-    if(!area) return;
-    const id=botao.dataset.alunoId;
-    if(!id) {area.textContent='Identificação do aluno indisponível.';return;}
-    const chave=chaveMenuAluno(botao);
-    const cache=historicoAutorizacoesCache.get(id);
-    if(cache && !forcar) {area.innerHTML=renderizarCodigosInline(cache);return;}
-    area.textContent='Consultando códigos…';
-    try {
-      const itens=await carregarAutorizacoesAluno(id,true);
-      // Evita atualizar uma linha removida por renderização em tempo real.
-      if(botao.isConnected && menusAbertosAluno.has(chave)) area.innerHTML=renderizarCodigosInline(itens);
-    } catch(e) {if(botao.isConnected) area.textContent='Não foi possível consultar os códigos. Verifique o acesso ao Firebase.';}
-  }
-  window.alternarAcoesAluno = function(botao) {
-    const grupo=botao.nextElementSibling;
-    if(!grupo?.classList.contains('grupo-botoes-acoes')) return;
-    const chave=chaveMenuAluno(botao);
-    const abrir=!menusAbertosAluno.has(chave);
-    if(abrir) menusAbertosAluno.add(chave); else menusAbertosAluno.delete(chave);
-    botao.setAttribute('aria-expanded',String(abrir));
-    botao.textContent=abrir?'▴ Fechar ações':'⋯ Ações';
-    grupo.hidden=!abrir;
-    grupo.style.display=abrir?'flex':'none';
-    if(abrir) carregarCodigosNoMenu(botao);
-  };
-  // Ao atualizar a tabela, mantém menus abertos e reutiliza dados já consultados.
-  function restaurarMenusAbertos(tabela) {
-    tabela?.querySelectorAll('.btn-expandir-acoes').forEach(botao=>{
-      const aberto=menusAbertosAluno.has(chaveMenuAluno(botao));
-      const grupo=botao.nextElementSibling;
-      botao.textContent=aberto?'▴ Fechar ações':'⋯ Ações';
-      botao.setAttribute('aria-expanded',String(aberto));
-      grupo.hidden=!aberto;
-      grupo.style.display=aberto?'flex':'none';
-      if(aberto) carregarCodigosNoMenu(botao);
-    });
-  }
-  document.addEventListener('click',async e=>{
-    const b=e.target.closest?.('.quiz-copiar-inline');
-    if(!b)return;
-    try {await navigator.clipboard.writeText(b.dataset.codigo);b.textContent='✓ Copiado';}
-    catch {b.textContent='Selecione o código';}
-  });
-
-  // Histórico privado de autorizações: leitura sob demanda, sem apagar registros anteriores.
-  // Códigos nunca são inseridos em boletins ou certificados entregues aos alunos.
-  const historicoAutorizacoesCache = new Map();
-  const escaparHistorico = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const dataHistorico = (v) => {
-    const d = v?.toDate?.() || (v?.seconds ? new Date(v.seconds * 1000) : null);
-    return d instanceof Date && !Number.isNaN(d.getTime()) ? d.toLocaleString('pt-BR') : 'Data pendente';
-  };
-  function janelaAutorizacao({titulo, nome, codigo, tipo, escola, turma, avaliacao}) {
-    const mensagem = `Autorização de ${tipo} para ${nome}\nEscola: ${escola || '-'} | Turma: ${turma || '-'}\nAvaliação: ${avaliacao || '-'}\nCódigo: ${codigo}\n${tipo === 'Entrada atrasada' ? 'Informe também o TOKEN da avaliação.' : 'Este código retoma a tentativa existente; não reinicia a prova.'}\nEntregue apenas ao aluno identificado.`;
-    document.getElementById('janela-autorizacao-quiz')?.remove();
-    const fundo = document.createElement('div'); fundo.id='janela-autorizacao-quiz';
-    fundo.style.cssText='position:fixed;inset:0;background:#000b;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
-    fundo.innerHTML=`<section role="dialog" aria-modal="true" aria-label="Autorização" style="background:#111c30;color:#e2e8f0;border:1px solid #405576;border-radius:14px;padding:24px;max-width:520px;width:100%;box-shadow:0 18px 45px #0008"><h2 style="margin:0 0 14px;color:#93c5fd">${escaparHistorico(titulo)}</h2><p><b>Aluno:</b> ${escaparHistorico(nome)}</p><p><b>Escola/Turma:</b> ${escaparHistorico(escola)} / ${escaparHistorico(turma)}</p><p><b>Avaliação:</b> ${escaparHistorico(avaliacao)}</p><p><b>Código:</b> <code style="font-size:20px;color:#facc15;user-select:all">${escaparHistorico(codigo)}</code></p><p style="font-size:12px;color:#cbd5e1">Entregue apenas ao aluno identificado.</p><div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:20px"><button type="button" data-quiz-copiar="codigo" class="btn-acao btn-secondary">📋 Copiar código</button><button type="button" data-quiz-copiar="mensagem" class="btn-acao btn-secondary">📨 Copiar mensagem</button><button type="button" data-quiz-fechar="1" class="btn-acao btn-secondary">Fechar</button></div><p data-quiz-status style="font-size:12px"></p></section>`;
-    fundo.addEventListener('click', async ev => {
-      if(ev.target.dataset.quizFechar || ev.target === fundo) { fundo.remove(); return; }
-      const qual=ev.target.dataset.quizCopiar;
-      if(!qual) return;
-      try { await navigator.clipboard.writeText(qual==='codigo'?codigo:mensagem); fundo.querySelector('[data-quiz-status]').textContent='Copiado!'; }
-      catch { fundo.querySelector('[data-quiz-status]').textContent='Não foi possível copiar automaticamente. Selecione o código e copie manualmente.'; }
-    });
-    document.body.appendChild(fundo);
-  }
-  async function carregarAutorizacoesAluno(idAluno, forcar=false) {
-    if(!idAluno) return [];
-    if(!forcar && historicoAutorizacoesCache.has(idAluno)) return historicoAutorizacoesCache.get(idAluno);
-    const colecoes=['bilhetes_entrada_atrasada','bilhetes_recuperacao','registros_entrada_atrasada','registros_recuperacao','registros_retomadas_alunos'];
-    const lotes=await Promise.allSettled(colecoes.map(c=>getDocs(query(collection(db,c),where('idAluno','==',idAluno)))));
-    const itens=[]; let erros=0;
-    lotes.forEach((r,i)=>{if(r.status==='rejected'){erros++; console.warn('Histórico indisponível:',colecoes[i],r.reason?.code||r.reason);return;}
-      r.value.forEach(d=>itens.push({origem:colecoes[i],docId:d.id,...d.data()}));
-    });
-    if(erros===colecoes.length) throw new Error('Sem acesso às coleções de histórico. Verifique as regras do Firestore.');
-    if(erros) mostrarNotificacao('Parte do histórico não pôde ser consultada; verifique as permissões do Firebase.');
-    itens.sort((a,b)=>(b.data?.toMillis?.()||b.autorizadoEm?.toMillis?.()||0)-(a.data?.toMillis?.()||a.autorizadoEm?.toMillis?.()||0));
-    historicoAutorizacoesCache.set(idAluno,itens);
-    return itens;
-  }
-  window.consultarAutorizacoesAluno = async function(idAluno, nome='Aluno') {
-    try {
-      const itens=await carregarAutorizacoesAluno(idAluno,true);
-      document.getElementById('janela-historico-quiz')?.remove();
-      const fundo=document.createElement('div'); fundo.id='janela-historico-quiz';
-      fundo.style.cssText='position:fixed;inset:0;background:#000b;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
-      const linhas=itens.map((a,i)=>{
-        const tipo=/atrasada/.test(a.origem)?'Entrada atrasada':/retomadas/.test(a.origem)?'Retomada':'Recuperação';
-        const data=dataHistorico(a.data||a.autorizadoEm);
-        const status=a.status||a.evento||'Registrado';
-        const codigo=a.codigo||'';
-        return `<div style="padding:10px;border:1px solid #405576;border-radius:8px;margin:8px 0"><b>${i+1}. ${tipo}</b> — ${escaparHistorico(status)}<div style="font-size:12px;color:#cbd5e1">${escaparHistorico(data)} • ${escaparHistorico(a.idAvaliacao||'')}</div>${codigo?`<div>Código: <code>${escaparHistorico(codigo)}</code> <button type="button" class="btn-acao btn-secondary" data-hist-codigo="${escaparHistorico(codigo)}">Copiar</button></div>`:''}</div>`;
-      }).join('')||'<p>Nenhuma autorização registrada para este aluno.</p>';
-      fundo.innerHTML=`<section role="dialog" aria-modal="true" style="background:#111c30;color:#e2e8f0;border:1px solid #405576;border-radius:14px;padding:20px;max-width:690px;width:100%;max-height:85vh;overflow:auto"><h2>Histórico de autorizações — ${escaparHistorico(nome)}</h2><p style="font-size:12px">Histórico privado do professor. Situações são exibidas conforme registradas no banco, sem presumir utilização ou expiração.</p>${linhas}<button type="button" class="btn-acao btn-secondary" data-hist-fechar="1">Fechar</button><p data-hist-status></p></section>`;
-      fundo.addEventListener('click',async ev=>{if(ev.target===fundo||ev.target.dataset.histFechar){fundo.remove();return;}if(ev.target.dataset.histCodigo){try{await navigator.clipboard.writeText(ev.target.dataset.histCodigo);fundo.querySelector('[data-hist-status]').textContent='Código copiado.';}catch{fundo.querySelector('[data-hist-status]').textContent='Selecione e copie o código manualmente.';}}});
-      document.body.appendChild(fundo);
-    } catch(e){alert('Não foi possível consultar o histórico: '+(e.message||e));}
-  };
-
-  // Entrada atrasada é diferente de recuperação: destina-se a uma PRIMEIRA tentativa.
-  // O bilhete é individual, por avaliação/escola/turma e fica registrado para auditoria.
-  // Não altera expiraEmMillis nem reabre o acesso dos demais alunos.
-  document.addEventListener("click", async (evento) => {
-    const botao = evento.target.closest?.(".btn-liberar-atrasado");
-    if (!botao) return;
-    const escola = String(botao.dataset.escola || "").trim();
-    const idAvaliacao = String(botao.dataset.avaliacao || "").trim();
-    const turmas = String(botao.dataset.turmas || "").split(" | ").filter(Boolean);
-    if (!escola || !idAvaliacao) { alert("Não foi possível identificar a escola e a avaliação."); return; }
-    const nome = prompt("Nome completo do aluno que chegou atrasado:");
-    if (nome === null) return;
-    const nomeLimpo = nome.trim().replace(/\s+/g, " ").toUpperCase();
-    if (nomeLimpo.length < 3) { alert("Informe o nome completo do aluno."); return; }
-    const turma = prompt("Turma autorizada (uma destas: " + turmas.join(", ") + "):", turmas[0] || "");
-    if (turma === null) return;
-    const turmaEscolhida = turmas.find(t => t.toLocaleLowerCase("pt-BR") === turma.trim().toLocaleLowerCase("pt-BR"));
-    if (!turmaEscolhida) { alert("A turma deve corresponder a uma turma da avaliação ativa."); return; }
-    if (!confirm(`Autorizar PRIMEIRA entrada atrasada para ${nomeLimpo} (${turmaEscolhida})?\n\nEssa ação não reinicia tentativas nem altera o prazo geral.`)) return;
-    botao.disabled = true;
-    try {
-      const codigo = criarCodigoRecuperacao();
-      const idAluno = [escola, nomeLimpo, turmaEscolhida].map(v => String(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "")).join("__");
-      const [online, permissao] = await Promise.all([
-        getDoc(doc(db,"alunos_online",idAluno)), getDoc(doc(db,"permissoes_alunos",idAluno))
-      ]);
-      if ((online.exists() && String(online.data().idAvaliacao||"") === idAvaliacao) ||
-          (permissao.exists() && String(permissao.data().idAvaliacao||"") === idAvaliacao && permissao.data().tentativaIniciada)) {
-        throw new Error("Já existe tentativa para este aluno. Use Recuperação, não Entrada atrasada.");
-      }
-      const registro = { codigo, escola, idAvaliacao, nome:nomeLimpo, turma:turmaEscolhida,
-        idAluno, status:"autorizada", tipo:"entrada_atrasada", autorizadoEm:serverTimestamp() };
-      await setDoc(doc(db,"bilhetes_entrada_atrasada",codigo), registro);
-      await addDoc(collection(db,"registros_entrada_atrasada"), {
-        escola,idAvaliacao,nome:nomeLimpo,turma:turmaEscolhida,idAluno,
-        evento:"autorizacao_entrada_atrasada",data:serverTimestamp(),codigo
-      });
-      // Exibe código e mensagem com cópia individual, sem expor o código no HTML da tabela.
-      const mensagem = `Código de ENTRADA ATRASADA para ${nomeLimpo}:\\n\\n${codigo}\\n\\nEntregue somente ao aluno identificado. O aluno deve informar este código e o TOKEN da avaliação.`;
-      const caixa = document.createElement("div");
-      caixa.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;";
-      const painel = document.createElement("div");
-      painel.style.cssText = "background:#172033;color:white;border-radius:12px;padding:22px;max-width:480px;width:100%;box-shadow:0 10px 40px #0008;";
-      const titulo = document.createElement("h3");
-      titulo.textContent = "Entrada atrasada autorizada";
-      const detalhe = document.createElement("p");
-      detalhe.textContent = `Aluno: ${nomeLimpo}`;
-      const valor = document.createElement("p");
-      valor.textContent = codigo;
-      valor.style.cssText = "font-size:24px;font-weight:bold;letter-spacing:2px;overflow-wrap:anywhere;";
-      const retorno = document.createElement("p");
-      retorno.setAttribute("role","status");
-      const copiar = (texto) => async () => {
-        try { await navigator.clipboard.writeText(texto); retorno.textContent = "Copiado!"; }
-        catch (_) { window.prompt("Selecione e copie o texto:", texto); }
-      };
-      const criarBotao = (rotulo, acao) => {
-        const b = document.createElement("button");
-        b.type = "button"; b.className = "btn-acao btn-secondary";
-        b.textContent = rotulo; b.style.margin = "5px"; b.addEventListener("click", acao);
-        return b;
-      };
-      painel.append(titulo, detalhe, valor,
-        criarBotao("Copiar código", copiar(codigo)),
-        criarBotao("Copiar mensagem", copiar(mensagem)),
-        criarBotao("Fechar", () => caixa.remove()), retorno);
-      caixa.append(painel);
-      document.body.append(caixa);
-      mostrarNotificacao("Autorização de entrada atrasada registrada.");
-    } catch (erro) {
-      console.error("Falha na autorização de entrada atrasada:",erro);
-      alert("Não foi possível gerar o código: " + (erro.message || erro.code || erro));
-    } finally { botao.disabled = false; }
-  });
-
-  // Recuperação assistida: o código é privado do professor. Não altera a
-  // permissão de refazer a prova nem expõe o código em permissões_alunos.
-  function criarCodigoRecuperacao() {
-    const bytes = new Uint8Array(10);
-    crypto.getRandomValues(bytes);
-    const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    return Array.from(bytes, n => alfabeto[n % alfabeto.length]).join("");
-  }
-
-  window.prepararRecuperacaoAluno = async function(botao) {
-    const idAluno = botao.dataset.id;
-    const aluno = alunosOnlineCache.find(a => a.idDoc === idAluno);
-    if (!aluno) { alert("Aluno não localizado no monitoramento. Atualize a lista."); return; }
-    // Nunca emitir autorização sem avaliação identificada: evita reaproveitar
-    // o código de uma prova anterior em outra avaliação do mesmo aluno.
-    const idAvaliacaoAtual = String(aluno.idAvaliacao || "").trim();
-    if (!idAvaliacaoAtual) {
-      alert("Não foi possível identificar a avaliação deste aluno. A autorização não foi criada.");
-      return;
-    }
-    if (!confirm(`Gerar autorização de recuperação para ${aluno.nome || "Aluno"}?\n\nAvaliação: ${idAvaliacaoAtual}\n\nIsto NÃO reinicia a prova e NÃO libera uma segunda tentativa.`)) return;
-    botao.disabled = true;
-    try {
-      const referencia = doc(db, "recuperacoes_tentativas", idAluno);
-      const anterior = await getDoc(referencia);
-      const autorizacaoAnterior = anterior.exists() ? anterior.data() : null;
-      const reutilizarCodigo = autorizacaoAnterior?.status === "autorizada"
-        && String(autorizacaoAnterior.idAvaliacao || "") === idAvaliacaoAtual
-        && String(autorizacaoAnterior.escola || "") === String(aluno.escola || "")
-        && typeof autorizacaoAnterior.codigo === "string"
-        && autorizacaoAnterior.codigo.length >= 8;
-      const codigo = reutilizarCodigo ? autorizacaoAnterior.codigo : criarCodigoRecuperacao();
-      const registro = {
-        idAluno, nome: aluno.nome || "", turma: aluno.turma || "",
-        escola: aluno.escola || "", idAvaliacao: idAvaliacaoAtual,
-        codigo, status: "autorizada", autorizadoEm: serverTimestamp(),
-        codigoReutilizado: reutilizarCodigo,
-        ultimaAtividadeAluno: aluno.atualizadoEm || null,
-        questaoAtual: aluno.questaoAtual || 1,
-        totalQuestoes: aluno.totalQuestoes || 0,
-        observacao: "Retomada da mesma tentativa; não autoriza reinício."
-      };
-      // Bilhete de capacidade: somente quem conhece o código consegue buscar este documento.
-      // A prova não contém gabarito; o bilhete contém apenas o progresso existente.
-      const [onlineSnap, permissaoSnap] = await Promise.all([
-        getDoc(doc(db,"alunos_online",idAluno)), getDoc(doc(db,"permissoes_alunos",idAluno))
-      ]);
-      if (!onlineSnap.exists() || !permissaoSnap.exists()) {
-        throw new Error("A tentativa original não está disponível para recuperação.");
-      }
-      const online = onlineSnap.data(), permissao = permissaoSnap.data();
-      if (String(online.idAvaliacao || "") !== idAvaliacaoAtual ||
-          String(permissao.idAvaliacao || "") !== idAvaliacaoAtual ||
-          !Number(permissao.tentativaIniciadaEm)) {
-        throw new Error("A tentativa original não corresponde à avaliação atual.");
-      }
-      await setDoc(doc(db,"bilhetes_recuperacao",codigo), {
-        idAluno, idAvaliacao:idAvaliacaoAtual, escola:aluno.escola || "",
-        nome:aluno.nome || "", turma:aluno.turma || "", status:"autorizada",
-        inicio:Number(permissao.tentativaIniciadaEm),
-        questaoAtual:online.questaoAtual || 1,
-        questoesIds:online.questoesIds || [], respostas:online.respostas || {},
-        autorizadoEm:serverTimestamp()
-      });
-      await setDoc(referencia, registro, {merge:true});
-      // Mantém um registro de auditoria separado para cada autorização.
-      await addDoc(collection(db, "registros_recuperacao"), {
-        idAluno, nome: registro.nome, escola: registro.escola,
-        turma: registro.turma, idAvaliacao: registro.idAvaliacao,
-        evento: "autorizacao_recuperacao", data: serverTimestamp(),
-        codigoReutilizado: reutilizarCodigo, codigo, status:"autorizada",
-        detalhe: reutilizarCodigo
-          ? "Autorização renovada para a mesma avaliação; tentativa preservada."
-          : "Novo código gerado para esta avaliação; tentativa preservada."
-      });
-      historicoAutorizacoesCache.delete(idAluno);
-      janelaAutorizacao({titulo:"Recuperação autorizada",nome:registro.nome,codigo,tipo:"Recuperação",escola:registro.escola,turma:registro.turma,avaliacao:registro.idAvaliacao});
-      mostrarNotificacao("Autorização de recuperação registrada.");
-    } catch (erro) {
-      console.error("Falha ao registrar recuperação:", erro);
-      alert("Não foi possível registrar a autorização no Firebase: " + (erro.code || erro.message));
-    } finally { botao.disabled = false; }
-  };
-
-  // Histórico individual de recuperação, restrito ao professor autenticado.
-  // Não expõe códigos em relatórios públicos e não altera tentativas existentes.
-  window.verHistoricoRecuperacaoAluno = async function(botao) {
-    const idAluno=botao?.dataset?.id;
-    if(!idAluno)return;
-    const aluno=alunosOnlineCache.find(a=>a.idDoc===idAluno);
-    await window.consultarAutorizacoesAluno(idAluno,aluno?.nome||idAluno);
-  };
-
-  window.finalizarAlunoElemento = function(btn) {
-    window.finalizarAlunoIndividual(btn.getAttribute("data-id"), btn.getAttribute("data-nome"));
-  };
-
-  window.finalizarAlunoIndividual = async function(idAluno, nomeAluno) {
-    if (!idAluno) return;
-    if (confirm(`Deseja finalizar a prova de "${nomeAluno}" agora?`)) {
-      try {
-        // 🔵 FASE 7 — motivo do encerramento fica registrado no resultado
-        // e também aparece imediatamente na tela do aluno.
-        const motivoFinalizacao = (prompt(
-          "Informe o motivo da finalização:",
-          "Finalizada manualmente pelo professor."
-        ) || "Finalizada manualmente pelo professor.").trim();
-
-        let alunoObj = alunosOnlineCache.find(a => a.idDoc === idAluno);
-        const agora = Date.now();
-        let segundos = alunoObj ? (alunoObj.segundosPassados || 0) : 0;
-        let totalQ = alunoObj?.totalQuestoes || 10;
-        // A nota é corrigida pelo mesmo mecanismo privado dos envios normais.
-        // Nunca fabricamos nota zero quando ainda não houve correção.
-        let pontuacaoAtual = null;
-        let escolaDestino = alunoObj?.escola || escolaAtivaSelecionadaIndependente || "Escola";
-
-        // 🔵 FASE 6B — RESULTADO NO MESMO LOCAL DA FINALIZAÇÃO NORMAL
-        // A Área do Aluno salva em "avaliacoes" (coleção principal).
-        // O botão Finalizar do professor agora salva exatamente no mesmo lugar.
-        const idResultado = (9999999999999 - agora).toString();
-        const dadosResultado = {
-          idAluno: idAluno,
-          nome: alunoObj?.nome || nomeAluno,
-          turma: alunoObj?.turma || "N/D",
-          escola: escolaDestino,
-          periodo: alunoObj?.periodo || "Geral",
-          materia: alunoObj?.materia || "Geral",
-          pontuacao: pontuacaoAtual,
-          totalQuestoes: totalQ,
-          respostas: alunoObj?.respostas || {},
-          respostasTexto: Array.isArray(alunoObj?.respostasTexto) ? alunoObj.respostasTexto : [],
-          questoesIds: Array.isArray(alunoObj?.questoesIds) ? alunoObj.questoesIds : [],
-          tempoGastoSegundos: segundos,
-          tempoGastoFormatado: `${Math.floor(segundos/60)}m ${segundos%60}s`,
-          dataEnvio: serverTimestamp(),
-          timestamp: agora,
-          finalizadoPeloProfessor: true,
-          motivoFinalizacao: motivoFinalizacao
-        };
-
-        await setDoc(doc(db, "avaliacoes", idResultado), dadosResultado);
-        const acertosProfessor = await corrigirResultadoPendente(idResultado, dadosResultado);
-        if (Number.isFinite(acertosProfessor)) dadosResultado.pontuacao = acertosProfessor;
-
-        // Atualiza a tabela imediatamente, sem depender do pequeno atraso
-        // do listener em tempo real antes de trocar de aba.
-        resultadosGlobaisCache = resultadosGlobaisCache.filter(r => r.idDoc !== idResultado);
-        resultadosGlobaisCache.unshift({
-          idDoc: idResultado,
-          refPath: `avaliacoes/${idResultado}`,
-          ...dadosResultado,
-          dataEnvio: null
-        });
-
-        await setDoc(doc(db, "permissoes_alunos", idAluno), {
-          podeFazer: false,
-          provaFinalizadaPeloProfessor: true,
-          motivoFinalizacao: motivoFinalizacao,
-          finalizadoEm: serverTimestamp()
-        }, { merge: true });
-        await deleteDoc(doc(db, "alunos_online", idAluno));
-        encerramentosConfirmados.set(idAluno, agora);
-
-        alunosOnlineCache = alunosOnlineCache.filter(a => a.idDoc !== idAluno);
-        renderizarTabelaTempoReal();
-
-        mostrarNotificacao(`✅ Prova de ${nomeAluno} finalizada e enviada para Resultados e Relatórios!`);
-
-        // 🔵 FASE 6 — após finalizar, abre automaticamente Resultados e Relatórios.
-        // O resultado já foi salvo acima antes de sair do Monitoramento.
-        setTimeout(() => {
-          // 🔵 FASE 6B — força a atualização antes de abrir Relatórios.
-          renderizarTabelaResultadosFiltrada();
-          const btnRelatorios = document.querySelector('.btn-aba[data-aba="aba-relatorios"]');
-          if (btnRelatorios) btnRelatorios.click();
-          setTimeout(() => renderizarTabelaResultadosFiltrada(), 100);
-        }, 250);
-
-      } catch (err) { alert("Erro: " + err.message); }
-    }
-  };
-
-  // ==========================================
-// MELHORIAS NA ABA DE BANCO DE DADOS (CATÁLOGO DE QUESTÕES)
-// ==========================================
-
-window.selecionarTodasQuestoesBanco = function(marcar) {
-  document.querySelectorAll(".chk-questao-catalogo").forEach(chk => chk.checked = marcar);
-};
-
-// [REMOVIDA DUPLICAÇÃO] excluirQuestoesSelecionadasEmMassa: mantida a implementação final mais abaixo.
-
-window.abrirModalEditarQuestaoBanco = function(idDoc) {
-  const q = questoesBancoCache.find(item => item.idDoc === idDoc);
-  if (!q) return;
-
-  let modal = document.getElementById("modal-editar-questao-db");
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "modal-editar-questao-db";
-    modal.style.cssText = "display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:90%; max-width:650px; background:#1e293b; border:1px solid #3b82f6; border-radius:12px; z-index:999999; padding:25px; box-shadow:0 10px 30px rgba(0,0,0,0.7); max-height:90vh; overflow-y:auto; color:#f8fafc;";
-    document.body.appendChild(modal);
-  }
-
-  let opcoesHtml = "";
-  let letras = ["A", "B", "C", "D", "E", "F", "G"];
-  (q.opcoes || []).forEach((op, idx) => {
-    let letra = letras[idx] || ("Opt" + (idx+1));
-    opcoesHtml += `
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;" class="linha-opcao-edicao">
-        <span style="font-weight:bold; min-width:25px;">${letra})</span>
-        <input type="text" class="input-opcao-valor" value="${op}" style="flex:1; padding:6px 10px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">
-        <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.linha-opcao-edicao').remove()">🗑️</button>
-      </div>
-    `;
-  });
-
-  let corretaAtual = (q.correta || "A").toString().trim().toUpperCase();
-
-  modal.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-      <h3 style="margin:0; color:#60a5fa; font-size:16px;">✏️ Editar Questão do Banco</h3>
-      <button type="button" onclick="document.getElementById('modal-editar-questao-db').style.display='none'" style="background:transparent; border:none; color:#94a3b8; font-size:18px; cursor:pointer;">✕</button>
-    </div>
-    <form id="form-editar-questao-db" style="display:flex; flex-direction:column; gap:14px;">
-      <input type="hidden" id="edit-id-doc" value="${q.idDoc}">
-      <div>
-        <label style="font-size:12px; color:#cbd5e1; display:block; margin-bottom:4px;">Matéria / Categoria:</label>
-        <input type="text" id="edit-materia" value="${q.materia || q.categoria || 'Geral'}" style="width:100%; padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">
-      </div>
-      <div>
-        <label style="font-size:12px; color:#cbd5e1; display:block; margin-bottom:4px;">Enunciado da Pergunta:</label>
-        <textarea id="edit-pergunta" rows="3" style="width:100%; padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">${q.pergunta || ''}</textarea>
-      </div>
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <label style="font-size:12px; color:#cbd5e1;">Alternativas:</label>
-          <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarAlternativaModalEdicao()">➕ Adicionar Alternativa</button>
-        </div>
-        <div id="container-opcoes-edicao" style="display:flex; flex-direction:column; gap:4px;">
-          ${opcoesHtml}
-        </div>
-      </div>
-      <div>
-        <label style="font-size:12px; color:#cbd5e1; display:block; margin-bottom:4px;">Alternativa Correta (Letra exata, ex: A, B, C):</label>
-        <input type="text" id="edit-correta" value="${corretaAtual}" maxlength="1" style="width:80px; padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px; text-align:center; font-weight:bold;">
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
-        <button type="button" onclick="document.getElementById('modal-editar-questao-db').style.display='none'" style="background:#475569; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">Cancelar</button>
-        <button type="submit" style="background:#22c55e; color:white; border:none; padding:8px 20px; border-radius:6px; font-weight:bold; cursor:pointer;">💾 Salvar Alterações</button>
-      </div>
-    </form>
-  `;
-
-  modal.style.display = "block";
-
-  document.getElementById("form-editar-questao-db").onsubmit = async (e) => {
-    e.preventDefault();
-    const idDoc = document.getElementById("edit-id-doc").value;
-    const materia = document.getElementById("edit-materia").value.trim();
-    const pergunta = document.getElementById("edit-pergunta").value.trim();
-    const correta = document.getElementById("edit-correta").value.trim().toUpperCase();
-    
-    const opcoesInputs = Array.from(document.querySelectorAll("#container-opcoes-edicao .input-opcao-valor"));
-    const opcoesLimpas = opcoesInputs.map(inp => inp.value.trim()).filter(Boolean);
-
-    if (!pergunta || opcoesLimpas.length < 2) {
-      alert("⚠️ Preencha o enunciado e pelo menos 2 alternativas válidas.");
-      return;
-    }
-
-    try {
-      const dadosAtualizados = {
-        materia: materia,
-        categoria: materia,
-        pergunta: pergunta,
-        opcoes: opcoesLimpas,
-        correta: correta,
-        atualizadoEm: serverTimestamp()
-      };
-
-      await setDoc(doc(db, "questoes", idDoc), dadosAtualizados, { merge: true });
-      
-      let idxCache = questoesBancoCache.findIndex(item => item.idDoc === idDoc);
-      if (idxCache !== -1) {
-        questoesBancoCache[idxCache] = { ...questoesBancoCache[idxCache], ...dadosAtualizados };
-      }
-
-      modal.style.display = "none";
-      popularFiltroMateriaCatalogo();
-      renderizarCatalogoBancoDados();
-      mostrarNotificacao("✅ Questão atualizada com sucesso!");
-    } catch (err) {
-      alert("Erro ao atualizar questão: " + err.message);
-    }
-  };
-};
-
-window.adicionarAlternativaModalEdicao = function() {
-  const container = document.getElementById("container-opcoes-edicao");
-  if (!container) return;
-  const totalAtual = container.querySelectorAll(".linha-opcao-edicao").length;
-  let letras = ["A", "B", "C", "D", "E", "F", "G"];
-  let letra = letras[totalAtual] || ("Opt" + (totalAtual+1));
-
-  let div = document.createElement("div");
-  div.className = "linha-opcao-edicao";
-  div.style.cssText = "display:flex; gap:8px; align-items:center; margin-bottom:8px;";
-  div.innerHTML = `
-    <span style="font-weight:bold; min-width:25px;">${letra})</span>
-    <input type="text" class="input-opcao-valor" placeholder="Nova alternativa..." style="flex:1; padding:6px 10px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">
-    <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.linha-opcao-edicao').remove()">🗑️</button>
-  `;
-  container.appendChild(div);
-};
-
-// ==========================================
-// CORREÇÃO DOS CLIQUES NOS MENUS DE CLASSIFICAÇÃO DO BANCO
-// ==========================================
-let ordemAtualBanco = "nenhum";
-
-window.aplicarOrdenacaoBanco = function(criterio) {
-  ordemAtualBanco = criterio;
-  
-  if (criterio === "materia") {
-    questoesBancoCache.sort((a, b) => (a.materia || a.categoria || "").localeCompare(b.materia || b.categoria || ""));
-  } else if (criterio === "enunciado-az") {
-    questoesBancoCache.sort((a, b) => (a.pergunta || "").localeCompare(b.pergunta || ""));
-  } else if (criterio === "id-asc") {
-    questoesBancoCache.sort((a, b) => (a.idDoc || "").localeCompare(b.idDoc || ""));
-  } else if (criterio === "id-desc") {
-    questoesBancoCache.sort((a, b) => (b.idDoc || "").localeCompare(a.idDoc || ""));
-  }
-
-  renderizarCatalogoBancoDados();
-  
-  // Fechar menus suspensos após o clique
-  document.querySelectorAll('.dropdown-menu-win, .dropdown-content').forEach(m => {
-    m.classList.remove('show');
-    m.style.display = 'none';
-  });
-  
-  if (typeof mostrarNotificacao === 'function') {
-    mostrarNotificacao("📌 Questões ordenadas com sucesso!");
-  }
-};
-
-document.addEventListener("click", (e) => {
-  const item = e.target.closest("button, a, div");
-  if (!item) return;
-  const texto = item.textContent ? item.textContent.trim() : "";
-  
-  if (texto.includes("Matéria / Categoria")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("materia");
-  } else if (texto.includes("Enunciado (A-Z)")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("enunciado-az");
-  } else if (texto.includes("Ordem Crescente (ID)")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("id-asc");
-  } else if (texto.includes("Ordem Decrescente (ID)")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("id-desc");
-  }
-});
-
-// ==========================================
-// CORREÇÃO DOS BOTÕES DE CLASSIFICAÇÃO E VISUALIZAÇÃO DO CATÁLOGO
-// ==========================================
-window.ordemAtualBancoCatalogo = "nenhum";
-
-// ==========================================
-// FUNÇÕES DE CLASSIFICAÇÃO E VISUALIZAÇÃO DO CATÁLOGO (BANCO DE DADOS)
-// ==========================================
-
-window.aplicarClassificacaoDB = function(criterio) {
-  window.ordemAtualBancoCatalogo = criterio;
-  renderizarCatalogoBancoDados();
-  document.querySelectorAll('.dropdown-menu-win').forEach(m => m.classList.remove('show'));
-  mostrarNotificacao("📌 Catálogo reordenado com sucesso!");
-};
-
-// [REMOVIDA DUPLICAÇÃO] alterarModoVisualizacaoDB: mantida a implementação final mais abaixo.
-
-// Sobrescrita do renderizador para tratar exatamente os critérios enviados no seu HTML:
-// [REMOVIDA DUPLICAÇÃO] renderizarCatalogoBancoDados: mantida a implementação final mais abaixo.
-
-window.alterarModoVisualizacaoDB = function(modo) {
-  const grid = document.getElementById("catalogo-questoes-grid");
-  if (!grid) return;
-
-  grid.classList.remove("modo-lista", "modo-blocos");
-  if (modo === "lista") {
-    grid.classList.add("modo-lista");
-    mostrarNotificacao("≡ Visualização em Lista ativada!");
-  } else if (modo === "blocos") {
-    grid.classList.add("modo-blocos");
-    mostrarNotificacao("🗂️ Visualização em Blocos ativada!");
-  } else {
-    mostrarNotificacao("🔲 Visualização em Grade ativada!");
-  }
-
-  // Fecha o menu suspenso
-  document.querySelectorAll('.dropdown-menu-win').forEach(m => m.classList.remove('show'));
-};
-
-// ==========================================
-// CORREÇÃO DEFINITIVA DO BANCO DE DADOS E MENUS
-// ==========================================
-window.ordemAtualBancoCatalogo = "nenhum";
-
-window.renderizarCatalogoBancoDados = function() {
-  const gridCatalogo = document.getElementById("catalogo-questoes-grid") || document.getElementById("lista-banco-dados-container");
-  const inputBusca = document.getElementById("input-busca-banco-dados") || document.querySelector('input[placeholder*="Pesquisar"]');
-  const selectFiltroMateria = document.getElementById("select-filtro-materia-db") || document.querySelector('select');
-  
-  // Atualizar o contador total de questões na tela imediatamente
-  const elContador = document.getElementById("db-total-questoes");
-  if (elContador) {
-    elContador.textContent = questoesBancoCache.length;
-  } else {
-    document.querySelectorAll('div, section').forEach(card => {
-      if (card.textContent && card.textContent.includes("TOTAL DE QUESTÕES")) {
-        const valEl = card.querySelector('div:last-child, h2, h3, span');
-        if (valEl) {
-          valEl.textContent = questoesBancoCache.length;
-        }
-      }
-    });
-  }
-
-  if (!gridCatalogo) return;
-
-  // Barra de ferramentas de seleção em massa
-  let barraFerramentas = document.getElementById("barra-ferramentas-db-avancada");
-  if (!barraFerramentas && gridCatalogo.parentNode) {
-    barraFerramentas = document.createElement("div");
-    barraFerramentas.id = "barra-ferramentas-db-avancada";
-    barraFerramentas.style.cssText = "display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; background: rgba(30, 41, 59, 0.9); padding: 14px; border-radius: 10px; border: 1px solid #334155; width: 100%;";
-    barraFerramentas.innerHTML = `
-      <div style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 250px;">
-        <input type="text" id="input-busca-banco-dados-dinamico" placeholder="🔍 Buscar no banco por termo ou enunciado..." style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;" oninput="renderizarCatalogoBancoDados()">
-      </div>
-      <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-        <button type="button" class="btn-acao-mini" style="background: #0284c7; color: white; padding: 7px 12px; border-radius:6px; font-weight:bold; cursor:pointer; border:none;" onclick="selecionarTodasQuestoesBanco(true)">☑️ Marcar Todas</button>
-        <button type="button" class="btn-acao-mini" style="background: #475569; color: white; padding: 7px 12px; border-radius:6px; font-weight:bold; cursor:pointer; border:none;" onclick="selecionarTodasQuestoesBanco(false)">🔲 Desmarcar</button>
-        <button type="button" class="btn-acao-mini" style="background: #ef4444; color: white; padding: 7px 12px; border-radius:6px; font-weight:bold; cursor:pointer; border:none;" onclick="excluirQuestoesSelecionadasEmMassa()">🗑️ Excluir Selecionadas</button>
-      </div>
-    `;
-    gridCatalogo.parentNode.insertBefore(barraFerramentas, gridCatalogo);
-  }
-
-  const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
-  const materiaSel = selectFiltroMateria ? selectFiltroMateria.value : "TODAS";
-
-  let filtradas = [...questoesBancoCache];
-
-  // Se for "Todas", exibe tudo sem filtrar
-  if (materiaSel && materiaSel !== "TODAS" && !materiaSel.includes("Todas") && !materiaSel.includes("todas")) {
-    filtradas = filtradas.filter(q => (q.materia === materiaSel || q.categoria === materiaSel));
-  }
-
-  if (termoBusca) {
-    filtradas = filtradas.filter(q => {
-      let texto = normalizarTexto(`${q.materia || ''} ${q.pergunta || ''} ${(q.opcoes || []).join(' ')} ${q.correta || ''}`);
-      return texto.includes(termoBusca);
-    });
-  }
-
-  // Ordenação ativa
-  if (window.ordemAtualBancoCatalogo && window.ordemAtualBancoCatalogo !== "nenhum") {
-    if (window.ordemAtualBancoCatalogo === "materia") {
-      filtradas.sort((a, b) => (a.materia || a.categoria || "").localeCompare(b.materia || b.categoria || ""));
-    } else if (window.ordemAtualBancoCatalogo === "enunciado-az") {
-      filtradas.sort((a, b) => (a.pergunta || "").localeCompare(b.pergunta || ""));
-    } else if (window.ordemAtualBancoCatalogo === "id-asc") {
-      filtradas.sort((a, b) => (a.idDoc || "").localeCompare(b.idDoc || ""));
-    } else if (window.ordemAtualBancoCatalogo === "id-desc") {
-      filtradas.sort((a, b) => (b.idDoc || "").localeCompare(a.idDoc || ""));
-    }
-  }
-
-  if (filtradas.length === 0) {
-    gridCatalogo.innerHTML = `<div style="text-align:center; color: #94a3b8; padding: 30px; grid-column: 1/-1;">Nenhuma questão encontrada com os filtros atuais.</div>`;
-    return;
-  }
-
-  let html = "";
-  filtradas.forEach(q => {
-    let materia = q.materia || q.categoria || "Geral";
-    // 🔵 FASE 7 — separação visual entre ENUNCIADO e ALTERNATIVAS.
-    let pergunta = limparPrefixoPergunta(q.pergunta || "Sem enunciado");
-    let correta = (q.correta || "A").toString().trim().toUpperCase();
-    let opcoes = (q.opcoes || []).map(op => limparPrefixoOpcao(op));
-    let letras = ["A", "B", "C", "D", "E", "F", "G"];
-
-    let opcoesHtml = "";
-    opcoes.forEach((op, idx) => {
-      if (!op) return;
-      let letra = letras[idx] || ("Opt" + (idx+1));
-      let ehCorreta = (letra === correta);
-      opcoesHtml += `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding: 4px 8px; background: rgba(15,23,42,0.4); border-radius:4px; font-size:12px; margin-bottom:3px; ${ehCorreta ? 'border:1px solid #22c55e; color:#4ade80; font-weight:bold;' : ''}">
-          <span><strong>${letra})</strong> ${op}</span>
-          ${ehCorreta ? '<span style="font-size:10px; background:rgba(34,197,94,0.2); padding:1px 4px; border-radius:3px;">Correta</span>' : ''}
-        </div>
-      `;
-    });
-
-    html += `
-      <div class="catalogo-card" data-id="${q.idDoc}" style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" class="chk-questao-catalogo" value="${q.idDoc}" style="cursor:pointer; width:16px; height:16px;">
-            <span style="font-size:11px; background:rgba(59,130,246,0.2); color:#60a5fa; padding:2px 6px; border-radius:4px; font-weight:bold;">📚 ${materia}</span>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button type="button" class="btn-acao-mini" style="background:#eab308; color:white; padding:5px 10px; border-radius:4px; border:none; cursor:pointer; font-weight:bold; font-size:11px;" onclick="abrirModalEditarQuestaoBanco('${q.idDoc}')">✏️ Editar</button>
-            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white; padding:5px 10px; border-radius:4px; border:none; cursor:pointer; font-weight:bold; font-size:11px;" onclick="excluirQuestaoBancoIndividual('${q.idDoc}')">🗑️ Excluir</button>
-          </div>
-        </div>
-        <div style="margin-top:4px; padding:10px 11px; background:rgba(59,130,246,.08); border-left:3px solid #3b82f6; border-radius:6px;">
-          <div style="font-size:10px; letter-spacing:.6px; color:#60a5fa; font-weight:800; margin-bottom:5px;">ENUNCIADO</div>
-          <div style="font-size:13px; line-height:1.45; font-weight:700; color:#f8fafc;">${pergunta}</div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
-          <div style="font-size:10px; letter-spacing:.6px; color:#94a3b8; font-weight:800; margin-bottom:2px;">ALTERNATIVAS</div>
-          ${opcoesHtml}
-        </div>
-        <div style="font-size: 10px; color: #64748b; margin-top: auto; padding-top: 6px; border-top: 1px solid rgba(51, 65, 85, 0.4);">
-          ID Ref: ${q.idDoc}
-        </div>
-      </div>
-    `;
-  });
-  gridCatalogo.innerHTML = html;
-
-  // ========================================================
-  // 🔧 FASE 4F — GRADE ESTÁVEL, SEM CORTAR CARDS
-  // Não usamos mais CSS "columns", pois ele pode dividir uma
-  // questão entre o fim de uma coluna e o início da próxima.
-  // Em Grade, criamos 3 colunas REAIS e movemos cada card
-  // inteiro para a coluna mais baixa.
-  // ========================================================
-  if (!gridCatalogo.classList.contains("modo-lista") &&
-      !gridCatalogo.classList.contains("modo-blocos")) {
-
-    const cards = Array.from(gridCatalogo.querySelectorAll(":scope > .catalogo-card"));
-
-    if (cards.length) {
-      const mural = document.createElement("div");
-      mural.className = "mural-questoes-estavel";
-
-      const colunas = [];
-      for (let i = 0; i < 3; i++) {
-        const coluna = document.createElement("div");
-        coluna.className = "mural-coluna";
-        mural.appendChild(coluna);
-        colunas.push(coluna);
-      }
-
-      gridCatalogo.innerHTML = "";
-      gridCatalogo.appendChild(mural);
-
-      // Distribuição progressiva: o card permanece inteiro.
-      cards.forEach((card, indice) => {
-        // No primeiro carregamento, distribui em sequência.
-        // Depois que há altura calculada, usa a menor coluna.
-        let destino;
-        if (indice < 3) {
-          destino = colunas[indice];
-        } else {
-          destino = colunas.reduce((menor, atual) =>
-            atual.scrollHeight < menor.scrollHeight ? atual : menor
-          , colunas[0]);
-        }
-        destino.appendChild(card);
-      });
-    }
-  }
-};
-
-// Eventos de clique para menus e botões
-document.addEventListener("click", async (e) => {
-  const alvo = e.target.closest("button, a, div");
-  if (!alvo) return;
-  const texto = alvo.textContent ? alvo.textContent.trim() : "";
-
-  // Botão Atualizar
-  if (texto.includes("Atualizar") || texto.includes("Recarregar")) {
-    e.preventDefault();
-    if (typeof carregarBancoDadosCompleto === 'function') {
-      mostrarNotificacao("🔄 Atualizando banco de dados...");
-      await carregarBancoDadosCompleto();
-      mostrarNotificacao("✅ Banco de dados atualizado com sucesso!");
-    }
-  }
-
-  // Opções de Classificação
-  if (texto.includes("Matéria / Categoria")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "materia";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por Matéria / Categoria");
-  } else if (texto.includes("Enunciado (A-Z)")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "enunciado-az";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por Enunciado (A-Z)");
-  } else if (texto.includes("Ordem Crescente (ID)")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "id-asc";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por ID (Crescente)");
-  } else if (texto.includes("Ordem Decrescente (ID)")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "id-desc";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por ID (Decrescente)");
-  } else if (texto.includes("Ver Tudo") || texto.includes("Sem Classificação")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "nenhum";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("🔄 Exibindo acervo completo!");
-  }
-});
-
-// Injetar automaticamente o botão "Ver Tudo / Sem Classificação" nos menus suspensos
-setInterval(() => {
-  document.querySelectorAll('.dropdown-menu-win, .dropdown-content, div').forEach(menu => {
-    if (menu.textContent && menu.textContent.includes("Enunciado (A-Z)") && !menu.textContent.includes("Ver Tudo")) {
-      const btnVerTudo = document.createElement("button");
-      btnVerTudo.type = "button";
-      btnVerTudo.style.cssText = "width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px; font-weight:bold;";
-      btnVerTudo.innerHTML = "🔄 Ver Tudo / Sem Classificação";
-      btnVerTudo.onclick = () => {
-        window.ordemAtualBancoCatalogo = "nenhum";
-        renderizarCatalogoBancoDados();
-        menu.classList.remove('show');
-        menu.style.display = 'none';
-        mostrarNotificacao("🔄 Exibindo acervo completo!");
-      };
-      menu.prepend(btnVerTudo);
-    }
-  });
-}, 1500);
-
-// ==========================================
-// FUNÇÕES GLOBAIS DE EXCLUSÃO DE QUESTÕES
-// ==========================================
-
-// [REMOVIDA DUPLICAÇÃO] excluirQuestaoBancoIndividual: mantida a implementação final mais abaixo.
-
-// [REMOVIDA DUPLICAÇÃO] excluirQuestoesSelecionadasEmMassa: mantida a implementação final mais abaixo.
-
-// ==========================================
-// SISTEMA DE EXCLUSÃO COM LIXEIRA PARA QUESTÕES
-// ==========================================
-
-// ==========================================
-// SISTEMA DA LIXEIRA DE QUESTÕES CORRIGIDO
-// ==========================================
-
-window.excluirQuestaoBancoIndividual = async function(idDoc) {
-  if (!idDoc) return;
-  if (confirm("🗑️ Deseja mover esta questão para a lixeira?")) {
-    try {
-      const questaoObj = questoesBancoCache.find(q => q.idDoc === idDoc);
-      if (questaoObj) {
-        // Grava explicitamente na coleção "lixeira_questoes" no Firebase
-        await setDoc(doc(db, "lixeira_questoes", idDoc), {
-          materia: questaoObj.materia || questaoObj.categoria || "Geral",
-          pergunta: questaoObj.pergunta || "Sem enunciado",
-          opcoes: questaoObj.opcoes || [],
-          correta: questaoObj.correta || "A",
-          categoria: questaoObj.categoria || "Geral",
-          idDocOriginal: idDoc,
-          excluidoEm: new Date().toISOString()
-        });
-        
-        // Remove da coleção ativa de questões
-        await deleteDoc(doc(db, "questoes", idDoc));
-        
-        // Atualiza o cache e a tela
-        questoesBancoCache = questoesBancoCache.filter(q => q.idDoc !== idDoc);
-        renderizarCatalogoBancoDados();
-        mostrarNotificacao("🗑️ Questão movida para a Lixeira!");
+        const updated = { ...r.match, events: [...old.events, event] };
+        latest.matches[latest.matches.findIndex((m) => m.id === old.id)] =
+          updated;
+        state = latest;
       } else {
-        alert("⚠️ Questão não encontrada no cache local.");
-      }
-    } catch (err) {
-      console.error("Erro ao excluir questão:", err);
-      alert("Erro ao excluir: " + err.message);
-    }
-  }
-};
-
-window.excluirQuestoesSelecionadasEmMassa = async function() {
-  const selecionadas = Array.from(document.querySelectorAll(".chk-questao-catalogo:checked")).map(c => c.value);
-  if (selecionadas.length === 0) {
-    alert("⚠️ Selecione pelo menos uma questão.");
-    return;
-  }
-  if (confirm(`🔥 Mover as ${selecionadas.length} questões selecionadas para a lixeira?`)) {
-    try {
-      for (const idDoc of selecionadas) {
-        const questaoObj = questoesBancoCache.find(q => q.idDoc === idDoc);
-        if (questaoObj) {
-          await setDoc(doc(db, "lixeira_questoes", idDoc), {
-            materia: questaoObj.materia || questaoObj.categoria || "Geral",
-            pergunta: questaoObj.pergunta || "Sem enunciado",
-            opcoes: questaoObj.opcoes || [],
-            correta: questaoObj.correta || "A",
-            categoria: questaoObj.categoria || "Geral",
-            idDocOriginal: idDoc,
-            excluidoEm: new Date().toISOString()
-          });
-          await deleteDoc(doc(db, "questoes", idDoc));
-          questoesBancoCache = questoesBancoCache.filter(q => q.idDoc !== idDoc);
+        state = D.reduce(latest, a, "demo");
+        if(["team","player","teamArchive"].includes(a.type)){
+          const entity=a.type==="player"?"players":"teams",target=a.teamId||a.data?.id||state[entity].at(-1)?.id;
+          state.teamLocalAudit=state.teamLocalAudit||[];state.teamLocalAudit.push({ID:crypto.randomUUID?crypto.randomUUID():"local-"+Date.now()+"-"+Math.random().toString(36).slice(2),entity,target,actor:"demonstração",at:new Date().toISOString(),before:latest[entity].find(r=>r.id===target)||null,after:state[entity].find(r=>r.id===target),detail:{type:a.type==="teamArchive"?(a.archived?"arquivamento":"reativação"):"cadastro / edição",reason:a.reason||"",text:"Alteração na demonstração"}});
+        }
+        if (a.type === "match") {
+          const m = state.matches[state.matches.length - 1];
+          m.clock = M.emptyClock();
+          m.publicNotice = "";
         }
       }
-      renderizarCatalogoBancoDados();
-      mostrarNotificacao(`🗑️️ ${selecionadas.length} questão(ões) movida(s) para a lixeira!`);
-    } catch (err) {
-      console.error("Erro na exclusão em massa:", err);
-      alert("Erro: " + err.message);
+      trainingMode ? trainingStore(state) : localStorage.setItem(key, JSON.stringify(state));
+    } else {
+      if (!cloud) throw Error("Aguarde a conexão com o Firebase.");
+      await cloud.send(a);
     }
-  }
-};
-
-window.abrirModalLixeiraQuestao = async function() {
-  const modal = document.getElementById("modal-lixeira-questoes");
-  if (modal) {
-    modal.classList.add("show");
-    await carregarConteudoLixeiraQuestoes();
-  }
-};
-
-window.fecharModalLixeiraQuestao = function() {
-  const modal = document.getElementById("modal-lixeira-questoes");
-  if (modal) modal.classList.remove("show");
-};
-
-async function carregarConteudoLixeiraQuestoes() {
-  const corpo = document.getElementById("corpo-tabela-lixeira-questoes");
-  if (!corpo) return;
-  try {
-    corpo.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 20px;">Carregando lixeira...</td></tr>`;
-    const snap = await getDocs(collection(db, "lixeira_questoes"));
-    
-    if (snap.empty) {
-      corpo.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 20px;">A lixeira de questões está vazia.</td></tr>`;
-      return;
-    }
-    
-    let html = "";
-    snap.forEach(docSnap => {
-      let q = docSnap.data();
-      let materia = q.materia || 'Geral';
-      let pergunta = q.pergunta || 'Sem enunciado';
-      html += `
-        <tr>
-          <td style="text-align: center;"><input type="checkbox" class="chk-lixeira-item" value="${docSnap.id}"></td>
-          <td>📚 ${materia}</td>
-          <td><strong>${pergunta}</strong></td>
-          <td style="text-align: center;">
-            <button type="button" class="btn-acao-mini" style="background:#22c55e; color:white; padding:5px 10px; border-radius:4px; border:none; cursor:pointer;" onclick="restaurarQuestaoLixeiraIndividual('${docSnap.id}')">♻️ Restaurar</button>
-          </td>
-        </tr>
-      `;
-    });
-    corpo.innerHTML = html;
-  } catch (err) {
-    console.error("Erro ao carregar lixeira:", err);
-    corpo.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ef4444; padding: 20px;">Erro ao carregar lixeira: ${err.message}</td></tr>`;
+    toast("Registro salvo.");
+    if (C.demo) render();
+  } catch (e) {
+    toast(e.message, true);
+    throw e;
+  } finally {
+    busy = false;
+    render();
   }
 }
+// 2 — Visualização e navegação.
+function matchCard(m, button = false) {
+  const points = D.score(m),
+    sc = gameResult(m),
+    a = team(m.home),
+    b = team(m.away);
+  return `<article class="card match-card ${m.status === "Ao vivo" ? "is-live" : ""}"><div class="match-top"><span class="tag">${esc(m.sport)}</span><span class="status ${m.status === "Ao vivo" ? "live" : ""}">${m.status === "Ao vivo" ? "● " : ""}${esc(m.status)}</span></div><p class="competition-name">${esc(m.competition || "Partida avulsa")}</p><div class="score"><div>${badge(a)}<div class="name">${esc(a.name)}</div></div><strong>${sc[0]} <span class="muted">:</span> ${sc[1]}</strong><div>${badge(b)}<div class="name">${esc(b.name)}</div></div></div>${clockMarkup(m)}<div class="stage-line">Etapa: ${esc(m.stage)} ${m.sport.startsWith("Vôlei") ? " • Pontos do set: " + points.join(" × ") : ""}</div>${m.sets.length ? '<p class="muted">Parciais: ' + m.sets.map((s) => s.score.join("–")).join(" / ") + "</p>" : ""}${m.publicNotice ? `<div class="public-notice"><strong>${["Pausada", "Suspensa", "Adiada", "Cancelada"].includes(m.status) ? "Informação da partida" : "Aviso da organização"}</strong><p>${esc(m.publicNotice)}</p></div>` : ""}<p class="match-meta">${esc(format(m.date))}<br>${esc(m.place || "Local a definir")}</p><div class="match-bottom">${button && (role === "admin" || (trainingMode && role === "operator") || cloud?.canOperate(m.id)) ? `<button data-open="${m.id}">Operar partida →</button>` : ""}<span class="brand-signature">WagnerBIZZA</span></div></article>`;
+}
 
-window.restaurarQuestaoLixeiraIndividual = async function(idDoc) {
-  try {
-    const docRef = doc(db, "lixeira_questoes", idDoc);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      let dados = docSnap.data();
-      delete dados.excluidoEm;
-      delete dados.idDocOriginal;
-      
-      // Retorna para a coleção oficial de questões
-      await setDoc(doc(db, "questoes", idDoc), dados);
-      // Remove da lixeira
-      await deleteDoc(docRef);
-      
-      await carregarBancoDadosCompleto();
-      await carregarConteudoLixeiraQuestoes();
-      mostrarNotificacao("♻️ Questão restaurada ao catálogo com sucesso!");
-    }
-  } catch (err) {
-    console.error("Erro ao restaurar questão:", err);
-    alert("Erro ao restaurar: " + err.message);
+function render() {
+  resetTeamProfileContext();
+  resetRemovedContext();
+  hideContextHelp();
+  document.documentElement.style.setProperty("--accent", state.settings.color);
+  document.title = systemDisplayName()+" — "+(admin?panelDisplayName():"Jogos e Resultados");
+  renderBrandAndIdentity();
+  document.body.classList.toggle("report-mode", admin && section === "reports");
+  $("#logout")?.classList.toggle("hidden", C.demo || !user);
+  if (admin && !C.demo && (!user || !role)) {
+    app.innerHTML = accessView();
+    if (accessBusy) app.querySelectorAll("button").forEach((b) => b.disabled = true);
+    return;
   }
-};
-
-window.restaurarQuestoesSelecionadasLixeira = async function() {
-  const sel = Array.from(document.querySelectorAll(".chk-lixeira-item:checked")).map(c => c.value);
-  if (sel.length === 0) { alert("⚠️ Selecione pelo menos uma questão."); return; }
-  for (const id of sel) {
-    await restaurarQuestaoLixeiraIndividual(id);
+  if (!admin) {
+    app.innerHTML = `<section class="hero" id="hero"><span class="tag">CENTRAL DE RESULTADOS / TEMPORADA</span><h1>${esc(systemDisplayName())}</h1><p class="muted">${esc(state.settings.subtitle)}</p></section><div class="sectionhead"><h2>Acompanhe os jogos</h2><select id="filter" aria-label="Filtrar modalidade"><option value="">Todas as modalidades</option>${options(
+      D.SPORTS,
+      (x) => x,
+      (x) => x,
+    )}</select></div>${publicHub()}`;
+    $("#filter").value = publicFilter;
+    if (state.settings.banner)
+      $("#hero").style.backgroundImage =
+        `linear-gradient(90deg,#0c1014ed,#0c1014b0),url("${encodeURI(state.settings.banner).replace(/"/g, "%22")}")`;
+    return;
   }
-};
-
-window.excluirPermanentementeQuestoesLixeira = async function() {
-  const sel = Array.from(document.querySelectorAll(".chk-lixeira-item:checked")).map(c => c.value);
-  if (sel.length === 0) { alert("⚠️ Selecione pelo menos uma questão."); return; }
-  if (confirm(`🔥 Excluir permanentemente as ${sel.length} questões selecionadas?`)) {
-    for (const id of sel) {
-      await deleteDoc(doc(db, "lixeira_questoes", id));
-    }
-    await carregarConteudoLixeiraQuestoes();
-    mostrarNotificacao("🔥 Questões excluídas permanentemente!");
+  // Uma sessão rebaixada ou trocada não mantém uma aba administrativa aberta.
+  if (role !== "admin" && !["overview", "matches", "account", "documentation", ...(canManageRosters()?["teams","players","imports"]:[])].includes(section)) {
+    section = "overview";
+    selected = "";
   }
+  if (selected && !state.matches.some((m) => m.id === selected)) selected = "";
+  const sections = [
+    ["overview", "Visão geral"],
+    ["championships", "Campeonatos"],
+    ["standings", "Classificação"],
+    ["teams", "Equipes"],
+    ["players", "Jogadores"],
+    ["matches", "Partidas"],
+    ["imports", "Importar"],
+    ["reports", "Súmulas e relatórios"],
+    ["cleanup", "Limpeza de testes"],
+    ["settings", "Configurações"],
+    ["users", "Usuários e permissões"],
+    ["account", "Minha conta"],
+    ["documentation", "Guias e documentação"],
+    ["monitor", "Operadores e partidas"],
+  ];
+  app.innerHTML = `<div class="sectionhead admin-heading noprint"><div><span class="tag">${esc(systemDisplayName())}</span><h2>${esc(panelDisplayName())}</h2></div><span class="status">${C.demo ? "Demonstração" : role === "admin" ? "Administrador principal" : "Operador"}</span></div>${workspaceNavigation(sections)}${locationTrail()}<div id="view">${view()}</div>`;
+  if (busy || accessBusy) app.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  if (section === "reports" && $("[name=reportMatch]")) {
+    $("[name=reportMatch]").value = reportFilter;
+    $("#reportOutput").innerHTML = state.matches
+      .filter((m) => !reportFilter || m.id === reportFilter)
+      .map(reportMatch)
+      .join("");
+  }
+}
+function publicMatches(filter) {
+  const list = state.matches.filter(m=>(!filter||m.sport===filter)&&
+    (publicArea==="live"?m.status==="Ao vivo":publicArea==="schedule"?["Agendada","Adiada"].includes(m.status):publicArea==="results"?finalStatuses.includes(m.status):publicArea==="active"?!finalStatuses.includes(m.status):true));
+  return list.length
+    ? list
+        .slice()
+        .sort(
+          (a, b) =>
+            (b.status === "Ao vivo") - (a.status === "Ao vivo") ||
+            a.date.localeCompare(b.date),
+        )
+        .map((m) => matchCard(m))
+        .join("")
+     : publicArea==="active"
+      ? `<section class="card public-empty-state"><h3>Nenhum jogo atual nesta seleção</h3><p>Não há partidas agendadas, em andamento ou interrompidas${filter?" nesta modalidade":""}. Consulte os jogos concluídos em Resultados.</p><button type="button" class="primary" data-public-area="results">Ver resultados</button></section>`
+      : empty("Nenhuma partida publicada para esta seleção.");
+}
+function view() {
+  if(section==="teams"&&selectedTeamId&&canManageRosters())return teamProfileView();
+  if(section==="documentation")return documentationView();
+  if(section==="monitor"&&role==="admin")return operatorMonitor();
+  if (section === "cleanup" && role === "admin") return cleanupPanel();
+  if (section === "standings" && role === "admin") return standingsPanel();
+  if (section === "account") return accountView();
+  if (section === "championships" && role === "admin") return championshipsView();
+  if (section === "users" && role === "admin") return usersView();
+  if (section === "overview")return overviewMatchView();
+  if (section === "teams") return teamsDirectoryView();
+  if (section === "players")
+    return `<div class="card"><h2>Cadastrar jogador</h2><p class="muted">Cadastre o elenco antes de criar a partida. A súmula preserva uma cópia do elenco daquela data.</p><form id="player"><input name="recordId" type="hidden"><div class="formgrid">${field("Nome", "name", "text", "required")}${select("Equipe", "team", teamOptions())}${field("Número", "number")}${field("Posição", "position")}${select("Escalação", "reserve", '<option value="false">Titular</option><option value="true">Reserva / banco</option>')}</div><button class="primary">Salvar jogador</button> <button type="button" data-section="imports">Importar jogadores</button></form></div>${listPanel("players")}`;
+  if (section === "matches" && role !== "admin" && !selected) {
+    return `<div class="card"><h2>Minhas partidas</h2><p>Você pode operar somente as partidas atribuídas pelo administrador principal. Histórico, relatórios e auditoria são exclusivos dele.</p></div>${listPanel("matches")}`;
+  }
+  if (section === "matches")
+    return selected
+      ? operate()
+      : `<div class="card"><h2>Programar partida</h2><form id="match"><div class="formgrid">${championshipSelectForCreate()}${select(
+          "Modalidade",
+          "sport",
+          options(
+            D.SPORTS,
+            (x) => x,
+            (x) => x,
+          ),
+        )}${select("Equipe da casa", "home", teamOptions())}${select("Equipe visitante", "away", teamOptions())}${field("Data e horário (horário deste computador)", "date", "datetime-local", "required")}${field("Local", "place")}${field("Competição / edição (partida sem vínculo)", "competition", "text", 'maxlength="150"')}${field("Árbitros e mesários", "referees")}${field("Etapa inicial (ex.: 1 ou 1º quarto)", "stage", "text", 'value="1"')}</div><button class="primary" ${canCreateMatches() ? "" : "disabled"}>Criar partida</button></form></div>${listPanel("matches")}`;
+  if (section === "imports") return importView();
+  if (section === "reports") return reports();
+  if (section === "settings") return settingsView();
+  return "";
+}
+// 3 — O Firestore valida permissões, auditoria e transições em firestore.rules.
+// 4 — Operação da partida. Sem apagar eventos: pontos errados recebem estorno.
+function operate() {
+  const m = state.matches.find((m) => m.id === selected);
+  if (!m) {
+    selected = "";
+    return view();
+  }
+  const locked = ["Encerrada", "Homologada", "Cancelada"].includes(m.status),
+    live = m.status === "Ao vivo",
+    c = m.clock || M.emptyClock();
+  const moves = {
+    Agendada: [
+      ["Ao vivo", "Iniciar jogo e cronômetro"],
+      ["Adiada", "Adiar"],
+      ["Cancelada", "Cancelar"],
+    ],
+    Adiada: [
+      ["Ao vivo", "Iniciar jogo e cronômetro"],
+      ["Agendada", "Voltar a agendada"],
+      ["Cancelada", "Cancelar"],
+    ],
+    "Ao vivo": [
+      ["Pausada", "Pausar jogo"],
+      ["Suspensa", "Suspender"],
+      ["Encerrada", "Encerrar"],
+    ],
+    Pausada: [
+      ["Ao vivo", "Retomar jogo"],
+      ["Suspensa", "Suspender"],
+      ["Encerrada", "Encerrar"],
+    ],
+    Suspensa: [
+      ["Ao vivo", "Retomar jogo"],
+      ["Encerrada", "Encerrar"],
+      ["Cancelada", "Cancelar"],
+    ],
+    Encerrada: [
+      ["Homologada", "Homologar"],
+      ["Ao vivo", "Reabrir com motivo"],
+    ],
+    Homologada: [["Ao vivo", "Reabrir com motivo"]],
+    Cancelada: [["Agendada", "Reativar com motivo"]],
+  };
+  const buttons = (moves[m.status] || [])
+    .filter(
+      ([status]) =>
+        (status !== "Ao vivo" || locked) && (role === "admin" ||
+        (!["Cancelada", "Homologada"].includes(status) && !locked)),
+    )
+    .map(
+      ([status, label]) =>
+        `<button type="button" data-status="${status}" class="${status === "Ao vivo" ? "primary" : ""}">${label}</button>`,
+    )
+    .join("");
+  const quick = [0, 1]
+    .map((side) => {
+      const t = team([m.home, m.away][side]);
+      return `<section class="quick-team"><div class="quick-team-title">${badge(t)}<h3>${esc(t.name)}</h3></div><label>Atleta (opcional)<select data-quick-player="${side}" aria-label="Atleta ${esc(t.name)}"><option value="">Sem atleta</option>${m.roster
+        .filter((p) => p.team === t.id)
+        .map(
+          (p) =>
+            `<option value="${esc(p.id)}" ${quickPlayers[side] === p.id ? "selected" : ""}>${esc(p.number + " • " + p.name + (p.reserve ? " (reserva)" : ""))}</option>`,
+        )
+        .join(
+          "",
+        )}</select></label><div class="quick-buttons">${(m.sport === "Basquete" ? [1, 2, 3] : [1]).map((v) => `<button class="quick-score primary" data-quick="${v}" data-side="${side}" ${!live ? "disabled" : ""}>+${v}<small>${m.sport === "Futebol" || m.sport === "Futsal" ? "GOL" : v > 1 ? "PONTOS" : "PONTO"}</small></button>`).join("")}</div></section>`;
+    })
+    .join("");
+  return `<button data-back>← Voltar às partidas</button><div class="live-console"><div class="console-score">${matchCard(m)}${matchStartGuide(m)}${role === "admin" ? championshipLinkForm(m) : ""}<div class="card"><h3>Jogo e interrupções</h3><form id="interruption"><div class="formgrid"><label>Motivo de pausa / suspensão<select name="pauseReason"><option>Intervalo</option><option>Atendimento em quadra</option><option>Chuva ou condições do local</option><option>Problema técnico</option><option>Decisão da arbitragem</option><option>Outro motivo</option></select></label><label>Detalhes para o público<input name="pauseDetails" maxlength="220" placeholder="Ex.: retorno previsto em 10 minutos"></label></div><div class="toolbar">${buttons}</div></form><p class="muted">Pausar ou suspender o jogo para o cronômetro e informa o motivo ao público. O placar é preservado.</p>${!locked ? `<form id="stage" class="row"><input name="stage" aria-label="Etapa" value="${esc(m.stage)}" required style="max-width:180px"><button>Atualizar etapa</button></form>${m.sport.startsWith("Vôlei") ? "<p><button data-set>Fechar set e iniciar próximo</button></p>" : ""}<hr><h3>Cronômetro</h3><div class="toolbar"><button data-clock-command="${c.running ? "parar" : "iniciar"}" ${!c.running && !live ? "disabled" : ""}>${c.running ? "Parar somente o relógio" : "Iniciar relógio"}</button></div><details id="clockSettings"><summary>Configurar duração e ajustar cronômetro</summary><p>Escolha um atalho ou preencha os tempos abaixo conforme o regulamento do seu evento. O atalho apenas preenche; clique em Salvar ajuste para aplicar.</p><div class="toolbar">${[10,20,45].map(n=>`<button type="button" data-clock-preset="${n}" ${c.running?"disabled":""}>${n} minutos</button>`).join("")}</div><form id="clock-config"><div class="formgrid"><label>Modo<select name="clockMode"><option value="up" ${c.mode === "up" ? "selected" : ""}>Crescente (00:00 →)</option><option value="down" ${c.mode === "down" ? "selected" : ""}>Regressivo (duração → 00:00)</option></select></label>${field("Duração da etapa (min)", "durationMin", "number", `min="0" max="360" value="${Math.floor((c.durationMs || 600000) / 60000)}"`)}${field("Tempo já decorrido (min)", "elapsedMin", "number", `min="0" max="360" value="${Math.floor(M.elapsed(m) / 60000)}"`)}${field("Segundos decorridos", "elapsedSec", "number", `min="0" max="59" value="${Math.floor(M.elapsed(m) / 1000) % 60}"`)}${field("Motivo do ajuste", "clockReason", "text", 'required maxlength="300"')}</div><button ${c.running ? "disabled" : ""}>Salvar ajuste do cronômetro</button><p class="muted">Pare o relógio para ajustar. A troca de etapa não zera o tempo automaticamente. Ao chegar a zero, a contagem regressiva aguarda a decisão da arbitragem.</p></form></details>` : ""}</div></div><div class="console-actions"><div class="card quick-panel"><span class="tag">LANÇAMENTO RÁPIDO</span><h2>Marcar ponto</h2><p class="muted">Selecione o atleta, se desejar, e toque na pontuação da equipe.</p><div class="quick-grid">${quick}</div>${!live ? '<p class="public-notice">Os lançamentos ficam disponíveis quando o jogo está Ao vivo.</p>' : ""}</div><div class="card"><details><summary>Cartões, faltas, substituições e outros lances</summary>${
+    locked
+      ? "<p>Partida bloqueada.</p>"
+      : `<form id="event"><div class="formgrid">${select("Equipe", "side", `<option value="0">${esc(name(m.home))}</option><option value="1">${esc(name(m.away))}</option>`)}${select(
+          "Tipo",
+          "kind",
+          options(
+            [
+              "ponto",
+              "cartão amarelo",
+              "cartão vermelho",
+              "falta",
+              "substituição",
+              "tempo",
+              "observação",
+            ],
+            (x) => x,
+            (x) => x,
+          ),
+        )}${select(
+          "Valor do ponto",
+          "value",
+          options(
+            m.sport === "Basquete" ? [3] : [1],
+            (x) => x,
+            (x) => x,
+          ),
+        )}${select(
+          "Atleta (opcional)",
+          "player",
+          '<option value="">Sem atleta</option>' +
+            options(
+              m.roster.filter((p) => p.team === m.home),
+              (x) => x.id,
+              (x) => x.number + " • " + x.name,
+            ),
+        )}</div><label>Detalhes / jogador que entra e sai<textarea name="text" maxlength="500"></textarea></label><p><button class="primary" ${!live ? "disabled" : ""}>Registrar lance</button></p></form>`
+  }</details></div><div class="card"><h3>Aviso para quem está assistindo</h3><form id="public-notice"><label>Mensagem pública<textarea name="notice" maxlength="300" ${locked ? "disabled" : ""}>${esc(m.publicNotice || "")}</textarea></label><p><button ${locked ? "disabled" : ""}>Publicar aviso</button></p></form></div><div class="card"><h3>Observações operacionais da súmula</h3><form id="notes"><label>Ocorrências<textarea name="notes" maxlength="5000" ${locked ? "disabled" : ""}>${esc(m.notes)}</textarea></label><p><button ${locked ? "disabled" : ""}>Salvar observações</button></p></form></div></div></div><div class="card"><h3>Histórico da partida</h3>${
+    m.events
+      .slice()
+      .reverse()
+      .map(
+        (e) =>
+          `<div class="event"><div><b>${esc(eventLabel(e, m))}</b> ${[0, 1].includes(e.side) ? esc(name([m.home, m.away][e.side])) : ""}</div><p>${esc(eventDescription(e))}</p><small>${esc(format(e.at))} • ${e.gameMs != null ? "Jogo " + prettyTime(e.gameMs) + " • " : ""}Operador ${esc((e.actor || "").slice(0, 8))} • Etapa ${esc(e.stage || "—")}${e.player ? " • " + esc(m.roster.find((p) => p.id === e.player)?.name || "") : ""}</small>${!locked && role === "admin" && e.type === "ponto" && e.value > 0 && !m.events.some((x) => x.correctionOf === e.id) ? ` <button data-correct="${e.id}">Estornar</button>` : ""}</div>`,
+      )
+      .join("") || empty("Histórico disponível somente ao administrador principal, ou aguardando carregamento.")
+  }</div>`;
+}
+// 5 — Importação. Excel/CSV com cabeçalhos reconhecidos e prévia obrigatória.
+const aliases = {
+  name: [
+    "nome",
+    "name",
+    "time",
+    "equipe",
+    "jogador",
+    "atleta",
+    "aluno",
+    "nome do time",
+    "nome do jogador",
+  ],
+  short: ["sigla"],
+  coach: ["tecnico", "tecnica", "treinador"],
+  category: ["categoria"],
+  badge: ["escudo", "bandeira", "imagem"],
+  teamName: ["equipe", "time", "nome do time"],
+  number: ["numero", "camisa"],
+  position: ["posicao"],
+  reserve: ["reserva", "banco"],
 };
-
-window.alternarTodosModalLixeiraQuestao = function(marcar) {
-  document.querySelectorAll(".chk-lixeira-item").forEach(chk => chk.checked = marcar);
-};
-
-  // 🔐 FASE 10A — só abre o painel depois da autenticação.
-  document.body.style.visibility = "hidden";
-
-  onAuthStateChanged(auth, async (usuario) => {
-    // 10C.9.1: se o professor escolheu explicitamente o modo offline,
-    // abre os relatórios locais sem tentar validar o token no Firebase.
-    const solicitouOffline = new URLSearchParams(window.location.search).get("modo") === "offline";
-    if (solicitouOffline && obterProfessorOffline()) {
-      document.body.style.visibility = "visible";
-      inicializarPainelOffline();
-      return;
-    }
-
-    if (!usuario) {
-      // 10C.9: acesso offline só é aceito neste navegador se houve
-      // autenticação online válida anteriormente.
-      if (!navigator.onLine && obterProfessorOffline()) {
-        document.body.style.visibility = "visible";
-        inicializarPainelOffline();
-        return;
-      }
-      window.location.replace("login.html");
-      return;
-    }
-
-    // 🔐 FASE 10C.6 — o painel administrativo aceita SOMENTE login
-    // de e-mail/senha. Uma sessão anônima pertence à Área do Aluno.
-    // Isso evita abrir o painel "por aparência" e depois receber
-    // permission-denied ao consultar dados protegidos.
+const norm = (s) =>
+  String(s ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+function importView() {
+  return `<div class="card"><span class="tag">CADASTRO EM LOTE</span><h2>Importar sem complicar</h2><p class="muted">Escolha o tipo, baixe o modelo e preencha até 300 linhas. A importação só acontece após conferir a prévia. Cadastros existentes são sinalizados e não são sobrescritos.</p><div class="formgrid">${select("Tipo de cadastro", "importKind", '<option value="team">Equipes</option><option value="player">Jogadores</option>')}<label>Arquivo Excel ou CSV<input id="importFile" type="file" accept=".xlsx,.csv"></label></div><button data-template>Baixar modelo Excel</button><p class="muted">Ou cole uma tabela com cabeçalho (colunas separadas por tabulação ou ponto e vírgula).</p><textarea id="paste" aria-label="Cole sua tabela"></textarea><p><button data-preview>Preparar prévia da lista</button></p><div id="preview"></div></div>`;
+}
+function sheetReady() {
+  if (!window.XLSX)
+    throw Error(
+      "Biblioteca Excel indisponível. Confira sua conexão e recarregue a página.",
+    );
+}
+function prepare(rows) {
+  const kind = $("[name=importKind]").value;
+  pendingImport = null;
+  $("#preview").innerHTML = "";
+  if (rows.length < 2 || rows.length > 301)
+    throw Error("Use cabeçalho e de 1 a 300 linhas.");
+  const heads = rows[0].map(norm),
+    fields =
+      kind === "team"
+        ? ["name", "short", "coach", "category", "badge"]
+        : ["name", "teamName", "number", "position", "reserve"];
+  const maps = {};
+  for (const f of fields)
+    maps[f] = heads.findIndex((h) => aliases[f].includes(h));
+  if (kind === "player") {
+    const specific = heads.findIndex((h) =>
+      [
+        "nome",
+        "nome do jogador",
+        "jogador",
+        "atleta",
+        "aluno",
+        "name",
+      ].includes(h),
+    );
+    maps.name = specific;
+  }
+  if (maps.name < 0 || (kind === "player" && maps.teamName < 0))
+    throw Error(
+      "Cabeçalhos obrigatórios: Nome" +
+        (kind === "player" ? " e Equipe" : "") +
+        ". Baixe o modelo.",
+    );
+  const valid = [],
+    errors = [],
+    seen = new Set();
+  rows.slice(1).forEach((row, i) => {
+    const d = {};
+    for (const f of fields)
+      d[f] = maps[f] >= 0 ? String(row[maps[f]] ?? "").trim() : "";
+    if (!Object.values(d).some(Boolean)) return;
+    d.reserve = ["sim", "true", "1", "reserva", "banco"].includes(
+      norm(d.reserve),
+    );
     try {
-      const token = await getIdTokenResult(usuario, true);
-      const provedor = token?.signInProvider || token?.claims?.firebase?.sign_in_provider || "";
-
-      if (provedor !== "password") {
-        console.warn("Painel bloqueado: sessão não é de professor.", provedor);
-        await signOut(auth);
-        window.location.replace("login.html?motivo=sessao-aluno");
-        return;
+      if (!d.name) throw Error("Nome ausente.");
+      const k =
+        norm(d.name) + "|" + (kind === "player" ? norm(d.teamName) : "");
+      if (seen.has(k)) throw Error("Duplicado no arquivo.");
+      let draft = { ...d };
+      if (kind === "player") {
+        const t = state.teams.find((t) => norm(t.name) === norm(d.teamName));
+        if (!t) throw Error("Equipe não cadastrada: " + d.teamName);
+        draft.team = t.id;
+        d.teamName = t.name;
       }
+      D.reduce(state, { type: kind, data: draft });
+      seen.add(k);
+      valid.push(d);
+    } catch (e) {
+      errors.push("Linha " + (i + 2) + ": " + e.message);
+    }
+  });
+  pendingImport = {
+    type: "import",
+    kind,
+    rows: valid,
+    importLabel: $("#importFile")?.files[0]?.name || "Lista colada",
+  };
+  $("#preview").innerHTML =
+    `<h3>Prévia: ${valid.length} válidos • ${errors.length} com problemas</h3>${errors.length ? '<p class="danger">' + errors.map(esc).join("<br>") + "</p>" : ""}${table(
+      fields.map(
+        (f) =>
+          ({
+            name: "Nome",
+            short: "Sigla",
+            coach: "Técnico",
+            category: "Categoria",
+            badge: "Escudo",
+            teamName: "Equipe",
+            number: "Número",
+            position: "Posição",
+            reserve: "Reserva",
+          })[f],
+      ),
+      valid.map((r) =>
+        tr(
+          fields.map((f) =>
+            typeof r[f] === "boolean" ? (r[f] ? "Sim" : "Não") : r[f],
+          ),
+        ),
+      ),
+    )}<p><button data-confirm-import class="primary" ${valid.length ? "" : "disabled"}>Confirmar ${valid.length} cadastros válidos</button></p><small>Linhas com problemas serão ignoradas. No Firebase, cada linha válida tem gravação e auditoria próprias; se houver interrupção, prepare outra prévia.</small>`;
+}
+// 6 — Relatórios. PDF usa a impressão do navegador; Excel contém várias abas.
+function reportMatch(m) {
+  const sc = gameResult(m);
+  const roster = [m.home, m.away]
+    .map(
+      (id, index) =>
+        `<section class="roster-block"><h3>${esc(name(id))}</h3><p>Técnico(a): ${esc(m.coaches?.[index] || "Não informado")}</p>${table(
+          ["Atleta", "Nº", "Posição", "Escalação"],
+          m.roster
+            .filter((p) => p.team === id)
+            .map((p) =>
+              tr([
+                p.name,
+                p.number,
+                p.position,
+                p.reserve ? "Reserva" : "Titular",
+              ]),
+            ),
+        )}</section>`,
+    )
+    .join("");
+  const rows = m.events
+    .map(
+      (e) =>
+        `<tr><td>${esc(new Date(e.at).toLocaleTimeString("pt-BR"))}<small class="cell-sub">${e.gameMs != null ? "Jogo " + prettyTime(e.gameMs) : ""}</small></td><td>${esc(e.stage || "—")}</td><td>${esc(eventLabel(e, m))}</td><td>${[0, 1].includes(e.side) ? esc(name([m.home, m.away][e.side])) : "—"}${e.player ? '<small class="cell-sub">' + esc(m.roster.find((p) => p.id === e.player)?.name || "") + "</small>" : ""}</td><td>${esc(eventDescription(e))}</td><td>${esc((e.actor || "").slice(0, 8))}</td></tr>`,
+    )
+    .join("");
+  const organizationLogo = state.settings?.logo || "";
+  const logoIsSafe = /^https:\/\//i.test(organizationLogo) || /^data:image\/(png|jpeg|webp);base64,/i.test(organizationLogo);
+  const organizationLogoMarkup = logoIsSafe ? `<img src="${esc(organizationLogo)}" alt="Logo da organização" style="display:block;max-width:46px;max-height:46px;object-fit:contain;margin-right:12px">` : "";
+  return `<article class="card report-sheet"><div class="report-header" style="display:flex;align-items:center;gap:10px"><div style="display:flex;align-items:center;min-width:0">${organizationLogoMarkup}<div><span class="tag">SÚMULA DA PARTIDA</span><h2>${esc(m.competition || "Partida avulsa")} • ${esc(m.sport)}</h2></div></div><span class="report-brand">WagnerBIZZA</span></div><div class="report-score"><div>${badge(team(m.home))}<strong>${esc(name(m.home))}</strong></div><b>${sc.join(" × ")}</b><div>${badge(team(m.away))}<strong>${esc(name(m.away))}</strong></div></div><div class="report-meta"><p><b>Data:</b> ${esc(format(m.date))}<br><b>Local:</b> ${esc(m.place || "Não informado")}</p><p><b>Arbitragem / mesa:</b> ${esc(m.referees || "Não informada")}<br><b>Situação:</b> ${esc(m.status)} • <b>Etapa:</b> ${esc(m.stage)} • <b>Relógio:</b> ${m.clock ? M.clockText(m) : "Não utilizado"}</p></div>${m.publicNotice ? '<p class="report-alert"><b>Aviso:</b> ' + esc(m.publicNotice) + "</p>" : ""}${m.sets.length ? "<p><b>Parciais:</b> " + m.sets.map((s) => esc(s.score.join(" × "))).join(" / ") + "</p>" : ""}<div class="roster-grid">${roster}</div><h3>Histórico e ocorrências</h3><div class="tablewrap report-events"><table><thead><tr><th>Horário / jogo</th><th>Etapa</th><th>Acontecimento</th><th>Equipe / atleta</th><th>Descrição / motivo</th><th>Operador*</th></tr></thead><tbody>${rows || '<tr><td colspan="6">Nenhum lançamento carregado.</td></tr>'}</tbody></table></div><small>* Identificador abreviado. A auditoria completa mantém a identificação integral de cada responsável. Horários dos lances referentes a ${esc(new Date(m.date).toLocaleDateString("pt-BR"))}.</small><section class="report-notes"><h3>Observações da súmula</h3><p>${esc(m.notes || "Sem observações.")}</p></section><section class="signatures"><div>Árbitro(a): __________________________</div><div>Mesa: __________________________</div><div>Responsável da equipe da casa: __________________________</div><div>Responsável da equipe visitante: __________________________</div><small>Súmula do sistema. Campos para assinatura em papel.</small></section></article>`;
+}
+function certificatePanel() {
+  return `<section class="card certificate-panel noprint"><span class="tag">EMISSÃO DE DOCUMENTOS</span><h2>Certificados</h2><p class="muted">Emita certificados personalizados para atletas, equipes, arbitragem e participantes. O documento é preparado para impressão ou para salvar como PDF.</p><form id="arenaCertificateForm"><div class="formgrid">${field("Nome completo do participante", "certificateName", "text", 'required maxlength="120" placeholder="Nome que aparecerá no certificado"')}${field("Participação / reconhecimento", "certificateRole", "text", 'required maxlength="120" value="Participação"')}${field("Evento / campeonato", "certificateEvent", "text", 'required maxlength="150" placeholder="Nome do evento ou campeonato"')}${field("Modalidade", "certificateSport", "text", 'maxlength="80" placeholder="Ex.: Futebol, Basquete, Vôlei"')}${field("Local", "certificatePlace", "text", 'maxlength="120" placeholder="Cidade ou local do evento"')}${field("Data de emissão", "certificateDate", "date", `required value="${new Date().toISOString().slice(0,10)}"`)}${field("Responsável pela emissão", "certificateIssuer", "text", 'required maxlength="100" value="WagnerBIZZA"')}</div><button class="primary" type="submit">Gerar certificado de participação / salvar em PDF</button></form><div class="certificate-institutional"><h3>Certificado institucional do projeto</h3><p>Documento de reconhecimento da idealização e do desenvolvimento da plataforma Arena Esportiva.</p><button type="button" data-institutional-certificate>Gerar certificado institucional</button></div><p class="muted">Cada emissão recebe um código identificador. Nesta etapa, o código identifica o documento, mas ainda não representa uma validação pública online nem um registro permanente no Firebase.</p></section>`;
+}
+function certificateDocument({name:person, role:participation, event, sport, place, date, issuer, institutional=false}) {
+  const code = "ARENA-" + new Date().getFullYear() + "-" + (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2,10)).replace(/-/g,"").slice(0,12).toUpperCase();
+  // Reutiliza o logo já salvo em Configurações, sem criar outro cadastro de imagem.
+  const organizationLogo = state.settings?.logo || "";
+  const logoIsSafe = /^https:\/\//i.test(organizationLogo) || /^data:image\/(png|jpeg|webp);base64,/i.test(organizationLogo);
+  const organizationLogoMarkup = logoIsSafe
+    ? `<img class="certificate-logo" src="${esc(organizationLogo)}" alt="Logo da organização">`
+    : "";
+  const title = institutional ? "CERTIFICADO INSTITUCIONAL" : "CERTIFICADO DE PARTICIPAÇÃO";
+  const recipient = institutional ? "Wagner BIZZA" : person;
+  const description = institutional
+    ? "Por idealizar e desenvolver a plataforma ARENA ESPORTIVA, um projeto independente dedicado à organização, gestão e acompanhamento de eventos e competições esportivas, reunindo tecnologia, informação e incentivo ao esporte."
+    : `Certificamos que ${recipient} participou como ${participation} do evento ${event}${sport ? `, na modalidade ${sport}` : ""}${place ? `, realizado em ${place}` : ""}, recebendo este reconhecimento pela sua participação.`;
+  const safe = v => esc(v);
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} • Arena Esportiva</title><style>@page{size:A4 landscape;margin:0}*{box-sizing:border-box}body{margin:0;background:#eef1f4;color:#18232e;font-family:Arial,Helvetica,sans-serif}.sheet{width:297mm;height:210mm;margin:0 auto;padding:13mm;background:#fff;position:relative;overflow:hidden}.frame{height:100%;border:2px solid #183b52;padding:12mm 17mm;position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}.frame:before{content:"";position:absolute;inset:3mm;border:1px solid #b58b45;pointer-events:none}.certificate-logo{position:absolute;top:9mm;right:12mm;display:block;max-width:30mm;max-height:24mm;object-fit:contain}.brand{font-size:13px;font-weight:800;letter-spacing:5px;color:#183b52}.mark{font-size:34px;color:#b58b45;margin:3mm 0}.eyebrow{font-size:13px;letter-spacing:4px;color:#536879;margin:2mm 0}.title{font-family:Georgia,serif;font-size:31px;letter-spacing:2px;color:#183b52;margin:4mm 0 8mm}.intro{font-size:15px;color:#53616c}.recipient{font-family:Georgia,serif;font-size:31px;font-weight:bold;color:#142f42;margin:5mm 0 7mm;border-bottom:1px solid #b58b45;padding:0 15mm 4mm}.description{font-family:Georgia,serif;font-size:17px;line-height:1.65;max-width:220mm;margin:0 auto}.bottom{width:100%;display:flex;justify-content:space-between;align-items:end;margin-top:13mm;font-size:12px;color:#465663}.signature{min-width:65mm;border-top:1px solid #536879;padding-top:3mm}.code{position:absolute;bottom:5mm;right:8mm;font-size:9px;color:#65737d}.seal{position:absolute;top:10mm;right:12mm;border:1px solid #b58b45;border-radius:50%;width:24mm;height:24mm;display:grid;place-content:center;color:#183b52;font-size:9px;font-weight:bold;transform:rotate(12deg)}@media print{body{background:white}.sheet{margin:0;box-shadow:none}}@media screen{.sheet{margin:18px auto;box-shadow:0 8px 35px #0002}}@media(max-width:800px){.sheet{transform-origin:top left;}}</style></head><body><main class="sheet"><div class="frame">${organizationLogoMarkup || '<div class="seal">ARENA<br>ESPORTIVA</div>'}<div class="brand">WAGNERBIZZA • ARENA ESPORTIVA</div><div class="mark">◇</div><div class="eyebrow">RECONHECIMENTO OFICIAL DO PROJETO</div><h1 class="title">${title}</h1><p class="intro">Certificamos para os devidos fins que</p><div class="recipient">${safe(recipient)}</div><p class="description">${safe(description)}</p><div class="bottom"><div class="signature">${safe(issuer || "WagnerBIZZA")}<br>Responsável pela emissão</div><div>${safe(date)}${place ? `<br>${safe(place)}` : ""}</div><div class="signature">Arena Esportiva<br>Gestão esportiva</div></div><div class="code">Código do documento: ${code}</div></div></main><script>window.addEventListener('load',()=>{const logo=document.querySelector('.certificate-logo');let printed=false;const print=()=>{if(printed)return;printed=true;setTimeout(()=>window.print(),180)};if(logo&&!logo.complete){logo.addEventListener('load',print,{once:true});logo.addEventListener('error',print,{once:true});setTimeout(print,3000)}else print()});</script></body></html>`;
+  const win = window.open("", "_blank");
+  if (!win) { toast("Permita janelas pop-up para gerar o certificado.", true); return; }
+  win.document.open(); win.document.write(html); win.document.close();
+}
+function reports() {
+  return `${certificatePanel()}<div class="card noprint"><h2>Súmulas e relatórios</h2><div class="formgrid">${select(
+    "Partida",
+    "reportMatch",
+    '<option value="">Todas as partidas</option>' +
+      options(
+        state.matches,
+        (m) => m.id,
+        (m) => name(m.home) + " × " + name(m.away) + " • " + format(m.date),
+      ),
+  )}</div><div class="toolbar"><button data-report-pdf>Baixar súmula PDF</button><button data-report-print>Imprimir</button><button data-report-excel class="primary">Exportar Excel</button><button data-audit-excel>Exportar auditoria completa</button><button data-backup>Baixar cópia JSON</button></div><p class="muted">Use “Baixar súmula PDF” para o arquivo pronto ou “Imprimir” para abrir a janela de impressão. O Excel inclui resultados, elencos, eventos e parciais. A cópia JSON é para consulta; não há restauração automática nesta versão.</p></div><div id="reportOutput">${state.matches.map(reportMatch).join("") || empty("Cadastre uma partida para gerar a súmula.")}</div>`;
+}
+document.addEventListener("submit", event => {
+  if (event.target?.id !== "arenaCertificateForm") return;
+  event.preventDefault();
+  if (role !== "admin") { toast("Somente o administrador principal pode emitir certificados.", true); return; }
+  const data = new FormData(event.target);
+  certificateDocument({name:data.get("certificateName"),role:data.get("certificateRole"),event:data.get("certificateEvent"),sport:data.get("certificateSport"),place:data.get("certificatePlace"),date:new Date(data.get("certificateDate")+"T12:00:00").toLocaleDateString("pt-BR"),issuer:data.get("certificateIssuer")});
+});
+document.addEventListener("click", event => {
+  const button = event.target.closest("[data-institutional-certificate]");
+  if (!button) return;
+  if (role !== "admin") { toast("Somente o administrador principal pode emitir certificados.", true); return; }
+  certificateDocument({date:new Date().toLocaleDateString("pt-BR"),issuer:"WagnerBIZZA",institutional:true});
+});
 
-      // 10C.9: registra autorização local apenas após validação online real.
-      registrarProfessorOffline(usuario);
-    } catch (erro) {
-      console.error("Não foi possível validar a sessão do professor:", erro);
-      if (!navigator.onLine && obterProfessorOffline()) {
-        document.body.style.visibility = "visible";
-        inicializarPainelOffline();
-        return;
-      }
-      await signOut(auth).catch(() => {});
-      window.location.replace("login.html?motivo=validacao");
+function exportExcel() {
+  sheetReady();
+  const filter = $("[name=reportMatch]").value,
+    ms = state.matches.filter((m) => !filter || m.id === filter),
+    wb = XLSX.utils.book_new();
+  const add = (title, rows, headers) => {
+    const sh = XLSX.utils.json_to_sheet(rows, { header: headers });
+    sh["!cols"] = headers.map((h) => ({
+      wch: Math.min(
+        42,
+        Math.max(
+          h.length + 2,
+          ...rows.map((r) => String(r[h] ?? "").length + 2),
+          12,
+        ),
+      ),
+    }));
+    if (sh["!ref"]) sh["!autofilter"] = { ref: sh["!ref"] };
+    XLSX.utils.book_append_sheet(wb, sh, title);
+  };
+  add(
+    "Resultados",
+    ms.map((m) => ({
+      "ID da partida": m.id,
+      Modalidade: m.sport,
+      Competição: m.competition,
+      "Equipe da casa": name(m.home),
+      "Equipe visitante": name(m.away),
+      "Pontos casa": D.score(m)[0],
+      "Pontos visitante": D.score(m)[1],
+      "Sets casa": m.sets.filter((s) => s.score[0] > s.score[1]).length,
+      "Sets visitante": m.sets.filter((s) => s.score[1] > s.score[0]).length,
+      "Data e hora": format(m.date),
+      Local: m.place,
+      Arbitragem: m.referees,
+      Situação: m.status,
+      "Tempo exibido": m.clock ? M.clockText(m) : "Não utilizado",
+      "Aviso público": m.publicNotice || "",
+      Observações: m.notes,
+    })),
+    [
+      "ID da partida",
+      "Modalidade",
+      "Competição",
+      "Equipe da casa",
+      "Equipe visitante",
+      "Pontos casa",
+      "Pontos visitante",
+      "Sets casa",
+      "Sets visitante",
+      "Data e hora",
+      "Local",
+      "Arbitragem",
+      "Situação",
+      "Tempo exibido",
+      "Aviso público",
+      "Observações",
+    ],
+  );
+  add(
+    "Elencos",
+    ms.flatMap((m) =>
+      m.roster.map((p) => ({
+        "ID da partida": m.id,
+        Equipe: name(p.team),
+        Atleta: p.name,
+        Número: p.number,
+        Posição: p.position,
+        Escalação: p.reserve ? "Reserva" : "Titular",
+      })),
+    ),
+    ["ID da partida", "Equipe", "Atleta", "Número", "Posição", "Escalação"],
+  );
+  add(
+    "Eventos",
+    ms.flatMap((m) =>
+      m.events.map((e) => ({
+        "ID da partida": m.id,
+        "Data e hora": format(e.at),
+        "Tempo de jogo":
+          e.gameMs != null ? prettyTime(e.gameMs) : "Não registrado",
+        Etapa: e.stage || "",
+        Acontecimento: eventLabel(e, m),
+        Equipe: [0, 1].includes(e.side) ? name([m.home, m.away][e.side]) : "",
+        Atleta: m.roster.find((p) => p.id === e.player)?.name || "",
+        Pontuação: e.type === "ponto" ? e.value : "",
+        Descrição: eventDescription(e),
+        Justificativa: e.reason || "",
+        "Responsável (UID)": e.actor,
+        "ID do lançamento": e.id,
+        "Lançamento estornado": e.correctionOf || "",
+      })),
+    ),
+    [
+      "ID da partida",
+      "Data e hora",
+      "Tempo de jogo",
+      "Etapa",
+      "Acontecimento",
+      "Equipe",
+      "Atleta",
+      "Pontuação",
+      "Descrição",
+      "Justificativa",
+      "Responsável (UID)",
+      "ID do lançamento",
+      "Lançamento estornado",
+    ],
+  );
+  add(
+    "Sets",
+    ms.flatMap((m) =>
+      m.sets.map((x, i) => ({
+        "ID da partida": m.id,
+        Set: i + 1,
+        "Pontos casa": x.score[0],
+        "Pontos visitante": x.score[1],
+      })),
+    ),
+    ["ID da partida", "Set", "Pontos casa", "Pontos visitante"],
+  );
+  XLSX.writeFile(wb, "relatorio-esportivo.xlsx");
+}
+// O Excel limita o tamanho de cada célula: snapshots grandes são divididos em colunas.
+function auditChunks(label, value) {
+  const text = JSON.stringify(value);
+  const fields = {};
+  for (let offset = 0; offset < text.length; offset += 30000)
+    fields[label + " " + (1 + offset / 30000)] = text.slice(
+      offset,
+      offset + 30000,
+    );
+  return fields;
+}
+function download(name, value) {
+  const u = URL.createObjectURL(
+      new Blob([value], { type: "application/json" }),
+    ),
+    a = document.createElement("a");
+  a.href = u;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+// 7 — Acesso e aprovação. Senhas ficam somente no Firebase Authentication.
+function accessView() {
+  const wrap = (content) => `<section class="card access-card" style="max-width:520px;margin:40px auto"><span class="tag">ACESSO À CENTRAL</span>${content}</section>`;
+  if (user) {
+    const messages = {
+      loading: "Conferindo sua autorização…",
+      incomplete: "Sua conta foi criada, mas a solicitação de acesso ainda precisa ser concluída.",
+      verify: "Confirme seu e-mail pelo link enviado pelo Firebase. A operação também depende da aprovação do administrador principal.",
+      pending: "E-mail confirmado. Sua solicitação aguarda aprovação do administrador principal.",
+      blocked: "Seu acesso está bloqueado. Procure o administrador principal.",
+      unauthorized: "Esta conta ainda não está autorizada. Procure o administrador principal."
+    };
+    return wrap(`<h2>Situação do acesso</h2><p>${esc(user.email || "")}</p><p role="status">${messages[accessStatus] || messages.unauthorized}</p>${accessStatus === "incomplete" ? `<form id="complete-access">${field("Seu nome", "name", "text", 'required maxlength="100" autocomplete="name"')}<p><button class="primary">Concluir solicitação</button></p></form>` : ""}<div class="toolbar">${!user.emailVerified && accessStatus !== "loading" ? '<button type="button" data-access-verify>Enviar confirmação de e-mail</button>' : ""}<button type="button" data-access-refresh>Já confirmei / Atualizar acesso</button><button type="button" data-access-exit>Sair desta conta</button></div><p class="muted">O cadastro não autoriza alterações de placar. A senha não é exibida para a organização.</p>${googleLinkPanel()}`);
+  }
+  if (authMode === "register") return wrap(`<h2>Solicitar acesso</h2><p>Cadastre sua conta de operador. O administrador principal aprovará o pedido e definirá as partidas autorizadas.</p>${googleEntryButton(true)}<p class="muted">Ou cadastre com e-mail e senha:</p><form id="register"><div style="display:grid;gap:14px">${field("Nome completo", "name", "text", 'required maxlength="100" autocomplete="name"')}${field("E-mail", "email", "email", 'required maxlength="254" autocomplete="email"')}${field("Senha (mínimo de 8 caracteres)", "password", "password", 'required minlength="8" autocomplete="new-password"')}${field("Confirmar senha", "confirmPassword", "password", 'required minlength="8" autocomplete="new-password"')}</div><p><button class="primary">Criar conta e solicitar acesso</button></p></form><button type="button" data-access-mode="login">Já tenho conta — entrar</button>`);
+  if (authMode === "recover") return wrap(`<h2>Recuperar senha</h2><p>Informe seu e-mail para receber as instruções do Firebase.</p><form id="recover">${field("E-mail", "email", "email", 'required autocomplete="email"')}<p><button class="primary">Enviar instruções</button></p></form><button type="button" data-access-mode="login">Voltar para entrar</button>`);
+  return wrap(`<h2>Entrar na organização</h2>${googleEntryButton()}<p class="muted">Ou entre com e-mail e senha:</p><form id="login"><div style="display:grid;gap:14px">${field("E-mail", "email", "email", 'required autocomplete="username"')}${field("Senha", "password", "password", 'required autocomplete="current-password"')}</div><p><button class="primary">Entrar</button></p></form><div class="toolbar"><button type="button" data-access-mode="register">Solicitar acesso</button><button type="button" data-access-mode="recover">Esqueci minha senha</button></div>`);
+}
+function accessError(e) {
+  return ({
+    "auth/popup-blocked": "O navegador bloqueou a janela do Google. Permita pop-ups para este site e clique novamente.",
+    "auth/popup-closed-by-user": "A janela do Google foi fechada. Nenhuma nova vinculação foi concluída; tente novamente se desejar.",
+    "auth/cancelled-popup-request": "Já existe uma tentativa de entrada aberta. Use uma janela do Google por vez.",
+    "auth/unauthorized-domain": "O domínio deste site ainda não está autorizado no Firebase Authentication.",
+    "auth/operation-not-allowed": "A entrada com Google precisa estar habilitada no Firebase Authentication.",
+    "auth/account-exists-with-different-credential": "Este e-mail já usa outra forma de entrada. Entre com seu método atual e use Minha conta → Vincular Google.",
+    "auth/credential-already-in-use": "Esta identidade Google já está ligada a outra conta. Nenhuma conta foi mesclada. Entre com a conta original ou escolha outra identidade Google.",
+    "auth/email-already-in-use": "Este e-mail já tem conta. Entre com seu método atual e vincule o Google em Minha conta.",
+    "auth/provider-already-linked": "O Google já está vinculado a esta conta. Atualize Minha conta para conferir.",
+    "auth/requires-recent-login": "Por segurança, saia e entre novamente com seu método atual antes de vincular Google.",
+    "auth/invalid-credential": "E-mail ou senha inválidos.",
+    "auth/wrong-password": "E-mail ou senha inválidos.",
+    "auth/user-not-found": "E-mail ou senha inválidos.",
+    "auth/invalid-email": "Confira o endereço de e-mail.",
+    "auth/weak-password": "A senha não atende aos requisitos do Firebase. Use uma senha mais forte.",
+    "auth/too-many-requests": "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.",
+    "auth/network-request-failed": "Sem conexão com o Firebase. Confira sua internet.",
+    "auth/user-disabled": "Esta conta foi desativada. Procure o administrador principal."
+  })[e.code] || e.message;
+}
+async function accessAction(action) {
+  if (accessBusy) return;
+  accessBusy = true;
+  app.querySelectorAll("button").forEach((b) => b.disabled = true);
+  try { await action(); }
+  catch (e) { toast(accessError(e), true); }
+  finally { accessBusy = false; render(); }
+}
+function usersView() {
+  if (C.demo) return `<div class="card"><h2>Usuários e permissões</h2><p>Esta função utiliza as contas reais do Firebase e não está disponível na demonstração local.</p></div>`;
+  const owner = cloud?.mainUID;
+  const users = (state.users || []).filter((u) => u.id !== owner).slice().sort((a,b) =>
+    Number(b.role === "pending") - Number(a.role === "pending") || (a.name || a.email || a.id).localeCompare(b.name || b.email || b.id));
+  const label = (u) => u.role === "pending" ? "Aguardando aprovação" : u.role === "operator" ? u.enabled === false ? "Bloqueado" : "Operador aprovado" : "Perfil antigo — revisar";
+  const link = new URL("painel.html", location.href);
+  link.search = "?acesso=cadastro";
+  const editing = users.find((u) => u.id === managedUserId);
+  const editor = editing ? `<section class="card"><h3>Permissões de ${esc(editing.name || editing.email || "Operador cadastrado")}</h3><p>${esc(editing.email || "E-mail não registrado no perfil antigo")}<br><small>UID: ${esc(editing.id)}</small></p><form id="access-user"><input type="hidden" name="userId" value="${esc(editing.id)}"><label>Situação do acesso<select name="access"><option value="pending" ${editing.role === "pending" ? "selected" : ""}>Aguardando aprovação</option><option value="active" ${editing.role === "operator" && editing.enabled !== false ? "selected" : ""}>Aprovar / manter operador ativo</option><option value="blocked" ${editing.role === "operator" && editing.enabled === false ? "selected" : ""}>Bloquear acesso</option></select></label><p class="muted">Mesmo aprovado, o operador precisa confirmar o e-mail. Nenhum operador pode promover usuários ou acessar seus relatórios.</p><label>Partidas autorizadas (Ctrl+clique para selecionar várias)<select name="assignedMatches" multiple size="6" style="width:100%;min-height:150px">${state.matches.map((m) => `<option value="${esc(m.id)}" ${(editing.matches || []).includes(m.id) ? "selected" : ""}>${esc(m.sport + " • " + name(m.home) + " × " + name(m.away) + " • " + (m.competition || format(m.date)))}</option>`).join("")}</select></label><p class="muted">Sem seleção, o operador não recebe nenhuma partida. Voltar para pendente remove as atribuições. Bloquear ou voltar para pendente também remove a permissão de cadastros.</p><label class="confirmation-check"><input type="checkbox" name="rosterPermission" ${(editing.permissions||[]).includes("rosters")?"checked":""}><span>Permitir cadastrar, editar e importar equipes e jogadores de toda a organização (inclui visualizar técnicos e elencos). Não libera relatórios, contas, configurações ou exclusões.</span></label><label class="confirmation-check"><input type="checkbox" name="matchCreatePermission" ${(editing.permissions||[]).includes("matchesCreate")?"checked":""}><span>Permitir criar novas partidas (somente cadastro inicial). Não permite editar, operar, encerrar ou excluir partidas não atribuídas, nem acessar relatórios ou configurações.</span></label><label>Motivo da alteração<textarea name="reason" required maxlength="500" placeholder="Ex.: operador responsável pelos jogos da quadra 1"></textarea></label><p><button class="primary">Salvar permissões</button> <button type="button" data-access-cancel>Fechar edição</button></p></form></section>` : "";
+  return `<section class="card"><h2>Usuários e permissões</h2><p><strong>Administrador principal: ${esc(user?.email || "Wagner")}</strong><br>Sua conta é protegida. Esta tela não permite alterar, bloquear ou remover sua autoridade.</p><label>Link para solicitar acesso<input readonly value="${esc(link.href)}"></label><p><button type="button" data-access-copy>Copiar link de cadastro</button></p><p class="muted">Envie esse link ao novo operador. Para testar outra conta neste computador, use uma janela anônima.</p></section><section class="card"><h3>Solicitações e operadores</h3>${table(["Pessoa", "Situação", "Partidas", "Cadastros", "Ação"], users.map((u) => `<tr><td>${esc(u.name || "Operador cadastrado")}<br><small>${esc(u.email || u.id)}</small></td><td>${esc(label(u))}</td><td>${(u.matches || []).length}</td><td>${(u.permissions||[]).includes("rosters")&&u.enabled!==false&&u.role==="operator"?"Permitido":"Não permitido"}</td><td><button type="button" data-access-edit="${esc(u.id)}">Revisar permissões</button></td></tr>`))}${users.length ? "" : empty("Nenhuma solicitação recebida ainda.")}</section>${editor}<section class="card"><h3>Últimos 50 registros de permissões</h3>${(state.accessAudit || []).map((a) => `<div class="event"><b>${esc(a.action)}</b><p>${esc(a.after?.name || a.target)} — ${esc(a.reason)}</p><small>${esc(a.at?.toDate ? a.at.toDate().toLocaleString("pt-BR") : "Aguardando confirmação do servidor")} • ${esc(a.after?.enabled ? "Ativo" : "Sem acesso ativo")} • ${(a.after?.matches || []).length} partida(s) • Cadastros: ${(a.after?.permissions||[]).includes("rosters")?"permitido":"não permitido"}</small></div>`).join("") || empty("Nenhuma alteração de permissão registrada nesta versão.")}</section>`;
+}
+// EVENTOS DE INTERFACE — um único ponto de entrada para cada ação.
+document.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const f = e.target,
+      d = data(f);
+    if ("recordId" in d) {
+      d.id = d.recordId;
+      delete d.recordId;
+    }
+    if (["login", "register", "recover", "complete-access", "access-user"].includes(f.id)) {
+      await accessAction(async () => {
+        if (f.id === "login") {
+          await cloud.auth.signInWithEmailAndPassword(cloud.authentication, d.email.trim(), d.password);
+        } else if (f.id === "register") {
+          if (d.password !== d.confirmPassword) throw Error("As duas senhas precisam ser iguais.");
+          await cloud.register(d);
+          toast("Conta criada. Confira seu e-mail, inclusive a pasta de spam, para confirmar o endereço.");
+        } else if (f.id === "recover") {
+          await cloud.recoverPassword(d.email);
+          toast("Se houver uma conta para esse endereço, você receberá as instruções. Confira também o spam.");
+        } else if (f.id === "complete-access") {
+          await cloud.requestAccess(d.name);
+          await cloud.resendVerification();
+          toast(user?.emailVerified ? "Solicitação registrada. Aguarde a aprovação do administrador principal." : "Solicitação registrada. Confira a confirmação enviada ao seu e-mail.");
+        } else {
+          await cloud.manageUser({userId:d.userId, access:d.access,
+            matches: new FormData(f).getAll("assignedMatches"), permissions:[...(f.elements.rosterPermission.checked?["rosters"]:[]),...(f.elements.matchCreatePermission.checked?["matchesCreate"]:[])], reason:d.reason});
+          managedUserId = "";
+          toast("Permissões salvas e registradas no histórico.");
+        }
+      });
       return;
     }
-
-    document.body.style.visibility = "visible";
-    const emailEl = document.getElementById("professor-email-logado");
-    if (emailEl) emailEl.textContent = usuario.email || "Professor autenticado";
-
-    // Carrega o histórico local ANTES do listener para nunca substituí-lo
-    // por uma lista contendo apenas os resultados recentes.
-    resultadosGlobaisCache = carregarCacheLocalRelatorios();
-    iniciarListenerNovosResultados();
-    iniciarFallbackResultadosRecentes();
-
-    await inicializarPainel();
-  });
-
-  window.sairPainelProfessor = async function() {
-    if (!confirm("Deseja sair do Painel do Professor?")) return;
-    // Após confirmar a saída, encerra a sessão Firebase antes de voltar à apresentação.
-    await signOut(auth);
-    window.location.replace("apresentacao.html");
-  };
-}
-
-// ==========================================================
-// 🧩 FASE 10B.5 — COLUNAS E LINHAS AJUSTÁVEIS COM O MOUSE
-// Arraste a borda direita do título para largura.
-// Arraste a borda inferior da linha para altura.
-// O navegador salva os ajustes localmente.
-// ==========================================================
-function ativarTabelaResultadosRedimensionavel() {
-  const tabela=document.querySelector(".tabela-resultados");
-  if(!tabela) return;
-
-  const larguras=JSON.parse(localStorage.getItem("relatorioColWidths")||"{}");
-  tabela.querySelectorAll("thead th").forEach((th,i)=>{
-    if(larguras[i]) { th.style.width=larguras[i]+"px"; th.style.minWidth=larguras[i]+"px"; }
-    if(th.querySelector(".col-resizer")) return;
-    const r=document.createElement("span"); r.className="col-resizer"; th.appendChild(r);
-    r.addEventListener("mousedown",e=>{
-      e.preventDefault(); e.stopPropagation();
-      const x=e.clientX,w=th.getBoundingClientRect().width;
-      const move=ev=>{ const nw=Math.max(55,w+(ev.clientX-x)); th.style.width=nw+"px"; th.style.minWidth=nw+"px"; };
-      const up=()=>{
-        document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);
-        const obj=JSON.parse(localStorage.getItem("relatorioColWidths")||"{}");
-        obj[i]=Math.round(th.getBoundingClientRect().width);
-        localStorage.setItem("relatorioColWidths",JSON.stringify(obj));
-      };
-      document.addEventListener("mousemove",move);document.addEventListener("mouseup",up);
-    });
-  });
-
-  tabela.querySelectorAll("tbody tr").forEach(tr=>{
-    if(tr.querySelector(".row-resizer")) return;
-    const r=document.createElement("span");r.className="row-resizer";tr.appendChild(r);
-    r.addEventListener("mousedown",e=>{
-      e.preventDefault();e.stopPropagation();
-      const y=e.clientY,h=tr.getBoundingClientRect().height;
-      const move=ev=>{tr.style.height=Math.max(42,h+(ev.clientY-y))+"px";};
-      const up=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);};
-      document.addEventListener("mousemove",move);document.addEventListener("mouseup",up);
-    });
-  });
-}
-
-const observadorTabelaResultados=new MutationObserver(()=>ativarTabelaResultadosRedimensionavel());
-window.addEventListener("DOMContentLoaded",()=>{
-  const corpo=document.getElementById("corpo-tabela");
-  if(corpo) observadorTabelaResultados.observe(corpo,{childList:true,subtree:false});
-  setTimeout(ativarTabelaResultadosRedimensionavel,400);
-});
-
-// ==========================================================
-// 🧭 FASE 10B.6 — AJUDA CONTEXTUAL AO PARAR O MOUSE
-// Esta rotina não altera o Firebase. Ela apenas explica a função
-// dos controles do painel depois que o ponteiro permanece sobre eles.
-// ==========================================================
-function instalarAjudaContextual() {
-  // Cria uma única caixa de ajuda reutilizada por todo o painel.
-  let tooltip = document.getElementById("tooltip-sistema");
-  if (!tooltip) {
-    tooltip = document.createElement("div");
-    tooltip.id = "tooltip-sistema";
-    tooltip.className = "tooltip-sistema";
-    document.body.appendChild(tooltip);
+    if (f.id === "team-player") {
+      if (!canManageRosters()) throw Error("Conta sem acesso aos cadastros.");
+      const t=state.teams.find(t=>t.id===selectedTeamId);
+      if(!t||t.archived||section!=="teams"||teamProfileTab!=="roster"||!teamPlayerDraft) throw Error("Abra uma equipe ativa para alterar o elenco.");
+      const id=teamPlayerDraft.id||"";
+      if(id&&!state.players.some(p=>p.id===id&&p.team===t.id)) throw Error("Jogador indisponível nesta equipe. Reabra o cadastro.");
+      const record={id,team:t.id,name:d.name.trim(),number:d.number.trim(),position:d.position.trim(),reserve:d.reserve==="true"};
+      teamPlayerDraft=record;
+      await dispatch({type:"player",data:record});
+      teamPlayerDraft=null;teamHistoryLoaded=false;render();
+      toast(id?"Jogador atualizado nesta equipe.":"Jogador adicionado nesta equipe.");
+      return;
+    }
+    if (["team", "player", "match", "settings", "championship"].includes(f.id)) {
+      if (f.id === "settings") {
+        if (systemLogoBusy) throw Error("Aguarde a preparação do logo antes de salvar.");
+        delete d.logoURL;
+      }
+      if (f.id === "team") {
+        delete d.badgeURL;
+        d.sports=new FormData(f).getAll("sports");
+      }
+      if (f.id === "player") d.reserve = d.reserve === "true";
+      if (f.id === "match") d.date = new Date(d.date).toISOString();
+      await dispatch({ type: f.id, data: d });
+      if(f.id==="team"){teamFormVisible=false;teamEditorId="";selectedTeamId=d.id||"";teamProfileTab="data";render();}
+      else if (f.id === "championship") { editedChampionshipId = ""; render(); }
+      else if (!C.demo) f.reset();
+    } else if (f.id === "championship-link") {
+      await dispatch({type:"championshipLink", matchId:selected, championshipId:d.championshipId, reason:d.reason});
+    } else if (f.id === "clock-config") {
+      await dispatch({
+        type: "clock",
+        matchId: selected,
+        command: "ajustar",
+        mode: d.clockMode,
+        baseMs: (Number(d.elapsedMin) * 60 + Number(d.elapsedSec)) * 1000,
+        durationMs: Number(d.durationMin) * 60000,
+        reason: d.clockReason,
+      });
+    } else if (f.id === "public-notice") {
+      await dispatch({ type: "notice", matchId: selected, notice: d.notice });
+    } else if (f.id === "event")
+      await dispatch({
+        type: "event",
+        matchId: selected,
+        kind: d.kind,
+        side: Number(d.side),
+        value: Number(d.value),
+        player: d.player,
+        text: d.text,
+      });
+    else if (f.id === "stage")
+      await dispatch({ type: "stage", matchId: selected, stage: d.stage });
+    else if (f.id === "notes")
+      await dispatch({ type: "notes", matchId: selected, notes: d.notes });
+  } catch (e) {
+    toast(e.message, true);
   }
+});
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  try {
+    if (b.dataset.googleEntry) {
+      if (!cloud || accessBusy) return;
+      const registerIntent = b.dataset.googleEntry === "register";
+      await accessAction(async () => {
+        await cloud.enterGoogle({register:registerIntent});
+        toast(registerIntent ? "Conta Google reconhecida. Confira a situação da solicitação de acesso." : "Entrada com Google concluída. Conferindo sua autorização.");
+      }); return;
+    }
+    if (b.hasAttribute("data-google-link")) {
+      if (!cloud || accessBusy) return;
+      await accessAction(async () => {
+        await cloud.linkGoogle();
+        toast("Google vinculado à mesma conta. Suas permissões foram preservadas.");
+      }); return;
+    }
+    if (b.hasAttribute("data-my-account")) {
+      if (!C.demo && (!user || !role)) return;
+      cloud?.stopHistory(); section = "account"; selected = ""; render(); return;
+    }
+    if (b.hasAttribute("data-account-recover")) {
+      if (!user?.email || C.demo) return;
+      await accessAction(async () => { await cloud.recoverPassword(user.email); toast("Enviamos as instruções de redefinição de senha para " + user.email + ". Confira também o spam."); }); return;
+    }
+    if (b.hasAttribute("data-account-exit")) {
+      if (cloud) await cloud.auth.signOut(cloud.authentication); return;
+    }
+    if (b.hasAttribute("data-remove-system-logo")) {
+      systemLogoVersion++; systemLogoBusy = false; setSystemLogoDraft("");
+      if ($("#systemLogoFile")) $("#systemLogoFile").value = "";
+      toast("Logo removido da prévia. Clique em Salvar aparência para publicar."); return;
+    }
+    if (b.dataset.editChampionship) {
+      editedChampionshipId = b.dataset.editChampionship; render();
+      $("#championship")?.scrollIntoView({behavior:"smooth"}); return;
+    }
+    if (b.hasAttribute("data-new-championship")) { editedChampionshipId = ""; render(); return; }
+    if (b.hasAttribute("data-clear-championship-filters")) { championshipQuery = ""; championshipStatus = ""; refresh(); return; }
+    if (b.dataset.championshipGames) {
+      cloud?.stopHistory(); selected = ""; section = "matches";
+      listFilters.matches = { ...listDefaults.matches, group:"all", championshipId:b.dataset.championshipGames };
+      render(); $("#list-results-matches")?.scrollIntoView({behavior:"smooth"}); return;
+    }
+    if (b.dataset.listReset) {
+      const kind = b.dataset.listReset;
+      if (!listDefaults[kind]) return;
+      listFilters[kind] = { ...listDefaults[kind] };
+      refresh(); return;
+    }
+    if (b.dataset.listGroup) {
+      listFilters.matches.group = b.dataset.listGroup;
+      listFilters.matches.status = "";
+      refresh(); return;
+    }
+    if (b.dataset.accessMode) {
+      authMode = b.dataset.accessMode;
+      render();
+      return;
+    }
+    if (b.hasAttribute("data-access-refresh")) {
+      await accessAction(async () => { await cloud.refreshAccess(); toast("Acesso atualizado."); });
+      return;
+    }
+    if (b.hasAttribute("data-access-verify")) {
+      await accessAction(async () => { await cloud.resendVerification(); toast("Confira a confirmação no seu e-mail, inclusive no spam."); });
+      return;
+    }
+    if (b.hasAttribute("data-access-exit")) {
+      await cloud.auth.signOut(cloud.authentication);
+      authMode = "login"; render(); return;
+    }
+    if (b.dataset.accessEdit) { managedUserId = b.dataset.accessEdit; render(); return; }
+    if (b.hasAttribute("data-access-cancel")) { managedUserId = ""; render(); return; }
+    if (b.hasAttribute("data-access-copy")) {
+      const url = new URL("painel.html?acesso=cadastro", location.href).href;
+      try { await navigator.clipboard.writeText(url); toast("Link copiado."); }
+      catch { toast("Selecione e copie o endereço exibido no campo Link para solicitar acesso."); }
+      return;
+    }
+    if (b.dataset.quick) {
+      await dispatch({
+        type: "event",
+        matchId: selected,
+        kind: "ponto",
+        side: Number(b.dataset.side),
+        value: Number(b.dataset.quick),
+        player: quickPlayers[Number(b.dataset.side)] || "",
+        text: "Lançamento rápido",
+      });
+    } else if (b.dataset.clockCommand) {
+      await dispatch({
+        type: "clock",
+        matchId: selected,
+        command: b.dataset.clockCommand,
+      });
+    } else if (b.hasAttribute("data-remove-badge")) {
+      setBadgeDraft("");
+    } else if(b.dataset.editTeam){openTeamEditor(b.dataset.editTeam);return;
+    } else if (b.dataset.editPlayer) {
+      const kind = b.dataset.editTeam ? "team" : "player",
+        item = (kind === "team" ? state.teams : state.players).find(
+          (x) => x.id === (b.dataset.editTeam || b.dataset.editPlayer),
+        );
+      const f = $("#" + kind);
+      for (const [k, v] of Object.entries(item)) {
+        const control = f.elements[k === "id" ? "recordId" : k];
+        if (control) control.value = String(v);
+      }
+      if (kind === "team") setBadgeDraft(item.badge || "");
+      f.scrollIntoView({ behavior: "smooth" });
+      toast("Cadastro carregado. Altere e clique em salvar.");
+    } else if (b.dataset.section) {
+      cloud?.stopHistory();
+      section = b.dataset.section;
+      if(section==="teams"){selectedTeamId="";teamFormVisible=false;teamEditorId="";}
+      selected = "";
+      pendingImport = null;
+      render();
+      if (section === "reports" && !C.demo) {
+        toast("Carregando históricos para as súmulas…");
+        await cloud.loadHistory(state.matches.map((m) => m.id));
+      }
+    } else if (b.dataset.open) {
+      selected = b.dataset.open;
+      quickPlayers = ["", ""];
+      section = "matches";
+      render();
+      if (!C.demo && role === "admin") await cloud.loadHistory([selected], { live: true });
+    } else if (b.hasAttribute("data-back")) {
+      cloud?.stopHistory();
+      selected = "";
+      render();
+    } else if (b.dataset.status) {
+      const m = state.matches.find((m) => m.id === selected);
+      let reason = "";
+      if (
+        ["Pausada", "Suspensa", "Adiada", "Cancelada"].includes(
+          b.dataset.status,
+        )
+      ) {
+        const d = data($("#interruption"));
+        reason = [d.pauseReason, d.pauseDetails]
+          .filter(Boolean)
+          .join(" — ")
+          .slice(0, 300);
+      }
+      if (
+        ["Encerrada", "Homologada", "Cancelada"].includes(m.status) &&
+        b.dataset.status !== "Homologada"
+      ) {
+        reason = prompt("Justificativa para reativar ou reabrir a partida:");
+        if (!reason) return;
+      }
+      if (
+        ["Suspensa", "Cancelada", "Adiada"].includes(b.dataset.status) &&
+        !confirm(
+          "Confirmar " +
+            b.dataset.status.toLowerCase() +
+            "? O motivo será mostrado ao público.",
+        )
+      )
+        return;
+      if (
+        ["Encerrada", "Homologada"].includes(b.dataset.status) &&
+        !confirm("Confirmar " + b.dataset.status.toLowerCase() + "?")
+      )
+        return;
+      await dispatch({
+        type: "status",
+        matchId: selected,
+        status: b.dataset.status,
+        reason,
+      });
+    } else if (b.dataset.correct) {
+      const reason = prompt("Justificativa do estorno:");
+      if (reason)
+        await dispatch({
+          type: "correct",
+          matchId: selected,
+          eventId: b.dataset.correct,
+          reason,
+        });
+    } else if (b.hasAttribute("data-set")) {
+      if (confirm("Conferiu a parcial e o regulamento? Fechar set?"))
+        await dispatch({ type: "set", matchId: selected });
+    } else if (b.hasAttribute("data-template")) {
+      sheetReady();
+      const isPlayer = $("[name=importKind]").value === "player",
+        rows = isPlayer
+          ? [
+              ["Nome", "Equipe", "Número", "Posição", "Reserva"],
+              [
+                "Jogador exemplo",
+                "Nome exato da equipe",
+                "10",
+                "Atacante",
+                "Não",
+              ],
+            ]
+          : [
+              ["Nome", "Sigla", "Técnico", "Categoria", "Escudo"],
+              ["Equipe exemplo", "EQP", "Técnico exemplo", "Sub-17", ""],
+            ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Modelo");
+      XLSX.writeFile(
+        wb,
+        isPlayer ? "modelo-jogadores.xlsx" : "modelo-equipes.xlsx",
+      );
+    } else if (b.hasAttribute("data-preview")) {
+      sheetReady();
+      const wb = XLSX.read($("#paste").value, { type: "string", raw: true });
+      prepare(
+        XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
+          header: 1,
+          defval: "",
+        }),
+      );
+    } else if (b.hasAttribute("data-confirm-import")) {
+      if (pendingImport?.rows.length) {
+        const action = pendingImport;
+        await dispatch(action);
+        pendingImport = null;
+        if (!C.demo) toast("Importação concluída.");
+      }
+    } else if (b.hasAttribute("data-report-pdf")) {
+      if (!C.demo) {
+        const filter = $("[name=reportMatch]").value;
+        await cloud.loadHistory(
+          state.matches
+            .filter((m) => !filter || m.id === filter)
+            .map((m) => m.id),
+        );
+      }
+      toast("Preparando súmula PDF…");
+      const { downloadReportPDF } = await import("./report-pdf.js");
+      const ms = state.matches.filter(
+        (m) => !reportFilter || m.id === reportFilter,
+      );
+      await downloadReportPDF(
+        ms.map((m) => ({
+          title: m.competition || "Partida avulsa",
+          organizationLogo: state.settings?.logo || "",
+          sport: m.sport,
+          home: name(m.home),
+          away: name(m.away),
+          badges: [team(m.home).badge || "", team(m.away).badge || ""],
+          score: gameResult(m).join(" x "),
+          date: format(m.date),
+          place: m.place || "Não informado",
+          referees: m.referees || "Não informada",
+          status: m.status,
+          stage: m.stage,
+          clock: m.clock ? M.clockText(m) : "Não utilizado",
+          notice: m.publicNotice || "",
+          sets: m.sets.map((s) => s.score.join(" x ")).join(" / "),
+          coaches: m.coaches?.join(" / ") || "Não informados",
+          roster: m.roster.map((p) => [
+            name(p.team),
+            p.name,
+            p.number,
+            p.position,
+            p.reserve ? "Reserva" : "Titular",
+          ]),
+          events: m.events.map((e) => [
+            new Date(e.at).toLocaleTimeString("pt-BR") +
+              (e.gameMs != null ? "\nJogo " + prettyTime(e.gameMs) : ""),
+            e.stage || "—",
+            eventLabel(e, m),
+            ([0, 1].includes(e.side) ? name([m.home, m.away][e.side]) : "") +
+              (e.player
+                ? "\n" + (m.roster.find((p) => p.id === e.player)?.name || "")
+                : ""),
+            eventDescription(e),
+            (e.actor || "").slice(0, 8),
+          ]),
+          notes: m.notes,
+        })),
+      );
+      toast("PDF gerado.");
+    } else if (b.hasAttribute("data-report-print")) {
+      window.print();
+    } else if (b.hasAttribute("data-report-excel")) {
+      if (!C.demo) {
+        const filter = $("[name=reportMatch]").value;
+        await cloud.loadHistory(
+          state.matches
+            .filter((m) => !filter || m.id === filter)
+            .map((m) => m.id),
+        );
+      }
+      exportExcel();
+    } else if (b.hasAttribute("data-audit-excel")) {
+      if (C.demo)
+        throw Error(
+          "Auditoria oficial está disponível após conectar ao Firebase.",
+        );
+      sheetReady();
+      toast("Consultando auditoria…");
+      const rows = await cloud.auditRows(),
+        wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(
+          rows.map((r) => ({
+            ID: r.ID,
+            Data: r.at?.toDate?.().toLocaleString("pt-BR") || "",
+            Usuário: r.actor,
+            Entidade: r.entity,
+            Registro: r.target,
+            Revisão: r.revision,
+            Ação: r.detail.type,
+            Detalhes: r.detail.text,
+            Motivo: r.detail.reason,
+            ...auditChunks("Antes", r.before),
+            ...auditChunks("Depois", r.after),
+          })),
+        ),
+        "Auditoria",
+      );
+      XLSX.writeFile(wb, "auditoria-esportiva.xlsx");
+    } else if (b.hasAttribute("data-backup"))
+      download("arena-copia.json", JSON.stringify(state, null, 2));
+    else if (b.id === "logout") await cloud.auth.signOut(cloud.authentication);
+  } catch (e) {
+    toast(e.message, true);
+  }
+});
+document.addEventListener("change", async (e) => {
+  try {
+    if (e.target.id === "systemLogoFile") {
+      const file = e.target.files[0]; if (!file) return;
+      const version = ++systemLogoVersion;
+      systemLogoBusy = true; toast("Preparando logo do sistema…");
+      try {
+        const value = await compactLogo(file);
+        if (version === systemLogoVersion && $("#settings")) { setSystemLogoDraft(value); toast("Logo pronto. Clique em Salvar aparência para publicar."); }
+      } finally { if (version === systemLogoVersion) systemLogoBusy = false; }
+      return;
+    }
+    if (e.target.name === "logoURL") {
+      systemLogoVersion++; systemLogoBusy = false;
+      const value = e.target.value.trim();
+      if (value && (!/^https:\/\//i.test(value) || value.length > 1500)) throw Error("Use um endereço HTTPS de até 1500 caracteres.");
+      setSystemLogoDraft(value); return;
+    }
+    if (e.target.dataset.championshipFilter === "status") {
+      championshipStatus = e.target.value; updateChampionshipList(); return;
+    }
+    if (e.target.closest("#match") && e.target.name === "championshipId") {
+      syncChampionshipDraft(); return;
+    }
+    if (e.target.dataset.quickPlayer !== undefined) {
+      quickPlayers[Number(e.target.dataset.quickPlayer)] = e.target.value;
+      return;
+    }
+    if (e.target.id === "badgeFile") {
+      const file = e.target.files[0];
+      if (file) {
+        toast("Preparando imagem…");
+        setBadgeDraft(await compactLogo(file));
+        toast("Imagem pronta. Clique em Salvar equipe para publicar.");
+      }
+      return;
+    }
+    if (e.target.name === "badgeURL") {
+      setBadgeDraft(e.target.value.trim());
+      return;
+    }
+    if (e.target.id === "filter") {
+      publicFilter = e.target.value;
+      render();
+    }
+    if (e.target.name === "reportMatch") {
+      reportFilter = e.target.value;
+      $("#reportOutput").innerHTML = state.matches
+        .filter((m) => !reportFilter || m.id === reportFilter)
+        .map(reportMatch)
+        .join("");
+    }
+    if (e.target.name === "importKind") {
+      pendingImport = null;
+      $("#preview").innerHTML = "";
+      $("#importFile").value = "";
+    }
+    if (e.target.id === "importFile") {
+      pendingImport = null;
+      $("#preview").innerHTML = "";
+      sheetReady();
+      const f = e.target.files[0];
+      if (!f) return;
+      if (f.size > 3 * 1024 * 1024)
+        throw Error("Arquivo muito grande. Máximo: 3 MB.");
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array", raw: true });
+      prepare(
+        XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
+          header: 1,
+          defval: "",
+        }),
+      );
+    }
+    if (e.target.name === "side") {
+      const m = state.matches.find((m) => m.id === selected);
+      $("[name=player]").innerHTML =
+        '<option value="">Sem atleta</option>' +
+        options(
+          m.roster.filter(
+            (p) => p.team === [m.home, m.away][Number(e.target.value)],
+          ),
+          (x) => x.id,
+          (x) => x.number + " • " + x.name,
+        );
+    }
+  } catch (e) {
+    toast(e.message, true);
+  }
+});
+window.addEventListener("offline", () => {if(!C.demo)setConnectionStatus("offline");});
+window.addEventListener("online", () => {if(!C.demo)setConnectionStatus("aguardando confirmação do servidor");});
 
-  // Textos específicos para os principais controles do sistema.
-  const ajudas = {
-    "btn-marcar-todos-resultados":"Marca todos os resultados atualmente exibidos para executar uma ação em grupo.",
-    "btn-limpar-selecao-resultados":"Desmarca todos os resultados selecionados.",
-    "btn-excluir-resultados":"Move os resultados selecionados para a lixeira.",
-    "btn-arquivar-resultados":"Retira os resultados selecionados da lista principal sem apagá-los.",
-    "btn-ver-ocultos":"Mostra os resultados que foram arquivados para que possam ser consultados ou restaurados.",
-    "input-busca-resultados":"Pesquisa nos resultados por aluno, escola, turma, matéria, nota e outras informações disponíveis.",
-    "select-filtro-escola-relatorio":"Filtra o relatório para exibir somente uma unidade escolar.",
-    "btn-classificar-resultados":"Abre as opções de ordenação dos resultados.",
-    "btn-recarregar":"Atualiza os dados exibidos usando as informações atuais do Firebase."
-  };
+function setBadgeDraft(value) {
+  const f = $("#team");
+  if (!f) return;
+  f.elements.badge.value = value;
+  f.elements.badgeURL.value = value.startsWith("https://") ? value : "";
+  $("#badgePreview").innerHTML =
+    badge({
+      name: f.elements.name.value || "Time",
+      short: f.elements.short.value || "TIME",
+      badge: value,
+    }) + '<button type="button" data-remove-badge>Remover imagem</button>';
+}
+async function compactLogo(file) {
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
+    throw Error("Escolha imagem PNG, JPG ou WebP.");
+  if (file.size > 5 * 1024 * 1024) throw Error("A imagem deve ter até 5 MB.");
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(Error("Não foi possível abrir a imagem."));
+      im.src = url;
+    });
+    if (img.naturalWidth * img.naturalHeight > 24000000)
+      throw Error(
+        "Imagem muito grande. Use uma versão com menos de 24 megapixels.",
+      );
+    for (const size of [224, 160, 112, 80]) {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d"),
+        ratio = Math.min(size / img.naturalWidth, size / img.naturalHeight),
+        w = img.naturalWidth * ratio,
+        h = img.naturalHeight * ratio;
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      for (const format of ["image/webp", "image/png"]) {
+        const value = canvas.toDataURL(format, 0.82);
+        if (value.length <= 40000) return value;
+      }
+    }
+    throw Error("Não foi possível compactar esta imagem. Tente outra.");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+const watermark = document.createElement("div");
+watermark.className = "watermark";
+watermark.textContent = "WagnerBIZZA";
+document.body.append(watermark);
+if ($("footer"))
+  $("footer").textContent = "Arena • Central esportiva • WagnerBIZZA";
+// 13 — PREFERÊNCIAS LOCAIS E AJUDA. Nunca altera placares ou permissões.
+const preferenceKey = "arena-preferencias-v1";
+const preferenceDefaults = { theme: "dark", text: "normal", contrast: false, motion: false, help: true };
+function readPreferences() {
+  try {
+    const p = JSON.parse(localStorage.getItem(preferenceKey) || "null") || {};
+    return {theme:["dark","light","auto"].includes(p.theme)?p.theme:"dark",text:["normal","large","larger"].includes(p.text)?p.text:"normal",contrast:p.contrast===true,motion:p.motion===true,help:p.help!==false};
+  } catch { return {...preferenceDefaults}; }
+}
+let preferences = readPreferences();
+const themeQuery = matchMedia("(prefers-color-scheme: dark)");
+function applyPreferences() {
+  const root = document.documentElement;
+  root.dataset.theme = preferences.theme === "auto" ? (themeQuery.matches?"dark":"light") : preferences.theme;
+  root.dataset.textSize = preferences.text;
+  root.classList.toggle("high-contrast",preferences.contrast);
+  root.classList.toggle("reduce-motion",preferences.motion);
+  root.dataset.contextHelp = String(preferences.help);
+}
+function savePreferences() {
+  applyPreferences();
+  try { localStorage.setItem(preferenceKey,JSON.stringify(preferences)); }
+  catch { toast("Preferência aplicada nesta página. O navegador não permitiu salvá-la."); }
+}
+function helpFor(el) {
+  if(el.matches("[data-quick]"))return "Acrescenta a pontuação indicada à equipe. Confira a equipe e o atleta antes de registrar.";
+  if(el.matches("[data-correct]"))return "Retira este lançamento por estorno, com justificativa, preservando a auditoria. Exclusivo do administrador principal.";
+  if(el.matches("[data-status]"))return "Altera a situação do jogo. Interrupções e reaberturas podem exigir justificativa.";
+  if(el.matches("[data-clock-command]"))return "Inicia ou para apenas o cronômetro. Os segundos na tela não geram gravações a cada segundo.";
+  if(el.matches("[data-open]"))return "Abre os controles desta partida. O acesso depende das permissões da sua conta.";
+  if(el.matches("[data-google-link]"))return "Vincula Google à conta atual, mantendo o mesmo usuário. Escolha a identidade correta na janela do Google.";
+  if(el.matches("[data-google-entry]"))return "Abre a janela do Google. Novos operadores continuam dependendo da aprovação do administrador.";
+  if(el.matches("[data-list-filter]"))return "Filtra apenas a visualização. Não altera ou exclui nenhum cadastro.";
+  if(el.matches("[data-list-group]"))return "Alterna entre partidas em andamento, finalizadas e todas. Os registros são preservados.";
+  if(el.matches("[data-backup]"))return "Baixa uma cópia JSON para consulta. Esta versão ainda não possui restauração automática.";
+  if(el.matches("[data-access-edit]"))return "Permite ao administrador aprovar, bloquear, atribuir partidas e conceder permissões específicas de cadastro esportivo.";
+  const key=el.dataset.section;
+  const sections={cleanup:"Prévia, cópia e exclusão de partidas de teste. Exclusivo do administrador principal.",standings:"Classificação do futebol calculada pelos jogos encerrados ou homologados de cada campeonato.",overview:"Resumo das equipes, jogadores e partidas disponíveis para sua conta.",championships:"Cadastro de campeonatos e temporadas. Gerenciado pelo administrador principal.",teams:"Cadastro e edição de equipes, técnicos, categorias e escudos.",players:"Cadastro do elenco, número, posição e titular ou reserva.",matches:"Programação, filtros e operação das partidas autorizadas.",imports:"Importa equipes ou jogadores por planilha ou texto, com prévia antes de confirmar.",reports:"Súmulas, PDF, Excel e cópia JSON. Acesso exclusivo do administrador principal.",settings:"Aparência pública do sistema: logo, título, cores e capa.",users:"Solicitações de acesso, aprovação, bloqueio, partidas atribuídas e permissões específicas.",account:"Identificação da conta conectada e formas de entrada vinculadas."};
+  if(sections[key])return sections[key];
+  if(el.tagName==="INPUT"||el.tagName==="TEXTAREA"||el.tagName==="SELECT"){
+    const label=el.closest("label")?.childNodes[0]?.textContent?.trim()||el.getAttribute("aria-label")||"este campo";
+    return `${el.required?"Campo obrigatório. ":""}${label}.${el.maxLength>0?" Limite de "+el.maxLength+" caracteres.":""}`;
+  }
+  const text=el.textContent.trim();
+  const known={"Salvar aparência":"Publica a aparência na central, no cadastro e no painel público.","Estornar":"Corrige um lançamento com justificativa, preservando o histórico.","Salvar vínculo com justificativa":"Vincula a partida ao campeonato da mesma modalidade e registra a justificativa.","Limpar filtros":"Restaura os filtros iniciais desta lista. Não apaga dados.","Criar partida":"Programa uma partida com cópia do elenco cadastrado naquele momento.","Cadastrar campeonato":"Cria uma edição do campeonato. A modalidade fica fixa após salvar.","Preparar prévia":"Analisa os dados antes da importação. Confira os resultados antes de confirmar."};
+  return known[text]||"";
+}
+let helpTarget=null;
+function hideContextHelp(){
+  const tip=document.getElementById("arenaContextHelp"); if(tip)tip.hidden=true;
+  if(helpTarget){const ids=(helpTarget.getAttribute("aria-describedby")||"").split(" ").filter(id=>id&&id!=="arenaContextHelp");if(ids.length)helpTarget.setAttribute("aria-describedby",ids.join(" "));else helpTarget.removeAttribute("aria-describedby");}
+  helpTarget=null;
+}
+function showContextHelp(target){
+  hideContextHelp();if(!preferences.help||!target)return;
+  const content=helpFor(target);if(!content)return;
+  const tip=document.getElementById("arenaContextHelp");if(!tip)return;
+  helpTarget=target;tip.textContent=content;tip.hidden=false;
+  target.setAttribute("aria-describedby",[target.getAttribute("aria-describedby"),"arenaContextHelp"].filter(Boolean).join(" "));
+}
+function setupAccessibility(){
+  applyPreferences();
+  const main=document.querySelector("main");if(main){main.id="mainContent";main.tabIndex=-1;}
+  document.body.insertAdjacentHTML("afterbegin",'<a class="skip-link" href="#mainContent">Pular para o conteúdo principal</a>');
+  const region=document.createElement("section");region.className="accessibility-bar noprint";
+  region.innerHTML=`<details id="arenaPreferences"><summary>Aparência, acessibilidade e ajuda</summary><div class="preference-controls"><label>Tema<select data-pref="theme"><option value="dark">Escuro</option><option value="light">Claro</option><option value="auto">Automático — seguir dispositivo</option></select></label><label>Tamanho do texto<select data-pref="text"><option value="normal">Padrão</option><option value="large">Maior</option><option value="larger">Muito maior</option></select></label><label class="preference-check"><input type="checkbox" data-pref="contrast">Contraste reforçado</label><label class="preference-check"><input type="checkbox" data-pref="motion">Reduzir movimentos</label><label class="preference-check"><input type="checkbox" data-pref="help">Mostrar ajuda contextual</label><button type="button" data-reset-preferences>Restaurar preferências</button></div><p>Preferências deste navegador. Use Tab para navegar, Enter para ativar e Esc para fechar a ajuda. No celular, toque em Ajuda da função e depois no controle desejado.</p><button type="button" data-touch-help aria-pressed="false">Ajuda da função: desativada</button><p id="touchHelpStatus" role="status"></p></details>`;
+  document.getElementById("mode")?.after(region);
+  for(const el of region.querySelectorAll("[data-pref]")){if(el.type==="checkbox")el.checked=preferences[el.dataset.pref];else el.value=preferences[el.dataset.pref];}
+  const tip=document.createElement("div");tip.id="arenaContextHelp";tip.role="tooltip";tip.hidden=true;document.body.append(tip);
+  let touchHelp=false;
+  document.addEventListener("change",e=>{const k=e.target.dataset.pref;if(!Object.hasOwn(preferenceDefaults,k))return;preferences[k]=e.target.type==="checkbox"?e.target.checked:e.target.value;hideContextHelp();savePreferences();});
+  document.addEventListener("pointerover",e=>{if(e.pointerType!=="touch")showContextHelp(e.target.closest("button,input,select,textarea,summary"));});
+  document.addEventListener("pointerout",e=>{if(helpTarget&&!helpTarget.contains(e.relatedTarget))hideContextHelp();});
+  document.addEventListener("focusin",e=>showContextHelp(e.target));
+  document.addEventListener("focusout",hideContextHelp);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"){hideContextHelp();touchHelp=false;const b=document.querySelector("[data-touch-help]");if(b){b.setAttribute("aria-pressed","false");b.textContent="Ajuda da função: desativada";}}});
+  document.addEventListener("click",e=>{
+    const b=e.target.closest("button,input,select,textarea");if(!b)return;
+    if(b.hasAttribute("data-touch-help")){touchHelp=!touchHelp;b.setAttribute("aria-pressed",String(touchHelp));b.textContent="Ajuda da função: "+(touchHelp?"ativada":"desativada");return;}
+    if(b.hasAttribute("data-reset-preferences")){preferences={...preferenceDefaults};savePreferences();for(const el of region.querySelectorAll("[data-pref]")){if(el.type==="checkbox")el.checked=preferences[el.dataset.pref];else el.value=preferences[el.dataset.pref];}hideContextHelp();return;}
+    if(touchHelp&&!b.closest(".accessibility-bar")&&!b.closest("#arenaTutorial")&&!b.closest("#sessionIdentity")){e.preventDefault();e.stopImmediatePropagation();document.getElementById("touchHelpStatus").textContent=helpFor(b)||"Este controle não possui uma explicação adicional.";showContextHelp(b);}
+  },true);
+  themeQuery.addEventListener("change",()=>{if(preferences.theme==="auto")applyPreferences();});
+}
+setupAccessibility();
 
-  // Aplica descrições explícitas quando o ID do controle é conhecido.
-  Object.entries(ajudas).forEach(([id,texto])=>{
-    const el=document.getElementById(id);
-    if(el) el.dataset.ajuda=texto;
+// 14 — COMO USAR. Guia por perfil, sem gravar ou alterar dados esportivos.
+let tutorialIndex = 0, tutorialReturnFocus = null;
+function tutorialSteps() {
+  if (!admin) return [
+    ["Bem-vindo ao painel público", "Aqui você acompanha resultados, situação das partidas e avisos publicados pela organização. Não é necessário fazer login para assistir."],
+    ["Escolha a modalidade", "Use Filtrar modalidade acima dos jogos. Cada cartão mostra as equipes, placar, etapa, data e local. O cronômetro depende da ativação pela organização."],
+    ["Entenda as interrupções", "Ao vivo, pausada, suspensa e encerrada são situações diferentes. Quando houver um aviso da organização, ele aparecerá no cartão. Você não precisa atualizar a página a cada lance."],
+    ["Ajuste a leitura", "Em Aparência, acessibilidade e ajuda, escolha tema, tamanho do texto e contraste. Para participar da organização, use Área da organização; novos operadores precisam solicitar acesso."]
+  ];
+  if (!C.demo && (!user || !role)) return [
+    ["Entrar ou solicitar acesso", "Quem já possui uma conta pode entrar com seu método atual. Para uma conta nova, escolha Solicitar acesso e cadastre com Google ou e-mail e senha."],
+    ["Confirmação e aprovação", "Confirme seu e-mail quando solicitado. O cadastro não autoriza mudanças de resultados: o administrador principal precisa aprovar o acesso e atribuir partidas."],
+    ["Adicionar Google à conta existente", "Entre primeiro com o método que já utiliza. Depois, em Minha conta, use Vincular Google para manter a mesma conta. Se houver conflito com outra conta, o sistema não faz mesclagem automática."],
+    ["Recuperar acesso", "Esqueci minha senha envia instruções ao seu e-mail. Se estiver bloqueado ou sem partidas atribuídas, procure o administrador principal."]
+  ];
+  if (role === "operator") return [
+    ["Sua conta de operador", "O cabeçalho identifica sua conta. Você recebe somente as partidas atribuídas pelo administrador principal. Permissões adicionais podem liberar cadastro de equipes/jogadores ou criação de novas partidas, sem conceder relatórios, usuários, configurações ou auditoria."],
+    ["Encontre sua partida", "Abra Partidas. Use busca, modalidade, situação e campeonato. Em andamento e próximas esconde as finalizadas; Todas permite localizar qualquer partida disponível para sua conta."],
+    ["Durante o jogo", "Abra Operar partida, confira as equipes e inicie o jogo quando autorizado. Use o lançamento rápido para registrar pontos ou gols na equipe correta. Se desejar, selecione o atleta antes do lançamento."],
+    ["Interrupções e avisos", "Pausar e suspender registram o motivo e interrompem o cronômetro. O campo Aviso para quem está assistindo publica informações. Observações operacionais compõem a súmula. Confira sempre o que ficará público."],
+    ["Correções e encerramento", "Se registrar um resultado errado, avise o administrador principal para realizar o estorno auditado. Ao encerrar, confira o placar. Reabertura, homologação, auditoria e relatórios são funções administrativas."],
+    ["Ajuda quando precisar", "Use Tab e Enter para navegar pelo teclado. A ajuda contextual explica controles sem modificar o jogo. Quando Ajuda da função estiver ativada, o toque apenas consulta; desative para voltar a operar."]
+  ];
+  return [
+    ["Administrador principal", "Sua conta gerencia cadastros, permissões, jogos e relatórios. O cabeçalho mostra com qual conta você entrou. Como usar pode ser aberto novamente a qualquer momento."],
+    ["Equipes e jogadores", "Cadastre as equipes e seus escudos em Equipes. Em Jogadores, informe equipe, número, posição e titular ou reserva. Prepare o elenco antes de criar a partida: a súmula preserva uma cópia daquele momento."],
+    ["Importação com prévia", "Em Importar, selecione equipes ou jogadores e forneça a planilha ou o texto. Confira a prévia antes de confirmar. Corrija linhas inválidas e verifique duplicados. A importação não deve ser confirmada sem essa revisão."],
+    ["Campeonatos e temporadas", "Cadastre uma edição para cada modalidade e categoria. A modalidade fica fixa após salvar. Encerrar o campeonato impede novas partidas vinculadas, mas não encerra os jogos automaticamente."],
+    ["Programar e localizar partidas", "Em Partidas, escolha campeonato, equipes diferentes, data e local. O vínculo preenche a modalidade. Use Todas para encontrar jogos encerrados e Ver partidas no cartão do campeonato para filtrar seus jogos."],
+    ["Operar um jogo", "Confira as equipes antes de iniciar. Use +1 para gols no futebol e os valores próprios nas outras modalidades. O cronômetro possui início, parada e ajuste com justificativa. Cartões, faltas e outros lances ficam na seção de detalhes."],
+    ["Gol anulado e VAR", "Se um gol for anulado, localize o ponto no Histórico e use Estornar com justificativa. Em uma partida encerrada, primeiro reabra com motivo. Para uma análise de VAR, publique um aviso ao público e aguarde a decisão antes do estorno."],
+    ["Interrupções e súmula", "Informe o motivo ao pausar, suspender ou cancelar. Avisos são públicos; observações operacionais entram na súmula e ficam disponíveis a quem opera a partida. Ao concluir, confira o resultado e encerre. Homologação é uma ação separada."],
+    ["Relatórios e cópia dos dados", "Em Súmulas e relatórios, selecione a partida e exporte PDF ou Excel. A auditoria preserva as correções. Baixar cópia JSON gera uma cópia para consulta; ainda não existe restauração automática nesta versão."],
+    ["Operadores e permissões", "Em Usuários e permissões, copie o link de cadastro, revise o pedido, aprove e atribua somente os jogos necessários. Bloquear retira o acesso operacional. Operadores não recebem sua autoridade de administrador principal."],
+    ["Logo, conta e leitura", "Configurações publica logo, título, cor e capa. Minha conta mostra sua identidade e permite vincular Google. Tema e acessibilidade são preferências deste navegador e não mudam as escolhas dos outros usuários."],
+    ["Antes de usar em um evento", "Confira equipes, elenco, campeonato e permissões. Teste um lançamento e a atualização do painel público. A demonstração interativa usa dados fictícios em outra aba. A classificação do futebol está disponível na central e no painel público. Idiomas e limpeza dos testes ainda estão em preparação nesta etapa."]
+  ];
+}
+function drawTutorial() {
+  const steps = tutorialSteps(); tutorialIndex = Math.max(0,Math.min(tutorialIndex,steps.length-1));
+  const [title,body] = steps[tutorialIndex];
+  document.getElementById("arenaTutorialProgress").textContent=`Passo ${tutorialIndex+1} de ${steps.length}`;
+  document.getElementById("arenaTutorialTitle").textContent=title;
+  document.getElementById("arenaTutorialBody").textContent=body;
+  document.getElementById("arenaTutorialPrevious").disabled=tutorialIndex===0;
+  document.getElementById("arenaTutorialNext").textContent=tutorialIndex===steps.length-1?"Concluir":"Próximo";
+}
+function setupTutorial() {
+  const bar=document.querySelector(".accessibility-bar"); if(!bar)return;
+  const open=document.createElement("button");open.type="button";open.dataset.openTutorial="";open.textContent="Como usar — guia passo a passo";open.style.marginTop="8px";bar.append(open);
+  const dialog=document.createElement("dialog");dialog.id="arenaTutorial";
+  dialog.setAttribute("aria-labelledby","arenaTutorialTitle");dialog.setAttribute("aria-describedby","arenaTutorialBody");
+  dialog.style.cssText="width:min(92vw,650px);max-height:85vh;overflow:auto;background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:12px;padding:24px";
+  dialog.innerHTML='<p id="arenaTutorialProgress" class="muted" aria-live="polite"></p><h2 id="arenaTutorialTitle" tabindex="-1"></h2><p id="arenaTutorialBody"></p><p class="muted">Este guia apenas orienta: não cria nem altera registros.</p><div class="toolbar"><button type="button" id="arenaTutorialPrevious">Anterior</button><button type="button" id="arenaTutorialNext" class="primary">Próximo</button><button type="button" id="arenaTutorialClose">Fechar guia</button></div>';
+  document.body.append(dialog);
+  open.addEventListener("click",()=>{hideContextHelp();tutorialReturnFocus=document.body.classList.contains("has-account-menu")?$("#accountMenuToggle"):document.activeElement?.closest("#publicTools")?$("#publicTools > summary"):document.activeElement;tutorialIndex=0;drawTutorial();dialog.showModal();document.getElementById("arenaTutorialTitle").focus();});
+  document.getElementById("arenaTutorialPrevious").addEventListener("click",()=>{tutorialIndex--;drawTutorial();document.getElementById("arenaTutorialTitle").focus();});
+  document.getElementById("arenaTutorialNext").addEventListener("click",()=>{if(tutorialIndex>=tutorialSteps().length-1)dialog.close();else{tutorialIndex++;drawTutorial();document.getElementById("arenaTutorialTitle").focus();}});
+  document.getElementById("arenaTutorialClose").addEventListener("click",()=>dialog.close());
+  dialog.addEventListener("close",()=>{hideContextHelp();if(tutorialReturnFocus?.isConnected)tutorialReturnFocus.focus();});
+}
+setupTutorial();
+
+// 15 — TREINAMENTO ISOLADO. O parâmetro só ativa dados locais fictícios.
+// Não altera window.CONFIG e não abre conexão com Firebase neste modo.
+function trainingSeed() {
+  let s = D.fresh();
+  s = D.reduce(s,{type:"settings",data:{title:"Arena — Treinamento",subtitle:"Dados fictícios para aprender sem alterar o evento real.",color:"#c8fa64",banner:"",logo:""}});
+  for(const [name,short,coach] of [["Treino Azul","AZL","Técnico fictício Azul"],["Treino Verde","VER","Técnico fictício Verde"]]) s=D.reduce(s,{type:"team",data:{name,short,coach,category:"Demonstração",badge:""}});
+  for(const t of s.teams) for(let i=1;i<=2;i++) s=D.reduce(s,{type:"player",data:{name:`Atleta fictício ${t.short} ${i}`,team:t.id,number:String(i+6),position:"Treinamento",reserve:i===2}});
+  for(const sport of ["Futebol","Basquete"]){
+    s=D.reduce(s,{type:"championship",data:{name:`Copa Treino ${sport}`,season:"Demonstração",sport,category:"Treinamento",status:"Planejado"}});
+    s=D.reduce(s,{type:"match",data:{sport,championshipId:s.championships.at(-1).id,home:s.teams[0].id,away:s.teams[1].id,date:new Date().toISOString(),place:"Local fictício de treinamento",referees:"Arbitragem fictícia",stage:"1"}});
+    const m=s.matches.at(-1);m.score=[0,0];m.clock=M.emptyClock();m.publicNotice="";m.rosterTeams=Object.fromEntries(m.roster.map(p=>[p.id,p.team]));
+  }
+  return s;
+}
+function trainingStore(value) {
+  try { localStorage.setItem(key,JSON.stringify(value)); }
+  catch { throw Error("O navegador não permitiu salvar o treino local. Nenhum dado real foi alterado."); }
+}
+function setupTraining() {
+  const bar=document.querySelector(".accessibility-bar");if(!bar)return;
+  if(!trainingMode){
+    const link=document.createElement("a");link.className="button";link.style.margin="8px 0 0 8px";
+    const url=new URL("painel.html",location.href);url.search="?demonstracao=1";
+    link.href=url.href;link.target="_blank";link.rel="noopener";link.dataset.trainingEntry="";link.textContent="Treinamento — dados fictícios";bar.append(link);return;
+  }
+  const banner=document.createElement("section");banner.className="card noprint";banner.style.cssText="margin:16px 5%;border:3px solid #ba891a";
+  banner.innerHTML='<h2>Demonstração — somente dados fictícios</h2><p>Este treino funciona apenas neste navegador, sem conexão com o Firebase. Sua conta e os resultados reais permanecem na outra aba.</p><div class="toolbar"><label>Simular perfil<select id="trainingRole"><option value="admin">Administrador</option><option value="operator">Operador</option><option value="operator-rosters">Operador com cadastros</option><option value="operator-matches">Operador que cria partidas</option></select></label><button type="button" id="trainingReset">Reiniciar apenas o treino</button><a class="button" id="trainingCentral">Voltar à central real</a><a class="button" id="trainingPublic" target="_blank" rel="noopener">Ver painel público do treino</a></div><p class="muted">Para começar, abra Partidas → Operar partida → Iniciar jogo. Cadastros e lançamentos daqui não são publicados no evento real. As permissões simuladas são apenas uma orientação; não representam contas reais.</p>';
+  bar.after(banner);
+  const central=new URL("painel.html",location.href);central.search="";document.getElementById("trainingCentral").href=central.href;
+  const pub=new URL("index.html",location.href);pub.search="?demonstracao=1";document.getElementById("trainingPublic").href=pub.href;
+  for(const link of document.querySelectorAll("header a")) {const url=new URL(link.href,location.href);if(url.origin===location.origin){url.search="?demonstracao=1";link.href=url.href;}}
+  document.getElementById("trainingRole").addEventListener("change",e=>{role=e.target.value==="admin"?"admin":"operator";operatorPermissions=e.target.value==="operator-rosters"?["rosters"]:e.target.value==="operator-matches"?["matchesCreate"]:[];section="overview";selected="";render();toast("Perfil simulado: "+(role==="admin"?"administrador":"operador")+". Dados apenas de treinamento.");});
+  document.getElementById("trainingReset").addEventListener("click",()=>{
+    if(!confirm("Reiniciar somente os dados fictícios deste treino? Os dados reais não serão alterados."))return;
+    try{const seed=trainingSeed();trainingStore(seed);state=seed;selected="";section="overview";pendingImport=null;quickPlayers=["",""];render();toast("Treino reiniciado com dados fictícios.");}catch(e){toast(e.message,true);}
   });
+}
+setupTraining();
 
-  // Gera uma descrição simples para os demais botões/selects sem ajuda manual.
-  document.querySelectorAll("button, select, input[type='search'], input[type='text']").forEach(el=>{
-    if(el.dataset.ajuda) return;
-    const texto=(el.innerText || el.getAttribute("aria-label") || el.placeholder || "").trim();
-    if(!texto) return;
-    const limpo=texto.replace(/[📊🏫🚀🟢📚🗄️🔄🔍🗑️📁📥🖨️✏️❌✅☑️⬜]/g,"").trim();
-    if(limpo) el.dataset.ajuda=`Opção: ${limpo}. Clique ou selecione para executar esta função.`;
+// 16 — CLASSIFICAÇÃO DO FUTEBOL. Calculada sem novas gravações no Firebase.
+// Critérios desta versão: pontos, vitórias, saldo de gols e gols pró.
+let standingChampionship = "";
+function footballTable(matches) {
+  const teams = new Map();
+  const ensure=id=>{if(!teams.has(id))teams.set(id,{id,points:0,played:0,wins:0,draws:0,losses:0,gf:0,ga:0,gd:0});return teams.get(id);};
+  let counted=0,invalid=0;
+  for(const m of matches){
+    if(m.sport!=="Futebol"||m.status==="Cancelada"||!m.home||!m.away||m.home===m.away)continue;
+    const home=ensure(m.home),away=ensure(m.away);
+    if(!["Encerrada","Homologada"].includes(m.status))continue;
+    const score=D.score(m);
+    if(score.length!==2||!score.every(n=>Number.isInteger(n)&&n>=0)){invalid++;continue;}
+    counted++;
+    for(const [t,gf,ga] of [[home,score[0],score[1]],[away,score[1],score[0]]]){
+      t.played++;t.gf+=gf;t.ga+=ga;t.gd=t.gf-t.ga;
+      if(gf>ga){t.wins++;t.points+=3;}else if(gf===ga){t.draws++;t.points++;}else t.losses++;
+    }
+  }
+  const comparison=(a,b)=>b.points-a.points||b.wins-a.wins||b.gd-a.gd||b.gf-a.gf;
+  const rows=[...teams.values()].sort((a,b)=>comparison(a,b)||name(a.id).localeCompare(name(b.id),"pt-BR"));
+  rows.forEach((r,i)=>{r.position=i&&comparison(r,rows[i-1])===0?rows[i-1].position:i+1;r.tied=rows.some(other=>other!==r&&comparison(r,other)===0);});
+  return {rows,counted,invalid};
+}
+function standingChampionships(){
+  const choices=new Map();
+  if(role==="admin") for(const c of state.championships||[])if(c.sport==="Futebol")choices.set(c.id,championshipTitle(c)+(c.category?" • "+c.category:""));
+  // Público usa somente identificadores e resultados já publicados.
+  for(const m of state.matches)if(m.sport==="Futebol"&&m.championshipId&&!choices.has(m.championshipId))choices.set(m.championshipId,m.competition||"Campeonato de futebol");
+  return [...choices].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR"));
+}
+function selectedStanding(){
+  const choices=standingChampionships();
+  if(!choices.some(([id])=>id===standingChampionship))standingChampionship=choices[0]?.[0]||"";
+  return footballTable(standingChampionship?state.matches.filter(m=>m.championshipId===standingChampionship):[]);
+}
+function standingOutput(){
+  const {rows,counted,invalid}=selectedStanding();
+  return `<p class="muted" role="status">${counted} partida(s) computada(s). ${rows.length} equipe(s) identificada(s) nas partidas não canceladas deste campeonato.</p>${invalid?'<p class="public-notice">Há resultado inválido fora do cálculo. O administrador deve conferir os registros.</p>':""}${rows.length?table(["Posição","Equipe","Pontos","Jogos","Vitórias","Empates","Derrotas","Gols pró","Gols contra","Saldo"],rows.map(r=>tr([r.position+"º"+(r.tied?" (empate)":""),name(r.id),r.points,r.played,r.wins,r.draws,r.losses,r.gf,r.ga,r.gd]))):empty("Ainda não há equipes em partidas deste campeonato. Programe uma partida e vincule ao campeonato de futebol.")}`;
+}
+function standingsPanel(){
+  const choices=standingChampionships();
+  if(!admin&&!choices.length)return "";
+  selectedStanding();
+  return `<section class="card"><h2>Classificação — Futebol</h2><p>Vitória: 3 pontos • Empate: 1 ponto • Derrota: 0 ponto.</p><label>Campeonato de futebol<select id="standingChampionship" ${!choices.length?"disabled":""}>${choices.map(([id,title])=>`<option value="${esc(id)}" ${id===standingChampionship?"selected":""}>${esc(title)}</option>`).join("")||'<option>Nenhum campeonato de futebol disponível</option>'}</select></label><p class="muted">Contam somente partidas Encerradas ou Homologadas. Partidas canceladas, ao vivo, pausadas, suspensas, adiadas ou agendadas não somam resultados. A reabertura retira o jogo do cálculo até ser encerrado novamente.</p><div id="standingOutput">${standingOutput()}</div><p class="muted">Desempate: pontos, vitórias, saldo de gols e gols pró. Se todos forem iguais, a posição é compartilhada; a ordem alfabética serve apenas para exibir as equipes. Não há confronto direto, punições, W.O., pênaltis ou grupos automáticos nesta versão.</p>${admin&&role==="admin"&&choices.length?'<button type="button" data-standing-excel>Exportar classificação em Excel</button>':""}</section>`;
+}
+document.addEventListener("change",e=>{if(e.target.id!=="standingChampionship")return;standingChampionship=e.target.value;$("#standingOutput").innerHTML=standingOutput();});
+document.addEventListener("click",e=>{
+  if(!e.target.closest("[data-standing-excel]"))return;
+  try{
+    if(role!=="admin")throw Error("Exportação exclusiva do administrador.");sheetReady();
+    const {rows,counted}=selectedStanding();const title=standingChampionships().find(([id])=>id===standingChampionship)?.[1]||"Futebol";
+    const data=rows.map(r=>({Posição:r.position,Equipe:name(r.id),Pontos:r.points,Jogos:r.played,Vitórias:r.wins,Empates:r.draws,Derrotas:r.losses,"Gols pró":r.gf,"Gols contra":r.ga,Saldo:r.gd,"Empate técnico":r.tied?"Sim":"Não"}));
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),"Classificação");
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Campeonato",title],["Partidas computadas",counted],["Pontuação","Vitória 3; empate 1; derrota 0"],["Situações","Encerrada e Homologada"],["Desempate","Pontos, vitórias, saldo e gols pró. Igualdade mantém empate técnico."],["Gerado em",new Date().toLocaleString("pt-BR")]]),"Critérios");
+    XLSX.writeFile(wb,"classificacao-futebol.xlsx");
+  }catch(error){toast(error.message,true);}
+});
+
+// 17 — Limpeza de partidas de teste: prévia, cópia e confirmação explícita.
+let cleanupPlan=null,cleanupBusy=false,cleanupCopied=false;
+function cleanupPanel(){
+ const eligible=state.matches.filter(m=>!["Ao vivo","Pausada","Suspensa"].includes(m.status)&&!m.clock?.running);
+ const p=cleanupPlan,m=p?.before;
+ return `<section class="card"><h2>Limpeza de partidas de teste</h2><p>Remove uma partida da central, do painel público e da classificação. Equipes, jogadores, campeonatos, contas, logo, configurações e auditoria permanecem.</p><p><strong>A exclusão é permanente. A cópia é para consulta e não possui restauração automática.</strong> Partidas ao vivo, pausadas, suspensas ou com relógio rodando não podem ser removidas.</p><label>Partida para conferir<select id="cleanupMatch">${eligible.map(m=>`<option value="${esc(m.id)}" ${p?.matchId===m.id?"selected":""}>${esc(name(m.home)+" × "+name(m.away)+" • "+m.sport+" • "+format(m.date)+" • "+m.status)}</option>`).join("")||'<option value="">Nenhuma partida disponível</option>'}</select></label><button type="button" data-cleanup-preview ${cleanupBusy||!eligible.length?"disabled":""}>Conferir partida antes de excluir</button>${m?`<div class="public-notice"><h3>Prévia da exclusão</h3><p>${esc(name(m.home))} × ${esc(name(m.away))}<br>${esc(m.sport)} • ${esc(format(m.date))} • ${esc(m.status)}<br>${esc(m.competition||"Sem campeonato")}<br>Placar: ${esc(D.score(m).join(" × "))}<br>ID: ${esc(m.id)}</p><p>Será removida somente esta partida e sua publicação. O registro completo da exclusão ficará privado para o administrador principal.</p><button type="button" data-cleanup-copy ${cleanupBusy?"disabled":""}>Baixar cópia desta partida</button><form id="cleanupConfirm"><label>Motivo da limpeza<textarea name="cleanupReason" minlength="5" maxlength="500" required></textarea></label><label>Digite EXCLUIR para confirmar<input name="cleanupWord" autocomplete="off" required></label><label class="confirmation-check"><input type="checkbox" name="cleanupSaved" required><span>Abri e conferi a cópia baixada e reconheço que não há restauração automática.</span></label><button type="submit" ${cleanupBusy||!cleanupCopied?"disabled":""}>Excluir somente a partida conferida</button></form><button type="button" data-cleanup-cancel ${cleanupBusy?"disabled":""}>Cancelar prévia</button></div>`:""}<hr>${removedHistoryPanel()}<hr><button type="button" data-cleanup-history>Baixar histórico de exclusões (JSON)</button><p class="muted">Exclusões também aparecem em Exportar auditoria completa. A primeira versão limpa partidas; não exclui cadastros de equipes, jogadores ou campeonatos.</p></section>`;
+}
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-cleanup-preview],[data-cleanup-copy],[data-cleanup-cancel],[data-cleanup-history]");
+ if(!b||cleanupBusy)return;
+ try{
+  if(role!=="admin")throw Error("Limpeza exclusiva do administrador principal.");
+  if(b.hasAttribute("data-cleanup-cancel")){cleanupPlan=null;cleanupCopied=false;render();return;}
+  if(b.hasAttribute("data-cleanup-copy")){
+   if(!cleanupPlan)throw Error("Gere uma prévia primeiro.");
+   download("arena-copia-partida-"+cleanupPlan.matchId+".json",JSON.stringify(cleanupPlan.backup,null,2));
+   cleanupCopied=true;render();toast("Confira o arquivo baixado antes de confirmar a exclusão.");return;
+  }
+  if(b.hasAttribute("data-cleanup-history")){
+   const logs=C.demo?(state.cleanupAudit||[]):await cloud.cleanupHistory();
+   download("arena-historico-exclusoes.json",JSON.stringify(logs,null,2));return;
+  }
+  const id=$("#cleanupMatch").value;if(!id)throw Error("Escolha uma partida.");
+  cleanupBusy=true;cleanupPlan=null;cleanupCopied=false;
+  if(C.demo){
+   const m=state.matches.find(m=>m.id===id);if(!m)throw Error("Partida indisponível.");
+   if(["Ao vivo","Pausada","Suspensa"].includes(m.status)||m.clock?.running)throw Error("Encerre ou cancele antes de limpar.");
+   const before=JSON.parse(JSON.stringify(m));cleanupPlan={matchId:id,before,createdAt:Date.now(),backup:{format:"arena-demonstracao-partida-v1",match:before}};
+  }else cleanupPlan=await cloud.previewCleanup(id);
+ }catch(error){toast(error.message,true);}finally{cleanupBusy=false;render();}
+});
+document.addEventListener("submit",async e=>{
+ if(e.target.id!=="cleanupConfirm")return;e.preventDefault();if(cleanupBusy)return;
+ try{
+  if(role!=="admin"||!cleanupPlan||!cleanupCopied)throw Error("Gere uma prévia e confira a cópia antes de excluir.");
+  const f=e.target,reason=f.elements.cleanupReason.value.trim(),word=f.elements.cleanupWord.value;
+  if(!f.elements.cleanupSaved.checked||word!=="EXCLUIR"||reason.length<5||reason.length>500)throw Error("Confira a cópia, preencha o motivo e digite EXCLUIR exatamente.");
+  cleanupBusy=true;const plan=cleanupPlan;
+  if(C.demo){
+   const m=state.matches.find(m=>m.id===plan.matchId);
+   if(!m||JSON.stringify(m)!==JSON.stringify(plan.before)||Date.now()-plan.createdAt>600000)throw Error("A partida mudou ou a prévia expirou. Gere uma nova prévia.");
+   state.cleanupAudit=state.cleanupAudit||[];state.cleanupAudit.push({target:m.id,reason,before:m,after:null,at:new Date().toISOString(),actor:"demonstração"});
+   state.matches=state.matches.filter(x=>x.id!==m.id);
+   if(trainingMode)trainingStore(state);else localStorage.setItem(key,JSON.stringify(state));
+   render();
+  }else await cloud.deleteTestMatch(plan,reason,word);
+  removedRequest++;removedHistory=[];removedLoaded=false;removedLoading=false;removedError="";
+  cleanupPlan=null;cleanupCopied=false;selected="";toast("Partida removida. Equipes, contas e histórico preservados.");
+ }catch(error){toast(error.message,true);}finally{cleanupBusy=false;render();}
+});
+
+// 18 — Mostrar/ocultar senha. Só muda a exibição do campo nesta tela.
+function passwordEye(visible) {
+  return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>${visible?'<path d="m3 3 18 18"/>':""}</svg>`;
+}
+document.addEventListener("click", e => {
+  const button=e.target.closest("[data-toggle-password]");
+  if(!button||button.disabled)return;
+  const input=document.getElementById(button.getAttribute("aria-controls"));
+  if(!input?.hasAttribute("data-private-password"))return;
+  const visible=input.type==="password";
+  input.type=visible?"text":"password";
+  button.setAttribute("aria-pressed",String(visible));
+  const label=document.querySelector(`label[for="${input.id}"]`)?.textContent||"senha";
+  button.setAttribute("aria-label",(visible?"Ocultar ":"Mostrar ")+label.toLowerCase());
+  button.innerHTML=passwordEye(visible)+`<span>${visible?"Ocultar":"Mostrar"}</span>`;
+});
+
+// 19 — Histórico de exclusões na tela. Consulta somente; não restaura ou exclui registros.
+let removedHistory=[],removedLoaded=false,removedLoading=false,removedQuery="",removedSport="",removedContext="",removedRequest=0,removedError="";
+function removedContextKey(){return (C.demo?key:(user?.uid||"anônimo"))+":"+role;}
+function resetRemovedContext(){
+ const next=removedContextKey();if(next===removedContext)return;
+ removedContext=next;removedRequest++;removedHistory=[];removedLoaded=false;removedLoading=false;removedQuery="";removedSport="";removedError="";
+}
+function removedTime(value){
+ if(value?.toMillis)return value.toMillis();
+ if(value&&typeof value==="object"&&Number.isFinite(value.seconds??value._seconds))return (value.seconds??value._seconds)*1000;
+ const n=Date.parse(value);return Number.isFinite(n)?n:0;
+}
+function removedDate(value){const n=removedTime(value);return n?new Date(n).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"}):"Data não informada";}
+function removedTeam(id){return state.teams.find(t=>t.id===id)?.name||id||"Equipe não informada";}
+function removedRows(){
+ const logs=C.demo?(state.cleanupAudit||[]):removedHistory;
+ const q=searchText(removedQuery);
+ return logs.filter(r=>{
+  const m=r.before||{};
+  return (!removedSport||m.sport===removedSport)&&(!q||searchText([removedTeam(m.home),removedTeam(m.away),m.competition,m.sport,r.reason,r.target,r.actor,removedDate(r.at)].join(" ")).includes(q));
+ }).slice().sort((a,b)=>removedTime(b.at)-removedTime(a.at));
+}
+function removedResults(){
+ if(role!=="admin")return "";
+ if(removedLoading)return '<p role="status">Consultando histórico…</p>';
+ if(removedError)return `<p role="alert">${esc(removedError)} Use Atualizar histórico para tentar novamente.</p>`;
+ if(!removedLoaded)return '<p class="muted">Clique em Ver partidas excluídas para consultar o histórico privado.</p>';
+ const rows=removedRows();
+ return `<p role="status">${rows.length} exclusão(ões) nesta visualização. Horários de Brasília. ${C.demo?"Dados locais da demonstração.":"Dados da última consulta; use Atualizar histórico para buscar alterações."}</p>${rows.length?table(["Excluída em","Partida","Modalidade","Campeonato","Placar","Motivo","Responsável"],rows.map(r=>{
+  const m=r.before||{},score=Array.isArray(m.score)?m.score.join(" × "):"—";
+  return tr([removedDate(r.at),removedTeam(m.home)+" × "+removedTeam(m.away),m.sport||"—",m.competition||"Sem campeonato",score,r.reason||"—",r.actor==="demonstração"?"Demonstração":r.actor===user?.uid?"Administrador principal":r.actor||"Não informado"]);
+ })):empty(removedQuery||removedSport?"Nenhuma exclusão corresponde aos filtros.":"Nenhuma partida excluída registrada neste ambiente.")}`;
+}
+function removedHistoryPanel(){
+ resetRemovedContext();
+ return `<section aria-labelledby="removedHistoryHeading"><h3 id="removedHistoryHeading">Partidas excluídas</h3><p>Consulta exclusiva do administrador principal. Os registros permanecem preservados; esta lista não é uma lixeira e não oferece restauração automática.</p><button type="button" data-removed-load ${removedLoading?"disabled":""}>${removedLoaded||removedError?"Atualizar histórico":"Ver partidas excluídas"}</button><div class="formgrid"><label>Buscar no histórico<input type="search" data-removed-query value="${esc(removedQuery)}" placeholder="Equipe, campeonato, motivo, data ou identificador"></label><label>Modalidade no histórico<select data-removed-sport><option value="">Todas as modalidades</option>${["Futebol","Futsal","Basquete","Vôlei","Vôlei de praia","Handebol"].map(s=>`<option value="${esc(s)}" ${s===removedSport?"selected":""}>${esc(s)}</option>`).join("")}</select></label></div><div id="removedResults">${removedResults()}</div></section>`;
+}
+document.addEventListener("click",async e=>{
+ if(!e.target.closest("[data-removed-load]")||removedLoading||role!=="admin")return;
+ resetRemovedContext();const context=removedContextKey(),request=++removedRequest;
+ removedLoading=true;removedError="";refresh();
+ try{
+  const rows=C.demo?(state.cleanupAudit||[]):await cloud.cleanupHistory();
+  if(request!==removedRequest||context!==removedContextKey()||role!=="admin")return;
+  removedHistory=rows;removedLoaded=true;
+ }catch(error){if(request===removedRequest){removedLoaded=false;removedError="Não foi possível consultar o histórico. Confira a conexão e seu acesso de administrador.";}}
+ finally{if(request===removedRequest){removedLoading=false;refresh();}}
+});
+document.addEventListener("input",e=>{if(!e.target.hasAttribute("data-removed-query")||role!=="admin")return;removedQuery=e.target.value;const out=$("#removedResults");if(out)out.innerHTML=removedResults();});
+document.addEventListener("change",e=>{if(!e.target.hasAttribute("data-removed-sport")||role!=="admin")return;removedSport=e.target.value;const out=$("#removedResults");if(out)out.innerHTML=removedResults();});
+
+// 20 — Menu da conta e preferências. Apenas navegação; conserva autenticação/permissões.
+function accountMenuMarkup(){
+ const label=C.demo?"Demonstração local":accountName();
+ return `<div class="account-summary"><strong>${esc(label)}</strong><small>${esc(accountRole())}</small></div><div class="account-dropdown"><button type="button" id="accountMenuToggle" data-account-menu-toggle aria-expanded="false" aria-controls="accountPopover">Minha conta <span data-connection-dot class="connection-dot" aria-hidden="true"></span><span aria-hidden="true">▾</span></button><div id="accountPopover" class="account-popover" hidden><div class="account-menu-identity"><strong>${esc(label)}</strong>${!C.demo?`<span>${esc(user?.email||"Sem e-mail informado")}</span>`:""}<small>${esc(accountRole())}</small></div>${connectionAccountPanel()}<nav aria-label="Opções da conta">${C.demo||role?'<button type="button" class="account-feature" data-my-account><strong>Minha conta e segurança</strong><small>Perfil, acesso, senha e vínculo com Google</small></button>':'<button type="button" data-access-refresh>Atualizar situação do acesso</button>'}<button type="button" class="account-feature" data-open-accessibility><strong>Aparência e acessibilidade</strong><small>Tema, tamanho do texto, contraste e movimentos</small></button>${role==="admin"?'<button type="button" data-account-settings>Configurações do sistema</button>':""}<button type="button" class="account-feature" data-account-guide><strong>Ajuda e guia de uso</strong><small>Orientações passo a passo para o seu perfil</small></button><a class="button account-feature" href="${esc(new URL("painel.html?demonstracao=1",location.href).href)}" target="_blank" rel="noopener"><strong>Treinamento</strong><small>Pratique em outra aba com dados fictícios</small></a>${C.demo?`<a class="button" href="${esc(new URL("painel.html",location.href).href)}">Sair da demonstração</a>`:'<button type="button" data-account-exit>Sair da conta</button>'}</nav></div></div>`;
+}
+function closeAccountMenu(focus=false){
+ const toggle=$("#accountMenuToggle"),panel=$("#accountPopover");
+ if(panel)panel.hidden=true;if(toggle)toggle.setAttribute("aria-expanded","false");
+ if(focus)toggle?.focus();
+}
+function setupAccountTools(){
+ const region=document.querySelector(".accessibility-bar"),details=$("#arenaPreferences");
+ if(!region||!details)return;
+ const dialog=document.createElement("dialog");dialog.id="arenaPreferencesDialog";
+ dialog.setAttribute("aria-labelledby","arenaPreferencesTitle");
+ dialog.innerHTML='<div class="preferences-dialog-heading"><h2 id="arenaPreferencesTitle" tabindex="-1">Aparência e acessibilidade</h2><button type="button" data-close-accessibility aria-label="Fechar aparência e acessibilidade">Fechar ✕</button></div>';
+ for(const child of [...details.children])if(child.tagName!=="SUMMARY")dialog.append(child);
+ details.remove();region.append(dialog);
+ const icon='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="12" cy="4" r="2"/><path d="M3 8h18M12 7v7m0 0-5 7m5-7 5 7"/></svg>';
+ region.insertAdjacentHTML("afterbegin",`<button type="button" class="preferences-entry" data-open-accessibility>${icon}<span>Preferências de leitura</span></button><button type="button" class="accessibility-float" data-open-accessibility aria-label="Abrir opções de acessibilidade" title="Acessibilidade">${icon}</button>`);
+ let returnFocus=null;
+ const openPreferences=source=>{hideContextHelp();closeAccountMenu();returnFocus=source?.closest("#accountPopover")?$("#accountMenuToggle"):source?.closest("#publicTools")?$("#publicTools > summary"):source; if(!dialog.open)dialog.showModal();$("#arenaPreferencesTitle").focus();};
+ dialog.addEventListener("close",()=>{hideContextHelp();if(returnFocus?.isConnected)returnFocus.focus();});
+ document.addEventListener("click",e=>{
+  const toggle=e.target.closest("[data-account-menu-toggle]");
+  if(toggle){hideContextHelp();const panel=$("#accountPopover"),open=toggle.getAttribute("aria-expanded")!=="true";panel.hidden=!open;toggle.setAttribute("aria-expanded",String(open));return;}
+  const accessibility=e.target.closest("[data-open-accessibility]");
+  if(accessibility){openPreferences(accessibility);return;}
+  if(e.target.closest("[data-close-accessibility]")){dialog.close();return;}
+  if(e.target.closest("[data-account-settings]")){
+   if(role!=="admin")return;closeAccountMenu();cloud?.stopHistory();section="settings";selected="";render();$("#view h2")?.scrollIntoView({block:"start"});return;
+  }
+  if(e.target.closest("[data-account-guide]")){closeAccountMenu();document.querySelector("[data-open-tutorial]")?.click();return;}
+  if(!e.target.closest(".account-dropdown"))closeAccountMenu();
+  else if(e.target.closest("#accountPopover button,#accountPopover a"))closeAccountMenu();
+ });
+ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#accountPopover")&&!$("#accountPopover").hidden){e.preventDefault();closeAccountMenu(true);}});
+ document.addEventListener("focusin",e=>{if(!e.target.closest("#sessionIdentity"))closeAccountMenu();});
+}
+setupAccountTools();
+
+// 21 — Organização da central. Permissões continuam validadas pelo Firebase.
+const workspaceDefinitions=[
+ {id:"games",title:"Jogos",intro:"Programação, operação e classificação",sections:["overview","matches","championships","standings"]},
+ {id:"records",title:"Cadastros",intro:"Equipes, jogadores e importações",sections:["teams","players","imports"]},
+ {id:"documents",title:"Documentação",intro:"Guias, súmulas e relatórios",sections:["documentation","reports"]},
+ {id:"administration",title:"Administração",intro:"Operadores, acessos e configurações",sections:["monitor","users","settings","cleanup"]}
+];
+function allowedWorkspaceSections(group){return group.sections.filter(id=>role==="admin"||["overview","matches","documentation"].includes(id)||(canManageRosters()&&["teams","players","imports"].includes(id)));}
+function workspaceNavigation(sections){
+ const visible=workspaceDefinitions.filter(g=>allowedWorkspaceSections(g).length);
+ const group=visible.find(g=>g.sections.includes(section))||visible[0];
+ const labels=Object.fromEntries(sections);
+ return `<section class="navigation-finder noprint" aria-label="Encontrar função"><label for="functionSearch">O que você quer fazer?</label><div class="navigation-search-row"><input id="functionSearch" type="search" placeholder="Ex.: gol, jogador, PDF, logo, permissões…" value="${esc(navigationQuery)}" autocomplete="off" aria-controls="navigationSearchResults"><button type="button" data-clear-navigation-search>Limpar busca</button></div><p class="muted">Digite para encontrar uma função ou expanda uma área pela seta abaixo.</p><div id="navigationSearchResults" aria-live="polite">${navigationSearchResults()}</div></section><nav class="workspace-tabs workspace-disclosures noprint" style="--workspace-count:${visible.length}" aria-label="Áreas da central">${visible.map(g=>`<details name="arena-navigation" data-navigation-group="${g.id}" ${expandedNavigation.has(g.id)?"open":""} class="${group?.id===g.id&&section!=="account"?"current-area":""}"><summary><span><strong>${g.title}</strong><small>${g.intro}</small></span><span class="navigation-disclosure-action" aria-hidden="true"><span class="navigation-closed-label">Ver opções</span><span class="navigation-open-label">Fechar</span><svg class="navigation-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" focusable="false"><path d="m8 5 7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary><div class="navigation-options">${allowedWorkspaceSections(g).map(id=>`<button type="button" data-section="${id}" ${id===section?'aria-current="page"':""}><strong>${esc(labels[id]||id)}</strong><small>${esc(navigationDescriptions[id]?.description||"")}</small></button>`).join("")}</div></details>`).join("")}</nav>${section!=="account"?`<nav class="workspace-subtabs noprint" aria-label="Seções de ${esc(group.title)}">${allowedWorkspaceSections(group).map(id=>sections.find(s=>s[0]===id)).filter(Boolean).map(([id,label])=>`<button type="button" data-section="${id}" class="${section===id?"active":""}" ${section===id?'aria-current="page"':""}>${label}</button>`).join("")}</nav>`:""}`;
+}
+function documentationView(){
+ const central=new URL("painel.html",location.href);central.search="";
+ const pub=new URL("index.html",location.href);pub.search="";
+ const signup=new URL(central);signup.search="?acesso=cadastro";
+ return `<section class="card"><span class="tag">GUIAS E DOCUMENTOS</span><h2>Central de documentação</h2><p>Encontre orientações e os endereços para usar a Arena em outros computadores. Cada pessoa usa sua própria conta.</p><div class="documentation-grid"><article><h3>Operar uma partida</h3><ol><li>Abra Jogos → Partidas e escolha uma partida autorizada.</li><li>Inicie o jogo, confira as equipes e registre os lances.</li><li>Use pausas e avisos para informar interrupções. Ao terminar, encerre a partida.</li></ol><button type="button" data-section="matches">Abrir partidas</button></article><article><h3>Usar em outro computador</h3><p>Abra o link da central em um navegador com internet. Entre com sua conta Google vinculada ou e-mail e senha. Não é necessário instalar VS Code ou GitHub para operar os jogos.</p><p><a href="${esc(central.href)}" target="_blank" rel="noopener">Abrir central</a> · <a href="${esc(pub.href)}" target="_blank" rel="noopener">Abrir painel público</a></p></article><article><h3>Novos operadores</h3><p>Envie o cadastro. A pessoa cria a conta, confirma o e-mail quando solicitado e aguarda a aprovação do administrador principal, que atribui as partidas.</p><a class="button" href="${esc(signup.href)}" target="_blank" rel="noopener">Abrir cadastro de operador</a></article><article><h3>Conta e leitura</h3><p>No menu Minha conta, confira o perfil, os métodos de entrada e a redefinição de senha. Aparência e acessibilidade muda tema, texto e contraste apenas neste navegador.</p><button type="button" data-open-accessibility>Abrir acessibilidade</button></article>${role==="admin"?'<article><h3>Súmulas e relatórios</h3><p>Consulte PDF, Excel, auditoria e cópia JSON. As cópias JSON são para consulta; ainda não há restauração automática.</p><button type="button" data-section="reports">Abrir súmulas e relatórios</button></article><article><h3>Compartilhar ou entregar o sistema</h3><p>Para colaboração, aprove contas e atribua partidas. Para outra organização independente, use uma cópia do código com GitHub e Firebase próprios. Transferir esta instalação exige revisar a propriedade e o UID principal no código e nas regras; transferir só o repositório não troca esse administrador.</p></article><article><h3>Limpeza de testes</h3><p>Remova somente a partida conferida, após baixar a cópia. Histórico e contas são preservados. Não é uma lixeira e não há restauração automática.</p><button type="button" data-section="cleanup">Abrir limpeza de testes</button></article>':""}</div></section>`;
+}
+function operatorMonitor(){
+ if(role!=="admin")return "";
+ const people=(state.users||[]).filter(u=>u.id!==(cloud?.mainUID||user?.uid));
+ const operators=people.filter(u=>u.role==="operator"&&u.enabled!==false),pending=people.filter(u=>u.role==="pending");
+ const assigned=new Set(operators.flatMap(u=>u.matches||[]));
+ const operational=state.matches.filter(m=>!["Encerrada","Homologada","Cancelada"].includes(m.status));
+ const unassigned=operational.filter(m=>!assigned.has(m.id));
+ return `<section class="card"><span class="tag">ADMINISTRAÇÃO</span><h2>Operadores e distribuição de partidas</h2><p>Acompanhe as aprovações e quem tem autorização em cada jogo. “Aprovado” indica permissão de acesso; não indica que a pessoa esteja conectada neste momento.</p><div class="admin-metrics"><article><strong>${operators.length}</strong><span>Operadores aprovados</span></article><article><strong>${pending.length}</strong><span>Solicitações pendentes</span></article><article><strong>${unassigned.length}</strong><span>Partidas em aberto sem operador</span></article></div><button type="button" data-section="users">Gerenciar acessos e atribuições</button>${table(["Pessoa","E-mail","Situação do acesso","Partidas existentes atribuídas"],people.map(u=>tr([u.name||"Operador",u.email||"Não informado",u.role==="pending"?"Aguardando aprovação":u.role==="operator"?(u.enabled===false?"Bloqueado":"Aprovado"):"Revisar perfil",(u.matches||[]).map(id=>state.matches.find(m=>m.id===id)).filter(Boolean).map(m=>`${name(m.home)} × ${name(m.away)} (${m.status})`).join("; ")||"Nenhuma"]))) }${people.length?"":empty(C.demo?"A demonstração não contém contas reais de operadores.":"Nenhum operador cadastrado.")}</section><section class="card"><h3>Partidas em aberto sem operador atribuído</h3>${unassigned.length?table(["Partida","Modalidade","Situação","Local"],unassigned.map(m=>tr([name(m.home)+" × "+name(m.away),m.sport,m.status,m.place||"A definir"]))):empty("Todas as partidas em aberto possuem operador aprovado atribuído, ou não há partidas em aberto.")}<p class="muted">O administrador principal continua autorizado a operar todas as partidas.</p></section>`;
+}
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-workspace]");if(!b)return;
+ const group=workspaceDefinitions.find(g=>g.id===b.dataset.workspace),allowed=group&&allowedWorkspaceSections(group);
+ if(!allowed?.length)return;
+ const target=allowed.includes(section)?section:allowed[0];cloud?.stopHistory();selected="";pendingImport=null;if(target==="teams"){selectedTeamId="";teamFormVisible=false;teamEditorId="";}section=target;render();
+});
+
+// 22 — Painel público: estatísticas dos jogos publicados e diversão apenas local.
+let publicArea="active",sportChallengeIndex=0,sportChallengeAnswer="",quizHits=0,quizAttempts=0;
+const sportChallenges=[
+ {question:"O placar estava 2 × 1 e a equipe visitante marcou. Como fica?",answers:["3 × 1","2 × 2","2 × 1"],correct:1,explanation:"O gol visitante acrescenta um ao segundo número: 2 × 2."},
+ {question:"Um time marcou 3 gols e sofreu 1. Qual é o saldo de gols?",answers:["+2","+4","−2"],correct:0,explanation:"Saldo é gols marcados menos sofridos: 3 − 1 = +2."},
+ {question:"O relógio marca 12:45. Após 15 segundos, qual será o tempo?",answers:["12:60","13:15","13:00"],correct:2,explanation:"Quinze segundos completam o minuto: 13:00."},
+ {question:"Qual jogador tem a função de proteger o gol no futebol?",answers:["Goleiro","Levantador","Pivô"],correct:0,explanation:"O goleiro atua na defesa do gol."},
+ {question:"Em qual modalidade a cesta é usada para pontuar?",answers:["Vôlei","Basquete","Futebol"],correct:1,explanation:"A cesta faz parte do basquete."},
+ {question:"Qual destas modalidades tem uma rede dividindo a quadra?",answers:["Futebol","Basquete","Vôlei"],correct:2,explanation:"No vôlei, a rede separa os dois lados da quadra."}
+];
+function publicStatistics(){
+ const games=state.matches.filter(m=>!publicFilter||m.sport===publicFilter),ended=games.filter(m=>["Encerrada","Homologada"].includes(m.status));
+ const football=ended.filter(m=>m.sport==="Futebol"),goals=football.reduce((sum,m)=>sum+(m.score||[0,0]).reduce((a,n)=>a+(Number.isFinite(n)?n:0),0),0),teams=new Set(games.flatMap(m=>[m.home,m.away]).filter(Boolean));
+ return `<div class="public-metrics" aria-label="Estatísticas dos jogos publicados"><article><strong>${games.filter(m=>m.status==="Ao vivo").length}</strong><span>Jogos ao vivo</span></article><article><strong>${games.filter(m=>["Agendada","Adiada"].includes(m.status)).length}</strong><span>Jogos programados</span></article><article><strong>${ended.length}</strong><span>Jogos concluídos</span></article><article><strong>${teams.size}</strong><span>Equipes nas partidas</span></article></div>${!publicFilter||publicFilter==="Futebol"?`<p class="muted public-goals">Futebol: ${goals} gol(s) em ${football.length} partida(s) encerrada(s) ou homologada(s).</p>`:""}`;
+}
+function publicChallenge(){
+ const q=sportChallenges[sportChallengeIndex%sportChallenges.length],answered=sportChallengeAnswer!=="";
+ return `<section class="card sport-challenge"><span class="tag">INTERVALO ESPORTIVO</span><h2>Desafio rápido</h2><p>Uma brincadeira para aprender enquanto acompanha as partidas. Suas respostas ficam apenas nesta página.</p><p class="quiz-score">Seu placar: <strong>${quizHits} acerto(s) em ${quizAttempts} resposta(s)</strong></p><h3>${esc(q.question)}</h3><div class="toolbar">${q.answers.map((a,i)=>`<button type="button" data-sport-answer="${i}" ${answered?"disabled":""}>${esc(a)}</button>`).join("")}</div>${answered?`<p role="status"><strong>${Number(sportChallengeAnswer)===q.correct?"Acertou!":"Vamos aprender!"}</strong> ${esc(q.explanation)}</p><button type="button" data-sport-next>Próximo desafio</button>`:""}</section>`;
+}
+function publicHub(){
+ const tabs=[["active","Jogos atuais"],["all","Todos os jogos"],["live","Ao vivo"],["schedule","Agenda"],["results","Resultados"],["standings","Classificação"],["fun","Diversão"]];
+ return `${publicStatistics()}${publicSportSummary()}<nav class="public-navigation" aria-label="Conteúdo do painel público">${tabs.map(([id,label])=>`<button type="button" data-public-area="${id}" class="${id===publicArea?"active":""}" ${id===publicArea?'aria-current="page"':""}>${label}</button>`).join("")}</nav><div id="publicHubContent">${publicHubContent()}</div>`;
+}
+function publicHubContent(){
+ if(publicArea==="fun")return fanZone();
+ if(publicArea==="standings")return standingsPanel()||empty("A classificação estará disponível quando houver partidas vinculadas a um campeonato de futebol.");
+ return `${publicArea==="active"?'<p class="muted">Partidas encerradas, homologadas e canceladas ficam em <strong>Resultados</strong> ou <strong>Todos os jogos</strong>.</p>':""}<div id="publicMatches" class="grid">${publicMatches(publicFilter)}</div>${["active","all"].includes(publicArea)?'<section class="card public-locations"><h2>Esporte em diferentes locais</h2><p>Veja o local informado em cada partida. Use a modalidade, a agenda e os jogos ao vivo para acompanhar os eventos publicados pela organização.</p></section>':""}`;
+}
+function googleSymbol(){return '<svg class="google-symbol" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.32 2.98-7.36Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.05.97-3.38.97-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.93a6 6 0 0 1 0-3.86V7.48H3.07a10 10 0 0 0 0 9.04l3.34-2.59Z"/><path fill="#EA4335" d="M12 5.95c1.47 0 2.78.5 3.82 1.5l2.86-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.48l3.34 2.59C7.2 7.7 9.4 5.95 12 5.95Z"/></svg>';}
+document.addEventListener("click",e=>{
+ if(admin)return;
+ const area=e.target.closest("[data-public-area]");
+ if(area){publicArea=area.dataset.publicArea;render();return;}
+ const answer=e.target.closest("[data-sport-answer]");
+ if(answer&&sportChallengeAnswer===""){sportChallengeAnswer=answer.dataset.sportAnswer;quizAttempts++;if(Number(sportChallengeAnswer)===sportChallenges[sportChallengeIndex%sportChallenges.length].correct)quizHits++;const out=$("#publicHubContent");if(out)out.innerHTML=fanZone();return;}
+ if(e.target.closest("[data-sport-next]")){sportChallengeIndex++;sportChallengeAnswer="";const out=$("#publicHubContent");if(out)out.innerHTML=fanZone();}
+});
+
+// 24 — Ficha da equipe. Dados atuais, partidas e lances têm escopos separados.
+let teamProfileContext="";
+let teamPlayerDraft=null;
+function resetTeamProfileContext(){const current=(C.demo?"demo":user?.uid||"anônimo")+":"+role+":"+canManageRosters();if(current===teamProfileContext)return;teamProfileContext=current;teamPlayerDraft=null;teamFormVisible=false;teamEditorId="";selectedTeamId="";teamHistoryRows=[];teamHistoryLoaded=false;teamEventsKey="";teamProfileRequest++;teamProfileBusy=false;}
+let teamGameScope="active";
+let selectedTeamId="",teamProfileTab="data",teamProfileSport="",teamProfileChamp="",teamHistoryRows=[],teamHistoryLoaded=false,teamProfileBusy=false,teamEventsKey="",teamProfileRequest=0;
+function teamSports(t){return [...new Set([...(t.sports||[]),...state.matches.filter(m=>[m.home,m.away].includes(t.id)).map(m=>m.sport)])].sort();}
+function teamMatches(){return state.matches.filter(m=>[m.home,m.away].includes(selectedTeamId)&&(!teamProfileSport||m.sport===teamProfileSport)&&(!teamProfileChamp||(m.championshipId||"__unlinked__")===teamProfileChamp));}
+function teamMatchKey(){return teamMatches().map(m=>m.id+":"+(m._revision||m.events?.length||0)).sort().join("|");}
+function teamStatistics(matches,teamId){
+ const groups=new Map();
+ for(const m of matches){if(!["Encerrada","Homologada"].includes(m.status))continue;
+  const score=gameResult(m),side=m.home===teamId?0:1;
+  if(!Array.isArray(score)||score.length!==2||!score.every(n=>Number.isInteger(n)&&n>=0))continue;
+  if(!groups.has(m.sport))groups.set(m.sport,{sport:m.sport,games:0,wins:0,draws:0,losses:0,for:0,against:0});
+  const r=groups.get(m.sport),a=score[side],b=score[1-side];r.games++;r.for+=a;r.against+=b;if(a>b)r.wins++;else if(a===b)r.draws++;else r.losses++;
+ }
+ return [...groups.values()].sort((a,b)=>a.sport.localeCompare(b.sport,"pt-BR"));
+}
+function teamAthleteEvents(matches,teamId){
+ const rows=new Map();
+ for(const m of matches){if(m.status==="Cancelada")continue;const side=m.home===teamId?0:1;
+  for(const e of m.events||[]){if(e.side!==side||!["ponto","cartão amarelo","cartão vermelho","falta"].includes(e.type))continue;
+   const player=e.player||"",key=m.sport+":"+player;
+   if(!rows.has(key))rows.set(key,{sport:m.sport,player:player?(m.roster||[]).find(p=>p.id===player)?.name||state.players.find(p=>p.id===player)?.name||player:"Sem atleta informado",points:0,yellow:0,red:0,fouls:0});
+   const r=rows.get(key);if(e.type==="ponto")r.points+=Number(e.value)||0;if(e.type==="cartão amarelo")r.yellow++;if(e.type==="cartão vermelho")r.red++;if(e.type==="falta")r.fouls++;
+  }
+ }
+ return [...rows.values()];
+}
+function teamHistoryOutput(){
+ if(!teamHistoryLoaded)return empty("Clique em Carregar histórico para consultar as alterações registradas da equipe e de seus jogadores.");
+ const labels={name:"Nome",short:"Sigla",coach:"Técnico(a)",category:"Categoria",badge:"Escudo",sports:"Modalidades",archived:"Arquivada",team:"Equipe",number:"Número",position:"Posição",reserve:"Reserva"};
+ return teamHistoryRows.map(r=>{
+  const changes=Object.entries(labels).filter(([key])=>JSON.stringify(r.before?.[key]??null)!==JSON.stringify(r.after?.[key]??null)).map(([key,label])=>{
+   const show=v=>key==="badge"?(v?"Imagem cadastrada":"Sem imagem"):Array.isArray(v)?v.join(", "):typeof v==="boolean"?(v?"Sim":"Não"):v??"—";
+   return tr([label,show(r.before?.[key]),show(r.after?.[key])]);
   });
+  return `<details class="event"><summary>${esc(r.entity==="teams"?"Equipe":"Jogador")} • ${esc(r.after?.name||r.before?.name||r.target)} • ${esc(r.detail?.type||"Alteração")} • ${esc(removedDate(r.at))}</summary><p>Responsável: ${esc(r.actor||"Não informado")}<br>Motivo/registro: ${esc(r.detail?.reason||r.detail?.text||"Não informado")}<br>ID: ${esc(r.ID||r.id||r.target)}</p>${table(["Campo","Antes","Depois"],changes)}</details>`;
+ }).join("")||empty("Não há alterações registradas para esta equipe ou seu elenco nesta versão.");
+}
+function teamProfileView(){
+ const t=state.teams.find(t=>t.id===selectedTeamId);if(!t||!canManageRosters()){selectedTeamId="";return empty("Equipe indisponível para esta conta.");}
+ const roster=state.players.filter(p=>p.team===t.id).slice().sort(alphabetical),games=teamMatches();
+ const tabs=[["data","Dados e técnico"],["roster","Jogadores"],["games","Jogos da equipe"],...(role==="admin"?[["stats","Estatísticas, cartões e faltas"],["history","Histórico de alterações"]]:[])];
+ if(!tabs.some(([id])=>id===teamProfileTab))teamProfileTab="data";
+ const championships=[...new Map(state.matches.filter(m=>[m.home,m.away].includes(t.id)).map(m=>[m.championshipId||"__unlinked__",m.championshipId?(m.competition||"Campeonato"):"Sem vínculo com campeonato"])).entries()];
+ let content="";
+ if(teamProfileTab==="data")content=`<section class="card"><h3>Cadastro atual</h3><dl class="account-details"><div><dt>Nome</dt><dd>${esc(t.name)}</dd></div><div><dt>Sigla</dt><dd>${esc(t.short||"Não informada")}</dd></div><div><dt>Técnico(a)</dt><dd>${esc(t.coach||"Não informado")}</dd></div><div><dt>Categoria</dt><dd>${esc(t.category||"Não informada")}</dd></div><div><dt>Modalidades cadastradas</dt><dd>${esc((t.sports||[]).join(", ")||"Ainda não informadas")}</dd></div><div><dt>Situação</dt><dd>${t.archived?"Arquivada":"Ativa"}</dd></div></dl><p class="muted">O cadastro atual não reescreve os elencos e técnicos congelados nas súmulas das partidas já criadas.</p><button type="button" data-profile-edit>Editar dados e modalidades</button>${role==="admin"?` <button type="button" data-profile-archive ${teamProfileBusy?"disabled":""}>${t.archived?"Reativar equipe":"Arquivar equipe"}</button><p class="muted">Arquivar preserva nome, jogadores, resultados e histórico. A equipe sai das opções de novos jogos e novos jogadores, e pode ser reativada.</p>`:""}</section>`;
+ if(teamProfileTab==="roster")content=`<section class="card"><h3>Elenco atual • ${roster.length} jogador(es)</h3>${!t.archived?'<button type="button" data-profile-new-player>Adicionar jogador nesta equipe</button>':'<p>Reative a equipe antes de alterar o elenco.</p>'}${teamPlayerEditor(t)}${roster.length?table(["Nome","Número","Posição","Escalação","Ação"],roster.map(p=>tr([p.name,p.number,p.position,p.reserve?"Reserva / banco":"Titular"]).replace("</tr>",`<td>${!t.archived?`<button type="button" data-profile-player="${esc(p.id)}">Editar jogador</button>`:"—"}</td></tr>`))):empty("Nenhum jogador cadastrado nesta equipe.")}<p class="muted">Cartões, faltas e pontos são registrados na partida. Consulte Estatísticas para os lances dos jogos selecionados.</p></section>`;
+ if(teamProfileTab==="games")content=`<section class="card"><h3>Jogos da equipe</h3>${matchScopeButtons("team",teamGameScope)}<p class="muted">Finalizadas inclui encerradas, homologadas e canceladas. Os dados e as súmulas permanecem salvos.</p></section><div class="grid">${scopeMatches(games,teamGameScope).map(m=>matchCard(m,true)).join("")||empty("Nenhuma partida corresponde a esta equipe e aos filtros.")}</div>${role!=="admin"?'<p>Esta conta vê somente suas partidas atribuídas.</p>':""}`;
+ if(teamProfileTab==="stats"){
+  const stats=teamStatistics(games,t.id),ready=C.demo||teamEventsKey===teamMatchKey(),events=ready?teamAthleteEvents(games,t.id):[];
+  content=`<section class="card"><h3>Resultados por modalidade</h3><p>Somente partidas encerradas ou homologadas. No vôlei, o resultado conta sets; nas demais modalidades, o placar. As modalidades não são somadas entre si.</p>${stats.length?table(["Modalidade","Jogos","Vitórias","Empates","Derrotas","A favor","Contra"],stats.map(r=>tr([r.sport,r.games,r.wins,r.draws,r.losses,r.for,r.against]))):empty("Ainda não há partidas concluídas nesta seleção.")}</section><section class="card"><h3>Jogadores, cartões e faltas</h3><p>Lances dos jogos selecionados, incluindo jogos em andamento e excluindo cancelados. Pontos/gols dos lances consideram os estornos registrados. Lances sem atleta ficam em uma linha própria.</p>${!C.demo?`<button type="button" data-profile-events ${teamProfileBusy?"disabled":""}>${teamProfileBusy?"Carregando…":"Carregar / atualizar lances"}</button>`:""}${ready?(events.length?table(["Modalidade","Jogador","Pontos/gols dos lances","Amarelos","Vermelhos","Faltas"],events.map(r=>tr([r.sport,r.player,r.points,r.yellow,r.red,r.fouls]))):empty("Nenhum lance correspondente carregado.")):empty("Carregue os lances para consultar cartões, faltas e pontuação individual.")}</section>`;
+ }
+ if(teamProfileTab==="history")content=`<section class="card"><h3>Alterações da equipe e elenco</h3><button type="button" data-profile-history ${teamProfileBusy?"disabled":""}>${teamProfileBusy?"Consultando…":"Carregar / atualizar histórico"}</button><p class="muted">Consulta sob demanda, exclusiva do administrador principal. Datas em horário de Brasília.</p>${teamHistoryOutput()}</section>`;
+ return `<section class="card team-profile-heading"><button type="button" data-profile-back>← Voltar às equipes</button><div class="team-profile-title">${badge(t)}<div><span class="tag">FICHA DA EQUIPE • ${t.archived?"ARQUIVADA":"ATIVA"}</span><h2>${esc(t.name)}</h2><p>Técnico(a): ${esc(t.coach||"Não informado")}</p></div></div><nav aria-label="Ficha da equipe">${tabs.map(([id,label])=>`<button type="button" data-profile-tab="${id}" class="${id===teamProfileTab?"active":""}">${label}</button>`).join("")}</nav>${["games","stats"].includes(teamProfileTab)?`<div class="formgrid"><label>Modalidade na ficha<select data-profile-sport><option value="">Todas as modalidades</option>${D.SPORTS.map(s=>`<option ${s===teamProfileSport?"selected":""}>${esc(s)}</option>`).join("")}</select></label><label>Campeonato / temporada<select data-profile-champ><option value="">Todos os campeonatos</option>${championships.map(([id,label])=>`<option value="${esc(id)}" ${id===teamProfileChamp?"selected":""}>${esc(label)}</option>`).join("")}</select></label></div>`:""}</section>${content}`;
+}
+function openTeamEditor(id){
+ if(!canManageRosters())return;const t=state.teams.find(t=>t.id===id);if(!t)return;
+ selectedTeamId="";teamFormVisible=true;teamEditorId=id;teamProfileBusy=false;teamProfileRequest++;section="teams";render();const f=$("#team");if(!f)return;
+ for(const key of ["name","short","coach","category"]){f.elements[key].value=t[key]||"";}f.elements.recordId.value=t.id;
+ for(const o of f.elements.sports.options)o.selected=(t.sports||[]).includes(o.value);
+ setBadgeDraft(t.badge||"");f.scrollIntoView({block:"start"});f.elements.name.focus({preventScroll:true});toast("Altere os dados e clique em Salvar equipe.");
+}
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-team-profile],[data-profile-back],[data-profile-tab],[data-profile-edit],[data-profile-archive],[data-profile-new-player],[data-profile-player],[data-profile-events],[data-profile-history]");if(!b)return;
+ try{
+  if(!canManageRosters())throw Error("Conta sem acesso aos cadastros.");
+  if(b.dataset.teamProfile){teamProfileBusy=false;selectedTeamId=b.dataset.teamProfile;teamGameScope="active";teamProfileTab=["roster","games"].includes(b.dataset.initialTeamTab)?b.dataset.initialTeamTab:"data";teamProfileSport="";teamProfileChamp="";teamHistoryRows=[];teamHistoryLoaded=false;teamEventsKey="";teamProfileRequest++;section="teams";teamPlayerDraft=null;render();return;}
+  if(b.hasAttribute("data-profile-back")){teamPlayerDraft=null;teamFormVisible=false;teamEditorId="";selectedTeamId="";teamProfileBusy=false;teamProfileRequest++;render();return;}
+  if(b.dataset.profileTab){if(["stats","history"].includes(b.dataset.profileTab)&&role!=="admin")return;teamProfileTab=b.dataset.profileTab;teamPlayerDraft=null;render();return;}
+  if(b.hasAttribute("data-profile-edit")){openTeamEditor(selectedTeamId);return;}
+  const teamId=selectedTeamId,t=state.teams.find(t=>t.id===teamId);if(!t)return;
+  if(b.hasAttribute("data-profile-archive")){
+   if(role!=="admin")throw Error("Exclusivo do administrador principal.");
+   const reason=prompt((t.archived?"Motivo para reativar ":"Motivo para arquivar ")+t.name+" (5 a 500 caracteres):");if(reason===null)return;
+   await dispatch({type:"teamArchive",teamId,archived:!t.archived,reason});teamHistoryLoaded=false;return;
+  }
+  if(b.hasAttribute("data-profile-new-player")||b.dataset.profilePlayer){
+   if(t.archived)throw Error("Reative a equipe antes de alterar seu elenco.");
+   const player=b.dataset.profilePlayer?state.players.find(p=>p.id===b.dataset.profilePlayer&&p.team===teamId):null;
+   if(b.dataset.profilePlayer&&!player)throw Error("Jogador não encontrado nesta equipe.");
+   teamPlayerDraft=player?{...player}:{name:"",number:"",position:"",reserve:false};
+   teamProfileTab="roster";render();$("#team-player")?.scrollIntoView({block:"center"});$("#team-player")?.elements.name.focus({preventScroll:true});return;
+  }
+  if(role!=="admin"||teamProfileBusy)return;
+  const request=++teamProfileRequest;teamProfileBusy=true;refresh();
+  try{
+   if(b.hasAttribute("data-profile-history")){
+    const rows=C.demo?(state.teamLocalAudit||[]).filter(r=>(r.entity==="teams"&&r.target===teamId)||(r.entity==="players"&&(r.before?.team===teamId||r.after?.team===teamId))).slice().reverse():await cloud.teamHistory(teamId);
+    if(request!==teamProfileRequest||role!=="admin"||selectedTeamId!==teamId)return;teamHistoryRows=rows;teamHistoryLoaded=true;
+   }else{const fingerprint=teamMatchKey();if(!C.demo)await cloud.loadHistory(teamMatches().map(m=>m.id));if(request===teamProfileRequest&&role==="admin"&&selectedTeamId===teamId)teamEventsKey=fingerprint;}
+  }finally{if(request===teamProfileRequest){teamProfileBusy=false;render();}}
+ }catch(error){teamProfileBusy=false;toast(error.message,true);render();}
+});
+document.addEventListener("change",e=>{if(!canManageRosters())return;if(e.target.hasAttribute("data-profile-sport")){teamProfileSport=e.target.value;render();}if(e.target.hasAttribute("data-profile-champ")){teamProfileChamp=e.target.value;render();}});
 
-  // Mostra a ajuda somente depois de 650 ms parado sobre o controle.
-  let timer=null;
-  document.addEventListener("mouseover",e=>{
-    const alvo=e.target.closest("[data-ajuda]");
-    if(!alvo) return;
-    clearTimeout(timer);
-    timer=setTimeout(()=>{
-      tooltip.textContent=alvo.dataset.ajuda;
-      const r=alvo.getBoundingClientRect();
-      const largura=290;
-      const x=Math.min(Math.max(8,r.left),window.innerWidth-largura-10);
-      const y=(r.bottom+10+80<window.innerHeight) ? r.bottom+8 : Math.max(8,r.top-55);
-      tooltip.style.left=x+"px";
-      tooltip.style.top=y+"px";
-      tooltip.classList.add("visivel");
-    },650);
-  });
+function teamRegistrationView(){return `<div class="card"><h3>Dados do cadastro</h3><form id="team"><input name="recordId" type="hidden"><div class="formgrid">${field("Nome da equipe", "name", "text", 'required maxlength="150"')}${field("Sigla", "short", "text", 'maxlength="12"')}${field("Técnico(a)", "coach")}${field("Categoria", "category")}<label>Modalidades da equipe (Ctrl+clique para várias)<select name="sports" multiple size="6">${D.SPORTS.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("")}</select><small>Cadastro da equipe. Não altera a modalidade das partidas existentes.</small></label><input name="badge" type="hidden"><label>Imagem do escudo / bandeira<input id="badgeFile" type="file" accept="image/png,image/jpeg,image/webp"><small>Escolha uma imagem do computador. O painel reduz seu tamanho automaticamente.</small></label><label>Ou endereço HTTPS da imagem<input name="badgeURL" type="url" placeholder="https://..."></label><div class="logo-preview" id="badgePreview">${badge({ name: "Time", short: "TIME", badge: "" })}<button type="button" data-remove-badge>Remover imagem</button></div></div><button class="primary">Salvar equipe</button> <button type="button" data-section="imports">Importar equipes</button></form></div>`;}
+// 25 — Navegação clara. Lista primeiro; formulários somente ao cadastrar/editar.
+let teamFormVisible=false,teamEditorId="";
+function teamDirectoryCard(t){
+ const roster=state.players.filter(p=>p.team===t.id).length;
+ const games=state.matches.filter(m=>[m.home,m.away].includes(t.id)).length;
+ return `<article class="card team-directory-card"><div class="team-directory-title">${badge(t)}<span class="status">${t.archived?"Arquivada":"Ativa"}</span></div><h3>${esc(t.name)}</h3><p class="muted">${esc(t.category||"Categoria não informada")}<br>Técnico(a): ${esc(t.coach||"Não informado")}<br>${esc(teamSports(t).join(" • ")||"Modalidade não informada")}</p><p>${roster} jogador(es) • ${games} ${role==="admin"?"partida(s)":"partida(s) autorizada(s)"}</p><div class="toolbar"><button type="button" class="primary" data-team-profile="${esc(t.id)}">Ver dados da equipe</button><button type="button" data-team-profile="${esc(t.id)}" data-initial-team-tab="roster">Jogadores</button><button type="button" data-team-profile="${esc(t.id)}" data-initial-team-tab="games">Jogos</button><button type="button" data-edit-team="${esc(t.id)}">Editar cadastro</button></div></article>`;
+}
+function teamsDirectoryView(){
+ if(teamFormVisible)return `<div class="sectionhead"><h2>${teamEditorId?"Editar equipe":"Nova equipe"}</h2><button type="button" data-team-form-back>← Voltar à lista de equipes</button></div>${teamRegistrationView()}`;
+ return `<div class="sectionhead team-directory-heading"><div><h2>Equipes</h2><p>Escolha uma equipe abaixo. Em <strong>Ver dados da equipe</strong> você encontra técnico, modalidades, elenco e jogos.</p></div><div class="toolbar"><button type="button" class="primary" data-new-team-form>+ Nova equipe</button><button type="button" data-section="imports">Importar equipes</button></div></div>${listPanel("teams")}`;
+}
+function locationTrail(){
+ const labels={overview:"Visão geral",matches:"Partidas",championships:"Campeonatos",standings:"Classificação",teams:"Equipes",players:"Jogadores",imports:"Importações",documentation:"Guias",reports:"Súmulas e relatórios",monitor:"Operadores e partidas",users:"Usuários e permissões",settings:"Configurações",cleanup:"Limpeza de testes",account:"Minha conta"};
+ if(section==="account")return '<nav class="location-trail" aria-label="Localização atual"><span>Você está em:</span><strong>Minha conta</strong></nav>';
+ const group=workspaceDefinitions.find(g=>g.sections.includes(section));
+ const profile=section==="teams"&&selectedTeamId?state.teams.find(t=>t.id===selectedTeamId):null;
+ const tabs={data:"Dados e técnico",roster:"Jogadores",games:"Jogos da equipe",stats:"Estatísticas, cartões e faltas",history:"Histórico de alterações"};
+ return `<nav class="location-trail noprint" aria-label="Localização atual"><span>Você está em:</span>${group?`<button type="button" data-workspace="${group.id}">${group.title}</button><span aria-hidden="true">›</span>`:""}${profile||section==="teams"&&teamFormVisible?'<button type="button" data-team-form-back>Equipes</button>':`<strong>${esc(labels[section]||section)}</strong>`}${profile?`<span aria-hidden="true">›</span><span>${esc(profile.name)}</span><span aria-hidden="true">›</span><strong>${esc(tabs[teamProfileTab]||"Dados e técnico")}</strong>`:section==="teams"&&teamFormVisible?`<span aria-hidden="true">›</span><strong>${teamEditorId?"Editar equipe":"Nova equipe"}</strong>`:""}</nav>`;
+}
+document.addEventListener("click",e=>{
+ if(!e.target.closest("[data-new-team-form],[data-team-form-back]"))return;
+ if(!canManageRosters())return;
+ selectedTeamId="";teamProfileBusy=false;teamProfileRequest++;teamEditorId="";
+ teamFormVisible=!!e.target.closest("[data-new-team-form]");section="teams";render();
+ if(teamFormVisible){$("#team")?.scrollIntoView({block:"start"});$("#team")?.elements.name.focus({preventScroll:true});}
+});
 
-  // Esconde imediatamente ao sair do controle.
-  document.addEventListener("mouseout",e=>{
-    if(!e.target.closest("[data-ajuda]")) return;
-    clearTimeout(timer);
-    tooltip.classList.remove("visivel");
-  });
+// 26 — Editor do elenco dentro da equipe. Usa a mesma gravação e auditoria dos cadastros.
+function teamPlayerEditor(t){
+ if(!teamPlayerDraft||t.archived)return "";
+ const p=teamPlayerDraft,v=k=>esc(p[k]||"");
+ return `<section class="team-player-editor" aria-labelledby="teamPlayerTitle"><h4 id="teamPlayerTitle">${p.id?"Editar jogador":"Novo jogador"} • ${esc(t.name)}</h4><form id="team-player"><div class="formgrid"><label>Nome do jogador<input name="name" required maxlength="150" value="${v("name")}" autocomplete="off"></label><label>Número da camisa<input name="number" maxlength="8" value="${v("number")}"></label><label>Posição<input name="position" maxlength="50" value="${v("position")}" placeholder="Ex.: goleiro, zagueiro, atacante"></label><label>Escalação no cadastro<select name="reserve"><option value="false" ${!p.reserve?"selected":""}>Titular</option><option value="true" ${p.reserve?"selected":""}>Reserva / banco</option></select></label></div><p class="muted">Salva no elenco atual de ${esc(t.name)}. Não altera jogadores ou escalações das súmulas já criadas. O administrador principal pode consultar a alteração em Histórico de alterações.</p><div class="toolbar"><button class="primary">${p.id?"Salvar alterações do jogador":"Salvar jogador nesta equipe"}</button><button type="button" data-player-editor-cancel>Cancelar edição</button></div></form></section>`;
+}
+document.addEventListener("click",e=>{if(e.target.closest("[data-player-editor-cancel]")){teamPlayerDraft=null;render();}});
 
-  // Também esconde durante rolagem para não deixar a caixa solta na tela.
-  window.addEventListener("scroll",()=>tooltip.classList.remove("visivel"),true);
+// 27 — Operação guiada. A transição para Ao vivo já inicia o relógio no modelo auditado.
+// Se o jogo já estiver Ao vivo, o atalho envia apenas a ação de iniciar o relógio.
+let guidedStartBusy=false;
+function matchStartGuide(m){
+ const ended=["Encerrada","Homologada","Cancelada"].includes(m.status),running=!!m.clock?.running,live=m.status==="Ao vivo";
+ const label=live?(running?"Jogo ao vivo e relógio em andamento":"Jogo ao vivo • relógio parado"):ended?"Partida finalizada ou bloqueada":["Pausada","Suspensa"].includes(m.status)?"Partida interrompida":"Prepare o início da partida";
+ return `<section class="card match-guide"><span class="tag">MESA DE OPERAÇÃO</span><h3>${label}</h3><p>${ended?"Confira a súmula e o histórico. Reabrir exige administrador e justificativa.":running?"Use os botões de pontuação para registrar os lances. Pausar o jogo também para o cronômetro.":"Confira as equipes e a etapa. Você pode configurar o tempo antes de começar ou usar o relógio atual."}</p>${!ended?`<div class="toolbar">${!running?`<button type="button" class="primary" data-guided-start ${guidedStartBusy?"disabled":""}>${live?"Iniciar cronômetro":["Pausada","Suspensa"].includes(m.status)?"Retomar jogo e cronômetro":"Iniciar jogo e cronômetro"}</button><button type="button" data-open-clock>Configurar tempo</button>`:""}</div><small>Iniciar/retomar preserva o tempo acumulado. Ajustes e mudanças de etapa continuam disponíveis abaixo.</small>`:""}</section>`;
+}
+function updateArenaFavicon(){
+ const logo=state.settings.logo||"";
+ const safe=/^https:\/\//i.test(logo)||/^data:image\/(png|jpeg|webp);base64,/i.test(logo);
+ const url=safe?logo:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#111c24"/><text x="32" y="46" text-anchor="middle" font-size="44" fill="#baff55" font-family="Arial">A</text></svg>');
+ let icon=document.getElementById("arenaFavicon");
+ if(!icon){icon=document.createElement("link");icon.id="arenaFavicon";icon.rel="icon";document.head.appendChild(icon);}
+ if(icon.getAttribute("href")!==url){icon.removeAttribute("type");icon.href=url;}
+}
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-guided-start],[data-open-clock],[data-clock-preset]");if(!b||!admin||!selected)return;
+ const m=state.matches.find(m=>m.id===selected);if(!m)return;
+ try{
+  if(b.hasAttribute("data-open-clock")){const d=$("#clockSettings");if(d){d.open=true;d.scrollIntoView({block:"center"});}return;}
+  if(b.dataset.clockPreset){if(m.clock?.running)throw Error("Pare o relógio antes de configurar.");const f=$("#clock-config");f.elements.durationMin.value=b.dataset.clockPreset;f.elements.clockReason.value="Configuração de duração da etapa: "+b.dataset.clockPreset+" minutos";toast("Duração preenchida. Confira o modo e clique em Salvar ajuste do cronômetro.");return;}
+  if(guidedStartBusy||busy)return;
+  if(!["Agendada","Adiada","Pausada","Suspensa","Ao vivo"].includes(m.status))throw Error("Esta partida não pode iniciar por este atalho.");
+  const matchId=m.id;guidedStartBusy=true;b.disabled=true;
+  if(m.status!=="Ao vivo")await dispatch({type:"status",matchId,status:"Ao vivo",reason:["Pausada","Suspensa"].includes(m.status)?"Retomada pela mesa de operação":"Início pela mesa de operação"});
+  else await dispatch({type:"clock",matchId,command:"iniciar"});
+  toast("Partida ao vivo com cronômetro iniciado.");
+ }catch(error){toast(error.message,true);}finally{if(guidedStartBusy){guidedStartBusy=false;render();}}
+});
+function publicSportSummary(){
+ const matches=state.matches.filter(m=>(!publicFilter||m.sport===publicFilter)&&["Encerrada","Homologada"].includes(m.status));
+ if(!matches.length)return "";
+ const groups=new Map();
+ for(const m of matches){const score=gameResult(m);if(!Array.isArray(score)||!score.every(n=>Number.isInteger(n)&&n>=0))continue;const r=groups.get(m.sport)||{games:0,total:0};r.games++;r.total+=score[0]+score[1];groups.set(m.sport,r);}
+ if(!groups.size)return "";
+ return `<details class="card public-sport-summary"><summary>Estatísticas por modalidade • jogos concluídos</summary><p>Somente partidas encerradas ou homologadas nesta seleção. No vôlei, contamos sets vencidos; as modalidades ficam separadas.</p>${table(["Modalidade","Jogos","Total","Média por jogo"],[...groups].sort(([a],[b])=>a.localeCompare(b,"pt-BR")).map(([sport,r])=>tr([sport,r.games,r.total+" "+(sport.startsWith("Vôlei")?"sets":sport==="Futebol"||sport==="Futsal"||sport==="Handebol"?"gols":"pontos"),(r.total/r.games).toLocaleString("pt-BR",{maximumFractionDigits:1})])))}</details>`;
+}
+// Jogos do público são locais: nenhuma resposta escreve resultados no Firebase.
+let fanActivity="quiz",memoryDeck=[],memoryOpen=[],memoryMatched=[],memoryMoves=0;
+const memorySymbols=["⚽","🏀","🏐","🏆","🥇","🎯"];
+function resetMemory(){memoryDeck=memorySymbols.flatMap((symbol,pair)=>[{symbol,pair},{symbol,pair}]);for(let i=memoryDeck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[memoryDeck[i],memoryDeck[j]]=[memoryDeck[j],memoryDeck[i]];}memoryOpen=[];memoryMatched=[];memoryMoves=0;}
+function fanZone(){
+ if(!memoryDeck.length)resetMemory();
+ const memory=`<section class="card"><span class="tag">JOGO DA MEMÓRIA</span><h2>Encontre os pares esportivos</h2><p>Abra duas cartas. Quando forem diferentes, clique em Virar novamente para continuar.</p><p role="status">${memoryMatched.length/2} de 6 pares • ${memoryMoves} tentativa(s)${memoryMatched.length===12?" • Parabéns, você completou!":""}</p><div class="memory-grid">${memoryDeck.map((card,i)=>{const show=memoryOpen.includes(i)||memoryMatched.includes(i);return `<button type="button" data-memory-card="${i}" aria-label="${show?card.symbol:"Carta "+(i+1)+", fechada"}" ${show||memoryOpen.length===2?"disabled":""}>${show?card.symbol:"?"}</button>`;}).join("")}</div><div class="toolbar">${memoryOpen.length===2?'<button type="button" data-memory-turn>Virar novamente</button>':""}<button type="button" data-memory-reset>Reiniciar memória</button></div></section>`;
+ return `<section class="card fan-welcome"><span class="tag">ARQUIBANCADA INTERATIVA</span><h2>Torça, acompanhe e divirta-se</h2><p>Os jogos continuam nas abas Ao vivo e Agenda. As brincadeiras são individuais e não alteram placares nem criam rankings públicos.</p><nav class="toolbar" aria-label="Brincadeiras"><button type="button" data-fan-activity="quiz" aria-pressed="${fanActivity==="quiz"}">Quiz esportivo</button><button type="button" data-fan-activity="memory" aria-pressed="${fanActivity==="memory"}">Memória esportiva</button></nav></section>${fanActivity==="memory"?memory:publicChallenge()}`;
+}
+document.addEventListener("click",e=>{
+ if(admin)return;const b=e.target.closest("[data-fan-activity],[data-memory-card],[data-memory-turn],[data-memory-reset]");if(!b)return;
+ if(b.dataset.fanActivity)fanActivity=b.dataset.fanActivity;
+ if(b.hasAttribute("data-memory-reset"))resetMemory();
+ if(b.hasAttribute("data-memory-turn"))memoryOpen=[];
+ if(b.hasAttribute("data-memory-card")){const i=Number(b.dataset.memoryCard);if(!Number.isInteger(i)||!memoryDeck[i]||memoryOpen.length===2||memoryOpen.includes(i)||memoryMatched.includes(i))return;memoryOpen.push(i);if(memoryOpen.length===2){memoryMoves++;if(memoryDeck[memoryOpen[0]].pair===memoryDeck[memoryOpen[1]].pair){memoryMatched.push(...memoryOpen);memoryOpen=[];}}}
+ const out=$("#publicHubContent");if(out)out.innerHTML=fanZone();
+});
+
+// 28 — Visualizações iniciais mostram os jogos atuais. Nunca remove registros do estado.
+let overviewGameScope="active";
+function scopeMatches(matches,scope){return matches.filter(m=>scope==="all"||(scope==="finished"?finalStatuses.includes(m.status):!finalStatuses.includes(m.status)));}
+function matchScopeButtons(area,value){return `<div class="list-groups" aria-label="Visualização dos jogos">${[["active","Atuais e próximas"],["finished","Finalizadas"],["all","Todas"]].map(([scope,label])=>`<button type="button" data-match-scope="${scope}" data-scope-area="${area}" class="${value===scope?"primary":""}" aria-pressed="${value===scope}">${label}</button>`).join("")}</div>`;}
+function overviewMatchView(){
+ const rows=scopeMatches(state.matches,overviewGameScope).slice().sort((a,b)=>{if(overviewGameScope!=="finished"){const priority=m=>m.status==="Ao vivo"?0:m.status==="Pausada"?1:2;const d=priority(a)-priority(b);if(d)return d;}return overviewGameScope==="finished"?new Date(b.date)-new Date(a.date):new Date(a.date)-new Date(b.date);});
+ return `<div class="grid">${[["Equipes",state.teams.length],["Jogadores",state.players.length],["Partidas ao vivo",state.matches.filter(m=>m.status==="Ao vivo").length]].map(([label,n])=>`<div class="card"><span class="muted">${label}</span><div class="kpi">${n}</div></div>`).join("")}</div><section class="card"><h2>Quadra e campo</h2>${matchScopeButtons("overview",overviewGameScope)}<p class="muted">Jogos encerrados ficam em Finalizadas. Esta seleção muda apenas a visualização.</p></section><div class="grid">${rows.slice(0,6).map(m=>matchCard(m,true)).join("")||empty(overviewGameScope==="active"?"Nenhuma partida atual. Consulte Finalizadas ou programe um novo jogo.":"Nenhuma partida nesta seleção.")}</div>${rows.length>6?'<p>Exibindo seis partidas. Abra Jogos → Partidas para consultar a lista completa.</p>':""}`;
+}
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-match-scope]");if(!b||!admin||!['active','finished','all'].includes(b.dataset.matchScope))return;
+ if(b.dataset.scopeArea==="overview")overviewGameScope=b.dataset.matchScope;
+ if(b.dataset.scopeArea==="team")teamGameScope=b.dataset.matchScope;
+ render();
+});
+
+// 29 — Navegação expansível e busca local. Resultados respeitam o perfil atual.
+let navigationQuery="";
+const expandedNavigation=new Set();
+const navigationDescriptions={
+ overview:{label:"Visão geral",description:"Resumo dos jogos atuais e consulta das finalizadas.",keywords:"inicio home encerradas finalizadas atuais próximas"},
+ matches:{label:"Partidas",description:"Criar ou operar jogos, placar, cronômetro e ocorrências.",keywords:"gol gols ponto pontos iniciar tempo relogio pausa intervalo etapa cartao cartões faltas substituicoes var estorno anular arbitragem juiz local futebol basquete volei"},
+ championships:{label:"Campeonatos",description:"Cadastrar competições e temporadas.",keywords:"competicao torneio campeonato temporada edicao categoria"},
+ standings:{label:"Classificação",description:"Consultar tabela e classificação do campeonato de futebol.",keywords:"tabela ranking saldo vitorias pontos"},
+ teams:{label:"Equipes",description:"Consultar e editar times, escudos, técnicos e elencos.",keywords:"time equipe bandeira escudo tecnico treinador modalidades arquivar reativar ficha elenco historico"},
+ players:{label:"Jogadores",description:"Cadastrar e editar atletas, camisa, posição e titular/reserva.",keywords:"jogador atleta numero camisa posicao titular reserva banco elenco"},
+ imports:{label:"Importar",description:"Trazer equipes e jogadores de planilha ou texto.",keywords:"importacao arquivo csv excel xlsx colar lista nomes"},
+ documentation:{label:"Guias e documentação",description:"Orientações e links para usar em outro computador.",keywords:"ajuda manual guia documento link computador compartilhar"},
+ reports:{label:"Súmulas e relatórios",description:"Consultar súmulas, emitir certificados e exportar PDF, Excel e auditoria.",keywords:"certificado certificação participação institucional atleta equipe campeonato evento sumula relatorio pdf excel exportar baixar backup copia json auditoria historico"},
+ monitor:{label:"Operadores e partidas",description:"Consultar operadores e distribuição dos jogos.",keywords:"monitoramento operador atribuicao distribuicao responsavel"},
+ users:{label:"Usuários e permissões",description:"Aprovar, bloquear e definir acessos dos operadores.",keywords:"usuario conta acesso permissao convite cadastro link aprovar bloquear autorizar"},
+ settings:{label:"Configurações",description:"Alterar título, cor, capa, logo e identidade visual.",keywords:"logotipo logo favicon icone aba titulo nome cor imagem capa configuracao"},
+ cleanup:{label:"Limpeza de testes",description:"Conferir cópia e excluir partidas de teste com registro.",keywords:"limpeza teste excluir apagar exclusoes historico"},
+ account:{label:"Minha conta",description:"Identificação, segurança, redefinição de senha e vínculo Google.",keywords:"email senha recuperar google vincular login conta sair"}
+};
+function navigationSearchResults(){
+ if(!navigationQuery.trim())return "";
+ const allowed=new Set([...workspaceDefinitions.flatMap(g=>allowedWorkspaceSections(g)),"account"]);
+ const words=searchText(navigationQuery).split(/\s+/).filter(Boolean);
+ const found=Object.entries(navigationDescriptions).filter(([id,item])=>allowed.has(id)&&words.every(word=>searchText([item.label,item.description,item.keywords].join(" ")).includes(word)));
+ return `<p class="muted">${found.length} função(ões) encontrada(s)</p><div class="navigation-search-results">${found.map(([id,item])=>`<button type="button" data-section="${id}" data-navigation-result><strong>${esc(item.label)}</strong><small>${esc(workspaceDefinitions.find(g=>g.sections.includes(id))?.title||"Conta")} › ${esc(item.description)}</small></button>`).join("")||'<p>Nenhuma função encontrada. Tente uma palavra como jogador, relógio ou relatório.</p>'}</div>`;
+}
+document.addEventListener("input",e=>{if(e.target.id!=="functionSearch")return;navigationQuery=e.target.value;const out=$("#navigationSearchResults");if(out)out.innerHTML=navigationSearchResults();});
+// Accordion: explorar uma área fecha somente os outros menus, sem trocar a tela.
+document.addEventListener("toggle",e=>{const group=e.target.dataset?.navigationGroup;if(!group)return;if(e.target.open){expandedNavigation.clear();expandedNavigation.add(group);for(const other of document.querySelectorAll("[data-navigation-group]"))if(other!==e.target)other.open=false;}else expandedNavigation.delete(group);},true);
+document.addEventListener("click",e=>{
+ if(e.target.closest("[data-clear-navigation-search]")){navigationQuery="";const input=$("#functionSearch");if(input){input.value="";input.focus();}const out=$("#navigationSearchResults");if(out)out.innerHTML="";}
+ if(e.target.closest("[data-navigation-result],.navigation-options [data-section]")){navigationQuery="";expandedNavigation.clear();for(const d of document.querySelectorAll("[data-navigation-group]"))d.open=false;const input=$("#functionSearch");if(input)input.value="";const out=$("#navigationSearchResults");if(out)out.innerHTML="";$("#view")?.scrollIntoView({block:"start"});}
+});
+
+// 32 — Indicador de sincronização: sem faixa técnica no uso normal.
+// A confirmação vem das notificações existentes do Firestore, sem consultas extras.
+let connectionState={kind:"waiting",label:"Conectando…",message:"Aguardando confirmação da conexão.",confirmedAt:null};
+function connectionAccountPanel(){return `<section class="connection-account" aria-label="Conexão do sistema"><strong>Conexão do sistema</strong><p data-connection-label></p><small data-connection-detail></small></section>`;}
+function setConnectionStatus(raw){
+ const text=String(raw||"").toLocaleLowerCase("pt-BR");
+ if(C.demo)connectionState={kind:"demo",label:"Demonstração local",message:"Dados fictícios neste navegador; nenhum resultado real é alterado.",confirmedAt:null};
+ else if(text.includes("offline")||navigator.onLine===false)connectionState={...connectionState,kind:"offline",label:"Sem internet",message:"Atualizações interrompidas. Os resultados exibidos podem estar desatualizados."};
+ else if(/cota|indisponível|indisponivel|permissão|permissao/.test(text))connectionState={...connectionState,kind:"warning",label:"Atualização indisponível",message:"Não foi possível confirmar as atualizações. Os resultados exibidos podem estar desatualizados."};
+ else if(/cache|aguardando|conectando/.test(text))connectionState={...connectionState,kind:"waiting",needsConfirmation:connectionState.needsConfirmation||["offline","warning"].includes(connectionState.kind),label:"Conectando…",message:"Aguardando confirmação das atualizações."};
+ else if(text.includes("conectado"))connectionState={kind:"connected",label:"Conexão ativa",message:"Atualizações automáticas habilitadas.",confirmedAt:new Date()};
+ else connectionState={...connectionState,kind:"ready",label:"Pronto para entrar",message:"Entre com sua conta para acessar a central."};
+ renderConnectionStatus();
+}
+function renderConnectionStatus(){
+ const c=connectionState,bar=$("#mode");
+ if(bar){bar.hidden=!["offline","warning","demo"].includes(c.kind)&&!c.needsConfirmation;bar.classList.toggle("connection-alert",["offline","warning"].includes(c.kind)||!!c.needsConfirmation);bar.textContent=c.kind==="demo"?"DEMONSTRAÇÃO ISOLADA • dados fictícios • nenhum resultado real é alterado":c.message;bar.setAttribute("role","status");}
+ const footer=document.querySelector("footer");
+ if(footer&&!footer.querySelector("#connectionIndicator")){const el=document.createElement("details");el.id="connectionIndicator";el.className="connection-indicator noprint";el.innerHTML='<summary><span data-connection-dot class="connection-dot" aria-hidden="true"></span><span>Conexão</span></summary><div><strong data-connection-label></strong><p data-connection-detail></p></div>';footer.appendChild(el);}
+ const detail=c.message+(c.confirmedAt?" Última confirmação: "+c.confirmedAt.toLocaleTimeString("pt-BR")+".":"");
+ for(const el of document.querySelectorAll("[data-connection-dot]")){el.dataset.state=c.kind;el.title=c.label;}
+ for(const el of document.querySelectorAll("[data-connection-label]"))el.textContent=c.label;
+ for(const el of document.querySelectorAll("[data-connection-detail]"))el.textContent=detail;
+ const button=$("#accountMenuToggle");if(button)button.title="Minha conta • "+c.label;
 }
 
-// Reaplica ajuda quando o Firebase recria botões/cartões dinamicamente.
-const observadorAjuda=new MutationObserver(()=>{
-  document.querySelectorAll("button:not([data-ajuda]),select:not([data-ajuda])").forEach(el=>{
-    const texto=(el.innerText||"").trim();
-    if(texto) el.dataset.ajuda=`Opção: ${texto.replace(/[^\p{L}\p{N}\s/.-]/gu,"").trim()}. Clique para executar esta função.`;
-  });
-});
+boot();
 
-window.addEventListener("DOMContentLoaded",()=>{
-  instalarAjudaContextual();
-  observadorAjuda.observe(document.body,{childList:true,subtree:true});
-});
+// 30 — Navegação intencional: posiciona somente após abrir uma função.
+// Não acompanha snapshots, cronômetro, placar, filtros nem gravações de lances.
+function navigationDestination(control){
+ const routes=[
+  ['data-my-account','#view'],['data-account-settings','#view'],
+  ['data-section','#view'],['data-workspace','#view'],
+  ['data-open','#view'],['data-back','#view'],
+  ['data-access-mode','#app'],['data-access-edit','#access-user'],
+  ['data-access-cancel','#view'],
+  ['data-edit-championship','#championship'],['data-new-championship','#championship'],
+  ['data-championship-games','#list-results-matches'],
+  ['data-new-team-form','#team'],['data-team-form-back','#view'],
+  ['data-edit-team','#team'],['data-edit-player','#player'],
+  ['data-team-profile','.team-profile-heading'],['data-profile-back','#view'],
+  ['data-profile-tab','.team-profile-heading + .card'],
+  ['data-profile-edit','#team'],['data-profile-new-player','.team-player-editor'],
+  ['data-profile-player','.team-player-editor'],['data-player-editor-cancel','.team-profile-heading'],
+  ['data-public-area','#publicHubContent'],['data-open-clock','#clockSettings']
+ ];
+ return routes.find(([attribute])=>control.hasAttribute(attribute))?.[1]||null;
+}
+function revealNavigationDestination(selector){
+ const container=document.querySelector(selector);if(!container)return;
+ // Os diálogos abertos gerenciam seu próprio foco.
+ if(document.querySelector('dialog[open]'))return;
+ const heading=container.matches('h1,h2,h3,h4')?container:container.querySelector('h1,h2,h3,h4');
+ const target=heading||container;
+ target.setAttribute('tabindex','-1');
+ target.style.scrollMarginTop='24px';
+ target.focus({preventScroll:true});
+ target.scrollIntoView({block:'start',behavior:'instant'});
+}
+let navigationRevealFrame=0;
+document.addEventListener('click',event=>{
+ const control=event.target.closest('button,a');
+ if(!control||control.disabled||control.getAttribute('aria-disabled')==='true')return;
+ const selector=navigationDestination(control);if(!selector)return;
+ const before=document.querySelector(selector),beforeContent=before?.firstElementChild;
+ if(navigationRevealFrame)cancelAnimationFrame(navigationRevealFrame);
+ navigationRevealFrame=requestAnimationFrame(()=>{
+  navigationRevealFrame=0;
+  if(event.defaultPrevented)return;
+  const after=document.querySelector(selector);
+  // Ação recusada sem mudança de conteúdo não desloca a página.
+  const editsInPlace=control.hasAttribute('data-edit-player');
+  if(!after||after===before&&after.firstElementChild===beforeContent&&!editsInPlace)return;
+  revealNavigationDestination(selector);
+ });
+},true);
 
-console.info("QUIZ BUILD: RESULTADOS-AUTOMATICOS-TOPO-2026-10-05");
-
-console.info("QUIZ BUILD: RESULTADOS-LISTENER-ROBUSTO-2026-10-05");
-
-console.info("QUIZ BUILD: RESULTADOS-CORRECAO-AUTOMATICA-2026-10-05");
-
-console.info("QUIZ BUILD: GITHUB-PRIORIDADE-FINAL-2026-10-05");
-
-console.info("QUIZ BUILD: ATIVACAO-GITHUB-RESILIENTE-2026-10-05");
-
-/*
-  PUBLICAÇÃO GITHUB EM UM CLIQUE
-  ------------------------------
-  Ao Ativar/Reembaralhar/Encerrar, o navegador continua baixando
-  prova-publicada.json com segurança (sem token GitHub no site).
-  No Windows, o professor pode executar PUBLICAR-AVALIACAO.bat:
-  ele localiza o pacote mais recente em Downloads, pede confirmação,
-  substitui somente prova-publicada.json e executa git add/commit/push.
-*/
-console.info("QUIZ BUILD: PUBLICACAO-UM-CLIQUE-2026-10-05");
-
-/*
-  PUBLICAÇÃO PELO VS CODE
-  O projeto inclui .vscode/tasks.json. Isso evita arquivos .BAT/.PS1,
-  que podem ser bloqueados pelo Controle Inteligente de Aplicativos do Windows.
-  A tarefa usa o terminal integrado do VS Code e o Git já autenticado.
-*/
-console.info("QUIZ BUILD: PUBLICACAO-VSCODE-2026-10-05");
-
-console.info("QUIZ BUILD: VSCODE-DOWNLOADS-AUTOMATICO-2026-10-05");
-
-console.info("QUIZ BUILD: VSCODE-CAMINHO-SEGURO-2026-10-05");
-
-/*
-  FLUXO DE PUBLICAÇÃO LIMPO
-  - Apenas prova-publicada.json permanece no projeto.
-  - Downloads intermediários não são apagados automaticamente.
-  - Existe tarefa separada de limpeza, sempre com confirmação do professor.
-*/
-console.info("QUIZ BUILD: PUBLICACAO-LIMPA-2026-10-05");
-
-/*
-  ATALHO DE PUBLICAÇÃO
-  A tarefa "Publicar avaliação no GitHub" é o build padrão do VS Code.
-  Com o projeto aberto, Ctrl+Shift+B executa diretamente a publicação.
-  Nenhuma credencial GitHub é colocada no site.
-*/
-console.info("QUIZ BUILD: PUBLICACAO-ATALHO-VSCODE-2026-10-05");
-
-/*
-  PROTEÇÃO DA PUBLICAÇÃO
-  Ctrl+Shift+B só executa Git quando existe prova-publicada*.json em Downloads.
-  Sem pacote novo, a tarefa encerra antes de copiar, adicionar, commitar ou enviar.
-*/
-console.info("QUIZ BUILD: PUBLICACAO-SEGURA-SEM-PACOTE-2026-10-05");
-
-console.info("QUIZ BUILD: PUBLICACAO-AUTOMATICA-LOCAL-2026-10-05");
-
-console.info("QUIZ BUILD: RELATORIOS-PRESERVADOS-CORRECAO-SEGURA-2026-10-05");
-
-console.info("QUIZ BUILD: BACKUP-LOCAL-SEGURO-2026-10-05");
-
-console.info("QUIZ BUILD: CORRECAO-INTEGRADA-BACKUP-NOTAS-2026-10-05");
+// 31 — Público: preferências e ajuda agrupadas; acessibilidade sempre à mão.
+function setupPublicTools(){
+ if(admin)return;
+ const bar=document.querySelector('.accessibility-bar');if(!bar)return;
+ const tools=document.createElement('details');tools.id='publicTools';tools.className='public-tools';
+ const summary=document.createElement('summary');summary.textContent='Preferências e ajuda';
+ const controls=document.createElement('div');controls.className='public-tools-options';
+ tools.append(summary,controls);
+ for(const item of bar.querySelectorAll(':scope > .preferences-entry,:scope > [data-open-tutorial],:scope > [data-training-entry]'))controls.append(item);
+ const organizationLink=document.querySelector('header a[href*="painel.html"]');
+ const actions=organizationLink?.parentElement;
+ if(actions){actions.classList.add('public-header-actions');actions.insertBefore(tools,organizationLink);}
+ else bar.prepend(tools);
+ document.addEventListener('click',event=>{
+  if(event.target.closest('#publicTools button,#publicTools a')||!event.target.closest('#publicTools'))tools.open=false;
+ });
+ tools.addEventListener('keydown',event=>{if(event.key==='Escape'){tools.open=false;summary.focus();}});
+}
+setupPublicTools();
