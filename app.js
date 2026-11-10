@@ -175,9 +175,7 @@ const canManageRosters = () => role === "admin" || (role === "operator" && opera
 const canCreateMatches = () => role === "admin" || (role === "operator" && operatorPermissions.includes("matchesCreate"));
 const accountRole = () => C.demo ? "Demonstração local" : role === "admin" ? "Administrador principal" : role === "operator" ? "Operador" : "Aguardando autorização";
 const accountName = () => user?.displayName || (state.users || []).find((p) => p.id === user?.uid)?.name || user?.email?.split("@")[0] || "Conta conectada";
-// Títulos por contexto, sem alterar a identidade personalizada salva.
-function systemDisplayName()
-// ANTES (Causava o erro):
+
 function systemDisplayName(){
  const title=String(state.settings.title||'').trim();
  return !title || /^(arena|arena esportiva)\s*[•—–-]?\s*(esporte|esportes) ao vivo$/i.test(title) ? 'Arena Esportiva' : title;
