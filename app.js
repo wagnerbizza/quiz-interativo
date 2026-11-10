@@ -4,7 +4,9 @@
 // Arquivo sem ferramenta de compilação: funciona no GitHub Pages.
 const trainingMode = new URLSearchParams(location.search).get("demonstracao") === "1";
 const D = window.CONFIG ? (trainingMode ? { ...window.CONFIG, demo: true } : window.CONFIG) : { fresh: {} };
-
+const C = D,
+      M = window.SparkModel,
+      admin = document.body.dataset.admin === "true";
 const $ = (s) => document.querySelector(s);
 const esc = (v) =>
   String(v ?? "").replace(
@@ -18,8 +20,6 @@ const esc = (v) =>
         "'": "&#39;",
       }[c]),
   );
-
-// Utiliza o encadeamento opcional para evitar quebras se D ou D.fresh forem undefined
 let state = D?.fresh || {},
     section = "overview",
     selected = "",
