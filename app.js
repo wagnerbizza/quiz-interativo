@@ -20,7 +20,7 @@ const $ = (s) => document.querySelector(s),
           "'": "&#39;",
         })[c],
     );
-let state = D.fresh(),
+let state = D?.fresh || {},
   section = "overview",
   selected = "",
   user = null,
