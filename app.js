@@ -2061,7 +2061,7 @@ if (window.location.pathname.includes("painel.html")) {
   async function carregarBancoDadosCompleto(forcarAtualizacao = false) {
     // 10C.7: evita baixar novamente todas as questões a cada clique na aba.
     if (bancoQuestoesCarregadoNestaSessao && !forcarAtualizacao) {
-      renderizarBancoDadosCompleto();
+      renderizarCatalogoBancoDados();
       return;
     }
     try {
