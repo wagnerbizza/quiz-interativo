@@ -1,0 +1,13 @@
+diff --git a/app.js b/app.js
+index eb9074d..e3aa1d6 100644
+--- a/app.js
++++ b/app.js
+@@ -3838,7 +3838,7 @@ if (window.location.pathname.includes("painel.html")) {
+ 
+     const tabela = corpo.closest("table");
+     const destino = tabela?.parentElement || corpo.parentElement;
+-    destino.parentElement.insertBefore(caixa, destino);
++    destino.after(caixa);
+ 
+     document.getElementById("btn-diagnostico-auth")?.addEventListener("click", diagnosticarAutenticacaoProfessor);
+     document.getElementById("btn-sincronizar-relatorios")?.addEventListener("click", sincronizarRelatoriosSobDemanda);
