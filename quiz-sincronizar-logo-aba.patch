@@ -1,0 +1,29 @@
+diff --git a/quiz-interface.js b/quiz-interface.js
+index db7495a..1f4ac40 100644
+--- a/quiz-interface.js
++++ b/quiz-interface.js
+@@ -41,18 +41,19 @@ function paintIdentity(){
+  const pageTitle = panel ? 'Painel do Professor' : login ? 'Entrar' :
+   location.pathname.endsWith('apresentacao.html') ? '' : 'Área do Aluno';
+  document.title = pageTitle ? identity.titulo + ' • ' + pageTitle : identity.titulo;
++ const defaultIcon = 'data:image/svg+xml,' + encodeURIComponent(
++  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#151c23"/><path d="m16 5 11 11-11 11L5 16z M16 11l5 5-5 5-5-5z" fill="#19c7ed" fill-rule="evenodd"/></svg>'
++ );
+  let favicon = document.getElementById('qi-favicon');
+- if (!favicon && identity.logo) {
++ if (!favicon) {
+   favicon = document.createElement('link');
+   favicon.id = 'qi-favicon';
+   favicon.rel = 'icon';
+   favicon.referrerPolicy = 'no-referrer';
+   document.head.append(favicon);
+  }
+- if (favicon) {
+-  if (identity.logo) favicon.href = identity.logo;
+-  else favicon.remove();
+- }
++ const icon = identity.logo || defaultIcon;
++ if (favicon.getAttribute('href') !== icon) favicon.href = icon;
+  if (location.pathname.endsWith('apresentacao.html')) {
+   let cover = $('#qi-public-cover');
+   if (!cover) {
