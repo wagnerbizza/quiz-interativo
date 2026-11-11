@@ -27,7 +27,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { 
   getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where, orderBy, limit 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut, getIdTokenResult, sendPasswordResetEmail }
+import { getAuth, onAuthStateChanged, signOut, getIdTokenResult, sendPasswordResetEmail, GoogleAuthProvider, linkWithPopup }
   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ==========================================
@@ -3586,6 +3586,20 @@ if (window.location.pathname.includes("painel.html")) {
     sel.innerHTML = html;
   }
 
+  const professorGoogleUid = "S8gicgKDwsep2gZmeg7qBLcSNCf1";
+  window.quizGoogleVinculado = () => {
+    const user = auth.currentUser;
+    return user?.uid === professorGoogleUid
+      ? user.providerData.some(provider => provider.providerId === "google.com")
+      : null;
+  };
+  window.quizVincularGoogle = async () => {
+    const user = auth.currentUser;
+    if (!user || user.uid !== professorGoogleUid) throw new Error("Entre com sua conta institucional.");
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    await linkWithPopup(user, provider);
+  };
   window.quizRecuperarSenhaAtual = async function() {
     const usuario=auth.currentUser;
     if(!usuario?.email)throw new Error("Nenhuma conta autenticada.");
@@ -3856,7 +3870,7 @@ if (window.location.pathname.includes("painel.html")) {
       // true força a renovação do token para evitar claims antigos em cache.
       const token = await getIdTokenResult(usuario, true);
       const provider = token?.signInProvider || token?.claims?.firebase?.sign_in_provider || "desconhecido";
-      const esperado = provider === "password";
+      const esperado = provider === "password" || (provider === "google.com" && usuario.uid === professorGoogleUid);
       const email = usuario.email || "(sem e-mail)";
       const uid = usuario.uid || "(sem UID)";
 
@@ -5922,7 +5936,7 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
       const token = await getIdTokenResult(usuario, true);
       const provedor = token?.signInProvider || token?.claims?.firebase?.sign_in_provider || "";
 
-      if (provedor !== "password") {
+      if (provedor !== "password" && !(provedor === "google.com" && usuario.uid === professorGoogleUid)) {
         console.warn("Painel bloqueado: sessão não é de professor.", provedor);
         await signOut(auth);
         window.location.replace("login.html?motivo=sessao-aluno");

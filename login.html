@@ -20,6 +20,8 @@ button:disabled{opacity:.6}.msg{display:none;margin-top:14px;padding:10px;border
 </head><body>
 <main class="card"><a class="voltar-apresentacao" href="apresentacao.html">← Voltar à apresentação</a><div class="logo">🔐</div><h1>Painel do Professor</h1>
 <div class="sub">Acesso protegido pelo Firebase Authentication</div>
+<button type="button" class="qi-button" id="btn-google">Entrar com Google</button>
+<p>Já tem conta institucional? Entre com a senha e vincule o Google em Minha conta.</p>
 <form id="form-login"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required>
 <label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required>
 <button id="btn-login">🔑 Entrar no Painel</button>
@@ -51,7 +53,7 @@ if (loginLocal && !permitirLoginLocal) {
   window.location.replace("https://wagnerbizza.github.io/quiz-interativo/login.html");
 }
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,getIdTokenResult,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,getIdTokenResult,sendPasswordResetEmail,GoogleAuthProvider,signInWithPopup} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 const firebaseConfig={apiKey:"AIzaSyCp40ALB_7lW7mOfX8NZkS8583YR3Khhbw",authDomain:"quiz-interativo-8a98c.firebaseapp.com",databaseURL:"https://quiz-interativo-8a98c-default-rtdb.firebaseio.com",projectId:"quiz-interativo-8a98c",storageBucket:"quiz-interativo-8a98c.firebasestorage.app",messagingSenderId:"948601017774",appId:"1:948601017774:web:bd0e038611ff6d2148643f"};
 const auth=getAuth(initializeApp(firebaseConfig)),form=document.getElementById("form-login"),btn=document.getElementById("btn-login"),msg=document.getElementById("mensagem");
 document.getElementById("btn-recuperar-senha").onclick=async()=>{
@@ -75,19 +77,32 @@ onAuthStateChanged(auth,async u=>{
   try{
     const token=await getIdTokenResult(u);
     const provedor=token?.signInProvider||token?.claims?.firebase?.sign_in_provider||"";
-    if(provedor==="password"){
+    if(provedor==="password" || (provedor==="google.com" && u.uid==="S8gicgKDwsep2gZmeg7qBLcSNCf1")){
       localStorage.setItem(CHAVE_PROFESSOR_OFFLINE,JSON.stringify({email:u.email,uid:u.uid,validadoEm:Date.now()}));
       location.replace("painel.html"); return;
     }
     // Remove somente a sessão antiga que estava ocupando o login do professor.
     await signOut(auth);
     msg.className="msg erro";
-    msg.textContent="ℹ️ A sessão de aluno foi encerrada. Entre com o e-mail e a senha do professor.";
+    msg.textContent=provedor==="google.com" ? "Esta conta Google não está vinculada ao cadastro do professor." : "A sessão de aluno foi encerrada. Entre com o e-mail e a senha do professor.";
   }catch(err){
     console.error(err);
     await signOut(auth).catch(()=>{});
   }
 });
+document.getElementById("btn-google").onclick=async event=>{
+  const button=event.currentTarget;
+  button.disabled=true;
+  const provider=new GoogleAuthProvider();
+  provider.setCustomParameters({prompt:"select_account"});
+  try { await signInWithPopup(auth,provider); }
+  catch(error) {
+    msg.className="msg erro";
+    msg.textContent=error.code==="auth/account-exists-with-different-credential"
+      ? "Entre com a senha institucional e vincule o Google em Minha conta."
+      : "Não foi possível entrar com Google. Confira o provedor e o domínio autorizado no Firebase.";
+  } finally { button.disabled=false; }
+};
 form.addEventListener("submit",async e=>{e.preventDefault();btn.disabled=true;btn.textContent="⏳ Verificando...";msg.className="msg";
 try{await signInWithEmailAndPassword(auth,email.value.trim(),senha.value);msg.className="msg ok";msg.textContent="✅ Login realizado."}
 catch(err){
