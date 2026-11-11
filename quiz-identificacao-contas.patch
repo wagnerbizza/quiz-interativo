@@ -1,0 +1,51 @@
+--- a/app.js
++++ b/app.js
+@@ -3587,15 +3587,17 @@
+   }
+ 
+   const professorGoogleUids = new Set(["S8gicgKDwsep2gZmeg7qBLcSNCf1", "gFjkApOW39Y50lKEUBzl0CYr6t22"]);
++  let sessaoProfessorValidada;
+   window.quizPerfilConta = () => {
+     const user = auth.currentUser;
+     if (!user || document.body.classList.contains("modo-offline-professor")) return null;
+     const google = user.providerData.find(provider => provider.providerId === "google.com");
+     const password = user.providerData.find(provider => provider.providerId === "password");
++    const provedor = sessaoProfessorValidada?.uid === user.uid ? sessaoProfessorValidada.provedor : "";
+     return {
+       tipoConta: user.uid === "S8gicgKDwsep2gZmeg7qBLcSNCf1" ? "Conta principal" : user.uid === "gFjkApOW39Y50lKEUBzl0CYr6t22" ? "Conta secundária" : "",
+-      emailSessao: user.email || "",
+-      nome: user.displayName || user.email?.split("@")[0] || "Professor",
++      emailSessao: provedor === "google.com" ? google?.email || "" : provedor === "password" ? password?.email || user.email || "" : "",
++      nome: user.uid === "S8gicgKDwsep2gZmeg7qBLcSNCf1" ? "Wagner Bizza" : user.uid === "gFjkApOW39Y50lKEUBzl0CYr6t22" ? "Wagner Santiago" : user.displayName || user.email?.split("@")[0] || "Professor",
+       email: password?.email || user.email || "",
+       confirmado: user.emailVerified,
+       senha: Boolean(password),
+@@ -5955,6 +5957,7 @@
+       }
+ 
+       // 10C.9: registra autorização local apenas após validação online real.
++      sessaoProfessorValidada = { uid: usuario.uid, provedor };
+       registrarProfessorOffline(usuario);
+     } catch (erro) {
+       console.error("Não foi possível validar a sessão do professor:", erro);
+--- a/quiz-interface.js
++++ b/quiz-interface.js
+@@ -115,7 +115,7 @@
+  const update = () => {
+   const address = email?.textContent.trim() || '';
+   const profile = window.quizPerfilConta?.();
+-  const name = profile?.tipoConta ? 'wagnerbizza' : address.includes('@') ? address.split('@')[0] : 'Professor';
++  const name = profile?.tipoConta ? profile.nome : address.includes('@') ? address.split('@')[0] : 'Professor';
+   const offline = !navigator.onLine || document.body.classList.contains('modo-offline-professor');
+   const role = offline ? 'Consulta local' : address.includes('@') ? 'Professor autenticado' : 'Professor';
+   $('#qi-account-name').textContent = name;
+@@ -164,7 +164,8 @@
+  if (profile) {
+   const methods = [profile.senha ? 'E-mail e senha' : '', profile.google ? 'Google' : ''].filter(Boolean).join(', ');
+   const fields = [
+-   ['Nome', profile.tipoConta ? 'wagnerbizza' : profile.nome], ['Conectado como', profile.emailSessao || profile.email],
++   ['Nome', profile.nome], ['Conectado como', profile.emailSessao || 'Não informado'],
++   ...(profile.senha ? [['E-mail de recuperação de senha', profile.email]] : []),
+    ...(profile.tipoConta ? [['Tipo de conta', profile.tipoConta]] : []),
+    ['Perfil de acesso', 'Professor'], ['Confirmação do e-mail', profile.confirmado ? 'Confirmado' : 'Pendente'],
+    ['Formas de entrada', methods || '—'],
