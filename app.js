@@ -5983,6 +5983,11 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
     await inicializarPainel();
   });
 
+  vigiarInatividade(() => auth.currentUser?.uid, async () => {
+    await signOut(auth);
+    window.location.replace("apresentacao.html");
+  });
+
   window.sairPainelProfessor = async function() {
     if (!window.confirm("Deseja sair da sua conta no Quiz?")) return;
     await signOut(auth);
@@ -6187,3 +6192,69 @@ console.info("QUIZ BUILD: RELATORIOS-PRESERVADOS-CORRECAO-SEGURA-2026-10-05");
 console.info("QUIZ BUILD: BACKUP-LOCAL-SEGURO-2026-10-05");
 
 console.info("QUIZ BUILD: CORRECAO-INTEGRADA-BACKUP-NOTAS-2026-10-05");
+
+// Expira apenas a sessão autenticada deste painel.
+function vigiarInatividade(obterUid, sair) {
+  const limite = 30 * 60 * 1000;
+  const antecedencia = 60 * 1000;
+  let uid;
+  let ultimaInteracao = Date.now();
+  let aviso;
+  let encerrando = false;
+
+  function fecharAviso() {
+    if (!aviso) return;
+    aviso.remove();
+    aviso = null;
+  }
+
+  function registrarInteracao() {
+    if (!aviso && !encerrando) ultimaInteracao = Date.now();
+  }
+
+  function abrirAviso() {
+    aviso = document.createElement("dialog");
+    aviso.setAttribute("aria-labelledby", "titulo-inatividade");
+    aviso.innerHTML = '<h2 id="titulo-inatividade">Sessão prestes a encerrar</h2><p>Sua sessão será encerrada por inatividade. Se ainda estiver usando o painel, continue conectado.</p><button type="button" autofocus>Continuar conectado</button>';
+    aviso.addEventListener("cancel", (event) => event.preventDefault());
+    aviso.querySelector("button").addEventListener("click", () => {
+      ultimaInteracao = Date.now();
+      fecharAviso();
+    });
+    document.body.append(aviso);
+    aviso.showModal();
+  }
+
+  async function verificar() {
+    if (encerrando) return;
+    const atual = obterUid();
+    if (!atual || atual !== uid) {
+      uid = atual;
+      ultimaInteracao = Date.now();
+      fecharAviso();
+      return;
+    }
+
+    const inativo = Date.now() - ultimaInteracao;
+    if (inativo >= limite) {
+      encerrando = true;
+      fecharAviso();
+      try {
+        await sair();
+      } catch (erro) {
+        console.error("Não foi possível encerrar a sessão por inatividade.", erro);
+        ultimaInteracao = Date.now() - limite + antecedencia;
+        encerrando = false;
+      }
+    } else if (inativo >= limite - antecedencia && !aviso) {
+      abrirAviso();
+    }
+  }
+
+  for (const evento of ["pointerdown", "keydown", "wheel", "touchstart"]) {
+    window.addEventListener(evento, registrarInteracao, { passive: true });
+  }
+  window.addEventListener("focus", verificar);
+  document.addEventListener("visibilitychange", verificar);
+  window.setInterval(verificar, 1000);
+}
