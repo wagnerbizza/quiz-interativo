@@ -2074,13 +2074,6 @@ if (window.location.pathname.includes("painel.html")) {
   // ==========================================
   function inicializarGerenciadorBancoDados() {
     carregarBancoDadosCompleto();
-    
-    const btnAbaBanco = document.querySelector('.btn-aba[data-aba="aba-banco-dados"]');
-    if (btnAbaBanco) {
-      btnAbaBanco.addEventListener("click", () => {
-        carregarBancoDadosCompleto();
-      });
-    }
   }
 
   async function carregarBancoDadosCompleto(forcarAtualizacao = false) {
@@ -5527,6 +5520,10 @@ window.alterarModoVisualizacaoDB = function(modo) {
 // ==========================================
 window.ordemAtualBancoCatalogo = "nenhum";
 
+const QUESTOES_POR_PAGINA = 36;
+let paginaCatalogo = 0;
+let criterioCatalogo = "";
+
 window.renderizarCatalogoBancoDados = function() {
   const gridCatalogo = document.getElementById("catalogo-questoes-grid") || document.getElementById("lista-banco-dados-container");
   const inputBusca = document.getElementById("input-busca-banco-dados") || document.querySelector('input[placeholder*="Pesquisar"]');
@@ -5560,7 +5557,7 @@ window.renderizarCatalogoBancoDados = function() {
         <input type="text" id="input-busca-banco-dados-dinamico" placeholder="🔍 Buscar no banco por termo ou enunciado..." style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;" oninput="renderizarCatalogoBancoDados()">
       </div>
       <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-        <button type="button" class="btn-acao-mini" style="background: #0284c7; color: white; padding: 7px 12px; border-radius:6px; font-weight:bold; cursor:pointer; border:none;" onclick="selecionarTodasQuestoesBanco(true)">☑️ Marcar Todas</button>
+        <button type="button" class="btn-acao-mini" style="background: #0284c7; color: white; padding: 7px 12px; border-radius:6px; font-weight:bold; cursor:pointer; border:none;" onclick="selecionarTodasQuestoesBanco(true)">☑️ Marcar página</button>
         <button type="button" class="btn-acao-mini" style="background: #475569; color: white; padding: 7px 12px; border-radius:6px; font-weight:bold; cursor:pointer; border:none;" onclick="selecionarTodasQuestoesBanco(false)">🔲 Desmarcar</button>
         <button type="button" class="btn-acao-mini" style="background: #ef4444; color: white; padding: 7px 12px; border-radius:6px; font-weight:bold; cursor:pointer; border:none;" onclick="excluirQuestoesSelecionadasEmMassa()">🗑️ Excluir Selecionadas</button>
       </div>
@@ -5598,13 +5595,47 @@ window.renderizarCatalogoBancoDados = function() {
     }
   }
 
-  if (filtradas.length === 0) {
-    gridCatalogo.innerHTML = `<div style="text-align:center; color: #94a3b8; padding: 30px; grid-column: 1/-1;">Nenhuma questão encontrada com os filtros atuais.</div>`;
+  const criterio = JSON.stringify([termoBusca, materiaSel, window.ordemAtualBancoCatalogo]);
+  if (criterio !== criterioCatalogo) {
+    paginaCatalogo = 0;
+    criterioCatalogo = criterio;
+  }
+  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / QUESTOES_POR_PAGINA));
+  paginaCatalogo = Math.min(paginaCatalogo, totalPaginas - 1);
+  const inicio = paginaCatalogo * QUESTOES_POR_PAGINA;
+  const pagina = filtradas.slice(inicio, inicio + QUESTOES_POR_PAGINA);
+
+  let controles = document.getElementById("paginacao-catalogo");
+  if (!controles) {
+    controles = document.createElement("nav");
+    controles.id = "paginacao-catalogo";
+    controles.setAttribute("aria-label", "Páginas do catálogo");
+    controles.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0";
+    controles.innerHTML = '<button type="button" class="qi-button">Anterior</button><span aria-live="polite"></span><button type="button" class="qi-button">Próxima</button>';
+    gridCatalogo.before(controles);
+  }
+  const [anterior, resumo, proxima] = controles.children;
+  anterior.disabled = paginaCatalogo === 0;
+  proxima.disabled = paginaCatalogo + 1 >= totalPaginas;
+  anterior.onclick = () => {
+    paginaCatalogo--;
+    window.renderizarCatalogoBancoDados();
+  };
+  proxima.onclick = () => {
+    paginaCatalogo++;
+    window.renderizarCatalogoBancoDados();
+  };
+  resumo.textContent = pagina.length
+    ? `${inicio + 1}–${inicio + pagina.length} de ${filtradas.length} questões`
+    : "Nenhuma questão encontrada";
+
+  if (!pagina.length) {
+    gridCatalogo.textContent = "Nenhuma questão encontrada com os filtros atuais.";
     return;
   }
 
   let html = "";
-  filtradas.forEach(q => {
+  pagina.forEach(q => {
     let materia = q.materia || q.categoria || "Geral";
     // 🔵 FASE 7 — separação visual entre ENUNCIADO e ALTERNATIVAS.
     let pergunta = limparPrefixoPergunta(q.pergunta || "Sem enunciado");
@@ -5652,50 +5683,6 @@ window.renderizarCatalogoBancoDados = function() {
     `;
   });
   gridCatalogo.innerHTML = html;
-
-  // ========================================================
-  // 🔧 FASE 4F — GRADE ESTÁVEL, SEM CORTAR CARDS
-  // Não usamos mais CSS "columns", pois ele pode dividir uma
-  // questão entre o fim de uma coluna e o início da próxima.
-  // Em Grade, criamos 3 colunas REAIS e movemos cada card
-  // inteiro para a coluna mais baixa.
-  // ========================================================
-  if (!gridCatalogo.classList.contains("modo-lista") &&
-      !gridCatalogo.classList.contains("modo-blocos")) {
-
-    const cards = Array.from(gridCatalogo.querySelectorAll(":scope > .catalogo-card"));
-
-    if (cards.length) {
-      const mural = document.createElement("div");
-      mural.className = "mural-questoes-estavel";
-
-      const colunas = [];
-      for (let i = 0; i < 3; i++) {
-        const coluna = document.createElement("div");
-        coluna.className = "mural-coluna";
-        mural.appendChild(coluna);
-        colunas.push(coluna);
-      }
-
-      gridCatalogo.innerHTML = "";
-      gridCatalogo.appendChild(mural);
-
-      // Distribuição progressiva: o card permanece inteiro.
-      cards.forEach((card, indice) => {
-        // No primeiro carregamento, distribui em sequência.
-        // Depois que há altura calculada, usa a menor coluna.
-        let destino;
-        if (indice < 3) {
-          destino = colunas[indice];
-        } else {
-          destino = colunas.reduce((menor, atual) =>
-            atual.scrollHeight < menor.scrollHeight ? atual : menor
-          , colunas[0]);
-        }
-        destino.appendChild(card);
-      });
-    }
-  }
 };
 
 // Os botões já chamam aplicarClassificacaoDB e carregarBancoDadosCompleto.
