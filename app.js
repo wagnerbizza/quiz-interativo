@@ -5985,6 +5985,7 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
   });
 
   window.sairPainelProfessor = async function() {
+    if (!window.confirm("Deseja sair da sua conta no Quiz?")) return;
     await signOut(auth);
     window.location.replace("apresentacao.html");
   };
