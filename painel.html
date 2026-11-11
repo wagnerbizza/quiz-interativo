@@ -1789,6 +1789,16 @@ body.light-mode #aba-banco-dados > p {
 <link rel="stylesheet" href="quiz-interface.css">
 <script src="quiz-interface.js" defer></script>
 <script src="quiz-biblioteca.js" defer></script>
+<style>
+.qi-report-controls { display:grid; gap:14px; margin-bottom:16px; }
+.qi-report-filters { display:grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr) auto; gap:12px; align-items:end; }
+.qi-report-filters label { display:grid; gap:6px; }
+#aba-relatorios .qi-report-filters :is(input,select) { width:100% !important; margin:0 !important; }
+.qi-report-management { border-top:1px solid var(--qi-line); padding-top:12px; }
+.qi-report-management summary { cursor:pointer; }
+.qi-report-management .qi-actions { margin-top:10px; }
+@media(max-width:740px){.qi-report-filters{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 
@@ -2146,36 +2156,36 @@ body.light-mode #aba-banco-dados > p {
     <div id="aba-relatorios" class="aba-conteudo hidden">
       <h2>📊 Histórico de Resultados e Relatórios</h2>
       
-      <div class="painel-controle-topo no-print">
-        <div class="grupo-controles-esquerda" id="bloco-esquerda-relatorios">
-          <button type="button" class="btn-acao" onclick="selecionarTodosResultados(true)" title="Marcar todos visíveis">☑️ Marcar</button>
-          <button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosResultados(false)" title="Desmarcar todos">🔲 Limpar</button>
-          <button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()" title="Excluir selecionados">🗑️ Excluir</button>
-          <button type="button" id="btn-arquivar-resultados" class="btn-acao" style="background-color:#0d9488;" onclick="ocultarAlunosSelecionados()" title="Retirar os resultados selecionados da lista principal sem excluí-los">📁 Arquivar selecionados</button>
-          <button type="button" class="btn-acao" style="background-color: #475569;" onclick="abrirModalOcultos()" title="Visualizar e resgatar alunos ocultados">📂 Ver Ocultos</button>
-          <button type="button" class="btn-acao" style="background-color: #b91c1c;" onclick="abrirModalLixeira()" title="Abrir lixeira de excluídos">🗑️ Lixeira</button>
-        </div>
-
-        <div class="grupo-controles-direita" id="bloco-direita-relatorios">
-          <input type="text" id="input-busca-resultados" placeholder="🔍 Pesquisar..." style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:12px; width: 120px;" oninput="renderizarTabelaResultadosFiltrada()">
-          
-          <select id="select-filtro-escola-relatorio" style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:110px; font-size: 12px;">
+      <section class="qi-report-controls qi-card no-print" aria-label="Filtros e ações do relatório">
+        <div class="qi-report-filters">
+          <label>Pesquisar resultados<input type="text" id="input-busca-resultados" placeholder="🔍 Pesquisar..." style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:12px; width: 120px;" oninput="renderizarTabelaResultadosFiltrada()"></label>
+          <label>Escola<select id="select-filtro-escola-relatorio" style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:110px; font-size: 12px;">
             <option value="TODAS">🏫 Escolas</option>
-          </select>
-
+          </select></label>
           <div class="dropdown-win">
             <button type="button" id="btn-dropdown-resultados" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-resultados', 'btn-dropdown-resultados')">
               🔄 Classificar <span style="font-size: 10px;">▼</span>
             </button>
             <div id="dropdown-menu-resultados" class="dropdown-menu-win"></div>
           </div>
-
-
-          <button type="button" class="btn-acao" style="background-color: #22c55e;" onclick="exportarResultadosCSV()">📥 CSV</button>
-          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="exportarResultadosPDF()">🖨️ PDF</button>
-          <button type="button" class="btn-acao" style="background-color: #15803d;" onclick="exportarResultadosExcel()">📊 Excel</button>
         </div>
-      </div>
+        <div class="qi-actions">
+          <button type="button" class="qi-button" onclick="exportarResultadosExcel()">📊 Excel</button>
+<button type="button" class="qi-button" onclick="exportarResultadosPDF()">🖨️ PDF</button>
+<button type="button" class="qi-button" onclick="exportarResultadosCSV()">📥 CSV</button>
+        </div>
+        <details class="qi-report-management">
+          <summary>Gerenciar registros</summary>
+          <div class="qi-actions">
+            <button type="button" class="qi-button" onclick="selecionarTodosResultados(true)" title="Marcar todos visíveis">☑️ Marcar</button>
+<button type="button" class="btn-acao btn-secondary" onclick="selecionarTodosResultados(false)" title="Desmarcar todos">🔲 Limpar</button>
+<button type="button" id="btn-arquivar-resultados" class="qi-button" onclick="ocultarAlunosSelecionados()" title="Retirar os resultados selecionados da lista principal sem excluí-los">📁 Arquivar selecionados</button>
+<button type="button" class="qi-button" onclick="abrirModalOcultos()" title="Visualizar e resgatar alunos ocultados">📂 Ver Ocultos</button>
+<button type="button" class="qi-button" onclick="abrirModalLixeira()" title="Abrir lixeira de excluídos">🗑️ Lixeira</button>
+<button type="button" class="btn-acao btn-danger" onclick="excluirResultadosSelecionados()" title="Excluir selecionados">🗑️ Excluir</button>
+          </div>
+        </details>
+      </section>
 
       <div class="tabela-responsiva">
       <table class="tabela-resultados">

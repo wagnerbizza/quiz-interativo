@@ -2291,7 +2291,7 @@ if (window.location.pathname.includes("painel.html")) {
 
   function organizarLayoutAbaRelatorios() {
     const abaRelatorios = document.getElementById("aba-relatorios");
-    if (!abaRelatorios) return;
+    if (!abaRelatorios || abaRelatorios.querySelector(".qi-report-controls")) return;
 
     let blocoTopo = abaRelatorios.querySelector(".acoes-topo-bloco") || abaRelatorios.querySelector(".barra-controles-relatorios") || abaRelatorios.querySelector("div");
     if (blocoTopo) {
