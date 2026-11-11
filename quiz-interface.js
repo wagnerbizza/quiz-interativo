@@ -38,6 +38,9 @@ function applyPreferences(){
 document.documentElement.dataset.qiPalette=quizPalette;let theme='dark',scale=1;try{theme=localStorage.getItem('quiz_ui_tema')||'dark';scale=Number(localStorage.getItem('quiz_ui_escala'))||1}catch{}document.documentElement.dataset.qiTheme=theme;document.documentElement.style.setProperty('--qi-scale',String(scale));try{document.documentElement.dataset.qiContrast=String(localStorage.getItem('quiz_ui_contraste')==='1');document.documentElement.dataset.qiMotion=String(localStorage.getItem('quiz_ui_movimentos')==='1')}catch{}document.body.classList.toggle('light-mode',theme==='light')}
 function paintIdentity(){
  applyPreferences();
+ const pageTitle = panel ? 'Painel do Professor' : login ? 'Entrar' :
+  location.pathname.endsWith('apresentacao.html') ? '' : 'Área do Aluno';
+ document.title = pageTitle ? identity.titulo + ' • ' + pageTitle : identity.titulo;
  if (location.pathname.endsWith('apresentacao.html')) {
   let cover = $('#qi-public-cover');
   if (!cover) {

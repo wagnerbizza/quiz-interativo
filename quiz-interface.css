@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap");
 /* Identidade comum às telas do Quiz. Não altera permissões nem temporizadores. */
 :root{--qi-bg:#0c1014;--qi-panel:#151c23;--qi-input:#10171d;--qi-line:#2b3640;--qi-text:#eef3f6;--qi-muted:#a6b4c1;--qi-accent:#c8fa64;--qi-ink:#10150a;--qi-blue:#7dd6ff;--qi-button:#24313b;--qi-scale:1}
 html[data-qi-theme="light"]{--qi-bg:#f3f6f3;--qi-panel:#fff;--qi-input:#f6f8f6;--qi-line:#cbd6ce;--qi-text:#16281f;--qi-muted:#506057;--qi-accent:#386312;--qi-ink:#fff;--qi-blue:#075c86;--qi-button:#e7ede8}
@@ -144,3 +145,18 @@ html[data-qi-theme="light"][data-qi-palette="amber"] { --qi-accent: #854d0e; --q
   object-fit: cover;
 }
 #qi-public-cover[hidden] { display: none; }
+
+/* Tipografia do cabeçalho e das seções do painel no padrão do Arena. */
+.qi-modern .qi-brand b {
+  font: 800 calc(18px * var(--qi-scale)) / 1.2 "Barlow Condensed", Arial, sans-serif;
+  color: var(--qi-accent);
+  letter-spacing: 1px;
+  overflow-wrap: anywhere;
+}
+.qi-modern .qi-brand small {
+  font: 400 calc(10px * var(--qi-scale)) / 1.4 system-ui, sans-serif;
+  letter-spacing: .12em;
+}
+.qi-modern :is(.qi-heading h1, .qi-settings-panel h2) {
+  font-family: "Barlow Condensed", Arial, sans-serif;
+}
