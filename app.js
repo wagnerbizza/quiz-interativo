@@ -3838,7 +3838,9 @@ if (window.location.pathname.includes("painel.html")) {
 
     const tabela = corpo.closest("table");
     const destino = tabela?.parentElement || corpo.parentElement;
-    destino.after(caixa);
+    const suporte = document.getElementById("qi-backup-slot");
+    if (suporte) suporte.append(caixa);
+    else destino.after(caixa);
 
     document.getElementById("btn-diagnostico-auth")?.addEventListener("click", diagnosticarAutenticacaoProfessor);
     document.getElementById("btn-sincronizar-relatorios")?.addEventListener("click", sincronizarRelatoriosSobDemanda);
