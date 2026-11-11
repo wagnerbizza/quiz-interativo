@@ -1,0 +1,52 @@
+diff --git a/escola.html b/escola.html
+index 8577b42..83b98f8 100644
+--- a/escola.html
++++ b/escola.html
+@@ -104,8 +104,22 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
+ 
+ </style>
+ <style>
+-.escola-navegacao { display:flex; justify-content:flex-start; margin-bottom: .75rem; }
+-.escola-navegacao a { margin:0; background:var(--card-bg); border:1px solid var(--border); }
++.escola-navegacao { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.75rem; }
++ .escola-navegacao .btn-acao {
++  display:inline-flex; align-items:center; justify-content:center;
++  flex:0 1 auto; width:auto; min-height:44px; box-sizing:border-box;
++  margin:0; padding:.45rem .85rem; background:var(--card-bg);
++  border:1px solid var(--border); overflow-wrap:anywhere;
++ }
++ .escola-navegacao .btn-acao:first-child { border-color:var(--qi-accent, #19c7ed); }
++ .escola-navegacao .btn-acao:hover { border-color:var(--qi-accent, #19c7ed); }
++ .escola-navegacao .btn-acao:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
++ .barra-botoes-fixa #btn-salvar-isolada { flex:0 1 auto; width:auto; min-height:44px; }
++ #container-boxes-escola, #nova-secao-escola { scroll-margin-block:1rem 6rem; }
++ @media(max-width:480px) {
++  .escola-navegacao .btn-acao { flex:1 1 8rem; }
++  .barra-botoes-fixa #btn-salvar-isolada { flex:1 1 auto; }
++ }
+ </style>
+ </head>
+ <body>
+@@ -118,7 +132,9 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
+     </header>
+ 
+     <nav class="escola-navegacao" aria-label="Navegação da unidade">
+-      <a href="painel.html#escolas" class="btn-acao">⌂ Home do professor</a>
++      <a href="painel.html#escolas" class="btn-acao" aria-label="Home do professor">Home</a>
++      <a href="#container-boxes-escola" class="btn-acao">Editar configurações</a>
++      <a href="#nova-secao-escola" class="btn-acao">Nova seção</a>
+     </nav>
+     <div class="banner-topo">
+       <h2 id="banner-escola-ativa-isolada">🏫 Configurando Unidade: Carregando...</h2>
+@@ -128,9 +144,9 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
+     </div>
+ 
+ 
+-    <div id="container-boxes-escola"></div>
++    <div id="container-boxes-escola" tabindex="-1"></div>
+ 
+-    <div style="background: #0f172a; padding: 18px; border-radius: 8px; border: 1px dashed var(--border); margin-top: 25px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
++    <div id="nova-secao-escola" tabindex="-1" style="background: #0f172a; padding: 18px; border-radius: 8px; border: 1px dashed var(--border); margin-top: 25px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+       <input type="text" id="input-nova-box-escola" placeholder="Nome da Nova Box Específica (Ex: Laboratórios)..." style="flex: 1; margin: 0; padding: 10px; background: #1e293b; border: 1px solid var(--border); color: white; border-radius: 6px;">
+       <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px;" onclick="criarNovaBoxEscola()">Adicionar seção</button>
+     </div>
