@@ -214,3 +214,45 @@ body.qi-login main.quiz-login-card #btn-google {
 .qi-login #qi-dialog .qi-form-grid > label { margin: 0; }
 .qi-login .qi-header #qi-preferences { width: auto; margin: 0; }
 
+/* Minha conta: cartões no padrão do Arena. */
+#qi-conta .qi-account-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin: 16px 0;
+}
+#qi-conta .qi-account-fields > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--qi-line);
+  border-radius: 10px;
+}
+#qi-conta .qi-account-fields dt {
+  font-size: 12px;
+  color: var(--qi-muted);
+  margin-bottom: 8px;
+}
+#qi-conta .qi-account-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+#qi-conta .qi-account-fields > div { padding: 12px; }
+#qi-conta .qi-account-google { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--qi-line); }
+#qi-account-menu { scrollbar-color: var(--qi-muted) var(--qi-panel); }
+#qi-account-menu .qi-account-profile {
+  gap: 5px;
+  padding: 4px 4px 14px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--qi-line);
+  overflow-wrap: anywhere;
+}
+#qi-account-menu .qi-account-native { display: none; }
+#qi-account-menu #qi-menu-session-email { font-size: .82rem; }
+#qi-account-menu .qi-account-feature {
+  gap: 4px !important;
+  padding: 12px !important;
+  line-height: 1.4;
+}
+#qi-account-menu .qi-account-feature strong { font-size: .95rem !important; }
+#qi-account-menu .qi-account-feature small { font-size: .82rem !important; }
