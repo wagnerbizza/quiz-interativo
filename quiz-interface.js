@@ -2,19 +2,57 @@
 (function(){'use strict';
 const $=s=>document.querySelector(s),safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const base={versao:1,titulo:'Quiz Interativo',subtitulo:'CENTRAL DE AVALIAÇÕES',marca:'WagnerBIZZA',logo:'',atualizadoEm:0};
+const base={versao:1,titulo:'Quiz Interativo',subtitulo:'CENTRAL DE AVALIAÇÕES',marca:'WagnerBIZZA',logo:'',capa:'',cor:'',atualizadoEm:0};
 let identity=base;try{identity={...base,...JSON.parse(localStorage.getItem('quiz_identidade_v1')||'{}')}}catch{};
-function validIdentity(x){return {...base,titulo:String(x.titulo||base.titulo).slice(0,70),subtitulo:String(x.subtitulo||base.subtitulo).slice(0,90),marca:String(x.marca||base.marca).slice(0,60),logo:/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(x.logo||'')?String(x.logo):'',atualizadoEm:Number(x.atualizadoEm)||0}}
+function httpsImage(value) {
+ try {
+  const url = new URL(value);
+  return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
+ } catch { return ''; }
+}
+const hexColor = value => /^#[0-9a-f]{6}$/i.test(value || '') ? value : '';
+function validIdentity(x){return {...base,titulo:String(x.titulo||base.titulo).slice(0,70),subtitulo:String(x.subtitulo||base.subtitulo).slice(0,90),marca:String(x.marca||base.marca).slice(0,60),logo:/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(x.logo||'')?String(x.logo):httpsImage(x.logo),capa:httpsImage(x.capa),cor:hexColor(x.cor),atualizadoEm:Number(x.atualizadoEm)||0}}
 identity=validIdentity(identity);const panel=location.pathname.endsWith('painel.html'),login=location.pathname.endsWith('login.html');let page='';
-const quizPalettes = { original: 'Verde original', blue: 'Azul', violet: 'Roxo', amber: 'Âmbar' };
+const quizPalettes = { original: 'Cor do sistema', blue: 'Azul', violet: 'Roxo', amber: 'Âmbar' };
 let quizPalette = 'original';
 try {
  const saved = localStorage.getItem('quiz_ui_paleta');
  if (Object.hasOwn(quizPalettes, saved)) quizPalette = saved;
 } catch {}
 
-function applyPreferences(){document.documentElement.dataset.qiPalette=quizPalette;let theme='dark',scale=1;try{theme=localStorage.getItem('quiz_ui_tema')||'dark';scale=Number(localStorage.getItem('quiz_ui_escala'))||1}catch{}document.documentElement.dataset.qiTheme=theme;document.documentElement.style.setProperty('--qi-scale',String(scale));try{document.documentElement.dataset.qiContrast=String(localStorage.getItem('quiz_ui_contraste')==='1');document.documentElement.dataset.qiMotion=String(localStorage.getItem('quiz_ui_movimentos')==='1')}catch{}document.body.classList.toggle('light-mode',theme==='light')}
-function paintIdentity(){document.querySelectorAll('[data-qi-title]').forEach(e=>e.textContent=identity.titulo);document.querySelectorAll('[data-qi-subtitle]').forEach(e=>e.textContent=identity.subtitulo);document.querySelectorAll('[data-qi-mark]').forEach(e=>e.textContent=identity.marca);document.querySelectorAll('.qi-logo').forEach(e=>{e.replaceChildren();if(identity.logo){const img=document.createElement('img');img.src=identity.logo;img.alt=identity.titulo;e.append(img)}else e.textContent='◈'});}
+function applyPreferences(){
+ const root = document.documentElement;
+ const customColor = quizPalette === 'original' ? identity.cor : '';
+ if (customColor) {
+  const [red, green, blue] = customColor.slice(1).match(/../g).map(channel => {
+   const value = parseInt(channel, 16) / 255;
+   return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  root.style.setProperty('--qi-accent', customColor);
+  root.style.setProperty('--qi-ink', luminance > 0.179 ? '#000' : '#fff');
+ } else {
+  root.style.removeProperty('--qi-accent');
+  root.style.removeProperty('--qi-ink');
+ }
+document.documentElement.dataset.qiPalette=quizPalette;let theme='dark',scale=1;try{theme=localStorage.getItem('quiz_ui_tema')||'dark';scale=Number(localStorage.getItem('quiz_ui_escala'))||1}catch{}document.documentElement.dataset.qiTheme=theme;document.documentElement.style.setProperty('--qi-scale',String(scale));try{document.documentElement.dataset.qiContrast=String(localStorage.getItem('quiz_ui_contraste')==='1');document.documentElement.dataset.qiMotion=String(localStorage.getItem('quiz_ui_movimentos')==='1')}catch{}document.body.classList.toggle('light-mode',theme==='light')}
+function paintIdentity(){
+ applyPreferences();
+ if (location.pathname.endsWith('apresentacao.html')) {
+  let cover = $('#qi-public-cover');
+  if (!cover) {
+   cover = document.createElement('img');
+   cover.id = 'qi-public-cover';
+   cover.alt = '';
+   cover.referrerPolicy = 'no-referrer';
+   $('.qi-header').after(cover);
+  }
+  cover.hidden = !identity.capa;
+  cover.onerror = () => { cover.hidden = true; };
+  if (identity.capa) cover.src = identity.capa;
+  else cover.removeAttribute('src');
+ }
+document.querySelectorAll('[data-qi-title]').forEach(e=>e.textContent=identity.titulo);document.querySelectorAll('[data-qi-subtitle]').forEach(e=>e.textContent=identity.subtitulo);document.querySelectorAll('[data-qi-mark]').forEach(e=>e.textContent=identity.marca);document.querySelectorAll('.qi-logo').forEach(e=>{e.replaceChildren();if(identity.logo){const img=document.createElement('img');img.referrerPolicy='no-referrer';img.src=identity.logo;img.alt=identity.titulo;e.append(img)}else e.textContent='◈'});}
 function feedback(msg){const el=$('#toast-notification');if(el){el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',5000)}else alert(msg)}
 function dialog(title,html){let d=$('#qi-dialog');if(!d){d=document.createElement('dialog');d.id='qi-dialog';d.className='qi-dialog';document.body.append(d)}d.innerHTML=`<header><h2>${safe(title)}</h2><button class="qi-button" type="button" data-qi-close aria-label="Fechar janela">×</button></header><div>${html}</div>`;d.showModal();return d}
 const entries=[['inicio','Visão geral','Resumo e atalhos para o dia a dia','gestao'],['escolas','Cadastro de escolas','Unidades, gestores e turmas','gestao'],['questoes','Cadastrar e importar questões','Enunciados, alternativas e gabaritos','gestao'],['banco-dados','Catálogo de questões','Pesquisar, editar, revisar e organizar','gestao'],['ativacao','Ativação de provas','Seleção, tempo, token e reembaralhamento','avaliacoes'],['monitoramento','Monitoramento','Progresso, entrada atrasada e recuperação','avaliacoes'],['relatorios','Resultados e relatórios','Notas, boletins, exportações e backups','resultados'],['identidade','Configurações do sistema','Logo, marca de autoria e nome do sistema','resultados']];
@@ -38,7 +76,21 @@ function identityPanel(formMarkup) {
  section.scrollIntoView({block:'start'});
  return section;
 }
-async function showIdentity(){const d=identityPanel(`<form id="qi-identity-form"><div class="qi-form-grid"><label>Título<input name="titulo" maxlength="70" required value="${safe(identity.titulo)}"></label><label>Subtítulo<input name="subtitulo" maxlength="90" value="${safe(identity.subtitulo)}"></label><label>Marca de autoria / marca d’água<input name="marca" maxlength="60" value="${safe(identity.marca)}"></label><label>Logo (PNG, JPG ou WebP)<input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp"></label></div><p class="qi-note">Salvar no projeto gera o arquivo público identidade-quiz.json. Escolha esse arquivo na pasta do Quiz; o sincronizador publica a identidade para os demais dispositivos. A opção local altera somente este navegador.</p><div class="qi-actions"><button type="button" class="qi-button" id="qi-remove-logo">Remover logo</button><button type="submit" class="qi-button">Salvar neste navegador</button><button type="button" class="qi-button primary" id="qi-save-project">Salvar no projeto e publicar</button></div><p id="qi-identity-status" role="status" class="qi-muted"></p></form>`);let draftLogo=identity.logo;d.querySelector('[name="logoFile"]').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size>3*1024*1024){feedback('Escolha uma imagem de até 3 MB.');e.target.value='';return}try{draftLogo=await smallLogo(f);$('#qi-identity-status').textContent='Logo preparado. Escolha como deseja salvar.'}catch{feedback('Não foi possível ler esta imagem.')}};$('#qi-remove-logo').onclick=()=>{draftLogo='';$('#qi-identity-status').textContent='O logo será removido ao salvar.'};const read=()=>validIdentity({...Object.fromEntries(new FormData($('#qi-identity-form'))),logo:draftLogo,atualizadoEm:Date.now()});const saveLocal=()=>{identity=read();try{localStorage.setItem('quiz_identidade_v1',JSON.stringify(identity))}catch{}paintIdentity()};$('#qi-identity-form').onsubmit=e=>{e.preventDefault();saveLocal();$('#qi-identity-status').textContent='Identidade salva somente neste navegador.'};$('#qi-save-project').onclick=async()=>{if(!$('#qi-identity-form').reportValidity())return;let handle=null;try{if(window.showSaveFilePicker)handle=await window.showSaveFilePicker({suggestedName:'identidade-quiz.json',types:[{description:'Identidade do Quiz',accept:{'application/json':['.json']}}]});saveLocal();const content=JSON.stringify(identity,null,2);if(handle){const w=await handle.createWritable();await w.write(content);await w.close();$('#qi-identity-status').textContent='Arquivo salvo. Aguarde a sincronização e a atualização do site.'}else{download('identidade-quiz.json',content,'application/json');$('#qi-identity-status').textContent='Copie o arquivo baixado para a pasta do Quiz e aguarde a publicação.'}}catch(err){if(err.name!=='AbortError')$('#qi-identity-status').textContent='Não foi possível salvar no projeto: '+err.message}};}
+async function showIdentity(){const d=identityPanel(`<form id="qi-identity-form"><div class="qi-form-grid"><label>Título<input name="titulo" maxlength="70" required value="${safe(identity.titulo)}"></label><label>Subtítulo<input name="subtitulo" maxlength="90" value="${safe(identity.subtitulo)}"></label><label>Cor de destaque<input name="cor" type="color" value="${identity.cor || '#c8fa64'}"></label><label>Endereço HTTPS da imagem de capa<input name="capa" type="url" pattern="https://.+" value="${safe(identity.capa)}" placeholder="https://..."></label><label>Marca de autoria / marca d’água<input name="marca" maxlength="60" value="${safe(identity.marca)}"></label><label>Logo (PNG, JPG ou WebP)<input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp"></label><label>Ou endereço HTTPS do logo<input name="logoUrl" type="url" pattern="https://.+" value="${safe(httpsImage(identity.logo))}" placeholder="https://..."></label></div><figure class="qi-logo-preview" hidden><img alt="Prévia do logo" referrerpolicy="no-referrer"></figure><p class="qi-note">Salvar no projeto gera o arquivo público identidade-quiz.json. Escolha esse arquivo na pasta do Quiz; o sincronizador publica a identidade para os demais dispositivos. A opção local altera somente este navegador.</p><div class="qi-actions"><button type="button" class="qi-button" id="qi-remove-logo">Remover logo</button><button type="submit" class="qi-button">Salvar neste navegador</button><button type="button" class="qi-button primary" id="qi-save-project">Salvar no projeto e publicar</button></div><p id="qi-identity-status" role="status" class="qi-muted"></p></form>`);let draftLogo=identity.logo.startsWith('data:') ? identity.logo : '';
+ const logoUrl = d.querySelector('[name="logoUrl"]');
+ const preview = d.querySelector('.qi-logo-preview');
+ const image = preview.querySelector('img');
+ const currentLogo = () => httpsImage(logoUrl.value) || draftLogo;
+ const refreshPreview = () => {
+  const src = currentLogo();
+  preview.hidden = !src;
+  if (src) image.src = src;
+  else image.removeAttribute('src');
+ };
+ image.onerror = () => { preview.hidden = true; };
+ logoUrl.addEventListener('input', refreshPreview);
+ refreshPreview();
+d.querySelector('[name="logoFile"]').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size>3*1024*1024){feedback('Escolha uma imagem de até 3 MB.');e.target.value='';return}try{draftLogo=await smallLogo(f);logoUrl.value='';refreshPreview();$('#qi-identity-status').textContent='Logo preparado. Escolha como deseja salvar.'}catch{feedback('Não foi possível ler esta imagem.')}};$('#qi-remove-logo').onclick=()=>{draftLogo='';logoUrl.value='';d.querySelector('[name="logoFile"]').value='';refreshPreview();$('#qi-identity-status').textContent='O logo será removido ao salvar.'};const read=()=>validIdentity({...Object.fromEntries(new FormData($('#qi-identity-form'))),logo:currentLogo(),atualizadoEm:Date.now()});const saveLocal=()=>{identity=read();try{localStorage.setItem('quiz_identidade_v1',JSON.stringify(identity))}catch{}paintIdentity()};$('#qi-identity-form').onsubmit=e=>{e.preventDefault();saveLocal();$('#qi-identity-status').textContent='Identidade salva somente neste navegador.'};$('#qi-save-project').onclick=async()=>{if(!$('#qi-identity-form').reportValidity())return;let handle=null;try{if(window.showSaveFilePicker)handle=await window.showSaveFilePicker({suggestedName:'identidade-quiz.json',types:[{description:'Identidade do Quiz',accept:{'application/json':['.json']}}]});saveLocal();const content=JSON.stringify(identity,null,2);if(handle){const w=await handle.createWritable();await w.write(content);await w.close();$('#qi-identity-status').textContent='Arquivo salvo. Aguarde a sincronização e a atualização do site.'}else{download('identidade-quiz.json',content,'application/json');$('#qi-identity-status').textContent='Copie o arquivo baixado para a pasta do Quiz e aguarde a publicação.'}}catch(err){if(err.name!=='AbortError')$('#qi-identity-status').textContent='Não foi possível salvar no projeto: '+err.message}};}
 function smallLogo(file){return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const ratio=Math.min(1,192/img.width,192/img.height),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*ratio));c.height=Math.max(1,Math.round(img.height*ratio));c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/png'))};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('Imagem inválida'))};img.src=url})}
 function download(name,content,type='text/plain'){const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function preferences(){dialog('Preferências e acessibilidade',`<div class="qi-form-grid"><label>Tema<select id="qi-theme"><option value="dark">Escuro</option><option value="light">Claro</option></select></label><label>Cor de destaque<select id="qi-palette">${Object.entries(quizPalettes).map(([id, label]) => `<option value="${id}">${label}</option>`).join('')}</select></label><label>Tamanho do texto<select id="qi-scale"><option value="1">Padrão</option><option value="1.15">Ampliado</option><option value="1.3">Maior</option></select></label><label class="qi-switch"><input id="qi-contrast" type="checkbox"> Alto contraste</label><label class="qi-switch"><input id="qi-motion" type="checkbox"> Reduzir movimentos</label></div>`);$('#qi-palette').value=quizPalette;$('#qi-palette').onchange=e=>{
