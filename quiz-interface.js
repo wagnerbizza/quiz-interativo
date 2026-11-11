@@ -41,6 +41,18 @@ function paintIdentity(){
  const pageTitle = panel ? 'Painel do Professor' : login ? 'Entrar' :
   location.pathname.endsWith('apresentacao.html') ? '' : 'Área do Aluno';
  document.title = pageTitle ? identity.titulo + ' • ' + pageTitle : identity.titulo;
+ let favicon = document.getElementById('qi-favicon');
+ if (!favicon && identity.logo) {
+  favicon = document.createElement('link');
+  favicon.id = 'qi-favicon';
+  favicon.rel = 'icon';
+  favicon.referrerPolicy = 'no-referrer';
+  document.head.append(favicon);
+ }
+ if (favicon) {
+  if (identity.logo) favicon.href = identity.logo;
+  else favicon.remove();
+ }
  if (location.pathname.endsWith('apresentacao.html')) {
   let cover = $('#qi-public-cover');
   if (!cover) {
