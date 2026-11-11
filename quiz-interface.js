@@ -168,9 +168,8 @@ function showAccount() {
    ...(profile.senha ? [['E-mail de recuperação de senha', profile.email]] : []),
    ...(profile.tipoConta ? [
     ['Identificação da sessão', 'Conta ativa'],
-    ['Outra conta autorizada', profile.tipoConta === 'Conta principal'
-      ? 'Wagner Santiago · wagnersantiago@prof.educacao.sp.gov.br'
-      : 'Wagner Bizza · wagnerbizza@gmail.com'],
+    ['Conta principal', 'Wagner Bizza · wagnerbizza@gmail.com'],
+    ['Conta secundária', 'Wagner Santiago · wagnersantiago@prof.educacao.sp.gov.br'],
    ] : []),
    ['Perfil de acesso', 'Professor'], ['Confirmação do e-mail', profile.confirmado ? 'Confirmado' : 'Pendente'],
    ['Formas de entrada', methods || '—'],
