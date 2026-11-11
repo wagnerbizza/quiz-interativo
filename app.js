@@ -1317,8 +1317,8 @@ function inicializarPaginaEscola() {
         <label class="checkbox-item-compacto">
           <span><input type="checkbox" class="chk-item-box-val" value="Item Exemplo 1" onchange="atualizarPainelResumoConsolidado()" checked> Item Exemplo 1</span>
           <div style="display:flex; gap:3px;">
-            <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
+            <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">Editar</button>
+            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">Excluir</button>
           </div>
         </label>
       `;
@@ -1327,15 +1327,15 @@ function inicializarPaginaEscola() {
         <div class="box-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
           <h4 style="font-size:14px; margin:0; color:#f8fafc;">${tituloBox}</h4>
           <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
-            <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparCard(this, true)" title="Marcar Tudo">☑️ Marcar</button>
-            <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparCard(this, false)" title="Desmarcar Tudo">🔲 Limpar</button>
-            <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarCardAZ(this)" title="Ordenar A-Z">🔤</button>
-            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑 Box removida!');" title="Excluir Box Inteira">🗑️ Excluir Box</button>
+            <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparCard(this, true)" title="Marcar Tudo">Marcar tudo</button>
+            <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparCard(this, false)" title="Desmarcar Tudo">Desmarcar tudo</button>
+            <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarCardAZ(this)" title="Ordenar A-Z">A–Z</button>
+            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑 Box removida!');" title="Excluir Box Inteira">Excluir seção</button>
           </div>
         </div>
         <div style="display:flex; gap:6px;">
           <input type="text" class="input-add-card-item" placeholder="Adicionar novo item..." style="flex:1; padding:5px 8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:12px;">
-          <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarItemCardDinamico(this)">➕ Adicionar</button>
+          <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarItemCardDinamico(this)">Adicionar</button>
         </div>
         <div class="grid-checkboxes" style="display:flex; flex-direction:column; max-height:180px; overflow-y:auto; gap:4px;">
           ${itensHtml}
@@ -1362,15 +1362,15 @@ function inicializarPaginaEscola() {
       <div class="box-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h4 style="font-size:14px; margin:0; color:#f8fafc;">🎒 Turmas Ativas (Escolha e Adição Individual)</h4>
         <div style="display:flex; gap:4px; flex-wrap:wrap;">
-          <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparTodasTurmas(true)" title="Marcar Tudo">☑️️ Marcar</button>
-          <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparTodasTurmas(false)" title="Desmarcar Tudo">🔲 Limpar</button>
-          <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarTurmasDiretasAZ()" title="Ordenar A-Z">🔤</button>
-          <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="excluirTodasTurmasDiretas()" title="Excluir Todas">🗑️</button>
+          <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparTodasTurmas(true)" title="Marcar Tudo">Marcar tudo</button>
+          <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparTodasTurmas(false)" title="Desmarcar Tudo">Desmarcar tudo</button>
+          <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarTurmasDiretasAZ()" title="Ordenar A-Z">A–Z</button>
+          <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="excluirTodasTurmasDiretas()" title="Excluir Todas">Excluir turmas</button>
         </div>
       </div>
       <div style="display:flex; gap:6px;">
         <input type="text" id="input-nova-turma-individual" placeholder="Nome da turma (Ex: 1º Ano A, 9º B)..." style="flex:1; padding:5px 8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:12px;">
-        <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarTurmaIndividualDireta()">➕ Adicionar</button>
+        <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarTurmaIndividualDireta()">Adicionar</button>
       </div>
       <div id="grid-turmas-individuais-lista" class="grid-checkboxes" style="display:flex; flex-direction:column; max-height:180px; overflow-y:auto; gap:4px;"></div>
     `;
@@ -1399,8 +1399,8 @@ function inicializarPaginaEscola() {
             <input type="checkbox" class="chk-turma-direta-val" value="${turma}" onchange="atualizarPainelResumoConsolidado()" ${checkedAttr}> ${turma}
           </span>
           <div style="display:flex; gap:3px;">
-            <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
+            <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">Editar</button>
+            <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">Excluir</button>
           </div>
         </label>
       `;
@@ -1478,7 +1478,7 @@ function inicializarPaginaEscola() {
       <div id="container-boxes-escola" style="display: flex; flex-direction: column; gap: 14px;"></div>
       <div id="bloco-criar-box-especifica" style="background: rgba(30, 41, 59, 0.5); border: 1px dashed #3b82f6; padding: 15px; border-radius: 8px; margin-top: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <input type="text" id="input-nome-nova-box-especifica" placeholder="Nome da Nova Box Específica (Ex: Laboratórios)..." style="flex:1; min-width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 13px;">
-        <button type="button" class="btn-acao" style="background: #2563eb; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none;" onclick="adicionarNovaBoxEspecificaEscola()">➕ Adicionar Box Específica</button>
+        <button type="button" class="btn-acao" style="background: #2563eb; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none;" onclick="adicionarNovaBoxEspecificaEscola()">Adicionar Box Específica</button>
       </div>
     `;
 
@@ -1509,8 +1509,8 @@ function inicializarPaginaEscola() {
               <input type="checkbox" class="chk-item-box-val" data-box-idx="${indexBox}" value="${item}" onchange="atualizarPainelResumoConsolidado()" ${checkedAttr}> ${item}
             </span>
             <div style="display:flex; gap:3px;">
-              <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
+              <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">Editar</button>
+              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">Excluir</button>
             </div>
           </label>
         `;
@@ -1521,15 +1521,15 @@ function inicializarPaginaEscola() {
           <div class="box-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
             <h4 style="font-size:14px; margin:0; color:#f8fafc;">${box.titulo}</h4>
             <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
-              <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparCard(this, true)" title="Marcar Tudo">☑️ Marcar</button>
-              <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparCard(this, false)" title="Desmarcar Tudo">🔲 Limpar</button>
-              <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarCardAZ(this)" title="Ordenar A-Z">🔤</button>
-              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑️ Box removida!');" title="Excluir Box Inteira">🗑 Excluir Box</button>
+              <button type="button" class="btn-acao-mini" style="background:#0284c7; color:white;" onclick="marcarLimparCard(this, true)" title="Marcar Tudo">Marcar tudo</button>
+              <button type="button" class="btn-acao-mini" style="background:#475569; color:white;" onclick="marcarLimparCard(this, false)" title="Desmarcar Tudo">Desmarcar tudo</button>
+              <button type="button" class="btn-acao-mini" style="background:#8b5cf6; color:white;" onclick="ordenarCardAZ(this)" title="Ordenar A-Z">A–Z</button>
+              <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.card-box').remove(); atualizarPainelResumoConsolidado(); mostrarNotificacao('🗑️ Box removida!');" title="Excluir Box Inteira">Excluir seção</button>
             </div>
           </div>
           <div style="display:flex; gap:6px;">
             <input type="text" class="input-add-card-item" placeholder="Adicionar novo item..." style="flex:1; padding:5px 8px; border-radius:4px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:12px;">
-            <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarItemCardDinamico(this)">➕ Adicionar</button>
+            <button type="button" class="btn-acao-mini" style="background:#2563eb; color:white;" onclick="adicionarItemCardDinamico(this)">Adicionar</button>
           </div>
           <div class="grid-checkboxes" style="display:flex; flex-direction:column; max-height:180px; overflow-y:auto; gap:4px;">
             ${itensHtml}
@@ -1560,8 +1560,8 @@ function inicializarPaginaEscola() {
         <input type="checkbox" class="chk-item-box-val" value="${val}" onchange="atualizarPainelResumoConsolidado()" checked> ${val}
       </span>
       <div style="display:flex; gap:3px;">
-        <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">✏️</button>
-        <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">🗑️</button>
+        <button type="button" class="btn-acao-mini" style="background:#eab308; color:white;" onclick="editarItemBoxEscolaCard(this)" title="Editar">Editar</button>
+        <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="removerItemBoxEscolaCard(this)" title="Excluir">Excluir</button>
       </div>
     `;
     grid.appendChild(novaLabel);
@@ -1610,7 +1610,7 @@ function inicializarPaginaEscola() {
 
     labels.forEach(l => grid.appendChild(l));
     atualizarPainelResumoConsolidado();
-    mostrarNotificacao("🔤 Itens ordenados de A a Z!");
+    mostrarNotificacao("A–Z Itens ordenados de A a Z!");
   };
 
   function carregarDadosSalvosEscola() {
@@ -2155,7 +2155,7 @@ if (window.location.pathname.includes("painel.html")) {
 
     linha.innerHTML = `
       <span style="font-weight:bold;min-width:25px;">${letra})</span>
-      <input type="text" class="input-alternativa-estatica"
+      <input type="text" class="input-alternativa-estatica" aria-label="Alternativa ${letra}"
              placeholder="Alternativa ${letra}"
              style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:#0f172a;color:#fff;">
       <button type="button" class="btn-acao-mini"
@@ -5698,8 +5698,8 @@ window.renderizarCatalogoBancoDados = function() {
       let letra = letras[idx] || ("Opt" + (idx+1));
       let ehCorreta = (letra === correta);
       opcoesHtml += `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding: 4px 8px; background: rgba(15,23,42,0.4); border-radius:4px; font-size:12px; margin-bottom:3px; ${ehCorreta ? 'border:1px solid #22c55e; color:#4ade80; font-weight:bold;' : ''}">
-          <span><strong>${letra})</strong> ${escaparTextoQuiz(op)}</span>
+        <div class="catalogo-alternativa" style="display:flex; align-items:center; justify-content:space-between; padding: 4px 8px; background: rgba(15,23,42,0.4); border-radius:4px; font-size:12px; margin-bottom:3px; ${ehCorreta ? 'border:1px solid #22c55e; color:#4ade80; font-weight:bold;' : ''}">
+          <span class="catalogo-alternativa-texto"><strong>${letra}</strong><span>${escaparTextoQuiz(op)}</span></span>
           ${ehCorreta ? '<span style="font-size:10px; background:rgba(34,197,94,0.2); padding:1px 4px; border-radius:3px;">Correta</span>' : ''}
         </div>
       `;

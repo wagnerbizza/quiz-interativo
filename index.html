@@ -589,6 +589,20 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
 </style>
 <link rel="stylesheet" href="quiz-interface.css">
 <script src="quiz-interface.js" defer></script>
+<style>
+
+    #opcoes-container .opcao-btn {
+      display: grid !important; grid-template-columns: 2em minmax(0, 1fr);
+      align-items: start; gap: .65em; overflow-wrap: anywhere;
+    }
+    #opcoes-container .opcao-letra {
+      border: 1px solid currentColor; border-radius: .35em;
+      text-align: center; font-weight: 700;
+    }
+    #opcoes-container .opcao-marcada { display: block; font-size: .85em; font-weight: 700; margin-top: .3em; }
+    #opcoes-container .opcao-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+</style>
 </head>
 <body>
 
@@ -1910,12 +1924,28 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         if (!texto) return; // não cria alternativa artificial vazia
         const btn = document.createElement("button");
         btn.className = "opcao-btn" + (respostasUsuario[indiceAtual] === letra ? " selecionada" : "");
-        btn.textContent = `${letra}) ${texto}`;
-        btn.onclick = () => {
+        btn.type = "button";
+        const marcada = respostasUsuario[indiceAtual] === letra;
+        btn.setAttribute("aria-pressed", String(marcada));
+        const marcador = document.createElement("span");
+        marcador.className = "opcao-letra";
+        marcador.textContent = letra;
+        const conteudo = document.createElement("span");
+        conteudo.textContent = texto;
+        if (marcada) {
+          const status = document.createElement("span");
+          status.className = "opcao-marcada";
+          status.setAttribute("aria-hidden", "true");
+          status.textContent = "✓ Marcada";
+          conteudo.appendChild(status);
+        }
+        btn.append(marcador, conteudo);
+        btn.onclick = (event) => {
           respostasUsuario[indiceAtual] = letra;
           salvarRascunhoAluno();
           try { atualizarPainelTempoAluno(); } catch (e) {}
           exibirQuestao();
+          if (event.detail === 0) container.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
         };
         container.appendChild(btn);
       });

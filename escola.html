@@ -77,6 +77,32 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
   </style>
 <link rel="stylesheet" href="quiz-interface.css">
 <script src="quiz-interface.js" defer></script>
+<style>
+
+    #container-boxes-escola .box-header { flex-wrap: wrap; gap: .6rem; }
+    #container-boxes-escola .box-header h4 { flex: 1 1 13rem; overflow-wrap: anywhere; }
+    #container-boxes-escola .btn-acao-mini { min-height: 44px; padding: .35rem .6rem; }
+    #container-boxes-escola button[title="Editar"],
+    #container-boxes-escola button[title="Ordenar A-Z"] {
+      background: var(--card-bg) !important; color: inherit !important;
+      border: 1px solid var(--border);
+    }
+    #container-boxes-escola button[title^="Excluir"] {
+      background: transparent !important; color: inherit !important;
+      border: 1px solid #e05d68;
+    }
+    #container-boxes-escola input[type="text"], #input-nova-box-escola { min-width: 0; }
+    #container-boxes-escola label { overflow-wrap: anywhere; min-width: 0; }
+    .barra-botoes-fixa {
+      position: sticky; bottom: 0; z-index: 2; flex-wrap: wrap; gap: .5rem;
+      padding: .6rem; background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: .75rem; margin-bottom: 1rem;
+    }
+    .barra-botoes-fixa > * { flex: 1 1 10rem; margin: 0; }
+    .barra-botoes-fixa #btn-salvar-isolada { color: #102116; }
+    @media (max-height: 400px) { .barra-botoes-fixa { position: static; } }
+
+</style>
 </head>
 <body>
 
@@ -99,12 +125,12 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
 
     <div style="background: #0f172a; padding: 18px; border-radius: 8px; border: 1px dashed var(--border); margin-top: 25px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
       <input type="text" id="input-nova-box-escola" placeholder="Nome da Nova Box Específica (Ex: Laboratórios)..." style="flex: 1; margin: 0; padding: 10px; background: #1e293b; border: 1px solid var(--border); color: white; border-radius: 6px;">
-      <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px;" onclick="criarNovaBoxEscola()">➕ Adicionar Box Específica</button>
+      <button type="button" class="btn-acao" style="margin: 0; background-color: #2563eb; padding: 10px 16px;" onclick="criarNovaBoxEscola()">Adicionar seção</button>
     </div>
 
     <div class="barra-botoes-fixa">
-      <button type="button" id="btn-salvar-isolada" class="btn-acao" style="background-color: #22c55e;">💾 Salvar Configurações desta Escola</button>
-      <a href="painel.html" class="btn-acao" style="background-color: #4b5563; text-align: center;">🔙 Voltar ao Painel</a>
+      <button type="button" id="btn-salvar-isolada" class="btn-acao" style="background-color: #22c55e;">Salvar configurações</button>
+      <a href="painel.html" class="btn-acao" style="background-color: #4b5563; text-align: center;">← Voltar ao painel</a>
     </div>
 
   </div>
