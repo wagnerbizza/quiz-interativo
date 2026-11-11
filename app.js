@@ -27,7 +27,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { 
   getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where, orderBy, limit 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut, getIdTokenResult }
+import { getAuth, onAuthStateChanged, signOut, getIdTokenResult, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ==========================================
@@ -2109,7 +2109,7 @@ if (window.location.pathname.includes("painel.html")) {
   }
 
   // Exposição explícita para os onclick/onchange do painel.html.
-  window.carregarBancoDadosCompleto = carregarBancoDadosCompleto;
+  window.carregarBancoDadosCompleto = () => carregarBancoDadosCompleto(true);
 
   function popularFiltroMateriaCatalogo() {
     const selectFiltro = document.getElementById("select-filtro-materia-db");
@@ -3582,6 +3582,11 @@ if (window.location.pathname.includes("painel.html")) {
     sel.innerHTML = html;
   }
 
+  window.quizRecuperarSenhaAtual = async function() {
+    const usuario=auth.currentUser;
+    if(!usuario?.email)throw new Error("Nenhuma conta autenticada.");
+    await sendPasswordResetEmail(auth,usuario.email);
+  };
   window.quizResumoInterface = function() {
     return {escolas:listaEscolasCache.length,questoes:questoesBancoCache.length,resultados:resultadosGlobaisCache.length};
   };
@@ -5475,25 +5480,7 @@ window.aplicarOrdenacaoBanco = function(criterio) {
   }
 };
 
-document.addEventListener("click", (e) => {
-  const item = e.target.closest("button, a, div");
-  if (!item) return;
-  const texto = item.textContent ? item.textContent.trim() : "";
-  
-  if (texto.includes("Matéria / Categoria")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("materia");
-  } else if (texto.includes("Enunciado (A-Z)")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("enunciado-az");
-  } else if (texto.includes("Ordem Crescente (ID)")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("id-asc");
-  } else if (texto.includes("Ordem Decrescente (ID)")) {
-    e.preventDefault();
-    aplicarOrdenacaoBanco("id-desc");
-  }
-});
+// A classificação é acionada exclusivamente pelos botões explícitos do catálogo.
 
 // ==========================================
 // CORREÇÃO DOS BOTÕES DE CLASSIFICAÇÃO E VISUALIZAÇÃO DO CATÁLOGO
@@ -5711,70 +5698,8 @@ window.renderizarCatalogoBancoDados = function() {
   }
 };
 
-// Eventos de clique para menus e botões
-document.addEventListener("click", async (e) => {
-  const alvo = e.target.closest("button, a, div");
-  if (!alvo) return;
-  const texto = alvo.textContent ? alvo.textContent.trim() : "";
-
-  // Botão Atualizar
-  if (texto.includes("Atualizar") || texto.includes("Recarregar")) {
-    e.preventDefault();
-    if (typeof carregarBancoDadosCompleto === 'function') {
-      mostrarNotificacao("🔄 Atualizando banco de dados...");
-      await carregarBancoDadosCompleto();
-      mostrarNotificacao("✅ Banco de dados atualizado com sucesso!");
-    }
-  }
-
-  // Opções de Classificação
-  if (texto.includes("Matéria / Categoria")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "materia";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por Matéria / Categoria");
-  } else if (texto.includes("Enunciado (A-Z)")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "enunciado-az";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por Enunciado (A-Z)");
-  } else if (texto.includes("Ordem Crescente (ID)")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "id-asc";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por ID (Crescente)");
-  } else if (texto.includes("Ordem Decrescente (ID)")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "id-desc";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("📌 Ordenado por ID (Decrescente)");
-  } else if (texto.includes("Ver Tudo") || texto.includes("Sem Classificação")) {
-    e.preventDefault();
-    window.ordemAtualBancoCatalogo = "nenhum";
-    renderizarCatalogoBancoDados();
-    mostrarNotificacao("🔄 Exibindo acervo completo!");
-  }
-});
-
-// Injetar automaticamente o botão "Ver Tudo / Sem Classificação" nos menus suspensos
-setInterval(() => {
-  document.querySelectorAll('.dropdown-menu-win, .dropdown-content, div').forEach(menu => {
-    if (menu.textContent && menu.textContent.includes("Enunciado (A-Z)") && !menu.textContent.includes("Ver Tudo")) {
-      const btnVerTudo = document.createElement("button");
-      btnVerTudo.type = "button";
-      btnVerTudo.style.cssText = "width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; border-radius:4px; font-weight:bold;";
-      btnVerTudo.innerHTML = "🔄 Ver Tudo / Sem Classificação";
-      btnVerTudo.onclick = () => {
-        window.ordemAtualBancoCatalogo = "nenhum";
-        renderizarCatalogoBancoDados();
-        menu.classList.remove('show');
-        menu.style.display = 'none';
-        mostrarNotificacao("🔄 Exibindo acervo completo!");
-      };
-      menu.prepend(btnVerTudo);
-    }
-  });
-}, 1500);
+// Os botões já chamam aplicarClassificacaoDB e carregarBancoDadosCompleto.
+// Não inferir ações pelo texto de blocos ancestrais nem inserir controles em divs genéricas.
 
 // ==========================================
 // FUNÇÕES GLOBAIS DE EXCLUSÃO DE QUESTÕES
