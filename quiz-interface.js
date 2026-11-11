@@ -115,7 +115,7 @@ function accountTools(head){
  const update = () => {
   const address = email?.textContent.trim() || '';
   const profile = window.quizPerfilConta?.();
-  const name = profile?.tipoConta ? 'wagnerbizza' : address.includes('@') ? address.split('@')[0] : 'Professor';
+  const name = profile?.tipoConta ? profile.nome : address.includes('@') ? address.split('@')[0] : 'Professor';
   const offline = !navigator.onLine || document.body.classList.contains('modo-offline-professor');
   const role = offline ? 'Consulta local' : address.includes('@') ? 'Professor autenticado' : 'Professor';
   $('#qi-account-name').textContent = name;
@@ -164,7 +164,8 @@ function showAccount() {
  if (profile) {
   const methods = [profile.senha ? 'E-mail e senha' : '', profile.google ? 'Google' : ''].filter(Boolean).join(', ');
   const fields = [
-   ['Nome', profile.tipoConta ? 'wagnerbizza' : profile.nome], ['Conectado como', profile.emailSessao || profile.email],
+   ['Nome', profile.nome], ['Conectado como', profile.emailSessao || 'Não informado'],
+   ...(profile.senha ? [['E-mail de recuperação de senha', profile.email]] : []),
    ...(profile.tipoConta ? [['Tipo de conta', profile.tipoConta]] : []),
    ['Perfil de acesso', 'Professor'], ['Confirmação do e-mail', profile.confirmado ? 'Confirmado' : 'Pendente'],
    ['Formas de entrada', methods || '—'],

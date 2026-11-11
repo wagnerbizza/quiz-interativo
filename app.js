@@ -3587,15 +3587,17 @@ if (window.location.pathname.includes("painel.html")) {
   }
 
   const professorGoogleUids = new Set(["S8gicgKDwsep2gZmeg7qBLcSNCf1", "gFjkApOW39Y50lKEUBzl0CYr6t22"]);
+  let sessaoProfessorValidada;
   window.quizPerfilConta = () => {
     const user = auth.currentUser;
     if (!user || document.body.classList.contains("modo-offline-professor")) return null;
     const google = user.providerData.find(provider => provider.providerId === "google.com");
     const password = user.providerData.find(provider => provider.providerId === "password");
+    const provedor = sessaoProfessorValidada?.uid === user.uid ? sessaoProfessorValidada.provedor : "";
     return {
       tipoConta: user.uid === "S8gicgKDwsep2gZmeg7qBLcSNCf1" ? "Conta principal" : user.uid === "gFjkApOW39Y50lKEUBzl0CYr6t22" ? "Conta secundária" : "",
-      emailSessao: user.email || "",
-      nome: user.displayName || user.email?.split("@")[0] || "Professor",
+      emailSessao: provedor === "google.com" ? google?.email || "" : provedor === "password" ? password?.email || user.email || "" : "",
+      nome: user.uid === "S8gicgKDwsep2gZmeg7qBLcSNCf1" ? "Wagner Bizza" : user.uid === "gFjkApOW39Y50lKEUBzl0CYr6t22" ? "Wagner Santiago" : user.displayName || user.email?.split("@")[0] || "Professor",
       email: password?.email || user.email || "",
       confirmado: user.emailVerified,
       senha: Boolean(password),
@@ -5955,6 +5957,7 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
       }
 
       // 10C.9: registra autorização local apenas após validação online real.
+      sessaoProfessorValidada = { uid: usuario.uid, provedor };
       registrarProfessorOffline(usuario);
     } catch (erro) {
       console.error("Não foi possível validar a sessão do professor:", erro);
