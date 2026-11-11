@@ -1,0 +1,62 @@
+diff --git a/app.js b/app.js
+index ca83702..eb9074d 100644
+--- a/app.js
++++ b/app.js
+@@ -3803,28 +3803,37 @@ if (window.location.pathname.includes("painel.html")) {
+ 
+     const caixa = document.createElement("div");
+     caixa.id = "controles-cache-relatorios";
+-    caixa.style.cssText = "margin:12px 0;padding:12px;border:1px solid #334155;border-radius:10px;background:#0f172a;display:flex;gap:10px;align-items:center;flex-wrap:wrap;";
++    caixa.className = "qi-card no-print";
++    caixa.style.cssText = "margin:12px 0;display:grid;gap:12px;";
+     caixa.innerHTML = `
+-      <div id="status-cache-relatorios" style="flex:1;min-width:260px;color:#cbd5e1;font-size:13px;">
+-        💾 Preparando relatórios locais...
++      <h3 style="margin:0">Backup e restauração de relatórios</h3>
++      <div id="status-cache-relatorios" role="status" class="qi-muted">
++        Preparando relatórios locais…
+       </div>
+-      <button id="btn-diagnostico-auth" type="button" class="btn-acao btn-secondary"
+-        title="Mostra como o Firebase está reconhecendo o professor. Não lê documentos do Firestore.">
+-        🔐 Diagnóstico
+-      </button>
+-      <button id="btn-sincronizar-relatorios" type="button" class="btn-acao btn-primary"
+-        title="Busca os resultados no Firebase somente quando você clicar. Use após a cota diária voltar.">
+-        🔄 Sincronizar relatórios
+-      </button>
+-      <button id="btn-backup-relatorios-local" type="button" class="btn-acao btn-secondary"
+-        title="Salva uma cópia JSON datada dos relatórios.">💾 Backup local</button>
+-      <button id="btn-vincular-backup-local" type="button" class="btn-acao btn-secondary"
+-        title="Vincula backup-local/relatorios. Nenhum arquivo é apagado automaticamente.">🔗 Pasta backup</button>
+-      <button id="btn-restaurar-backup-local" type="button" class="btn-acao btn-secondary"
+-        title="Restaura um backup JSON somente neste navegador. Não altera o Firebase.">
+-        📥 Restaurar backup
+-      </button>
+-      <input id="arquivo-backup-relatorios" type="file" accept=".json,application/json" style="display:none;">
++      <div>
++        <h4>1. Atualizar resultados</h4>
++        <p>Busca os resultados no Firebase e atualiza a cópia deste navegador. Use antes de salvar um backup atualizado.</p>
++        <button id="btn-sincronizar-relatorios" type="button" class="btn-acao btn-primary">Buscar resultados no Firebase</button>
++      </div>
++      <div>
++        <h4>2. Salvar uma cópia</h4>
++        <p>Gera um arquivo <code>backup-relatorios-…json</code> com os resultados deste navegador. Se a pasta escolhida estiver disponível, o arquivo vai para ela. Caso contrário, o navegador baixa o arquivo.</p>
++        <div class="qi-actions">
++          <button id="btn-backup-relatorios-local" type="button" class="btn-acao btn-secondary">Salvar backup de relatórios</button>
++          <button id="btn-vincular-backup-local" type="button" class="btn-acao btn-secondary">Escolher pasta de backups</button>
++        </div>
++      </div>
++      <div>
++        <h4>Restaurar uma cópia</h4>
++        <p>Selecione um <code>backup-relatorios-…json</code> para consultar os resultados no navegador. A restauração é local e os dados do Firebase ficam intactos.</p>
++        <button id="btn-restaurar-backup-local" type="button" class="btn-acao btn-secondary">Restaurar relatórios neste navegador</button>
++        <input id="arquivo-backup-relatorios" type="file" accept=".json,application/json" hidden>
++      </div>
++      <details>
++        <summary>Diagnóstico de acesso</summary>
++        <p>Mostra como o Firebase identifica a conta conectada.</p>
++        <button id="btn-diagnostico-auth" type="button" class="btn-acao btn-secondary">Ver diagnóstico da conta</button>
++      </details>
+     `;
+ 
+     const tabela = corpo.closest("table");
