@@ -1,0 +1,33 @@
+--- a/app.js
++++ b/app.js
+@@ -3593,6 +3593,8 @@
+     const google = user.providerData.find(provider => provider.providerId === "google.com");
+     const password = user.providerData.find(provider => provider.providerId === "password");
+     return {
++      tipoConta: user.uid === "S8gicgKDwsep2gZmeg7qBLcSNCf1" ? "Conta principal" : user.uid === "gFjkApOW39Y50lKEUBzl0CYr6t22" ? "Conta secundária" : "",
++      emailSessao: user.email || "",
+       nome: user.displayName || user.email?.split("@")[0] || "Professor",
+       email: password?.email || user.email || "",
+       confirmado: user.emailVerified,
+--- a/quiz-interface.js
++++ b/quiz-interface.js
+@@ -114,7 +114,8 @@
+  const sessionStatus = $('#status-conexao-professor');
+  const update = () => {
+   const address = email?.textContent.trim() || '';
+-  const name = address.includes('@') ? address.split('@')[0] : 'Professor';
++  const profile = window.quizPerfilConta?.();
++  const name = profile?.tipoConta ? 'wagnerbizza' : address.includes('@') ? address.split('@')[0] : 'Professor';
+   const offline = !navigator.onLine || document.body.classList.contains('modo-offline-professor');
+   const role = offline ? 'Consulta local' : address.includes('@') ? 'Professor autenticado' : 'Professor';
+   $('#qi-account-name').textContent = name;
+@@ -163,7 +164,8 @@
+  if (profile) {
+   const methods = [profile.senha ? 'E-mail e senha' : '', profile.google ? 'Google' : ''].filter(Boolean).join(', ');
+   const fields = [
+-   ['Nome', profile.nome], ['E-mail da conta', profile.email],
++   ['Nome', profile.tipoConta ? 'wagnerbizza' : profile.nome], ['Conectado como', profile.emailSessao || profile.email],
++   ...(profile.tipoConta ? [['Tipo de conta', profile.tipoConta]] : []),
+    ['Perfil de acesso', 'Professor'], ['Confirmação do e-mail', profile.confirmado ? 'Confirmado' : 'Pendente'],
+    ['Formas de entrada', methods || '—'],
+   ];
