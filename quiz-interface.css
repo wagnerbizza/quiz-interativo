@@ -160,3 +160,16 @@ html[data-qi-theme="light"][data-qi-palette="amber"] { --qi-accent: #854d0e; --q
 .qi-modern :is(.qi-heading h1, .qi-settings-panel h2) {
   font-family: "Barlow Condensed", Arial, sans-serif;
 }
+
+.qi-quick-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.qi-quick-links [aria-current="page"] {
+  background: var(--qi-accent) !important;
+  color: var(--qi-ink) !important;
+}
+.qi-shell .qi-search { flex-wrap: wrap; margin-bottom: 12px; }
+.qi-search label { flex-basis: 100%; color: var(--qi-muted); font-weight: 700; }
+.qi-shell .qi-menus { margin-top: 12px; }
+@media (min-width: 680px) and (max-width: 980px) {
+  .qi-shell .qi-menus { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  .qi-shell .qi-menus summary { flex-wrap: wrap; }
+}
