@@ -64,3 +64,15 @@ html[data-qi-motion="true"] *,html[data-qi-motion="true"] *::before,html[data-qi
 .qi-catalog-total span { color: var(--qi-accent); }
 .qi-catalog-total:hover { border-color: var(--qi-accent); }
 .qi-modern.qi-account-ready #btn-demo-prof { display: none !important; }
+
+/* Menu da conta e assinatura visual */
+.qi-account-profile { display: grid; gap: 5px; overflow-wrap: anywhere; }
+.qi-account-profile small, .qi-connection-card small { color: var(--qi-muted); }
+.qi-account-native #status-conexao-professor { display: none; }
+.qi-account-menu .qi-account-native { border: 0; padding: 0; margin: 0; }
+.qi-connection-card { display: grid; gap: 6px; border: 1px solid var(--qi-line); border-radius: 10px; padding: 12px; margin: 12px 0; }
+.qi-account-offline .qi-connection-dot { background: #f59e0b; }
+.qi-account-menu .qi-account-feature[data-qi-account-action="accessibility"] { border-inline-start: 3px solid var(--qi-accent); }
+.qi-modern button.qi-accessibility-float { bottom: 64px; width: 54px; height: 54px; min-height: 54px !important; }
+.qi-modern.qi-account-open button.qi-accessibility-float { visibility: hidden; }
+.qi-footer .qi-watermark { position: fixed; right: 16px; bottom: 10px; font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--qi-text); opacity: .22; pointer-events: none; z-index: 2; }

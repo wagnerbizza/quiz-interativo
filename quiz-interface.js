@@ -7,7 +7,7 @@ let identity=base;try{identity={...base,...JSON.parse(localStorage.getItem('quiz
 function validIdentity(x){return {...base,titulo:String(x.titulo||base.titulo).slice(0,70),subtitulo:String(x.subtitulo||base.subtitulo).slice(0,90),marca:String(x.marca||base.marca).slice(0,60),logo:/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(x.logo||'')?String(x.logo):'',atualizadoEm:Number(x.atualizadoEm)||0}}
 identity=validIdentity(identity);const panel=location.pathname.endsWith('painel.html'),login=location.pathname.endsWith('login.html');let page='';
 function applyPreferences(){let theme='dark',scale=1;try{theme=localStorage.getItem('quiz_ui_tema')||'dark';scale=Number(localStorage.getItem('quiz_ui_escala'))||1}catch{}document.documentElement.dataset.qiTheme=theme;document.documentElement.style.setProperty('--qi-scale',String(scale));try{document.documentElement.dataset.qiContrast=String(localStorage.getItem('quiz_ui_contraste')==='1');document.documentElement.dataset.qiMotion=String(localStorage.getItem('quiz_ui_movimentos')==='1')}catch{}document.body.classList.toggle('light-mode',theme==='light')}
-function paintIdentity(){document.querySelectorAll('[data-qi-title]').forEach(e=>e.textContent=identity.titulo);document.querySelectorAll('[data-qi-subtitle]').forEach(e=>e.textContent=identity.subtitulo);document.querySelectorAll('[data-qi-mark]').forEach(e=>e.textContent='© '+new Date().getFullYear()+' '+identity.marca);document.querySelectorAll('.qi-logo').forEach(e=>{e.replaceChildren();if(identity.logo){const img=document.createElement('img');img.src=identity.logo;img.alt=identity.titulo;e.append(img)}else e.textContent='◈'});}
+function paintIdentity(){document.querySelectorAll('[data-qi-title]').forEach(e=>e.textContent=identity.titulo);document.querySelectorAll('[data-qi-subtitle]').forEach(e=>e.textContent=identity.subtitulo);document.querySelectorAll('[data-qi-mark]').forEach(e=>e.textContent=identity.marca);document.querySelectorAll('.qi-logo').forEach(e=>{e.replaceChildren();if(identity.logo){const img=document.createElement('img');img.src=identity.logo;img.alt=identity.titulo;e.append(img)}else e.textContent='◈'});}
 function feedback(msg){const el=$('#toast-notification');if(el){el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',5000)}else alert(msg)}
 function dialog(title,html){let d=$('#qi-dialog');if(!d){d=document.createElement('dialog');d.id='qi-dialog';d.className='qi-dialog';document.body.append(d)}d.innerHTML=`<header><h2>${safe(title)}</h2><button class="qi-button" type="button" data-qi-close aria-label="Fechar janela">×</button></header><div>${html}</div>`;d.showModal();return d}
 const entries=[['inicio','Visão geral','Resumo e atalhos para o dia a dia','gestao'],['escolas','Cadastro de escolas','Unidades, gestores e turmas','gestao'],['questoes','Cadastrar e importar questões','Enunciados, alternativas e gabaritos','gestao'],['banco-dados','Catálogo de questões','Pesquisar, editar, revisar e organizar','gestao'],['ativacao','Ativação de provas','Seleção, tempo, token e reembaralhamento','avaliacoes'],['monitoramento','Monitoramento','Progresso, entrada atrasada e recuperação','avaliacoes'],['relatorios','Resultados e relatórios','Notas, boletins, exportações e backups','resultados'],['identidade','Identidade visual','Logo, marca de autoria e nome do sistema','resultados']];
@@ -21,16 +21,50 @@ function smallLogo(file){return new Promise((resolve,reject)=>{const img=new Ima
 function download(name,content,type='text/plain'){const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function preferences(){dialog('Preferências e acessibilidade',`<div class="qi-form-grid"><label>Tema<select id="qi-theme"><option value="dark">Escuro</option><option value="light">Claro</option></select></label><label>Tamanho do texto<select id="qi-scale"><option value="1">Padrão</option><option value="1.15">Ampliado</option><option value="1.3">Maior</option></select></label><label class="qi-switch"><input id="qi-contrast" type="checkbox"> Alto contraste</label><label class="qi-switch"><input id="qi-motion" type="checkbox"> Reduzir movimentos</label></div>`);$('#qi-theme').value=document.documentElement.dataset.qiTheme;$('#qi-scale').value=document.documentElement.style.getPropertyValue('--qi-scale')||'1';$('#qi-theme').onchange=e=>{try{localStorage.setItem('quiz_ui_tema',e.target.value)}catch{}applyPreferences()};$('#qi-scale').onchange=e=>{try{localStorage.setItem('quiz_ui_escala',e.target.value)}catch{}applyPreferences()};$('#qi-contrast').checked=document.documentElement.dataset.qiContrast==='true';$('#qi-motion').checked=document.documentElement.dataset.qiMotion==='true';$('#qi-contrast').onchange=e=>{try{localStorage.setItem('quiz_ui_contraste',e.target.checked?'1':'0')}catch{}applyPreferences()};$('#qi-motion').onchange=e=>{try{localStorage.setItem('quiz_ui_movimentos',e.target.checked?'1':'0')}catch{}applyPreferences()}}
 const accessibilityIcon='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="12" cy="4" r="2"/><path d="M3 8h18M12 7v7m0 0-5 7m5-7 5 7"/></svg>';
-function closeAccount(focus=false){const menu=$('#qi-account-menu'),toggle=$('#qi-account-toggle');if(menu)menu.hidden=true;if(toggle){toggle.setAttribute('aria-expanded','false');if(focus)toggle.focus()}}
+function closeAccount(focus=false){const menu=$('#qi-account-menu'),toggle=$('#qi-account-toggle');if(menu)menu.hidden=true;document.body.classList.remove('qi-account-open');if(toggle){toggle.setAttribute('aria-expanded','false');if(focus)toggle.focus()}}
 function accountTools(head){
  const session=head.querySelector('.qi-session');if(!session)return;
  const wrapper=document.createElement('section');wrapper.className='qi-account';wrapper.setAttribute('aria-label','Conta do professor');
- wrapper.innerHTML=`<div class="qi-account-summary"><strong id="qi-account-name">Professor</strong><small>Professor autenticado</small></div><div class="qi-account-dropdown"><button type="button" class="qi-button" id="qi-account-toggle" aria-expanded="false" aria-controls="qi-account-menu">Minha conta <span class="qi-connection-dot" aria-hidden="true"></span><span aria-hidden="true">▾</span></button><div id="qi-account-menu" class="qi-account-menu" hidden><div class="qi-account-native"></div><nav aria-label="Opções da conta"><button type="button" class="qi-button qi-account-feature" data-qi-account-action="security"><strong>Minha conta e segurança</strong><small>Identificação e recuperação de senha</small></button><button type="button" class="qi-button qi-account-feature" data-qi-account-action="accessibility"><strong>Aparência e acessibilidade</strong><small>Tema, texto, contraste e movimentos</small></button><button type="button" class="qi-button qi-account-feature" data-qi-account-action="identity"><strong>Identidade visual</strong><small>Logo, título e marca de autoria</small></button><button type="button" class="qi-button qi-account-feature" data-qi-account-action="guide"><strong>Ajuda e demonstração</strong><small>Orientações passo a passo do painel</small></button></nav></div></div>`;
+ wrapper.innerHTML=`<div class="qi-account-summary"><strong id="qi-account-name">Professor</strong><small>Professor autenticado</small></div><div class="qi-account-dropdown"><button type="button" class="qi-button" id="qi-account-toggle" aria-expanded="false" aria-controls="qi-account-menu">Minha conta <span class="qi-connection-dot" aria-hidden="true"></span><span aria-hidden="true">▾</span></button><div id="qi-account-menu" class="qi-account-menu" hidden><div class="qi-account-profile"><strong id="qi-menu-name"></strong><div class="qi-account-native"></div><small id="qi-menu-role"></small></div><section class="qi-connection-card" aria-label="Conexão do sistema"><strong>Conexão do sistema</strong><span id="qi-connection-state" role="status"></span><small id="qi-connection-sync"></small></section><nav aria-label="Opções da conta"><button type="button" class="qi-button qi-account-feature" data-qi-account-action="security"><strong>Minha conta e segurança</strong><small>Identificação e recuperação de senha</small></button><button type="button" class="qi-button qi-account-feature" data-qi-account-action="accessibility"><strong>Aparência e acessibilidade</strong><small>Tema, texto, contraste e movimentos</small></button><button type="button" class="qi-button qi-account-feature" data-qi-account-action="identity"><strong>Identidade visual</strong><small>Logo, título e marca de autoria</small></button><button type="button" class="qi-button qi-account-feature" data-qi-account-action="guide"><strong>Ajuda e guia de uso</strong><small>Demonstração guiada do painel</small></button></nav></div></div>`;
  session.before(wrapper);wrapper.querySelector('.qi-account-native').append(session);
  document.body.classList.add('qi-account-ready');
  const logout=session.querySelector('.btn-sair-professor');if(logout){logout.textContent='Sair da conta';logout.classList.add('qi-button');wrapper.querySelector('nav').append(logout)}
- const update=()=>{const email=$('#professor-email-logado')?.textContent?.trim()||'';$('#qi-account-name').textContent=email.includes('@')?email.split('@')[0]:'Professor'};update();const email=$('#professor-email-logado');if(email)new MutationObserver(update).observe(email,{childList:true,characterData:true,subtree:true});
- $('#qi-account-toggle').onclick=()=>{const menu=$('#qi-account-menu');menu.hidden=!menu.hidden;$('#qi-account-toggle').setAttribute('aria-expanded',String(!menu.hidden))};
+ const email = $('#professor-email-logado');
+ const sessionStatus = $('#status-conexao-professor');
+ const update = () => {
+  const address = email?.textContent.trim() || '';
+  const name = address.includes('@') ? address.split('@')[0] : 'Professor';
+  const offline = !navigator.onLine || document.body.classList.contains('modo-offline-professor');
+  const role = offline ? 'Consulta local' : address.includes('@') ? 'Professor autenticado' : 'Professor';
+  $('#qi-account-name').textContent = name;
+  $('#qi-menu-name').textContent = name;
+  $('#qi-menu-role').textContent = role;
+  wrapper.querySelector('.qi-account-summary small').textContent = role;
+  wrapper.classList.toggle('qi-account-offline', offline);
+  $('#qi-connection-state').textContent = offline ? 'Modo offline' : 'Navegador online';
+  let lastSync = null;
+  try { lastSync = localStorage.getItem('quiz_relatorios_cache_data_v10c3'); } catch {}
+  const date = lastSync ? new Date(lastSync) : null;
+  $('#qi-connection-sync').textContent = date && Number.isFinite(date.getTime())
+   ? 'Última sincronização dos relatórios: ' + date.toLocaleString('pt-BR')
+   : 'Sem sincronização de relatórios registrada neste navegador.';
+ };
+ const observer = new MutationObserver(update);
+ for (const field of [email, sessionStatus]) {
+  if (field) observer.observe(field, {childList:true, characterData:true, subtree:true});
+ }
+ observer.observe(document.body, {attributes:true, attributeFilter:['class']});
+ window.addEventListener('online', update);
+ window.addEventListener('offline', update);
+ update();
+ $('#qi-account-toggle').onclick = () => {
+  const menu = $('#qi-account-menu');
+  if (!menu.hidden) return closeAccount();
+  update();
+  menu.hidden = false;
+  $('#qi-account-toggle').setAttribute('aria-expanded', 'true');
+  document.body.classList.add('qi-account-open');
+ };
  document.addEventListener('click',e=>{const action=e.target.closest('[data-qi-account-action]');if(action){closeAccount();if(action.dataset.qiAccountAction==='accessibility')preferences();if(action.dataset.qiAccountAction==='identity')showIdentity();if(action.dataset.qiAccountAction==='guide')$('#btn-demo-prof')?.click();if(action.dataset.qiAccountAction==='security')showAccount();return}if(!e.target.closest('.qi-account'))closeAccount()});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#qi-account-menu').hidden){e.preventDefault();closeAccount(true)}});
 }
