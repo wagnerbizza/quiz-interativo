@@ -1421,7 +1421,6 @@ function inicializarPaginaEscola() {
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 8px;">
         <h4 style="margin: 0; color: #60a5fa; font-size: 15px; display:flex; align-items:center; gap:6px;">📊 Resumo Consolidado das Configurações Atuais (${escolaNome})</h4>
         <div style="display:flex; gap:8px;">
-          <button type="button" onclick="if(window.history.length > 1) { window.history.back(); } else { window.location.href='painel.html'; }" class="btn-acao-mini" style="background:#475569; color:white; padding:6px 12px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center;">🏠 Retornar à Tela Anterior</button>
         </div>
       </div>
       <div id="conteudo-resumo-consolidado" style="font-size: 13px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; color: #cbd5e1;">

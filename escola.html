@@ -103,6 +103,10 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
     @media (max-height: 400px) { .barra-botoes-fixa { position: static; } }
 
 </style>
+<style>
+.escola-navegacao { display:flex; justify-content:flex-start; margin-bottom: .75rem; }
+.escola-navegacao a { margin:0; background:var(--card-bg); border:1px solid var(--border); }
+</style>
 </head>
 <body>
 
@@ -113,6 +117,9 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
       <h1>⚙️ Configuração Individual da Unidade Escolar</h1>
     </header>
 
+    <nav class="escola-navegacao" aria-label="Navegação da unidade">
+      <a href="painel.html#escolas" class="btn-acao">⌂ Home do professor</a>
+    </nav>
     <div class="banner-topo">
       <h2 id="banner-escola-ativa-isolada">🏫 Configurando Unidade: Carregando...</h2>
       <div id="texto-resumo-escolhas" class="resumo-topo-detalhes">
@@ -130,7 +137,6 @@ no app.js pela seção: "PÁGINA DA ESCOLA".
 
     <div class="barra-botoes-fixa">
       <button type="button" id="btn-salvar-isolada" class="btn-acao" style="background-color: #22c55e;">Salvar configurações</button>
-      <a href="painel.html" class="btn-acao" style="background-color: #4b5563; text-align: center;">← Voltar ao painel</a>
     </div>
 
   </div>
