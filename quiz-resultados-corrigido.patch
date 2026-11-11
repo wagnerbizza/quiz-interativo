@@ -1,0 +1,110 @@
+diff --git a/app.js b/app.js
+index ca83702..dddc646 100644
+--- a/app.js
++++ b/app.js
+@@ -4607,8 +4607,7 @@ if (window.location.pathname.includes("painel.html")) {
+   };
+ 
+   function resultadosParaExportacao() {
+-    return (resultadosFiltradosCache && resultadosFiltradosCache.length)
+-      ? resultadosFiltradosCache : resultadosGlobaisCache.filter(r => !alunosOcultosCache.has(r.idDoc) && !alunosLixeiraCache.has(r.idDoc));
++    return resultadosFiltradosCache;
+   }
+   // Mantém o motivo registrado pelo aluno visível nos relatórios e exportações.
+   // Resultados antigos sem motivo explícito permanecem como finalizados, sem inferir a causa.
+diff --git a/painel.html b/painel.html
+index ea2fe4b..ac7a921 100644
+--- a/painel.html
++++ b/painel.html
+@@ -1832,6 +1832,9 @@ body.light-mode #aba-banco-dados > p {
+   outline:2px solid var(--accent, currentColor); outline-offset:2px;
+ }
+ </style>
++<style>
++.tabela-resultados th:is([aria-sort="ascending"],[aria-sort="descending"]) .quiz-seta-ordem { color:var(--accent, currentColor); font-weight:900; }
++</style>
+ </head>
+ <body>
+ 
+@@ -2202,6 +2205,11 @@ body.light-mode #aba-banco-dados > p {
+             <div id="dropdown-menu-resultados" class="dropdown-menu-win"></div>
+           </div>
+         </div>
++        <div class="qi-actions">
++          <button type="button" class="qi-button" id="limpar-filtros-resultados">Limpar filtros</button>
++          <span id="resumo-selecao-resultados" class="qi-muted" role="status"></span>
++        </div>
++        <p class="qi-muted">Excel, PDF e CSV incluem os resultados dos filtros atuais.</p>
+         <div class="qi-actions">
+           <button type="button" class="qi-button" onclick="exportarResultadosExcel()">📊 Excel</button>
+ <button type="button" class="qi-button" onclick="exportarResultadosPDF()">🖨️ PDF</button>
+@@ -2224,7 +2232,7 @@ body.light-mode #aba-banco-dados > p {
+       <table class="tabela-resultados">
+         <thead>
+           <tr>
+-            <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-resultados" onclick="selecionarTodosResultados(this.checked)"></th>
++            <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-resultados" aria-label="Selecionar todos os resultados visíveis" onclick="selecionarTodosResultados(this.checked)"></th>
+             <th>Status</th><th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo</th><th>Acertos</th><th>Nota</th><th style="text-align: center;">Ações</th>
+           </tr>
+         </thead>
+@@ -2547,7 +2555,13 @@ window.addEventListener("resize",()=>{
+       const valorA = a.cells[coluna]?.innerText || "";
+       const valorB = b.cells[coluna]?.innerText || "";
+ 
+-      return comparar(valorA, valorB) * (crescente ? 1 : -1);
++      const chaveData = valor => valor.trim().replace(
++        /^(\d{2})\/(\d{2})\/(\d{4})[,\s]+(\d{2}:\d{2}:\d{2})$/,
++        "$3-$2-$1 $4"
++      );
++      const porData = tabela.classList.contains("tabela-resultados") && coluna === 2;
++      const ordem = porData ? comparar(chaveData(valorA), chaveData(valorB)) : comparar(valorA, valorB);
++      return ordem * (crescente ? 1 : -1);
+     });
+ 
+     const fragmento = document.createDocumentFragment();
+@@ -2576,6 +2590,7 @@ window.addEventListener("resize",()=>{
+       const seta = document.createElement("span");
+       seta.className = "quiz-seta-ordem";
+       seta.textContent = "↕";
++      seta.setAttribute("aria-hidden", "true");
+       th.appendChild(seta);
+ 
+       function alternarOrdem() {
+@@ -2611,6 +2626,37 @@ window.addEventListener("resize",()=>{
+ 
+   function iniciarOrdenacao() {
+     tabelas.forEach(prepararTabela);
++    const corpo = document.getElementById("corpo-tabela");
++    const resumo = document.getElementById("resumo-selecao-resultados");
++    const todos = document.getElementById("chk-marcar-todos-resultados");
++    if (!corpo || !resumo || !todos) return;
++
++    const atualizarSelecao = () => {
++      const caixas = [...corpo.querySelectorAll(".chk-item-resultado")];
++      const marcadas = caixas.filter(caixa => caixa.checked).length;
++      const texto = `${caixas.length} resultado(s) · ${marcadas} selecionado(s)`;
++      if (resumo.textContent !== texto) resumo.textContent = texto;
++      todos.checked = caixas.length > 0 && marcadas === caixas.length;
++      todos.indeterminate = marcadas > 0 && marcadas < caixas.length;
++    };
++
++    corpo.closest("table").addEventListener("change", atualizarSelecao);
++    document.getElementById("aba-relatorios").addEventListener("click", () => queueMicrotask(atualizarSelecao));
++    new MutationObserver(mudancas => {
++      if (mudancas.some(mudanca => [...mudanca.removedNodes].some(no => !no.isConnected))) {
++        corpo.closest("table").querySelectorAll('th[data-quiz-ordenavel]').forEach(th => {
++          th.setAttribute("aria-sort", "none");
++          th.querySelector(".quiz-seta-ordem").textContent = "↕";
++        });
++      }
++      atualizarSelecao();
++    }).observe(corpo, { childList: true });
++    document.getElementById("limpar-filtros-resultados")?.addEventListener("click", () => {
++      document.getElementById("input-busca-resultados").value = "";
++      document.getElementById("select-filtro-escola-relatorio").value = "TODAS";
++      window.renderizarTabelaResultadosFiltrada();
++    });
++    atualizarSelecao();
+   }
+ 
+   if (document.readyState === "loading") {
