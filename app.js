@@ -3587,11 +3587,20 @@ if (window.location.pathname.includes("painel.html")) {
   }
 
   const professorGoogleUid = "S8gicgKDwsep2gZmeg7qBLcSNCf1";
-  window.quizGoogleVinculado = () => {
+  window.quizPerfilConta = () => {
     const user = auth.currentUser;
-    return user?.uid === professorGoogleUid
-      ? user.providerData.some(provider => provider.providerId === "google.com")
-      : null;
+    if (!user || document.body.classList.contains("modo-offline-professor")) return null;
+    const google = user.providerData.find(provider => provider.providerId === "google.com");
+    const password = user.providerData.find(provider => provider.providerId === "password");
+    return {
+      nome: user.displayName || user.email?.split("@")[0] || "Professor",
+      email: password?.email || user.email || "",
+      confirmado: user.emailVerified,
+      senha: Boolean(password),
+      google: Boolean(google),
+      googleEmail: google?.email || "",
+      podeVincular: user.uid === professorGoogleUid,
+    };
   };
   window.quizVincularGoogle = async () => {
     const user = auth.currentUser;
@@ -3603,7 +3612,7 @@ if (window.location.pathname.includes("painel.html")) {
   window.quizRecuperarSenhaAtual = async function() {
     const usuario=auth.currentUser;
     if(!usuario?.email)throw new Error("Nenhuma conta autenticada.");
-    await sendPasswordResetEmail(auth,usuario.email);
+    await sendPasswordResetEmail(auth, usuario.providerData.find(provider => provider.providerId === "password")?.email || usuario.email);
   };
   window.quizResumoInterface = function() {
     return {escolas:listaEscolasCache.length,questoes:questoesBancoCache.length,resultados:resultadosGlobaisCache.length};

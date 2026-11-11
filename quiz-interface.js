@@ -58,8 +58,8 @@ function paintIdentity(){
 document.querySelectorAll('[data-qi-title]').forEach(e=>e.textContent=identity.titulo);document.querySelectorAll('[data-qi-subtitle]').forEach(e=>e.textContent=identity.subtitulo);document.querySelectorAll('[data-qi-mark]').forEach(e=>e.textContent=identity.marca);document.querySelectorAll('.qi-logo').forEach(e=>{e.replaceChildren();if(identity.logo){const img=document.createElement('img');img.referrerPolicy='no-referrer';img.src=identity.logo;img.alt=identity.titulo;e.append(img)}else e.textContent='◈'});}
 function feedback(msg){const el=$('#toast-notification');if(el){el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',5000)}else alert(msg)}
 function dialog(title,html){let d=$('#qi-dialog');if(!d){d=document.createElement('dialog');d.id='qi-dialog';d.className='qi-dialog';document.body.append(d)}d.innerHTML=`<header><h2>${safe(title)}</h2><button class="qi-button" type="button" data-qi-close aria-label="Fechar janela">×</button></header><div>${html}</div>`;d.showModal();return d}
-const entries=[['inicio','Visão geral','Resumo e atalhos para o dia a dia','gestao'],['escolas','Cadastro de escolas','Unidades, gestores e turmas','gestao'],['questoes','Cadastrar e importar questões','Enunciados, alternativas e gabaritos','gestao'],['banco-dados','Catálogo de questões','Pesquisar, editar, revisar e organizar','gestao'],['ativacao','Ativação de provas','Seleção, tempo, token e reembaralhamento','avaliacoes'],['monitoramento','Monitoramento','Progresso, entrada atrasada e recuperação','avaliacoes'],['relatorios','Resultados e relatórios','Notas, boletins, exportações e backups','resultados'],['identidade','Configurações do sistema','Logo, marca de autoria e nome do sistema','resultados']];
-function navigate(id){const original=$('.btn-aba[data-aba="aba-'+id+'"]');if(original){original.click();document.querySelectorAll('.qi-page').forEach(e=>e.hidden=true);setCurrent(id);return}if(id==='inicio'){showCustom('inicio');return}if(id==='identidade'){showIdentity();return}}
+const entries=[['inicio','Visão geral','Resumo e atalhos para o dia a dia','gestao'],['escolas','Cadastro de escolas','Unidades, gestores e turmas','gestao'],['questoes','Cadastrar e importar questões','Enunciados, alternativas e gabaritos','gestao'],['banco-dados','Catálogo de questões','Pesquisar, editar, revisar e organizar','gestao'],['ativacao','Ativação de provas','Seleção, tempo, token e reembaralhamento','avaliacoes'],['monitoramento','Monitoramento','Progresso, entrada atrasada e recuperação','avaliacoes'],['relatorios','Resultados e relatórios','Notas, boletins, exportações e backups','resultados'],['conta','Minha conta e segurança','Perfil, senha e vínculo com Google','resultados'],['identidade','Configurações do sistema','Logo, marca de autoria e nome do sistema','resultados']];
+function navigate(id){const original=$('.btn-aba[data-aba="aba-'+id+'"]');if(original){original.click();document.querySelectorAll('.qi-page').forEach(e=>e.hidden=true);setCurrent(id);return}if(id==='inicio'){showCustom('inicio');return}if(id==='identidade'){showIdentity();return}if(id==='conta'){showAccount();return}}
 function showCustom(id){const escola=$('.btn-aba[data-aba="aba-escolas"]');if(escola)escola.click();document.querySelectorAll('.aba-conteudo').forEach(e=>e.classList.add('hidden'));document.querySelectorAll('.btn-aba').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.qi-page').forEach(e=>e.hidden=e.id!=='qi-'+id);if(id==='inicio'){refreshOverview();history.replaceState(null,'','#inicio')}setCurrent(id)}
 function setCurrent(id){page=id;const item=entries.find(x=>x[0]===id);if(!item)return;$('#qi-location').textContent=item[1];document.querySelectorAll('.qi-menus details').forEach(e=>{e.classList.toggle('qi-current',e.dataset.qiGroup===item[3]);e.open=false});document.querySelectorAll('[data-qi-page]').forEach(e=>e.setAttribute('aria-current',e.dataset.qiPage===id?'page':'false'));$('#qi-function-search').value='';$('#qi-search-results').replaceChildren()}
 function refreshOverview(){const api=window.quizResumoInterface;const r=typeof api==='function'?api():{escolas:null,questoes:null,resultados:null};for(const [id,key]of [['schools','escolas'],['questions','questoes'],['reports','resultados']]){const el=$('#qi-stat-'+id);if(el)el.textContent=r[key]===null?'—':Number(r[key]).toLocaleString('pt-BR')}}
@@ -149,31 +149,65 @@ function accountTools(head){
  document.addEventListener('click',e=>{const action=e.target.closest('[data-qi-account-action]');if(action){closeAccount();if(action.dataset.qiAccountAction==='accessibility')preferences();if(action.dataset.qiAccountAction==='settings')showIdentity();if(action.dataset.qiAccountAction==='guide')$('#btn-demo-prof')?.click();if(action.dataset.qiAccountAction==='security')showAccount();return}if(!e.target.closest('.qi-account'))closeAccount()});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#qi-account-menu').hidden){e.preventDefault();closeAccount(true)}});
 }
-function showAccount(){const email=$('#professor-email-logado')?.textContent||'Aguardando autenticação';dialog('Minha conta e segurança',`<p class="qi-kicker">CONTA DO PROFESSOR</p><p><strong>${safe(email)}</strong></p><p class="qi-note">Acesso por e-mail e senha. Se precisar trocar a senha, solicite um link de recuperação para o e-mail desta conta.</p><button type="button" class="qi-button" id="qi-reset-password">Enviar recuperação de senha para este e-mail</button><p id="qi-password-status" role="status" class="qi-muted"></p><div id="qi-google-link"></div>`);const linked = window.quizGoogleVinculado?.();
- if (typeof linked === 'boolean') {
-  const area = $('#qi-google-link');
-  if (linked) {
-   area.textContent = 'Google vinculado';
-  } else {
-   area.innerHTML = '<button type="button" class="qi-button" id="qi-link-google">Vincular Google</button><p role="status"></p>';
-   const button = $('#qi-link-google');
-   button.onclick = async () => {
-    button.disabled = true;
-    const status = area.querySelector('[role="status"]');
-    try {
-     await window.quizVincularGoogle();
-     area.textContent = 'Google vinculado. Você já pode entrar com Google.';
-    } catch (error) {
-     status.textContent = error.code === 'auth/credential-already-in-use'
-      ? 'Esse Google já está associado a outro cadastro no Quiz.'
-      : 'O vínculo não foi concluído. Confira a conta selecionada e tente novamente.';
-     button.disabled = false;
-    }
-   };
-  }
+function showAccount() {
+ const profile = window.quizPerfilConta?.();
+ let section = $('#qi-conta');
+ if (!section) {
+  section = document.createElement('section');
+  section.id = 'qi-conta';
+  section.className = 'qi-page qi-card qi-settings-panel';
+  section.setAttribute('aria-labelledby', 'qi-account-title');
+  $('.container').append(section);
  }
- $('#qi-reset-password').onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{if(typeof window.quizRecuperarSenhaAtual!=='function')throw Error('Aguarde a autenticação do painel.');await window.quizRecuperarSenhaAtual();$('#qi-password-status').textContent='Solicitação enviada. Confira o e-mail desta conta.'}catch(err){$('#qi-password-status').textContent='Não foi possível solicitar a recuperação: '+err.message}finally{b.disabled=false}}}
-function init(){document.body.classList.add('qi-modern');if(location.pathname.endsWith('index.html')||location.pathname.endsWith('/')){document.body.classList.add('qi-student');const atraso=$('#codigo-entrada-atrasada-aluno'),recuperacao=$('#codigo-recuperacao-aluno');if(atraso)atraso.placeholder='Código de entrada atrasada';if(recuperacao)recuperacao.placeholder='Código de recuperação';}if(login)document.body.classList.add('qi-login');applyPreferences();const head=document.createElement('div');head.className='qi-header';head.innerHTML=`<a class="qi-brand" href="apresentacao.html"><span class="qi-logo"></span><span><b data-qi-title></b><small data-qi-subtitle></small></span></a><div class="qi-actions"><button type="button" class="qi-button" id="qi-preferences">◐ Preferências</button>${panel?'<a class="qi-button" href="index.html" target="_blank" rel="noopener">Área do aluno →</a>':'<a class="qi-button" href="login.html">Área do professor →</a>'}</div>`;document.body.prepend(head);if(panel){const session=$('.sessao-professor');if(session){session.classList.add('qi-session');head.querySelector('.qi-actions').prepend(session);const oldHeader=$('.container>header');if(oldHeader)oldHeader.hidden=true}const reload=$('#btn-recarregar-painel');if(reload){reload.textContent='↻ Recarregar';head.querySelector('.qi-actions').append(reload)}const bar=$('.barra-acoes-topo');if(bar)bar.hidden=true}const foot=document.createElement('footer');foot.className='qi-footer';foot.innerHTML='<span>Gestão de avaliações e aprendizagem</span><span class="qi-watermark" data-qi-mark></span>';document.body.append(foot);const pref=$('#qi-preferences');pref.innerHTML=accessibilityIcon+'<span>Preferências de leitura</span>';pref.classList.add('qi-preferences-entry');pref.onclick=preferences;const floating=document.createElement('button');floating.type='button';floating.className='qi-accessibility-float';floating.setAttribute('aria-label','Abrir opções de acessibilidade');floating.title='Acessibilidade';floating.innerHTML=accessibilityIcon;floating.onclick=preferences;document.body.append(floating);if(panel){accountTools(head);shell();enhanceQuestions()}document.addEventListener('click',e=>{const n=e.target.closest('[data-qi-page]');if(n)navigate(n.dataset.qiPage);if(e.target.closest('[data-qi-close]'))$('#qi-dialog').close()});document.querySelectorAll('label:not([for])').forEach((l,i)=>{if(l.querySelector('input,select,textarea'))return;const input=l.nextElementSibling;if(input&&/^(INPUT|SELECT|TEXTAREA)$/.test(input.tagName)){if(!input.id)input.id='qi-campo-'+i;l.htmlFor=input.id}});paintIdentity();fetch('identidade-quiz.json?_='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('identidade ausente');return r.json()}).then(x=>{if(Number(x.atualizadoEm)>=identity.atualizadoEm){identity=validIdentity(x);try{localStorage.setItem('quiz_identidade_v1',JSON.stringify(identity))}catch{}paintIdentity()}}).catch(()=>{});}
+ section.innerHTML = '<h2 id="qi-account-title" tabindex="-1">Minha conta e segurança</h2>';
+ if (profile) {
+  const methods = [profile.senha ? 'E-mail e senha' : '', profile.google ? 'Google' : ''].filter(Boolean).join(', ');
+  const fields = [
+   ['Nome', profile.nome], ['E-mail da conta', profile.email],
+   ['Perfil de acesso', 'Professor'], ['Confirmação do e-mail', profile.confirmado ? 'Confirmado' : 'Pendente'],
+   ['Formas de entrada', methods || '—'],
+  ];
+  section.insertAdjacentHTML('beforeend', `<p class="qi-muted">Confira a conta que está usando nesta sessão.</p>
+   <dl class="qi-account-fields">${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${safe(value)}</dd></div>`).join('')}</dl>
+   <div class="qi-actions">${profile.senha ? '<button type="button" class="qi-button" id="qi-reset-password">Alterar minha senha</button>' : ''}
+   <button type="button" class="qi-button" id="qi-account-sign-out">Sair desta conta</button></div>
+   <p class="qi-muted" id="qi-password-status" role="status">${profile.senha ? 'O link para escolher uma nova senha será enviado para ' + safe(profile.email) + '.' : ''}</p>
+   <section class="qi-account-google"><h3>Entrada com Google</h3>
+   ${profile.google ? '<p><strong>Google vinculado</strong><br>' + safe(profile.googleEmail || 'E-mail não informado pelo Google') + '</p>'
+    : profile.podeVincular ? '<p>Associe uma conta Google ao seu cadastro atual.</p><button type="button" class="qi-button" id="qi-link-google">Vincular Google</button><p id="qi-link-status" role="status"></p>'
+    : '<p>Google não vinculado.</p>'}</section>`);
+  $('#qi-account-sign-out').onclick = () => $('.qi-account .btn-sair-professor')?.click();
+  const reset = $('#qi-reset-password');
+  if (reset) reset.onclick = async () => {
+   reset.disabled = true;
+   try {
+    await window.quizRecuperarSenhaAtual();
+    $('#qi-password-status').textContent = 'Link enviado. Confira a caixa de entrada e o spam.';
+   } catch {
+    $('#qi-password-status').textContent = 'Não foi possível enviar o link. Tente novamente.';
+   } finally { reset.disabled = false; }
+  };
+  const link = $('#qi-link-google');
+  if (link) link.onclick = async () => {
+   link.disabled = true;
+   try {
+    await window.quizVincularGoogle();
+    showAccount();
+   } catch (error) {
+    $('#qi-link-status').textContent = error.code === 'auth/credential-already-in-use'
+     ? 'Esse Google já está associado a outro cadastro no Quiz.'
+     : 'O vínculo não foi concluído. Confira a conta selecionada e tente novamente.';
+    link.disabled = false;
+   }
+  };
+ } else {
+  section.insertAdjacentHTML('beforeend', '<p>Entre no Quiz com uma conexão ativa para gerenciar a conta.</p>');
+ }
+ showCustom('conta');
+ $('#qi-account-title').focus();
+ section.scrollIntoView({block:'start'});
+}
+function init(){document.body.classList.add('qi-modern');if(location.pathname.endsWith('index.html')||location.pathname.endsWith('/')){document.body.classList.add('qi-student');const atraso=$('#codigo-entrada-atrasada-aluno'),recuperacao=$('#codigo-recuperacao-aluno');if(atraso)atraso.placeholder='Código de entrada atrasada';if(recuperacao)recuperacao.placeholder='Código de recuperação';}if(login)document.body.classList.add('qi-login');applyPreferences();const head=document.createElement('div');head.className='qi-header';head.innerHTML=`<a class="qi-brand" href="apresentacao.html"><span class="qi-logo"></span><span><b data-qi-title></b><small data-qi-subtitle></small></span></a><div class="qi-actions"><button type="button" class="qi-button" id="qi-preferences">◐ Preferências</button>${panel?'<a class="qi-button" href="index.html" target="_blank" rel="noopener">Área do aluno →</a>':login?'<a class="qi-button" href="apresentacao.html">Voltar à apresentação ↗</a>':'<a class="qi-button" href="login.html">Área do professor →</a>'}</div>`;document.body.prepend(head);if(panel){const session=$('.sessao-professor');if(session){session.classList.add('qi-session');head.querySelector('.qi-actions').prepend(session);const oldHeader=$('.container>header');if(oldHeader)oldHeader.hidden=true}const reload=$('#btn-recarregar-painel');if(reload){reload.textContent='↻ Recarregar';head.querySelector('.qi-actions').append(reload)}const bar=$('.barra-acoes-topo');if(bar)bar.hidden=true}const foot=document.createElement('footer');foot.className='qi-footer';foot.innerHTML='<span>Gestão de avaliações e aprendizagem</span><span class="qi-watermark" data-qi-mark></span>';document.body.append(foot);const pref=$('#qi-preferences');pref.innerHTML=accessibilityIcon+'<span>Preferências de leitura</span>';pref.classList.add('qi-preferences-entry');pref.onclick=preferences;const floating=document.createElement('button');floating.type='button';floating.className='qi-accessibility-float';floating.setAttribute('aria-label','Abrir opções de acessibilidade');floating.title='Acessibilidade';floating.innerHTML=accessibilityIcon;floating.onclick=preferences;document.body.append(floating);if(panel){accountTools(head);shell();enhanceQuestions()}document.addEventListener('click',e=>{const n=e.target.closest('[data-qi-page]');if(n)navigate(n.dataset.qiPage);if(e.target.closest('[data-qi-close]'))$('#qi-dialog').close()});document.querySelectorAll('label:not([for])').forEach((l,i)=>{if(l.querySelector('input,select,textarea'))return;const input=l.nextElementSibling;if(input&&/^(INPUT|SELECT|TEXTAREA)$/.test(input.tagName)){if(!input.id)input.id='qi-campo-'+i;l.htmlFor=input.id}});paintIdentity();fetch('identidade-quiz.json?_='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('identidade ausente');return r.json()}).then(x=>{if(Number(x.atualizadoEm)>=identity.atualizadoEm){identity=validIdentity(x);try{localStorage.setItem('quiz_identidade_v1',JSON.stringify(identity))}catch{}paintIdentity()}}).catch(()=>{});}
 function enhanceQuestions(){const aba=$('#aba-questoes');if(!aba)return;aba.querySelector('h2').textContent='Biblioteca de questões';const form=$('#form-cadastrar-questao');if(form){const e=$('#cad-op-e');if(e){e.required=false;e.placeholder='Alternativa E (opcional)'}const title=document.createElement('p');title.className='qi-note';title.textContent='Cadastre questões com quatro ou cinco alternativas. Confira o gabarito antes de salvar. Para várias questões, use a importação com revisão abaixo.';form.before(title)}const input=$('#input-arquivo-questoes');if(input)input.accept='.txt,.docx,.xlsx,.xls,.json';const tools=document.createElement('section');tools.className='qi-library-tools';tools.innerHTML=`<h3>Mais formas de adicionar questões</h3><p class="qi-muted">Importe um arquivo, cole conteúdo estruturado ou carregue uma fonte pública em JSON. Você revisa tudo antes de salvar.</p><div class="qi-actions"><button type="button" class="qi-button" id="qi-model">Baixar modelo JSON</button><button type="button" class="qi-button" id="qi-internet">Buscar conteúdo na internet</button><button type="button" class="qi-button" id="qi-url">Importar JSON por endereço</button></div><p class="qi-muted">Use conteúdos cuja utilização seja permitida e registre a fonte. Sites que não autorizam leitura pelo navegador precisam ser importados por arquivo.</p>`;form?.after(tools);$('#qi-model').onclick=()=>download('modelo-questoes-quiz.json',JSON.stringify({questoes:[{materia:'Programação Front-End',pergunta:'Qual linguagem estrutura uma página web?',opcoes:['HTML','CSS','SQL','Python'],correta:'A',fonte:'Material do professor'}]},null,2),'application/json');$('#qi-internet').onclick=()=>{const materia=$('#cad-materia')?.value||'Ensino Médio';window.open('https://www.google.com/search?q='+encodeURIComponent(materia+' questões gabarito material educacional licença aberta'),'_blank','noopener,noreferrer')};$('#qi-url').onclick=()=>{dialog('Importar questões por endereço',`<form id="qi-url-form"><label>Endereço HTTPS de um arquivo JSON público<input type="url" id="qi-source-url" placeholder="https://…/questoes.json" required></label><p class="qi-note">A fonte precisa permitir leitura pelo navegador e fornecer pergunta, alternativas e gabarito. Não informe links com senhas ou tokens.</p><button class="qi-button primary" type="submit">Carregar para revisão</button><p id="qi-url-status" role="status"></p></form>`);$('#qi-url-form').onsubmit=async e=>{e.preventDefault();const url=new URL($('#qi-source-url').value);if(url.protocol!=='https:'||url.username||url.password){$('#qi-url-status').textContent='Informe um endereço HTTPS público.';return}const btn=e.submitter;btn.disabled=true;$('#qi-url-status').textContent='Carregando…';try{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);let text;try{const r=await fetch(url.href,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!r.ok)throw Error('A fonte respondeu HTTP '+r.status);text=await r.text()}finally{clearTimeout(timer)}if(text.length>2000000)throw Error('O arquivo excede 2 MB.');window.QuizBiblioteca.revisarTexto(text,$('#cad-materia')?.value,url.href)}catch(err){$('#qi-url-status').textContent='Não foi possível ler esta fonte. Baixe o JSON e use a importação por arquivo. '+err.message}finally{btn.disabled=false}}};}
 window.QuizInterface={get identidade(){return {...identity}},dialog,safe,feedback,download,navigate,refreshOverview};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

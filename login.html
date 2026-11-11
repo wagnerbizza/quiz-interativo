@@ -16,18 +16,51 @@ button:disabled{opacity:.6}.msg{display:none;margin-top:14px;padding:10px;border
 .card .logo{margin-top:12px}
 .marca-entrada{position:fixed;bottom:12px;left:14px;font-size:12px;color:#94a3b8;opacity:.65;pointer-events:none}
 </style><link rel="stylesheet" href="quiz-interface.css">
+<style>
+.qi-login main.quiz-login-card {
+  width: min(520px, calc(100% - 32px)) !important;
+  margin: clamp(28px, 7vw, 68px) auto !important;
+  border-top: 4px solid var(--qi-accent) !important;
+  padding: clamp(20px, 5vw, 32px) !important;
+}
+.qi-login .quiz-login-card h1 {
+  text-align: left;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  margin-bottom: 16px;
+}
+.qi-login #btn-google {
+  background: #f6f7f8 !important;
+  color: #172332 !important;
+  border-color: #b7c2cd !important;
+  min-height: 48px;
+}
+.qi-login #btn-google:hover { background: #e7edf4 !important; }
+.quiz-login-divider { border-top: 1px solid var(--qi-line); padding-top: 14px; }
+.quiz-password-row { display: flex; align-items: stretch; gap: 8px; }
+.quiz-password-row input { min-width: 0; }
+.quiz-password-row #btn-mostrar-senha { flex: 0 0 auto; width: auto; margin: 0; }
+.qi-login .quiz-login-card :is(#btn-login, #btn-recuperar-senha) { width: auto; margin-right: 8px; }
+</style>
 <script src="quiz-interface.js" defer></script>
 </head><body>
-<main class="card"><a class="voltar-apresentacao" href="apresentacao.html">← Voltar à apresentação</a><div class="logo">🔐</div><h1>Painel do Professor</h1>
-<div class="sub">Acesso protegido pelo Firebase Authentication</div>
-<button type="button" class="qi-button" id="btn-google">Entrar com Google</button>
-<p>Já tem conta institucional? Entre com a senha e vincule o Google em Minha conta.</p>
+<main class="card quiz-login-card">
+<p class="qi-kicker">ACESSO AO PAINEL</p><h1>Entrar como professor</h1>
+<button type="button" class="qi-button" id="btn-google"><svg class="google-symbol" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.32 2.98-7.36Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.05.97-3.38.97-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.93a6 6 0 0 1 0-3.86V7.48H3.07a10 10 0 0 0 0 9.04l3.34-2.59Z"/><path fill="#EA4335" d="M12 5.95c1.47 0 2.78.5 3.82 1.5l2.86-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.48l3.34 2.59C7.2 7.7 9.4 5.95 12 5.95Z"/></svg> Entrar com Google</button>
+<p class="qi-muted">Já tem conta institucional? Entre com a senha e vincule o Google em Minha conta.</p>
+<p class="qi-muted quiz-login-divider">Ou entre com e-mail e senha</p>
 <form id="form-login"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required>
-<label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required>
-<button id="btn-login">🔑 Entrar no Painel</button>
+<label for="senha">Senha</label><div class="quiz-password-row"><input id="senha" type="password" autocomplete="current-password" required><button type="button" class="qi-button" id="btn-mostrar-senha" aria-controls="senha" aria-pressed="false">Mostrar</button></div>
+<button id="btn-login" class="qi-button primary">Entrar</button>
 <button id="btn-recuperar-senha" type="button" class="qi-button">Esqueci minha senha</button>
 <button id="btn-entrar-offline" type="button" style="display:none;background:#475569;">📴 Entrar em modo offline</button><div id="mensagem" class="msg"></div></form></main><div class="marca-entrada" aria-hidden="true">© 2026 WagnerBIZZA</div>
 <script>
+document.getElementById('btn-mostrar-senha').onclick = event => {
+  const input = document.getElementById('senha');
+  const visible = input.type === 'password';
+  input.type = visible ? 'text' : 'password';
+  event.currentTarget.textContent = visible ? 'Ocultar' : 'Mostrar';
+  event.currentTarget.setAttribute('aria-pressed', String(visible));
+};
 /* Retorna à apresentação após 3 minutos sem interação, somente enquanto o login está aberto. */
 (function(){
   const destino='apresentacao.html', limite=180000;
@@ -37,7 +70,7 @@ button:disabled{opacity:.6}.msg{display:none;margin-top:14px;padding:10px;border
   setInterval(()=>{
     if(document.hidden || Date.now()-ultimaInteracao<limite) return;
     const botao=document.getElementById('btn-login');
-    if(botao && botao.disabled) return; // Não interromper autenticação.
+    if(botao?.disabled || document.getElementById("btn-google")?.disabled) return; // Não interromper autenticação.
     location.replace(destino);
   },10000);
 })();
