@@ -173,3 +173,44 @@ html[data-qi-theme="light"][data-qi-palette="amber"] { --qi-accent: #854d0e; --q
   .qi-shell .qi-menus { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
   .qi-shell .qi-menus summary { flex-wrap: wrap; }
 }
+
+
+/* Padrao visual da entrada e das preferencias. */
+body.qi-login main.quiz-login-card {
+  border: 1px solid var(--qi-line) !important;
+  border-top: 3px solid var(--qi-accent) !important;
+  border-radius: 16px !important;
+  padding: clamp(20px, 4vw, 32px) !important;
+}
+body.qi-login main.quiz-login-card #btn-google {
+  min-height: 44px !important;
+  padding: 8px 14px !important;
+  gap: 8px;
+  font: 600 .875rem Inter, Arial, sans-serif !important;
+  border-radius: 8px !important;
+}
+.qi-login #qi-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+.qi-login #qi-dialog header h2 {
+  min-width: 0;
+  margin: 0;
+  font: 700 1.25rem/1.25 Inter, Arial, sans-serif !important;
+}
+.qi-login #qi-dialog header [data-qi-close] {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 40px;
+  min-height: 40px;
+  margin: 0 !important;
+  padding: 6px 10px !important;
+  border-radius: 8px;
+}
+
+.qi-login #qi-dialog .qi-form-grid > label { margin: 0; }
+.qi-login .qi-header #qi-preferences { width: auto; margin: 0; }
+
