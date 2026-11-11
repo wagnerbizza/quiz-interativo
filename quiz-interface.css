@@ -99,3 +99,9 @@ html[data-qi-palette="amber"] { --qi-accent: #ffd477; --qi-ink: #241600; }
 html[data-qi-theme="light"][data-qi-palette="blue"] { --qi-accent: #075985; --qi-ink: #fff; }
 html[data-qi-theme="light"][data-qi-palette="violet"] { --qi-accent: #6b21a8; --qi-ink: #fff; }
 html[data-qi-theme="light"][data-qi-palette="amber"] { --qi-accent: #854d0e; --qi-ink: #fff; }
+
+/* Destaca as opções da conta como no Arena. */
+#qi-account-menu nav :is(button, a):is(:hover, :focus-visible) {
+  background: var(--qi-bg) !important;
+  border-color: var(--qi-accent) !important;
+}
