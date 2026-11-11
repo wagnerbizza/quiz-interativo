@@ -10,12 +10,12 @@
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
   "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1794410908785,
+  "expiraEmMillis": 1794414039121,
   "turmasAtivas": [],
   "token": "",
-  "seedReordenacao": "1794410908785",
-  "publicadoEm": "2026-11-11T15:28:28.785Z",
-  "encerradoEm": "2026-11-11T15:28:28.785Z",
+  "seedReordenacao": "1794414039121",
+  "publicadoEm": "2026-11-11T16:20:39.121Z",
+  "encerradoEm": "2026-11-11T16:20:39.122Z",
   "motivoEncerramento": "Avaliação encerrada pelo professor.",
   "questoesPublicas": []
 }
