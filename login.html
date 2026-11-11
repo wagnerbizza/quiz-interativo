@@ -42,16 +42,6 @@ button:disabled{opacity:.6}.msg{display:none;margin-top:14px;padding:10px;border
 .qi-login .quiz-login-card :is(#btn-login, #btn-recuperar-senha) { width: auto; margin-right: 8px; }
 </style>
 <script src="quiz-interface.js" defer></script>
-<style>
-  .qi-login .qi-header .qi-actions {
-    align-items: center;
-  }
-
-  .qi-login .qi-header #qi-preferences {
-    width: auto;
-    margin: 0;
-  }
-</style>
 </head><body>
 <main class="card quiz-login-card">
 <p class="qi-kicker">ACESSO AO PAINEL</p><h1>Entrar como professor</h1>
@@ -120,10 +110,7 @@ onAuthStateChanged(auth,async u=>{
   try{
     const token=await getIdTokenResult(u);
     const provedor=token?.signInProvider||token?.claims?.firebase?.sign_in_provider||"";
-    if (provedor === "password" || (provedor === "google.com" && [
-    "S8gicgKDwsep2gZmeg7qBLcSNCf1",
-    "gFjkApOW39Y50lKEUBzl0CYr6t22"
-    ].includes(u.uid))) {
+    if(provedor==="password" || (provedor==="google.com" && ["S8gicgKDwsep2gZmeg7qBLcSNCf1", "gFjkApOW39Y50lKEUBzl0CYr6t22"].includes(u.uid))){
       localStorage.setItem(CHAVE_PROFESSOR_OFFLINE,JSON.stringify({email:u.email,uid:u.uid,validadoEm:Date.now()}));
       location.replace("painel.html"); return;
     }

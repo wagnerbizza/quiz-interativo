@@ -3586,10 +3586,7 @@ if (window.location.pathname.includes("painel.html")) {
     sel.innerHTML = html;
   }
 
-  const professorGoogleUids = new Set([
-  "S8gicgKDwsep2gZmeg7qBLcSNCf1",
-  "gFjkApOW39Y50lKEUBzl0CYr6t22"
-]);
+  const professorGoogleUids = new Set(["S8gicgKDwsep2gZmeg7qBLcSNCf1", "gFjkApOW39Y50lKEUBzl0CYr6t22"]);
   window.quizPerfilConta = () => {
     const user = auth.currentUser;
     if (!user || document.body.classList.contains("modo-offline-professor")) return null;
@@ -3602,12 +3599,12 @@ if (window.location.pathname.includes("painel.html")) {
       senha: Boolean(password),
       google: Boolean(google),
       googleEmail: google?.email || "",
-      podeVincular: user.uid === professorGoogleUid,
+      podeVincular: professorGoogleUids.has(user.uid),
     };
   };
   window.quizVincularGoogle = async () => {
     const user = auth.currentUser;
-    if (!user || user.uid !== professorGoogleUid) throw new Error("Entre com sua conta institucional.");
+    if (!user || !professorGoogleUids.has(user.uid)) throw new Error("Entre com sua conta institucional.");
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
     await linkWithPopup(user, provider);
@@ -3882,7 +3879,7 @@ if (window.location.pathname.includes("painel.html")) {
       // true força a renovação do token para evitar claims antigos em cache.
       const token = await getIdTokenResult(usuario, true);
       const provider = token?.signInProvider || token?.claims?.firebase?.sign_in_provider || "desconhecido";
-      const esperado = provider === "password" || (provider === "google.com" && usuario.uid === professorGoogleUid);
+      const esperado = provider === "password" || (provider === "google.com" && professorGoogleUids.has(usuario.uid));
       const email = usuario.email || "(sem e-mail)";
       const uid = usuario.uid || "(sem UID)";
 
@@ -5948,7 +5945,7 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
       const token = await getIdTokenResult(usuario, true);
       const provedor = token?.signInProvider || token?.claims?.firebase?.sign_in_provider || "";
 
-      if (provedor !== "password" && !(provedor === "google.com" && usuario.uid === professorGoogleUid)) {
+      if (provedor !== "password" && !(provedor === "google.com" && professorGoogleUids.has(usuario.uid))) {
         console.warn("Painel bloqueado: sessão não é de professor.", provedor);
         await signOut(auth);
         window.location.replace("login.html?motivo=sessao-aluno");
