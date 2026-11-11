@@ -1,0 +1,32 @@
+diff --git a/quiz-interface.js b/quiz-interface.js
+index 77f4c8d..08bb0fc 100644
+--- a/quiz-interface.js
++++ b/quiz-interface.js
+@@ -79,7 +79,26 @@ function identityPanel(formMarkup) {
+  section.scrollIntoView({block:'start'});
+  return section;
+ }
+-async function showIdentity(){const d=identityPanel(`<form id="qi-identity-form"><div class="qi-form-grid"><label>Título<input name="titulo" maxlength="70" required value="${safe(identity.titulo)}"></label><label>Subtítulo<input name="subtitulo" maxlength="90" value="${safe(identity.subtitulo)}"></label><label>Cor de destaque<input name="cor" type="color" value="${identity.cor || '#c8fa64'}"></label><label>Endereço HTTPS da imagem de capa<input name="capa" type="url" pattern="https://.+" value="${safe(identity.capa)}" placeholder="https://..."></label><label>Marca de autoria / marca d’água<input name="marca" maxlength="60" value="${safe(identity.marca)}"></label><label>Logo (PNG, JPG ou WebP)<input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp"></label><label>Ou endereço HTTPS do logo<input name="logoUrl" type="url" pattern="https://.+" value="${safe(httpsImage(identity.logo))}" placeholder="https://..."></label></div><figure class="qi-logo-preview" hidden><img alt="Prévia do logo" referrerpolicy="no-referrer"></figure><p class="qi-note">Salvar no projeto gera o arquivo público identidade-quiz.json. Escolha esse arquivo na pasta do Quiz; o sincronizador publica a identidade para os demais dispositivos. A opção local altera somente este navegador.</p><div class="qi-actions"><button type="button" class="qi-button" id="qi-remove-logo">Remover logo</button><button type="submit" class="qi-button">Salvar neste navegador</button><button type="button" class="qi-button primary" id="qi-save-project">Salvar no projeto e publicar</button></div><p id="qi-identity-status" role="status" class="qi-muted"></p></form>`);let draftLogo=identity.logo.startsWith('data:') ? identity.logo : '';
++async function showIdentity(){const d=identityPanel(`<form id="qi-identity-form"><div class="qi-form-grid"><label>Título<input name="titulo" maxlength="70" required value="${safe(identity.titulo)}"></label><label>Subtítulo<input name="subtitulo" maxlength="90" value="${safe(identity.subtitulo)}"></label><label>Cor de destaque<input name="cor" type="color" value="${identity.cor || '#c8fa64'}"></label><label>Endereço HTTPS da imagem de capa<input name="capa" type="url" pattern="https://.+" value="${safe(identity.capa)}" placeholder="https://..."></label><label>Marca de autoria / marca d’água<input name="marca" maxlength="60" value="${safe(identity.marca)}"></label><label>Logo (PNG, JPG ou WebP)<input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp"></label><label>Ou endereço HTTPS do logo<input name="logoUrl" type="url" pattern="https://.+" value="${safe(httpsImage(identity.logo))}" placeholder="https://..."></label></div><figure class="qi-logo-preview" hidden><img alt="Prévia do logo" referrerpolicy="no-referrer"></figure><p class="qi-note">Salvar no projeto gera o arquivo público identidade-quiz.json. Escolha esse arquivo na pasta do Quiz; o sincronizador publica a identidade para os demais dispositivos. A opção local altera somente este navegador.</p><div class="qi-actions"><button type="button" class="qi-button" id="qi-remove-logo">Remover logo</button><button type="submit" class="qi-button">Salvar neste navegador</button><button type="button" class="qi-button primary" id="qi-save-project">Salvar no projeto e publicar</button></div><p id="qi-identity-status" role="status" class="qi-muted"></p></form>`);
++const publication = document.createElement('section');
++publication.className = 'qi-note';
++publication.innerHTML = `<h3>Publicação de avaliações</h3>
++<p>Selecione o arquivo <code>prova-publicada.json</code> na pasta principal do Quiz e permita a gravação no navegador.</p>
++<button type="button" class="qi-button">Vincular ou trocar arquivo de publicação</button>
++<p class="qi-muted" role="status"></p>`;
++d.append(publication);
++publication.querySelector('button').onclick = async () => {
++  const status = publication.querySelector('[role="status"]');
++  if (typeof window.vincularArquivoPublicacao !== 'function') {
++    status.textContent = 'O painel ainda está carregando. Tente novamente.';
++    return;
++  }
++  const vinculado = await window.vincularArquivoPublicacao();
++  status.textContent = vinculado
++    ? 'Arquivo vinculado. Volte à Ativação de provas para continuar.'
++    : 'O vínculo não foi atualizado.';
++};
++let draftLogo=identity.logo.startsWith('data:') ? identity.logo : '';
+  const logoUrl = d.querySelector('[name="logoUrl"]');
+  const preview = d.querySelector('.qi-logo-preview');
+  const image = preview.querySelector('img');
