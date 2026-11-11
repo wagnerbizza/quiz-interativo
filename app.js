@@ -2076,12 +2076,17 @@ if (window.location.pathname.includes("painel.html")) {
     carregarBancoDadosCompleto();
   }
 
+  let carregandoCatalogo = false;
   async function carregarBancoDadosCompleto(forcarAtualizacao = false) {
     // 10C.7: evita baixar novamente todas as questões a cada clique na aba.
     if (bancoQuestoesCarregadoNestaSessao && !forcarAtualizacao) {
       renderizarCatalogoBancoDados();
       return;
     }
+    if (carregandoCatalogo) return;
+    carregandoCatalogo = true;
+    const status = document.getElementById("qi-catalog-status");
+    if (status) status.textContent = "Consultando o Firebase…";
     try {
       const snap = await getDocs(collection(db, "questoes"));
       bancoQuestoesCarregadoNestaSessao = true;
@@ -2096,8 +2101,14 @@ if (window.location.pathname.includes("painel.html")) {
       popularFiltroMateriaCatalogo();
       renderizarCatalogoBancoDados();
       window.QuizInterface?.refreshOverview();
+      if (status) status.textContent = snap.metadata?.fromCache
+        ? "Cópia em cache"
+        : "Atualizado às " + new Date().toLocaleTimeString("pt-BR");
     } catch (err) {
+      if (status) status.textContent = "Falha na atualização. Tente novamente.";
       console.error("Erro ao carregar banco de dados:", err);
+    } finally {
+      carregandoCatalogo = false;
     }
   }
 
@@ -2108,18 +2119,18 @@ if (window.location.pathname.includes("painel.html")) {
     const selectFiltro = document.getElementById("select-filtro-materia-db");
     if (!selectFiltro) return;
 
-    let materiasSet = new Set();
-    questoesBancoCache.forEach(q => {
-      if (q.materia) materiasSet.add(q.materia);
-      if (q.categoria) materiasSet.add(q.categoria);
-    });
-
-    let html = `<option value="TODAS">📚 Todas as Matérias (${questoesBancoCache.length})</option>`;
-    Array.from(materiasSet).sort().forEach(mat => {
-      let qtd = questoesBancoCache.filter(q => (q.materia === mat || q.categoria === mat)).length;
-      html += `<option value="${mat}">${mat} (${qtd})</option>`;
-    });
-    selectFiltro.innerHTML = html;
+    const selecionada = selectFiltro.value;
+    const contagens = new Map();
+    for (const questao of questoesBancoCache) {
+      for (const materia of new Set([questao.materia, questao.categoria].filter(Boolean))) {
+        contagens.set(materia, (contagens.get(materia) || 0) + 1);
+      }
+    }
+    selectFiltro.replaceChildren(new Option("Todas as matérias", "TODAS"));
+    for (const materia of [...contagens.keys()].sort((a, b) => a.localeCompare(b, "pt-BR"))) {
+      selectFiltro.add(new Option(`${materia} (${contagens.get(materia)})`, materia));
+    }
+    if (contagens.has(selecionada)) selectFiltro.value = selecionada;
   }
 
 
@@ -5524,6 +5535,17 @@ const QUESTOES_POR_PAGINA = 36;
 let paginaCatalogo = 0;
 let criterioCatalogo = "";
 
+window.abrirAcervoCompleto = function() {
+  const busca = document.getElementById("input-busca-banco-dados");
+  const materia = document.getElementById("select-filtro-materia-db");
+  if (busca) busca.value = "";
+  if (materia) materia.value = "TODAS";
+  paginaCatalogo = 0;
+  window.renderizarCatalogoBancoDados();
+  busca?.focus({ preventScroll: true });
+  busca?.scrollIntoView({ block: "center" });
+};
+
 window.renderizarCatalogoBancoDados = function() {
   const gridCatalogo = document.getElementById("catalogo-questoes-grid") || document.getElementById("lista-banco-dados-container");
   const inputBusca = document.getElementById("input-busca-banco-dados") || document.querySelector('input[placeholder*="Pesquisar"]');
@@ -5565,7 +5587,7 @@ window.renderizarCatalogoBancoDados = function() {
     gridCatalogo.parentNode.insertBefore(barraFerramentas, gridCatalogo);
   }
 
-  const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
+  const termosBusca = (inputBusca?.value || "").trim().split(/\s+/).map(normalizarTexto).filter(Boolean);
   const materiaSel = selectFiltroMateria ? selectFiltroMateria.value : "TODAS";
 
   let filtradas = [...questoesBancoCache];
@@ -5575,10 +5597,10 @@ window.renderizarCatalogoBancoDados = function() {
     filtradas = filtradas.filter(q => (q.materia === materiaSel || q.categoria === materiaSel));
   }
 
-  if (termoBusca) {
+  if (termosBusca.length) {
     filtradas = filtradas.filter(q => {
       let texto = normalizarTexto(`${q.materia || ''} ${q.pergunta || ''} ${(q.opcoes || []).join(' ')} ${q.correta || ''}`);
-      return texto.includes(termoBusca);
+      return termosBusca.every(termo => texto.includes(termo));
     });
   }
 
@@ -5595,7 +5617,7 @@ window.renderizarCatalogoBancoDados = function() {
     }
   }
 
-  const criterio = JSON.stringify([termoBusca, materiaSel, window.ordemAtualBancoCatalogo]);
+  const criterio = JSON.stringify([termosBusca, materiaSel, window.ordemAtualBancoCatalogo]);
   if (criterio !== criterioCatalogo) {
     paginaCatalogo = 0;
     criterioCatalogo = criterio;
@@ -5626,7 +5648,7 @@ window.renderizarCatalogoBancoDados = function() {
     window.renderizarCatalogoBancoDados();
   };
   resumo.textContent = pagina.length
-    ? `${inicio + 1}–${inicio + pagina.length} de ${filtradas.length} questões`
+    ? `Exibindo ${inicio + 1}–${inicio + pagina.length} · ${filtradas.length.toLocaleString("pt-BR")} encontradas · Página ${paginaCatalogo + 1} de ${totalPaginas}`
     : "Nenhuma questão encontrada";
 
   if (!pagina.length) {

@@ -2076,76 +2076,30 @@ body.light-mode #aba-banco-dados > p {
     <!-- ABA 4: BANCO DE DADOS (CATÁLOGO INTERATIVO DE QUESTÕES) -->
     <div id="aba-banco-dados" class="aba-conteudo hidden">
       <h2>🗄️ Catálogo Interativo do Banco de Dados</h2>
-      <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 15px;">
-        Pesquise, filtre, organize, edite enunciados/alternativas e altere modos de visualização em tempo real.
-      </p>
-
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px;">
-        <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-          <span style="color: #94a3b8; font-size: 12px; font-weight: bold;">TOTAL DE QUESTÕES NO CATÁLOGO</span>
-          <div id="db-total-questoes" style="font-size: 24px; font-weight: bold; color: #60a5fa; margin-top: 5px;">Carregando...</div>
-        </div>
-        <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-          <span style="color: #94a3b8; font-size: 12px; font-weight: bold;">STATUS DA CONEXÃO</span>
-          <div style="font-size: 16px; font-weight: bold; color: #4ade80; margin-top: 8px; display:flex; align-items:center; gap:6px;">
-            <span class="ponto-ativo"></span> Online / Sincronizado
-          </div>
+      <div class="qi-catalog-summary">
+        <button type="button" class="qi-card qi-catalog-total" onclick="abrirAcervoCompleto()"><small>Questões no acervo</small><strong id="db-total-questoes">—</strong><span>Ver todas as questões →</span></button>
+        <div class="qi-card"><small>Atualização do catálogo</small><div id="qi-catalog-status" role="status">Aguardando consulta</div></div>
+      </div>
+      <div class="qi-catalog-toolbar no-print">
+        <label class="qi-catalog-search">Pesquisar questões
+          <input id="input-busca-banco-dados" type="search" placeholder="Enunciado, matéria ou alternativa" oninput="renderizarCatalogoBancoDados()">
+        </label>
+        <label>Matéria<select id="select-filtro-materia-db" onchange="renderizarCatalogoBancoDados()"><option value="TODAS">Todas as matérias</option></select></label>
+        <label>Ordenar por<select onchange="aplicarClassificacaoDB(this.value)">
+          <option value="nenhum">Ordem original</option><option value="materia">Matéria</option><option value="enunciado-az">Enunciado (A–Z)</option><option value="id-asc">ID crescente</option><option value="id-desc">ID decrescente</option>
+        </select></label>
+        <label>Visualização<select onchange="alterarModoVisualizacaoDB(this.value)">
+          <option value="grade">Grade</option><option value="lista">Lista</option><option value="blocos">Blocos</option>
+        </select></label>
+        <div class="qi-actions qi-catalog-actions">
+          <button type="button" class="qi-button" onclick="carregarBancoDadosCompleto()">Atualizar catálogo</button>
+          <button type="button" class="qi-button" onclick="abrirModalLixeiraQuestao()">Lixeira</button>
         </div>
       </div>
-
-      <div class="grupo-controles-direita">
-
-        
-  <!-- Botão Classificar -->
-  <div class="dropdown-win">
-  </div>
-
-  <!-- Botão Visualizar -->
-  <div class="dropdown-win">
-  </div>
-
-  <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="carregarBancoDadosCompleto()">🔄 Atualizar</button>
-  
-  <!-- BOTÃO DA LIXEIRA -->
-  <button type="button" class="btn-acao" style="background-color: #b91c1c; color: white;" onclick="abrirModalLixeiraQuestao()">🗑️ Lixeira</button>
-</div>
-
-      <div class="painel-controle-topo no-print">
-        <div class="grupo-controles-esquerda">
-          <input type="text" id="input-busca-banco-dados" placeholder="🔍 Pesquisar no catálogo..." style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; width: 220px;" oninput="renderizarCatalogoBancoDados()">
-          <select id="select-filtro-materia-db" style="margin:0; padding:8px 12px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-size:13px; min-width: 180px;" onchange="renderizarCatalogoBancoDados()">
-            <option value="TODAS">📚 Todas as Matérias</option>
-          </select>
-        </div>
-        <div class="grupo-controles-direita">
-          <!-- BOTÃO CLASSIFICAR COM A OPÇÃO "VER TUDO" DENTRO -->
-          <div class="dropdown-win">
-            <button type="button" id="btn-dropdown-classificar-db" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-classificar-db', 'btn-dropdown-classificar-db')">
-              🔄 Classificar <span style="font-size: 10px;">▼</span>
-            </button>
-            <div id="dropdown-menu-classificar-db" class="dropdown-menu-win">
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer; font-weight:bold; border-bottom:1px solid #334155;" onclick="aplicarClassificacaoDB('nenhum')">🔄 Ver Tudo / Sem Classificação</button>
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('materia')">📚 Matéria / Categoria</button>
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('nome')">🔤 Enunciado (A-Z)</button>
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('crescente')">📈 Ordem Crescente (ID)</button>
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="aplicarClassificacaoDB('decrescente')">📉 Ordem Decrescente (ID)</button>
-            </div>
-          </div>
-
-          <!-- BOTÃO VISUALIZAR CORRIGIDO -->
-          <div class="dropdown-win">
-            <button type="button" id="btn-dropdown-visualizar-db" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-visualizar-db', 'btn-dropdown-visualizar-db')">
-              ≡ Visualizar <span style="font-size: 10px;">▼</span>
-            </button>
-            <div id="dropdown-menu-visualizar-db" class="dropdown-menu-win">
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('grade')">🔲 Grade (Cards)</button>
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('lista')">≡ Lista</button>
-              <button type="button" style="width:100%; text-align:left; background:transparent; border:none; color:inherit; padding:8px 12px; cursor:pointer;" onclick="alterarModoVisualizacaoDB('blocos')">🗂️ Blocos</button>
-            </div>
-          </div>
-
-          <button type="button" class="btn-acao" style="background-color: #2563eb;" onclick="carregarBancoDadosCompleto()">🔄 Atualizar</button>
-        </div>
+      <div id="barra-ferramentas-db-avancada" class="qi-actions qi-catalog-selection no-print">
+        <button type="button" class="qi-button" onclick="selecionarTodasQuestoesBanco(true)">Marcar página</button>
+        <button type="button" class="qi-button" onclick="selecionarTodasQuestoesBanco(false)">Desmarcar</button>
+        <button type="button" class="qi-button qi-danger" onclick="excluirQuestoesSelecionadasEmMassa()">Excluir selecionadas</button>
       </div>
 
       <div id="catalogo-questoes-grid" class="catalogo-grid">
