@@ -106,3 +106,20 @@ html[data-qi-theme="light"][data-qi-palette="amber"] { --qi-accent: #854d0e; --q
   background: var(--qi-bg) !important;
   border-color: var(--qi-accent) !important;
 }
+
+/* Configurações abertas no painel, com acesso ao botão de acessibilidade. */
+.qi-settings-panel {
+  padding: clamp(16px, 3vw, 32px);
+  margin-bottom: 72px;
+  scroll-margin-top: 16px;
+}
+.qi-settings-panel .qi-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.qi-settings-panel .qi-form-grid input {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 540px) {
+  .qi-settings-panel .qi-form-grid { grid-template-columns: minmax(0, 1fr); }
+}
