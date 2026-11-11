@@ -3593,6 +3593,8 @@ if (window.location.pathname.includes("painel.html")) {
     const google = user.providerData.find(provider => provider.providerId === "google.com");
     const password = user.providerData.find(provider => provider.providerId === "password");
     return {
+      tipoConta: user.uid === "S8gicgKDwsep2gZmeg7qBLcSNCf1" ? "Conta principal" : user.uid === "gFjkApOW39Y50lKEUBzl0CYr6t22" ? "Conta secundária" : "",
+      emailSessao: user.email || "",
       nome: user.displayName || user.email?.split("@")[0] || "Professor",
       email: password?.email || user.email || "",
       confirmado: user.emailVerified,
