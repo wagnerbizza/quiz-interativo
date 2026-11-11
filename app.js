@@ -84,7 +84,7 @@ document.addEventListener("click", (ev) => {
 document.addEventListener("DOMContentLoaded", () => {
   document.body.style.opacity = "1";
   aplicarTemaSistema(temaAtualSistema);
-  garantirBancoCompleto100Questoes();
+  // O banco é mantido pelo professor; não gerar questões artificiais ao abrir a página.
   forcarMenuClassificarCompleto();
   injetarEstilosGlobaisAjustados();
   injetarBarraNavegacaoGlobalTopo();
@@ -711,6 +711,19 @@ async function sincronizarQuestoesPublicas() {
   return verificacao.size;
 }
 
+function escaparTextoQuiz(valor) {
+  return String(valor ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function identificarDocumentoQuiz(html) {
+  const visual=window.QuizInterface?.identidade;
+  if(!visual)return html;
+  const e=escaparTextoQuiz;
+  const topo=`<div style="display:flex;gap:12px;align-items:center;padding-bottom:12px;margin-bottom:20px;border-bottom:1px solid #d1d5db">${visual.logo?`<img src="${e(visual.logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<b>${e(visual.titulo)}</b></div>`;
+  const rodape=`<footer style="margin-top:25px;padding-top:10px;border-top:1px solid #e5e7eb;color:#64748b;font-size:10px;text-align:right">${e(visual.marca)}</footer>`;
+  return html.replace(/<body([^>]*)>/i,`<body$1>${topo}`).replace(/<\/body>/i,`${rodape}</body>`);
+}
+
 function normalizarTexto(txt) {
   if (!txt) return "";
   return txt.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
@@ -726,7 +739,7 @@ function limparPrefixoPergunta(pergunta) {
 function limparPrefixoOpcao(opcaoStr) {
   if (!opcaoStr) return "";
   // A alternativa E é válida; removemos somente o marcador A), B., E - etc.
-  return opcaoStr.toString().replace(/^[A-Ea-e][\)\.\-\s]+\s*/, "").trim();
+  return opcaoStr.toString().replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, "").trim();
 }
 
 function normalizarDocumentoQuestao(d, idDoc = null) {
@@ -757,7 +770,7 @@ function normalizarDocumentoQuestao(d, idDoc = null) {
 
   for (let i = alternativasMapeadas.length - 1; i > 0; i--) {
     const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-    const j = Math.floor((aleatorio / 4294967295) * (i + 1));
+    const j = Math.floor((aleatorio / 4294967296) * (i + 1));
     [alternativasMapeadas[i], alternativasMapeadas[j]] = [alternativasMapeadas[j], alternativasMapeadas[i]];
   }
 
@@ -934,7 +947,43 @@ async function gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento="Aval
   return await baixarArquivoProvaPublicada(pacote);
 }
 
-async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
+// Funções de publicação: nunca copiam gabaritos para o pacote do aluno.
+function embaralharListaPublicada(lista) {
+  const nova = [...lista];
+  for (let i=nova.length-1;i>0;i--) {
+    const j=Math.floor((crypto.getRandomValues(new Uint32Array(1))[0]/4294967296)*(i+1));
+    [nova[i],nova[j]]=[nova[j],nova[i]];
+  }
+  // Em listas pequenas, não deixar o comando resultar na mesma ordem.
+  if (nova.length>1 && nova.every((item,i)=>item===lista[i])) nova.push(nova.shift());
+  return nova;
+}
+function questaoPublicaValidada(q) {
+  const id=String(q.idDoc || q.idQuestao || q.id || q.questaoId || "").trim();
+  const pergunta=String(q.pergunta || q.questao || q.titulo || "").trim();
+  const brutas=q.opcoes || q.alternativas || q.respostas;
+  const opcoes=Array.isArray(brutas) ? brutas.map(op=>limparPrefixoOpcao(op)) : [];
+  if (!id || !pergunta || opcoes.length<2 || opcoes.length>5 || opcoes.some(op=>!op)) {
+    throw new Error(`Questão ${id || "sem identificador"} incompleta: confira enunciado e de 2 a 5 alternativas preenchidas.`);
+  }
+  return {idQuestao:id,pergunta,opcoes,materia:String(q.materia || q.categoria || ""),categoria:String(q.categoria || q.materia || "")};
+}
+function reordenarPacotePublicado(pacote, escolaNome, idAvaliacao, novaSeed) {
+  if (!pacote?.ativa || normalizarTexto(pacote.escolaAtiva)!==normalizarTexto(escolaNome) ||
+      !idAvaliacao || String(pacote.idAvaliacao)!==String(idAvaliacao)) {
+    throw new Error("O arquivo vinculado não corresponde à avaliação ativa desta escola. Confira o vínculo antes de reembaralhar.");
+  }
+  if (!Array.isArray(pacote.questoesPublicas) || pacote.questoesPublicas.length!==Number(pacote.quantidadeQuestoes) || !pacote.questoesPublicas.length) {
+    throw new Error("Pacote incompleto. A quantidade de questões não corresponde à seleção publicada.");
+  }
+  const questoes=pacote.questoesPublicas.map(questaoPublicaValidada);
+  if (new Set(questoes.map(q=>q.idQuestao)).size!==questoes.length) throw new Error("Há identificadores de questões repetidos no pacote.");
+  // Mantém alternativas, tentativa, token e prazos para preservar a recuperação.
+  // As alternativas já foram embaralhadas na ativação; aqui só muda a ordem das questões.
+  const ordenadas=embaralharListaPublicada(questoes);
+  return {...pacote,seedReordenacao:String(novaSeed),publicadoEm:new Date().toISOString(),questoesPublicas:ordenadas};
+}
+async function prepararPacoteEstaticoAvaliacao(dadosPublicacao) {
   const materias = dadosPublicacao.materiasAtivas || [];
   let fonte = Array.isArray(questoesBancoCache) ? [...questoesBancoCache] : [];
   if (!fonte.length) {
@@ -946,20 +995,22 @@ async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
     }
   }
   const candidatas = fonte.filter(q => {
+    // Modelos criados pela antiga rotina não são questões pedagógicas revisadas.
+    if (/^Questão oficial de nível avançado nº \d+ abordando conceitos teóricos e práticos aplicados em /iu.test(String(q.pergunta || ""))) return false;
     const cat = q.materia || q.categoria || "";
     return !materias.length || materias.some(m => normalizarTexto(cat).includes(normalizarTexto(m)));
-  }).map(q => ({
-    idQuestao:q.idDoc || q.idQuestao || q.id || q.questaoId || "",
-    materia:q.materia || q.categoria || "", categoria:q.categoria || q.materia || "",
-    pergunta:q.pergunta || "", opcoes:Array.isArray(q.opcoes) ? q.opcoes : []
-  }));
+  }).map(questaoPublicaValidada);
+  if (new Set(candidatas.map(q=>q.idQuestao)).size!==candidatas.length) {
+    throw new Error("Há identificadores repetidos no banco selecionado. Revise antes de publicar.");
+  }
   for (let i=candidatas.length-1;i>0;i--) {
     const n=crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;
     const j=Math.floor(n*(i+1)); [candidatas[i],candidatas[j]]=[candidatas[j],candidatas[i]];
   }
-  const qtd=Math.max(1,parseInt(dadosPublicacao.quantidadeQuestoes)||10);
-  const selecionadas=candidatas.slice(0,qtd);
-  if (!selecionadas.length) throw new Error("Nenhuma questão compatível foi encontrada.");
+  const qtd=Number(dadosPublicacao.quantidadeQuestoes);
+  if (!Number.isInteger(qtd) || qtd<1) throw new Error("Informe uma quantidade inteira de questões, maior que zero.");
+  if (candidatas.length<qtd) throw new Error(`Foram solicitadas ${qtd} questões, mas há somente ${candidatas.length} disponíveis para as matérias selecionadas após excluir os modelos genéricos automáticos. Reduza a quantidade ou complete o banco. A publicação foi interrompida.`);
+  const selecionadas=candidatas.slice(0,qtd).map(q=>({...q,opcoes:embaralharListaPublicada(q.opcoes)}));
   const pacote={
     versaoPacote:1, ativa:true, idAvaliacao:dadosPublicacao.idAvaliacao || "",
     escolaAtiva:dadosPublicacao.escolaAtiva,
@@ -975,8 +1026,12 @@ async function gerarPacoteEstaticoAvaliacao(dadosPublicacao) {
     token:dadosPublicacao.token||"", seedReordenacao:dadosPublicacao.seedReordenacao||Date.now().toString(),
     publicadoEm:new Date().toISOString(), questoesPublicas:selecionadas
   };
+  return pacote;
+}
+async function gerarPacoteEstaticoAvaliacao(dadosPublicacao, pacotePreparado = null) {
+  const pacote=pacotePreparado || await prepararPacoteEstaticoAvaliacao(dadosPublicacao);
   const modo=await baixarArquivoProvaPublicada(pacote);
-  return {total:selecionadas.length,modo};
+  return {total:pacote.questoesPublicas.length,modo};
 }
 
 async function carregarEscolasCache() {
@@ -998,41 +1053,7 @@ async function carregarEstruturaGlobalFirebase() {
   } catch (e) { console.error(e); }
 }
 
-async function garantirBancoCompleto100Questoes() {
-  try {
-    await carregarEstruturaGlobalFirebase();
-    const snap = await getDocs(collection(db, "questoes"));
-    let totalBanco = snap.size;
-    if (totalBanco < 900) {
-      const materiasCompletas = [
-        "Inteligência Artificial", 
-        "Programação Front-End", 
-        "Redes de Computadores e Segurança da Informação", 
-        "Processos de Desenvolvimento de Software e Metodologias Ágeis",
-        "Matemática", "Língua Portuguesa", "História", "Geografia", "Biologia", "Física", "Química", "Inglês"
-      ];
-
-      for (let mat of materiasCompletas) {
-        for (let i = 1; i <= 100; i++) {
-          await addDoc(collection(db, "questoes"), {
-            materia: mat,
-            categoria: mat,
-            pergunta: `Questão oficial de nível avançado nº ${i} abordando conceitos teóricos e práticos aplicados em ${mat}`,
-            opcoes: [
-              `Diretriz fundamental e parâmetro otimizado aplicado a ${mat}`,
-              "Processamento autônomo baseado em regras estáticas locais",
-              "Conversão estruturada de metadados em arquivos compactados",
-              "Execução direta de rotinas em camada de hardware isolada",
-              "Indexação sequencial de logs e repositórios desatualizados"
-            ],
-            correta: "A",
-            criadoEm: serverTimestamp()
-          });
-        }
-      }
-    }
-  } catch (e) { console.error(e); }
-}
+// A geração automática de questões genéricas foi removida. Registros existentes são preservados.
 
 // ==========================================
 // TELA DO ALUNO (index.html) - EMBARALHAMENTO ROBUSTO COM POUCAS QUESTÕES
@@ -1085,7 +1106,7 @@ async function iniciarQuizAluno() {
 
     for (let i = questoesFiltradas.length - 1; i > 0; i--) {
       const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-      const j = Math.floor((aleatorio / 4294967295) * (i + 1));
+      const j = Math.floor((aleatorio / 4294967296) * (i + 1));
       [questoesFiltradas[i], questoesFiltradas[j]] = [questoesFiltradas[j], questoesFiltradas[i]];
     }
 
@@ -2027,6 +2048,7 @@ if (window.location.pathname.includes("painel.html")) {
     popularSelectMateriasQuestao();
     organizarLayoutAbaRelatorios();
     inicializarGerenciadorBancoDados();
+    window.QuizInterface?.refreshOverview();
     setTimeout(() => {
       forcarMenuClassificarCompleto();
       // 10C.7: prova ativa em tempo real só é observada dentro da aba Ativação.
@@ -2041,6 +2063,9 @@ if (window.location.pathname.includes("painel.html")) {
       const abaHash = window.location.hash.replace("#", "aba-");
       const btnAlvo = document.querySelector(`.btn-aba[data-aba="${abaHash}"]`);
       if (btnAlvo) btnAlvo.click();
+      else if(window.location.hash==="#inicio") window.QuizInterface?.navigate("inicio");
+    } else {
+      window.QuizInterface?.navigate("inicio");
     }
   }
 
@@ -2077,6 +2102,7 @@ if (window.location.pathname.includes("painel.html")) {
       });
       popularFiltroMateriaCatalogo();
       renderizarCatalogoBancoDados();
+      window.QuizInterface?.refreshOverview();
     } catch (err) {
       console.error("Erro ao carregar banco de dados:", err);
     }
@@ -2924,6 +2950,9 @@ if (window.location.pathname.includes("painel.html")) {
           const idProvaAtiva = normalizarTexto(escolaNome);
           const refProvaAtiva = doc(db, "provas_ativas", idProvaAtiva);
 
+          // Valida a seleção e grava o pacote antes de alterar a ativação remota.
+          const pacotePreparado=await prepararPacoteEstaticoAvaliacao(dadosPublicacao);
+          const pubLocal=await gerarPacoteEstaticoAvaliacao(dadosPublicacao,pacotePreparado);
           let firebasePublicado=false;
           try {
             await setDoc(refProvaAtiva,{...dadosPublicacao,ativa:true});
@@ -2932,7 +2961,6 @@ if (window.location.pathname.includes("painel.html")) {
             console.warn("Firebase indisponível na ativação:",erroFirebase?.code||erroFirebase);
           }
 
-          const pubLocal=await gerarPacoteEstaticoAvaliacao(dadosPublicacao);
           animarBotaoSucesso(e.target);
           alert(
             `✅ Avaliação preparada para "${escolaNome}".\n\n`+
@@ -3068,7 +3096,7 @@ if (window.location.pathname.includes("painel.html")) {
       const vinculoOk = await garantirVinculoPublicacaoNoClique();
       if (!vinculoOk) return;
       const escolaNome = btnEmbaralhar.dataset.escola;
-      if (confirm(`🔀 Deseja reembaralhar a prova de "${escolaNome}"?`)) {
+      if (confirm(`🔀 Reordenar as mesmas questões da prova de "${escolaNome}"?\n\nAs alternativas, o token e os prazos serão mantidos para preservar a recuperação. Tentativas já iniciadas mantêm a prova em uso; a nova ordem vale para novas entradas após a publicação.`)) {
         try {
           let dadosAtivos = null;
           try {
@@ -3088,11 +3116,10 @@ if (window.location.pathname.includes("painel.html")) {
             return JSON.parse(await (await h.getFile()).text());
           } catch(_) { return null; }})();
           const novaSeed = Date.now().toString();
-          const novosDados = {
-            ...dadosAtivos,
-            idAvaliacao: dadosAtivos.idAvaliacao || pacoteAnterior?.idAvaliacao || `av_${Date.now()}`,
-            ativa:true, seedReordenacao:novaSeed, publicadoEm:new Date().toISOString()
-          };
+          const pacoteReordenado=reordenarPacotePublicado(pacoteAnterior,escolaNome,dadosAtivos.idAvaliacao,novaSeed);
+          const modoPublicacao=await baixarArquivoProvaPublicada(pacoteReordenado);
+          const pubLocal={total:pacoteReordenado.questoesPublicas.length,modo:modoPublicacao};
+
 
           try {
             await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
@@ -3103,7 +3130,6 @@ if (window.location.pathname.includes("painel.html")) {
             console.warn("Firebase indisponível ao reembaralhar:", erroFirebase?.code || erroFirebase);
           }
 
-          const pubLocal = await gerarPacoteEstaticoAvaliacao(novosDados);
           if (history.replaceState) history.replaceState(null, "", "#ativacao");
           mostrarNotificacao("✅ Reembaralhamento concluído e arquivo do projeto atualizado.");
           alert(`✅ Reembaralhamento concluído com ${pubLocal.total} questões.\n\nO prova-publicada.json foi atualizado. Aguarde a mensagem "QUIZ: GitHub atualizado." no terminal do VS Code.`);
@@ -3192,13 +3218,13 @@ if (window.location.pathname.includes("painel.html")) {
         let htmlOpcoes = '';
         letras.forEach((letra, i) => {
           if (q.opcoes[i] && q.opcoes[i].trim() !== "") {
-            htmlOpcoes += `<div>${letra}) ${q.opcoes[i]}</div>`;
+            htmlOpcoes += `<div>${letra}) ${escaparTextoQuiz(q.opcoes[i])}</div>`;
           }
         });
 
         html += `
           <div class="questao">
-            <p class="enunciado">Questão ${idx + 1}: ${q.pergunta}</p>
+            <p class="enunciado">Questão ${idx + 1}: ${escaparTextoQuiz(q.pergunta)}</p>
             <div class="opcoes">
               ${htmlOpcoes}
             </div>
@@ -3213,7 +3239,7 @@ if (window.location.pathname.includes("painel.html")) {
       html += `</ul></div>`;
 
       html += `</body></html>`;
-      janelaImpressao.document.write(html);
+      janelaImpressao.document.write(identificarDocumentoQuiz(html));
       janelaImpressao.document.close();
       janelaImpressao.print();
     } catch(err) {
@@ -3221,90 +3247,40 @@ if (window.location.pathname.includes("painel.html")) {
     }
   };
 
-  window.gerarCopiaProvaIndividual = async function(nomeAluno, turmaAluno, materiaAluno, periodoAluno = 'Geral', dataEnvioAluno = null, escolaAluno = '') {
+  function escaparDocumentoQuiz(valor) {
+    return String(valor ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function montarTentativaRegistrada(resultado) {
+    const ids=Array.isArray(resultado.questoesIds) ? resultado.questoesIds : [];
+    const perguntas=Array.isArray(resultado.questoesPerguntas) ? resultado.questoesPerguntas : [];
+    const legadas=Array.isArray(resultado.respostas) ? resultado.respostas : [];
+    const total=Math.max(ids.length,perguntas.length,legadas.length);
+    if (!total) throw new Error("Este registro antigo não possui questões ou respostas detalhadas. A cópia não será substituída por uma nova seleção do banco.");
+    return Array.from({length:total},(_,i)=>{
+      const antiga=legadas[i] && typeof legadas[i]==="object" ? legadas[i] : {};
+      const texto=resultado.respostasTexto?.[i];
+      const marcada=resultado.respostas?.[i];
+      const resposta=typeof texto==="string" && texto.trim() ? texto :
+        antiga.respostaDada!=null ? String(antiga.respostaDada) :
+        typeof marcada==="string" && marcada.trim() ? `Alternativa ${marcada} (texto não registrado)` : "Não respondida / não registrada";
+      return {id:String(ids[i] || ""),pergunta:String(perguntas[i] || antiga.pergunta || "Enunciado não armazenado neste registro."),resposta};
+    });
+  }
+  window.gerarCopiaProvaIndividual = async function(nomeAluno, turmaAluno, materiaAluno, periodoAluno='Geral', dataEnvioAluno=null, escolaAluno='', resultado=null) {
     try {
-      const snapProva = escolaAluno
-        ? await getDoc(doc(db, "provas_ativas", normalizarTexto(escolaAluno)))
-        : null;
-      const pData = snapProva && snapProva.exists() ? snapProva.data() : { quantidadeQuestoes: 10 };
-       
-      const qSnap = await getDocs(collection(db, "questoes"));
-      let banco = [];
-      qSnap.forEach(s => banco.push(normalizarDocumentoQuestao(s.data(), s.id)));
-
-      let filtradas = banco.filter(q => normalizarTexto(q.categoria).includes(normalizarTexto(materiaAluno)) || normalizarTexto(materiaAluno).includes(normalizarTexto(q.categoria)));
-      if (filtradas.length === 0) filtradas = banco;
-
-      for (let i = filtradas.length - 1; i > 0; i--) {
-        const aleatorio = crypto.getRandomValues(new Uint32Array(1))[0];
-        const j = Math.floor((aleatorio / 4294967295) * (i + 1));
-        [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
-      }
-
-      let qtdQ = pData.quantidadeQuestoes || 10;
-      let questoesAluno = filtradas.slice(0, qtdQ);
-
-      let dataImpressaoStr = dataEnvioAluno ? dataEnvioAluno : new Date().toLocaleString('pt-BR');
-
-      let win = window.open('', '_blank');
-      let html = `
-        <html>
-        <head>
-          <title>Caderno de Prova - ${nomeAluno}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 30px; color: #000; line-height: 1.6; }
-            .cabecalho { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
-            .questao { margin-bottom: 30px; page-break-inside: avoid; border-bottom: 1px solid #ccc; padding-bottom: 15px; }
-            .questao p.enunciado { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #000; }
-            .opcoes { margin-left: 20px; font-size: 14px; }
-            .opcoes div { margin-bottom: 6px; }
-            .gabarito { margin-top: 50px; border-top: 2px dashed #000; padding-top: 25px; page-break-before: always; }
-            .gabarito h3 { margin-bottom: 15px; font-size: 18px; }
-            .gabarito ul { list-style-type: none; padding: 0; }
-            .gabarito li { padding: 6px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="cabecalho">
-            <h2>CADERNO DE PROVA INDIVIDUAL ${escolaAluno ? '- ' + escolaAluno : ''}</h2>
-            <p><strong>Aluno(a):</strong> ${nomeAluno} | <strong>Turma:</strong> ${turmaAluno}</p>
-            <p><strong>Matéria:</strong> ${materiaAluno} | <strong>Período/Turno:</strong> ${periodoAluno}</p>
-            <p><strong>Data e Horário da Prova/Emissão:</strong> ${dataImpressaoStr}</p>
-          </div>
-      `;
-
-      questoesAluno.forEach((q, idx) => {
-        let letras = ['A', 'B', 'C', 'D', 'E'];
-        let htmlOpcoes = '';
-        letras.forEach((letra, i) => {
-          if (q.opcoes[i] && q.opcoes[i].trim() !== "") {
-            htmlOpcoes += `<div>${letra}) ${q.opcoes[i]}</div>`;
-          }
-        });
-
-        html += `
-          <div class="questao">
-            <p class="enunciado">Questão ${idx + 1}: ${q.pergunta}</p>
-            <div class="opcoes">
-              ${htmlOpcoes}
-            </div>
-          </div>
-        `;
-      });
-
-      html += `<div class="gabarito"><h3>GABARITO DA AVALIAÇÃO</h3><ul>`;
-      questoesAluno.forEach((q, idx) => {
-        html += `<li><strong>Questão ${idx + 1}:</strong> Resposta Correta: <strong>${q.correta}</strong></li>`;
-      });
-      html += `</ul></div>`;
-
-      html += `</body></html>`;
-      win.document.write(html);
-      win.document.close();
-      win.print();
-    } catch (err) {
-      alert("Erro ao gerar prova individual: " + err.message);
-    }
+      if (!resultado) throw new Error("Abra a prova pelo botão Ações do resultado desejado para identificar a tentativa correta.");
+      const questoes=montarTentativaRegistrada(resultado),e=escaparDocumentoQuiz;
+      const win=window.open('', '_blank');
+      if (!win) throw new Error("Permita a abertura de janelas para visualizar a prova.");
+      const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prova registrada - ${e(nomeAluno)}</title>
+        <style>@page{size:A4;margin:15mm}body{font:14px/1.6 Arial;color:#111;margin:0}h1{font-size:22px}.cab{border-bottom:2px solid #222;padding-bottom:15px}.aviso{background:#f1f5f9;padding:12px;margin:20px 0;border-left:3px solid #64748b}.questao{break-inside:avoid;border-bottom:1px solid #ddd;padding:15px 0}.resposta{padding:9px;border:1px solid #ddd}small{color:#555}button{padding:10px 18px;margin:15px 0}@media print{button{display:none}}</style></head><body>
+        <div class="cab"><h1>REGISTRO DA PROVA INDIVIDUAL</h1><p><b>Escola:</b> ${e(escolaAluno)}<br><b>Aluno(a):</b> ${e(nomeAluno)} | <b>Turma:</b> ${e(turmaAluno)}<br><b>Matéria(s):</b> ${e(materiaAluno)}<br><b>Período:</b> ${e(periodoAluno)} | <b>Data:</b> ${e(dataEnvioAluno || "Não informada")}<br><b>Tentativa:</b> ${e(resultado.idAvaliacao || resultado.idDoc || "Não identificada")}</p></div>
+        <div class="aviso">Questões na ordem registrada na tentativa, com as respostas armazenadas. Este registro não guardou o conjunto completo de alternativas exibidas; por isso, elas não são reconstruídas a partir do banco atual. Não foi feito novo sorteio.</div>
+        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+        ${questoes.map((q,i)=>`<section class="questao"><h3>Questão ${i+1}: ${e(q.pergunta)}</h3><p class="resposta"><b>Resposta registrada:</b> ${e(q.resposta)}</p><small>ID da questão: ${e(q.id || "Não registrado")}</small></section>`).join('')}
+        </body></html>`;
+      win.document.write(identificarDocumentoQuiz(html));win.document.close();
+    } catch(err) { alert("Não foi possível gerar a prova registrada: "+err.message); }
   };
 
   function renderizarSeletorEscolasTopo() {
@@ -3602,59 +3578,64 @@ if (window.location.pathname.includes("painel.html")) {
       }
     });
     let html = "";
-    materias.forEach(m => { html += `<option value="${m}">${m}</option>`; });
+    materias.forEach(m => { html += `<option value="${escaparTextoQuiz(m)}">${escaparTextoQuiz(m)}</option>`; });
     sel.innerHTML = html;
   }
 
-  document.getElementById("form-cadastrar-questao")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const materia = document.getElementById("cad-materia").value;
-    const pergunta = document.getElementById("cad-pergunta").value.trim();
-    const opA = document.getElementById("cad-op-a").value.trim();
-    const opB = document.getElementById("cad-op-b").value.trim();
-    const opC = document.getElementById("cad-op-c").value.trim();
-    const opD = document.getElementById("cad-op-d").value.trim();
-    const opE = document.getElementById("cad-op-e") ? document.getElementById("cad-op-e").value.trim() : "";
-    const correta = document.getElementById("cad-correta").value.toUpperCase();
-
-    if (!pergunta || !materia) { mostrarNotificacao("⚠ Preencha todos os campos!"); return; }
-
-    try {
-      const novaQuestaoRef = await addDoc(collection(db, "questoes"), {
-        materia: materia,
-        categoria: materia,
-        pergunta: pergunta,
-        opcoes: [opA, opB, opC, opD, opE].filter(Boolean),
-        correta: correta,
-        criadoEm: serverTimestamp()
-      });
-
-      // Mantém a cópia segura do aluno no momento do cadastro.
-      // Nunca envia o campo "correta".
-      await setDoc(doc(db, "questoes_publicas", novaQuestaoRef.id), {
-        materia: materia,
-        categoria: materia,
-        pergunta: pergunta,
-        opcoes: [opA, opB, opC, opD, opE].filter(Boolean),
-        origem: "questoes",
-        atualizadoEm: serverTimestamp()
-      });
-
-      animarBotaoSucesso(e.submitter);
-      mostrarNotificacao("✅ Questão cadastrada com sucesso!");
-      document.getElementById("form-cadastrar-questao").reset();
-      popularSelectMateriasQuestao();
-    } catch (err) { mostrarNotificacao("Erro ao cadastrar: " + err.message); }
+  window.quizResumoInterface = function() {
+    return {escolas:listaEscolasCache.length,questoes:questoesBancoCache.length,resultados:resultadosGlobaisCache.length};
+  };
+  window.quizSalvarQuestoesRevisadas = async function(lista) {
+    const api=window.QuizBiblioteca;
+    if (!api || !Array.isArray(lista) || lista.length>100) throw new Error("Lista de importação inválida.");
+    const validadas=lista.map(q=>({...api.validar(q),indiceRevisao:q.indiceRevisao}));
+    if(validadas.some(q=>q.erros.length))throw new Error("Há questões inválidas na seleção.");
+    // Uma leitura antes da importação evita duplicar também os documentos antigos.
+    const snap=await getDocs(collection(db,"questoes"));
+    const existentes=new Map();snap.forEach(d=>existentes.set(api.assinatura(d.data()),d.id));
+    const resumo={salvas:0,duplicadas:0,falhas:0,itens:[]};
+    for (const q of validadas) {
+      try {
+        const assinatura=api.assinatura(q);let id=existentes.get(assinatura);const jaExiste=Boolean(id);
+        if(!id){
+          const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(assinatura));
+          id="imp_"+Array.from(new Uint8Array(hash)).map(n=>n.toString(16).padStart(2,"0")).join("");
+          const dados={materia:q.materia,categoria:q.materia,pergunta:q.pergunta,opcoes:q.opcoes,correta:q.correta,fonte:q.fonte,criadoEm:serverTimestamp()};
+          await setDoc(doc(db,"questoes",id),dados);
+          existentes.set(assinatura,id);
+          // A cópia privada já existe; a cópia pública pode ser reparada na repetição.
+          if(!questoesBancoCache.some(x=>x.idDoc===id))questoesBancoCache.push({idDoc:id,...dados});
+        }
+        await setDoc(doc(db,"questoes_publicas",id),{idQuestao:id,materia:q.materia,categoria:q.materia,pergunta:q.pergunta,opcoes:q.opcoes,origem:"questoes",atualizadoEm:serverTimestamp()});
+        if(jaExiste)resumo.duplicadas++;else resumo.salvas++;
+        resumo.itens.push({indice:q.indiceRevisao,ok:true,mensagem:jaExiste?"Já cadastrada; cópia pública conferida.":"Questão cadastrada e sincronizada."});
+      }catch(err){resumo.falhas++;resumo.itens.push({indice:q.indiceRevisao,ok:false,mensagem:"Pendente: "+(err.code||err.message)});}
+    }
+    window.QuizInterface?.refreshOverview();
+    return resumo;
+  };
+  document.getElementById("form-cadastrar-questao")?.addEventListener("submit", async e=>{
+    e.preventDefault();const api=window.QuizBiblioteca;
+    if(!api){mostrarNotificacao("A biblioteca ainda está carregando.");return;}
+    const opcoes=["a","b","c","d","e"].map(l=>document.getElementById("cad-op-"+l)?.value.trim()||"");if(!opcoes[4])opcoes.pop();
+    const q=api.validar({materia:document.getElementById("cad-materia").value,pergunta:document.getElementById("cad-pergunta").value,opcoes,correta:document.getElementById("cad-correta").value});
+    if(q.erros.length){mostrarNotificacao(q.erros.join(" "));return;}
+    const btn=e.submitter;if(btn)btn.disabled=true;
+    try{const r=await window.quizSalvarQuestoesRevisadas([{...q,indiceRevisao:0}]);if(r.falhas)throw new Error(r.itens[0].mensagem);
+      mostrarNotificacao(r.duplicadas?"Questão já cadastrada; cópia pública conferida.":"Questão cadastrada com sucesso.");
+      document.getElementById("form-cadastrar-questao").reset();popularSelectMateriasQuestao();
+    }catch(err){mostrarNotificacao("Não foi possível concluir: "+err.message)}finally{if(btn)btn.disabled=false}
   });
 
   window.processarArquivoImportacao = async function(event) {
     const arquivo = event.target.files[0];
     if (!arquivo) return;
 
+    if(arquivo.size>5*1024*1024){alert("Selecione um arquivo de até 5 MB.");return;}
     const extensao = arquivo.name.split('.').pop().toLowerCase();
     const textarea = document.getElementById("input-massa-questoes");
 
-    if (extensao === 'txt') {
+    if (extensao === 'txt' || extensao === 'json') {
       const leitor = new FileReader();
       leitor.onload = function(e) {
         textarea.value = e.target.result;
@@ -3705,49 +3686,8 @@ if (window.location.pathname.includes("painel.html")) {
   };
 
   window.importarQuestoesEmMassa = async function() {
-    const texto = document.getElementById("input-massa-questoes").value.trim();
-    const materiaPadrao = document.getElementById("cad-materia").value || "Geral";
-    if (!texto) { alert("⚠️ Cole o texto ou envie um arquivo com as questões para importar."); return; }
-
-    let linhas = texto.split("\n");
-    let importadas = 0;
-
-    for (let linha of linhas) {
-      if (!linha.trim()) continue;
-      let partes = linha.split("|").map(p => p.trim());
-       
-      try {
-        if (partes.length >= 8) {
-          await addDoc(collection(db, "questoes"), {
-            materia: partes[0],
-            categoria: partes[0],
-            pergunta: partes[1],
-            opcoes: [partes[2], partes[3], partes[4], partes[5], partes[6]].filter(Boolean),
-            correta: partes[7].toUpperCase(),
-            criadoEm: serverTimestamp()
-          });
-          importadas++;
-        } else if (partes.length >= 7) {
-          await addDoc(collection(db, "questoes"), {
-            materia: materiaPadrao,
-            categoria: materiaPadrao,
-            pergunta: partes[0],
-            opcoes: [partes[1], partes[2], partes[3], partes[4], partes[5]].filter(Boolean),
-            correta: partes[6].toUpperCase(),
-            criadoEm: serverTimestamp()
-          });
-          importadas++;
-        }
-      } catch(e) {}
-    }
-
-    if (importadas > 0) {
-      document.getElementById("input-massa-questoes").value = "";
-      document.getElementById("input-arquivo-questoes").value = "";
-      mostrarNotificacao(`✅ ${importadas} questões importadas em massa com sucesso!`);
-    } else {
-      alert("⚠️ Formato inválido.");
-    }
+    if(!window.QuizBiblioteca){alert("Aguarde o carregamento da biblioteca.");return;}
+    window.QuizBiblioteca.revisarTexto(document.getElementById("input-massa-questoes").value,document.getElementById("cad-materia").value||"Geral");
   };
 
   // ==========================================================
@@ -4461,8 +4401,8 @@ if (window.location.pathname.includes("painel.html")) {
     return resultadosGlobaisCache.find(r => r.idDoc === id);
   }
   function dataResultado(res) {
-    return res?.dataEnvio?.toDate ? res.dataEnvio.toDate().toLocaleString("pt-BR") :
-      (res?.timestamp?.toDate ? res.timestamp.toDate().toLocaleString("pt-BR") : "Não informado");
+    const data=millisMonitoramento(res?.dataEnvio) || millisMonitoramento(res?.timestamp);
+    return data ? new Date(data).toLocaleString("pt-BR") : "Não informado";
   }
   function metricasResultado(res) {
     const total = Number(res?.totalQuestoes || 0);
@@ -4478,7 +4418,11 @@ if (window.location.pathname.includes("painel.html")) {
   function abrirDocumentoImpressao(titulo, corpo) {
     const w = window.open("", "_blank");
     if (!w) { alert("⚠️ Permita pop-ups para gerar o documento."); return; }
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>
+    const identidade=window.QuizInterface?.identidade || {titulo:"Quiz Interativo",marca:"WagnerBIZZA",logo:""};
+    const escDoc=escaparDocumentoQuiz;
+    const cabecalhoIdentidade=`<div style="display:flex;gap:12px;align-items:center;border-bottom:1px solid #d1d5db;padding:0 0 12px;margin:0 0 18px">${identidade.logo?`<img src="${escDoc(identidade.logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<strong>${escDoc(identidade.titulo)}</strong></div>`;
+    const marca=`<footer style="margin-top:25px;padding-top:10px;border-top:1px solid #e5e7eb;color:#64748b;font-size:10px;text-align:right">${escDoc(identidade.marca)}</footer>`;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escDoc(titulo)}</title>
     <style>
       @page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111827;margin:0;font-size:12px}
       h1{font-size:22px;margin:0 0 5px}h2{font-size:16px;margin:20px 0 8px}.sub{color:#475569;margin-bottom:18px}
@@ -4487,7 +4431,7 @@ if (window.location.pathname.includes("painel.html")) {
       .metrica{border:1px solid #cbd5e1;border-radius:7px;padding:10px;text-align:center}.metrica strong{display:block;font-size:18px;margin-top:3px}
       .obs{border:1px solid #e2e8f0;background:#f8fafc;padding:10px;border-radius:7px;margin-top:14px}.assinaturas{display:flex;gap:50px;justify-content:center;margin-top:60px}
       .assinaturas div{width:220px;text-align:center;border-top:1px solid #111;padding-top:5px}@media print{button{display:none}}
-    </style></head><body>${corpo}</body></html>`);
+    </style></head><body>${cabecalhoIdentidade}${corpo}${marca}</body></html>`);
     w.document.close(); setTimeout(()=>w.print(),180);
   }
 
@@ -4521,7 +4465,7 @@ if (window.location.pathname.includes("painel.html")) {
 
   window.gerarProvaPorId = function(id) {
     const r=obterResultadoPorId(id); if(!r) return alert("Resultado não encontrado.");
-    gerarCopiaProvaIndividual(r.nome||"Aluno", r.turma||"", r.materia||"Geral", r.periodo||"Geral", dataResultado(r), r.escola||"");
+    gerarCopiaProvaIndividual(r.nome||"Aluno", r.turma||"", r.materia||"Geral", r.periodo||"Geral", dataResultado(r), r.escola||"", r);
   };
 
   window.gerarBoletimIndividual = function(nome, turma, escola, nota, materia) {
@@ -4735,7 +4679,7 @@ if (window.location.pathname.includes("painel.html")) {
   function normalizarRespostaParaCorrecao(valor) {
     return (valor ?? "").toString().normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .replace(/^[A-Ea-e][\)\.\-\:\s]+\s*/, "")
+      .replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, "")
       .replace(/\s+/g, " ").trim().toLowerCase();
   }
 
@@ -4776,21 +4720,21 @@ if (window.location.pathname.includes("painel.html")) {
         }
         if (!qSnap.exists()) continue;
 
-        questoesResolvidas++;
-
         const dadosQuestao = qSnap.data() || {};
         const opcoesPrivadas = Array.isArray(dadosQuestao.opcoes)
           ? dadosQuestao.opcoes
-          : (Array.isArray(dadosQuestao.alternativas) ? dadosQuestao.alternativas : []);
+          : (Array.isArray(dadosQuestao.alternativas) ? dadosQuestao.alternativas : (Array.isArray(dadosQuestao.respostas) ? dadosQuestao.respostas : []));
 
-        const corretaBruta = String(
-          dadosQuestao.correta || dadosQuestao.resposta || dadosQuestao.correto || ""
-        ).trim();
+        const gabaritoBruto=dadosQuestao.correta ?? dadosQuestao.resposta ?? dadosQuestao.correto ?? "";
+        const corretaBruta = String(gabaritoBruto).trim();
 
         let textoCorreto = "";
         let letraCorreta = corretaBruta.toUpperCase();
 
-        if (/^[A-E]$/.test(letraCorreta)) {
+        if (typeof gabaritoBruto==="number" && Number.isInteger(gabaritoBruto) && gabaritoBruto>=0 && gabaritoBruto<opcoesPrivadas.length) {
+          textoCorreto=String(opcoesPrivadas[gabaritoBruto] || "");
+          letraCorreta="ABCDE"[gabaritoBruto];
+        } else if (/^[A-E]$/.test(letraCorreta)) {
           const idxCorreto = "ABCDE".indexOf(letraCorreta);
           textoCorreto = String(opcoesPrivadas[idxCorreto] || "");
         } else {
@@ -4798,6 +4742,9 @@ if (window.location.pathname.includes("painel.html")) {
           textoCorreto = corretaBruta;
         }
 
+        // Uma questão encontrada sem gabarito válido continua pendente, não vira erro do aluno.
+        if (!textoCorreto || !opcoesPrivadas.some(op=>normalizarRespostaParaCorrecao(op)===normalizarRespostaParaCorrecao(textoCorreto))) continue;
+        questoesResolvidas++;
         const letraEscolhida = String(res.respostas?.[i] || "").trim().toUpperCase();
         const textoEscolhido = String(res.respostasTexto?.[i] || "").trim();
 
@@ -4815,7 +4762,7 @@ if (window.location.pathname.includes("painel.html")) {
 
       // Só grava nota quando todas as questões foram identificadas.
       const totalEsperado = res.questoesIds.length;
-      if (totalEsperado === 0 || questoesResolvidas !== totalEsperado) {
+      if (totalEsperado === 0 || questoesResolvidas !== totalEsperado || Number(res.totalQuestoes || totalEsperado)!==totalEsperado) {
         console.warn(`Correção pendente: ${questoesResolvidas}/${totalEsperado} questões localizadas.`, idResultado);
         await setDoc(doc(db, "avaliacoes", idResultado), {
           correcaoPendente:true, questoesResolvidasCorrecao:questoesResolvidas,
@@ -5392,7 +5339,7 @@ window.abrirModalEditarQuestaoBanco = function(idDoc) {
     opcoesHtml += `
       <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;" class="linha-opcao-edicao">
         <span style="font-weight:bold; min-width:25px;">${letra})</span>
-        <input type="text" class="input-opcao-valor" value="${op}" style="flex:1; padding:6px 10px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">
+        <input type="text" class="input-opcao-valor" value="${escaparTextoQuiz(op)}" style="flex:1; padding:6px 10px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">
         <button type="button" class="btn-acao-mini" style="background:#ef4444; color:white;" onclick="this.closest('.linha-opcao-edicao').remove()">🗑️</button>
       </div>
     `;
@@ -5413,7 +5360,7 @@ window.abrirModalEditarQuestaoBanco = function(idDoc) {
       </div>
       <div>
         <label style="font-size:12px; color:#cbd5e1; display:block; margin-bottom:4px;">Enunciado da Pergunta:</label>
-        <textarea id="edit-pergunta" rows="3" style="width:100%; padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">${q.pergunta || ''}</textarea>
+        <textarea id="edit-pergunta" rows="3" style="width:100%; padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff; font-size:13px;">${escaparTextoQuiz(q.pergunta || '')}</textarea>
       </div>
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -5685,7 +5632,7 @@ window.renderizarCatalogoBancoDados = function() {
       let ehCorreta = (letra === correta);
       opcoesHtml += `
         <div style="display:flex; align-items:center; justify-content:space-between; padding: 4px 8px; background: rgba(15,23,42,0.4); border-radius:4px; font-size:12px; margin-bottom:3px; ${ehCorreta ? 'border:1px solid #22c55e; color:#4ade80; font-weight:bold;' : ''}">
-          <span><strong>${letra})</strong> ${op}</span>
+          <span><strong>${letra})</strong> ${escaparTextoQuiz(op)}</span>
           ${ehCorreta ? '<span style="font-size:10px; background:rgba(34,197,94,0.2); padding:1px 4px; border-radius:3px;">Correta</span>' : ''}
         </div>
       `;
@@ -5696,7 +5643,7 @@ window.renderizarCatalogoBancoDados = function() {
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div style="display:flex; align-items:center; gap:8px;">
             <input type="checkbox" class="chk-questao-catalogo" value="${q.idDoc}" style="cursor:pointer; width:16px; height:16px;">
-            <span style="font-size:11px; background:rgba(59,130,246,0.2); color:#60a5fa; padding:2px 6px; border-radius:4px; font-weight:bold;">📚 ${materia}</span>
+            <span style="font-size:11px; background:rgba(59,130,246,0.2); color:#60a5fa; padding:2px 6px; border-radius:4px; font-weight:bold;">📚 ${escaparTextoQuiz(materia)}</span>
           </div>
           <div style="display:flex; gap:6px;">
             <button type="button" class="btn-acao-mini" style="background:#eab308; color:white; padding:5px 10px; border-radius:4px; border:none; cursor:pointer; font-weight:bold; font-size:11px;" onclick="abrirModalEditarQuestaoBanco('${q.idDoc}')">✏️ Editar</button>
@@ -5705,7 +5652,7 @@ window.renderizarCatalogoBancoDados = function() {
         </div>
         <div style="margin-top:4px; padding:10px 11px; background:rgba(59,130,246,.08); border-left:3px solid #3b82f6; border-radius:6px;">
           <div style="font-size:10px; letter-spacing:.6px; color:#60a5fa; font-weight:800; margin-bottom:5px;">ENUNCIADO</div>
-          <div style="font-size:13px; line-height:1.45; font-weight:700; color:#f8fafc;">${pergunta}</div>
+          <div style="font-size:13px; line-height:1.45; font-weight:700; color:#f8fafc;">${escaparTextoQuiz(pergunta)}</div>
         </div>
         <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
           <div style="font-size:10px; letter-spacing:.6px; color:#94a3b8; font-weight:800; margin-bottom:2px;">ALTERNATIVAS</div>
@@ -5945,8 +5892,8 @@ async function carregarConteudoLixeiraQuestoes() {
       html += `
         <tr>
           <td style="text-align: center;"><input type="checkbox" class="chk-lixeira-item" value="${docSnap.id}"></td>
-          <td>📚 ${materia}</td>
-          <td><strong>${pergunta}</strong></td>
+          <td>📚 ${escaparTextoQuiz(materia)}</td>
+          <td><strong>${escaparTextoQuiz(pergunta)}</strong></td>
           <td style="text-align: center;">
             <button type="button" class="btn-acao-mini" style="background:#22c55e; color:white; padding:5px 10px; border-radius:4px; border:none; cursor:pointer;" onclick="restaurarQuestaoLixeiraIndividual('${docSnap.id}')">♻️ Restaurar</button>
           </td>

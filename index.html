@@ -587,6 +587,8 @@ html:not(.acesso-aluno-autorizado) #navegacao-acesso-aluno #voltar-ao-token-alun
 html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{display:none!important}
 @media(max-width:640px){#navegacao-acesso-aluno{margin-bottom:10px}#navegacao-acesso-aluno a,#navegacao-acesso-aluno button{font-size:13px}}
 </style>
+<link rel="stylesheet" href="quiz-interface.css">
+<script src="quiz-interface.js" defer></script>
 </head>
 <body>
 
@@ -971,11 +973,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     }
 
     function limparPrefixoOpcao(opcaoStr) {
-      if (!opcaoStr) return "";
-      let limpo = opcaoStr.toString().replace(/^[a-zA-Z][\)\.\-\s]+\s*/, "").trim();
-      let lower = limpo.toLowerCase();
-      if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return "";
-      return limpo;
+      if (opcaoStr == null) return "";
+      return String(opcaoStr).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, "").trim();
     }
 
     // ==========================================================
@@ -1479,6 +1478,17 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       await iniciarCarregamentoProva();
     });
 
+    function ordenarQuestoesPublicadasPorAluno(questoes, idAluno) {
+      const hashPosicao = indice => {
+        const texto=String(idAluno || "")+"|posicao|"+indice;
+        let h=2166136261;
+        for(let i=0;i<texto.length;i++){h^=texto.charCodeAt(i);h=Math.imul(h,16777619);}
+        return h>>>0;
+      };
+      return questoes.map((q,i)=>({q,i,chave:hashPosicao(i)}))
+        .sort((a,b)=>a.chave-b.chave || a.i-b.i).map(item=>item.q);
+    }
+
     async function iniciarCarregamentoProva() {
       const avaliacaoRetomada = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
       let rascunhoRetomada = lerRascunhoAluno(alunoAtual.id, avaliacaoRetomada);
@@ -1512,12 +1522,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           
           let opcoesLimpas = opcoesBrutas
             .map(op => limparPrefixoOpcao(op))
-            .filter(op => {
-              if (!op || op === "") return false;
-              let lower = op.toLowerCase();
-              if (lower.startsWith("alternativa e") || lower.startsWith("opção e")) return false;
-              return true;
-            });
+            .filter(op => !!op);
           // 🔐 FASE 10C — nenhuma chave de resposta é carregada no navegador do aluno.
           banco.push({
             idQuestao: d.idQuestao || s.id,
@@ -1600,6 +1605,13 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         if (deslocamento > 0) {
           unicasArray = unicasArray.slice(deslocamento).concat(unicasArray.slice(0, deslocamento));
         }
+      }
+
+      // O pacote já foi reordenado pelo professor. A permutação individual usa
+      // posições, não IDs/seed: uma nova ordem publicada não é anulada por outro sort.
+      // Mesma tentativa e mesmo pacote permanecem determinísticos por aluno.
+      if (dadosProvaAtiva.origemPublicacao === "github" && Array.isArray(dadosProvaAtiva.questoesPublicas)) {
+        unicasArray = ordenarQuestoesPublicadasPorAluno(filtradas, alunoAtual.id);
       }
 
       listaQuestoes = dadosProvaAtiva.origemPublicacao === "github" && Array.isArray(dadosProvaAtiva.questoesPublicas)
@@ -2043,9 +2055,10 @@ if (unsubscribePermissaoAluno) {
       document.getElementById("tela-resultado").classList.remove("hidden");
       // 🔐 FASE 10C — o aluno não possui mais a resposta correta.
       // Ele envia as respostas e o professor realiza a correção com o banco privado.
+      const escaparRevisao=valor=>String(valor ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
       let htmlRev = listaQuestoes.map((q, idx) => {
         const resp = respostasUsuario[idx] || "-";
-        return `<div class="item-revisao"><p><strong>${idx+1}. ${q.pergunta}</strong></p><p>Resposta enviada: ${resp}</p></div>`;
+        return `<div class="item-revisao"><p><strong>${idx+1}. ${escaparRevisao(q.pergunta)}</strong></p><p>Resposta enviada: ${escaparRevisao(resp)}</p></div>`;
       }).join("");
       let min = Math.floor(segundosPassados / 60);
       let seg = segundosPassados % 60;
