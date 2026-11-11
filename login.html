@@ -120,7 +120,10 @@ onAuthStateChanged(auth,async u=>{
   try{
     const token=await getIdTokenResult(u);
     const provedor=token?.signInProvider||token?.claims?.firebase?.sign_in_provider||"";
-    if(provedor==="password" || (provedor==="google.com" && u.uid==="S8gicgKDwsep2gZmeg7qBLcSNCf1")){
+    if (provedor === "password" || (provedor === "google.com" && [
+  "S8gicgKDwsep2gZmeg7qBLcSNCf1",
+  "gFjkApOW39Y50lKEUBzl0CYr6t22"
+  ].includes(u.uid))) {
       localStorage.setItem(CHAVE_PROFESSOR_OFFLINE,JSON.stringify({email:u.email,uid:u.uid,validadoEm:Date.now()}));
       location.replace("painel.html"); return;
     }
