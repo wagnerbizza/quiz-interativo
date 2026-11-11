@@ -1,0 +1,22 @@
+diff --git a/quiz-interface.js b/quiz-interface.js
+index 08bb0fc..6f634b6 100644
+--- a/quiz-interface.js
++++ b/quiz-interface.js
+@@ -83,10 +83,15 @@ async function showIdentity(){const d=identityPanel(`<form id="qi-identity-form"
+ const publication = document.createElement('section');
+ publication.className = 'qi-note';
+ publication.innerHTML = `<h3>Publicação de avaliações</h3>
+-<p>Selecione o arquivo <code>prova-publicada.json</code> na pasta principal do Quiz e permita a gravação no navegador.</p>
++<p>Arquivo para vincular <strong><code>prova-publicada.json</code></strong></p>
++<p>Abra a pasta principal do projeto <strong>quiz-interativo</strong>, selecione esse arquivo e permita a gravação no navegador.</p>
+ <button type="button" class="qi-button">Vincular ou trocar arquivo de publicação</button>
+ <p class="qi-muted" role="status"></p>`;
+-d.append(publication);
++const form = d.querySelector('#qi-identity-form');
++const identityHeading = document.createElement('h3');
++identityHeading.textContent = 'Identidade visual';
++d.querySelector('#qi-settings-title').textContent = 'Configurações do sistema';
++form.before(publication, identityHeading);
+ publication.querySelector('button').onclick = async () => {
+   const status = publication.querySelector('[role="status"]');
+   if (typeof window.vincularArquivoPublicacao !== 'function') {
