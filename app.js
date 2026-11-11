@@ -4616,8 +4616,7 @@ if (window.location.pathname.includes("painel.html")) {
   };
 
   function resultadosParaExportacao() {
-    return (resultadosFiltradosCache && resultadosFiltradosCache.length)
-      ? resultadosFiltradosCache : resultadosGlobaisCache.filter(r => !alunosOcultosCache.has(r.idDoc) && !alunosLixeiraCache.has(r.idDoc));
+    return resultadosFiltradosCache;
   }
   // Mantém o motivo registrado pelo aluno visível nos relatórios e exportações.
   // Resultados antigos sem motivo explícito permanecem como finalizados, sem inferir a causa.
