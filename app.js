@@ -3586,7 +3586,10 @@ if (window.location.pathname.includes("painel.html")) {
     sel.innerHTML = html;
   }
 
-  const professorGoogleUid = "S8gicgKDwsep2gZmeg7qBLcSNCf1";
+  const professorGoogleUids = new Set([
+  "S8gicgKDwsep2gZmeg7qBLcSNCf1",
+  "gFjkApOW39Y50lKEUBzl0CYr6t22"
+]);
   window.quizPerfilConta = () => {
     const user = auth.currentUser;
     if (!user || document.body.classList.contains("modo-offline-professor")) return null;
