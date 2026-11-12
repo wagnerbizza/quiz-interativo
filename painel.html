@@ -2209,14 +2209,24 @@ body.light-mode #aba-banco-dados > p {
         });
         pedido.addEventListener("input", () => { copiar.disabled = !pedido.value.trim(); });
         copiar.addEventListener("click", async () => {
+          if (!pedido.value.trim()) {
+            status.textContent = "Digite um pedido ou clique em Preparar pedido.";
+            pedido.focus();
+            return;
+          }
           try {
             await navigator.clipboard.writeText(pedido.value);
-            status.textContent = "Pedido copiado.";
           } catch {
             pedido.focus();
             pedido.select();
-            status.textContent = "Pressione Ctrl+C para copiar o pedido selecionado.";
+            try {
+              if (!document.execCommand("copy")) throw new Error("Cópia indisponível");
+            } catch {
+              status.textContent = "O pedido está selecionado. Pressione Ctrl+C para copiar.";
+              return;
+            }
           }
+          status.textContent = "Pedido copiado. Abra o ChatGPT e cole com Ctrl+V.";
         });
         function converterQuestoesColadas(texto, materia) {
           // A revisão existente continua aceitando arquivos JSON e linhas com separadores.
