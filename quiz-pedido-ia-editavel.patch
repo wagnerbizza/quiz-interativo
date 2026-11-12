@@ -1,0 +1,21 @@
+diff --git a/painel.html b/painel.html
+index 01de3e9..5df170b 100644
+--- a/painel.html
++++ b/painel.html
+@@ -2158,7 +2158,7 @@ body.light-mode #aba-banco-dados > p {
+             <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="qi-button">Abrir ChatGPT</a>
+           </div>
+           <label for="qi-assistente-texto">Pedido para enviar à IA</label>
+-          <textarea id="qi-assistente-texto" rows="5" readonly></textarea>
++          <textarea id="qi-assistente-texto" rows="5" placeholder="Ex.: Crie 10 questões sobre HTML semântico, com alternativas de A a E e gabarito."></textarea>
+         </form>
+         <label for="qi-assistente-resposta">Questões copiadas do ChatGPT</label>
+         <textarea id="qi-assistente-resposta" rows="6" placeholder="Cole as questões numeradas, com A) a E) e Gabarito: B"></textarea>
+@@ -2212,6 +2212,7 @@ body.light-mode #aba-banco-dados > p {
+           copiar.disabled = false;
+           status.textContent = "Pedido pronto. Copie e envie à IA.";
+         });
++        pedido.addEventListener("input", () => { copiar.disabled = !pedido.value.trim(); });
+         copiar.addEventListener("click", async () => {
+           try {
+             await navigator.clipboard.writeText(pedido.value);
