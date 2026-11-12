@@ -1835,6 +1835,39 @@ body.light-mode #aba-banco-dados > p {
 <style>
 .tabela-resultados th:is([aria-sort="ascending"],[aria-sort="descending"]) .quiz-seta-ordem { color:var(--accent, currentColor); font-weight:900; }
 </style>
+
+<style id="qi-acoes-escola">
+#aba-escolas .qi-escola-acoes, #aba-escolas .qi-escola-form-acoes {
+  display:flex; flex-wrap:wrap; align-items:center; gap:.5rem;
+}
+#aba-escolas .card-escola-dinamico { flex-wrap:wrap; gap:.75rem; cursor:default; }
+#aba-escolas .card-escola-dinamico > div:first-child { flex-basis: min(100%, 16rem) !important; }
+#aba-escolas .qi-escola-form-acoes #btn-salvar-nova-escola { flex:0 1 auto !important; }
+#aba-escolas .qi-escola-acoes :is(button,a), #aba-escolas .qi-escola-form-acoes button,
+#aba-ativacao #btn-publicar-prova-escola-profissional {
+  display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+  min-height:44px; max-width:100%; padding:.5rem .8rem !important; box-sizing:border-box;
+  font-weight:600; border-radius:.6rem; text-decoration:none; white-space:normal;
+}
+#aba-escolas .qi-escola-acoes :is(button,a) { border:1px solid var(--qi-line,#526276); }
+#aba-escolas .qi-escola-acoes a, #aba-ativacao #btn-publicar-prova-escola-profissional {
+  background:var(--qi-accent,#19c7ed) !important; color:var(--qi-ink,#071219) !important;
+}
+#aba-escolas .qi-escola-acoes .btn-excluir-escola {
+  background:transparent !important; color:inherit !important; border-color:#e05d68;
+}
+#aba-escolas .qi-escola-acoes [aria-pressed="true"] { border-color:var(--qi-accent,#19c7ed); }
+#aba-escolas .qi-escola-acoes :is(button,a):hover { filter:brightness(1.12); }
+#aba-escolas .qi-escola-acoes :is(button,a):focus-visible, #aba-escolas .qi-escola-form-acoes button:focus-visible,
+#aba-ativacao #btn-publicar-prova-escola-profissional:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+#aba-escolas .qi-configurar-unidade::before { content:"⚙" / ""; }
+#aba-escolas .btn-editar-escola::before { content:"✎" / ""; }
+#aba-escolas .btn-excluir-escola::before { content:"×" / ""; }
+@media(max-width:600px) {
+  #aba-escolas .qi-escola-acoes { flex:1 1 100%; }
+  #aba-escolas .qi-escola-acoes > * { flex:1 1 9rem; }
+}
+</style>
 </head>
 <body>
 
@@ -2045,27 +2078,27 @@ body.light-mode #aba-banco-dados > p {
 
     <!-- ABA 1: CADASTRO DE ESCOLAS -->
     <div id="aba-escolas" class="aba-conteudo hidden">
-      <h2>🏫 Cadastro de Unidades Escolares</h2>
+      <h2>Cadastro de escolas</h2>
       <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
         <input type="hidden" id="input-escola-id-editando" value="">
-        <label>Nome da Escola:</label>
+        <label for="input-nome-escola">Nome da Escola:</label>
         <input type="text" id="input-nome-escola" placeholder="Ex: EE Profª Maria da Silva...">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
           <div>
-            <label>Diretor(a) / Gestor(a):</label>
+            <label for="input-gestor-escola">Diretor(a) / Gestor(a):</label>
             <input type="text" id="input-gestor-escola" placeholder="Nome do Gestor...">
           </div>
           <div>
-            <label>Cidade / Município:</label>
+            <label for="input-cidade-escola">Cidade / Município:</label>
             <input type="text" id="input-cidade-escola" placeholder="Ex: São Paulo - SP...">
           </div>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <button id="btn-salvar-nova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 15px; flex: 1; justify-content: center;">➕ Cadastrar Escola</button>
-          <button id="btn-cancelar-edicao" class="btn-acao btn-secondary hidden" style="margin-top: 15px;">✖ Cancelar</button>
+        <div class="qi-escola-form-acoes">
+          <button id="btn-salvar-nova-escola" class="btn-acao" style="background-color: #22c55e; margin-top: 15px; flex: 1; justify-content: center;">Cadastrar escola</button>
+          <button id="btn-cancelar-edicao" class="btn-acao btn-secondary hidden" style="margin-top: 15px;">Cancelar</button>
         </div>
       </div>
-      <h3 style="color: #60a5fa; font-size: 15px; margin-bottom: 12px;">📋 Escolas Cadastradas</h3>
+      <h3 style="color: #60a5fa; font-size: 15px; margin-bottom: 12px;">Escolas cadastradas</h3>
       <div id="lista-escolas-cadastradas-container">Carregando escolas...</div>
     </div>
 

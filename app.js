@@ -2662,12 +2662,17 @@ if (window.location.pathname.includes("painel.html")) {
       containerAtivacao.appendChild(painelDinamico);
     }
 
+    painelDinamico.onchange = null;
+    painelDinamico.oninput = null;
+    painelDinamico.setAttribute("aria-busy", "true");
+    painelDinamico.innerHTML = '<p role="status">Carregando a configuração da escola…</p>';
+
     // 10C.7: leitura única da configuração para ativação.
     getDoc(doc(db, "escolas_configuracoes", normalizarTexto(escolaNome))).then((docSnap) => {
       // Ignora resposta antiga quando o professor já selecionou outra escola.
       if (numeroRequisicao !== requisicaoConfiguracaoAtivacao) return;
       let tab = {};
-      let turmasCarregadas = ["1A", "2A", "3A"];
+      let turmasCarregadas = [];
       let materiasMarcadasSalvas = [];
       let disciplinasMarcadasSalvas = [];
       let periodosMarcadosSalvos = [];
@@ -2697,24 +2702,38 @@ if (window.location.pathname.includes("painel.html")) {
         turmasMarcadasSalvas = tab.turmas || [];
       }
 
-      let listaMat = materiasMarcadasSalvas.length > 0 ? [...new Set(materiasMarcadasSalvas)] : (tab.materias || ["Inteligência Artificial", "Programação Front-End"]);
-      let listaDisc = disciplinasMarcadasSalvas.length > 0 ? [...new Set(disciplinasMarcadasSalvas)] : (tab.disciplinas || ["Redes de Computadores", "Metodologias Ágeis"]);
-      let listaPer = periodosMarcadosSalvos.length > 0 ? [...new Set(periodosMarcadosSalvos)] : (tab.periodos || ["Geral"]);
-      let turmasParaExibir = turmasMarcadasSalvas.length > 0 ? turmasMarcadasSalvas : turmasCarregadas;
+      const valoresValidos = lista => Array.isArray(lista)
+        ? [...new Set(lista.filter(item => typeof item === "string").map(item => item.trim()).filter(Boolean))]
+        : [];
+      const listaMat = valoresValidos(materiasMarcadasSalvas.length ? materiasMarcadasSalvas : tab.materias);
+      const listaDisc = valoresValidos(disciplinasMarcadasSalvas.length ? disciplinasMarcadasSalvas : tab.disciplinas);
+      const listaPer = valoresValidos(periodosMarcadosSalvos.length ? periodosMarcadosSalvos : tab.periodos);
+      const turmasParaExibir = valoresValidos(Array.isArray(tab.turmas) ? turmasMarcadasSalvas : turmasCarregadas);
+
+      painelDinamico.removeAttribute("aria-busy");
+      if (!listaMat.length || !turmasParaExibir.length) {
+        const caminho = "escola.html?escola=" + encodeURIComponent(escolaNome) + "&retorno=ativacao";
+        painelDinamico.innerHTML = `<div class="qi-card">
+          <h3>Configuração pendente · ${escaparTextoQuiz(escolaNome)}</h3>
+          <p>Salve pelo menos uma matéria e uma turma marcada em Configurar Unidade para preparar a avaliação.</p>
+          <a class="qi-button" href="${caminho}">Configurar Unidade</a>
+        </div>`;
+        return;
+      }
 
       let htmlMat = "";
       listaMat.forEach(m => {
-        htmlMat += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-materia-ativacao" value="${m}" checked> ${m}</label>`;
+        htmlMat += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-materia-ativacao" value="${escaparTextoQuiz(m)}" checked> ${escaparTextoQuiz(m)}</label>`;
       });
 
       let htmlDisc = "";
       listaDisc.forEach(d => {
-        htmlDisc += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-disciplina-ativacao" value="${d}" checked> ${d}</label>`;
+        htmlDisc += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-disciplina-ativacao" value="${escaparTextoQuiz(d)}" checked> ${escaparTextoQuiz(d)}</label>`;
       });
 
       let htmlPeriodos = "";
       listaPer.forEach(p => {
-        htmlPeriodos += `<option value="${p}">${p}</option>`;
+        htmlPeriodos += `<option value="${escaparTextoQuiz(p)}">${escaparTextoQuiz(p)}</option>`;
       });
 
       let htmlTurmas = "";
@@ -2722,14 +2741,10 @@ if (window.location.pathname.includes("painel.html")) {
         htmlTurmas = `<p style="color:#94a3b8; font-size:13px; font-style:italic;">Nenhuma turma cadastrada.</p>`;
       } else {
         turmasParaExibir.forEach(t => {
-          htmlTurmas += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-turma-ativacao" value="${t}" checked> ${t}</label>`;
+          htmlTurmas += `<label class="checkbox-item-compacto"><input type="checkbox" class="chk-turma-ativacao" value="${escaparTextoQuiz(t)}" checked> ${escaparTextoQuiz(t)}</label>`;
         });
       }
 
-      const campoTokenAnterior = painelDinamico.querySelector("#input-token-ativacao");
-      if (campoTokenAnterior && escolaAtivaSelecionadaIndependente === escolaNome) {
-        rascunhosTokenAtivacao.set(escolaNome, campoTokenAnterior.value);
-      }
       painelDinamico.innerHTML = `
         <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid #3b82f6; padding: 24px; border-radius: 12px; margin-top: 15px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
           
@@ -2818,12 +2833,12 @@ if (window.location.pathname.includes("painel.html")) {
           </div>
 
           <div style="margin:10px 0;padding:10px;border:1px solid #334155;border-radius:8px;">
-            <button type="button" onclick="vincularArquivoPublicacao()" style="background:#0ea5e9;color:white;border:none;padding:8px 12px;border-radius:7px;font-weight:bold;cursor:pointer;">🔗 Vincular publicação automática</button>
+            <button type="button" onclick="vincularArquivoPublicacao()" style="background:#0ea5e9;color:white;border:none;padding:8px 12px;border-radius:7px;font-weight:bold;cursor:pointer;">Vincular arquivo de publicação</button>
             <span id="status-vinculo-publicacao" style="margin-left:8px;font-size:12px;">Verificando vínculo...</span>
             <div style="font-size:11px;color:#94a3b8;margin-top:5px;">Faça isto uma única vez e selecione o prova-publicada.json da pasta principal do projeto.</div>
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px;">
-            <button type="button" id="btn-publicar-prova-escola-profissional" style="background: #22c55e; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);">🚀 Confirmar e Publicar Avaliação para os Alunos</button>
+            <button type="button" id="btn-publicar-prova-escola-profissional" style="background: #22c55e; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);">Publicar avaliação</button>
           </div>
 
         </div>
@@ -2855,8 +2870,8 @@ if (window.location.pathname.includes("painel.html")) {
           rascunhosTokenAtivacao.set(escolaNome, campoTokenAtual.value);
         });
       }
-      painelDinamico.addEventListener("change", atualizarPreviewDinamicoAtivacao);
-      painelDinamico.addEventListener("input", atualizarPreviewDinamicoAtivacao);
+      painelDinamico.onchange = atualizarPreviewDinamicoAtivacao;
+      painelDinamico.oninput = atualizarPreviewDinamicoAtivacao;
       atualizarPreviewDinamicoAtivacao();
       atualizarStatusVinculoPublicacao();
 
@@ -2980,6 +2995,11 @@ if (window.location.pathname.includes("painel.html")) {
           );
         }
       });
+    }).catch(erro => {
+      if (numeroRequisicao !== requisicaoConfiguracaoAtivacao) return;
+      painelDinamico.removeAttribute("aria-busy");
+      painelDinamico.innerHTML = '<p role="alert">Não foi possível carregar a configuração. Selecione a escola novamente para tentar.</p>';
+      console.error("Erro ao carregar configuração da escola:", erro);
     });
   }
 
@@ -3393,22 +3413,22 @@ if (window.location.pathname.includes("painel.html")) {
           escolas.forEach(esc => {
             let ehFixada = esc.idDoc === escolaPrincipalFixadaId;
             let classeFixada = ehFixada ? "fixada" : "";
-            let textoPin = ehFixada ? "📌 Fixada" : "📌 Fixar Principal";
+            let textoPin = ehFixada ? "Desafixar" : "Fixar como principal";
             let draggableAttr = ehFixada ? "false" : "true";
 
             htmlCadastradas += `
-              <div class="card-escola-dinamico ${classeFixada}" draggable="${draggableAttr}" data-id="${esc.idDoc}" onclick="window.location.href='escola.html?escola=${encodeURIComponent(esc.nome)}&retorno=escolas';">
+              <div class="card-escola-dinamico ${classeFixada}" draggable="${draggableAttr}" data-id="${esc.idDoc}">
                 <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
-                  <strong style="font-size: 15px; color: inherit; display: block;">🏫 ${esc.nome} ${ehFixada ? '<span style="font-size:11px; color:#eab308; background:rgba(234,179,8,0.2); padding:2px 6px; border-radius:4px; margin-left:6px;">⭐ Principal</span>' : ''}</strong>
+                  <strong style="font-size: 15px; color: inherit; display: block;">${escaparTextoQuiz(esc.nome)} ${ehFixada ? '<span style="font-size:11px; color:#eab308; background:rgba(234,179,8,0.2); padding:2px 6px; border-radius:4px; margin-left:6px;">⭐ Principal</span>' : ''}</strong>
                   <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; opacity: 0.85;">
-                    <span>Gestor(a): ${esc.gestor || 'N/D'} | Cidade: ${esc.cidade || 'N/D'}</span>
-                    <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⚙️ Configurar Unidade</span>
+                    <span>Gestor(a): ${escaparTextoQuiz(esc.gestor || 'N/D')} | Cidade: ${escaparTextoQuiz(esc.cidade || 'N/D')}</span>
                   </div>
                 </div>
-                <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;" onclick="event.stopPropagation();">
-                  <button type="button" class="btn-fixar-escola btn-acao-mini" data-id="${esc.idDoc}" style="background:${ehFixada ? '#eab308' : '#334155'}; color:white;" title="Fixar Escola Principal">${textoPin}</button>
-                  <button type="button" class="btn-editar-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" data-gestor="${esc.gestor || ''}" data-cidade="${esc.cidade || ''}" style="background:#eab308; color:white;" title="Editar">✏️</button>
-                  <button type="button" class="btn-excluir-escola btn-acao-mini" data-id="${esc.idDoc}" data-nome="${esc.nome}" style="background:#ef4444; color:white;" title="Excluir">🗑️</button>
+                <div class="qi-escola-acoes" onclick="event.stopPropagation();">
+                  <a class="qi-button qi-configurar-unidade" href="escola.html?escola=${encodeURIComponent(esc.nome)}&amp;retorno=escolas">Configurar Unidade</a>
+                  <button type="button" class="btn-fixar-escola btn-acao-mini" data-id="${escaparTextoQuiz(esc.idDoc)}" aria-pressed="${ehFixada}">${textoPin}</button>
+                  <button type="button" class="btn-editar-escola btn-acao-mini" data-id="${escaparTextoQuiz(esc.idDoc)}" data-nome="${escaparTextoQuiz(esc.nome)}" data-gestor="${escaparTextoQuiz(esc.gestor)}" data-cidade="${escaparTextoQuiz(esc.cidade)}" >Editar</button>
+                  <button type="button" class="btn-excluir-escola btn-acao-mini" data-id="${escaparTextoQuiz(esc.idDoc)}" data-nome="${escaparTextoQuiz(esc.nome)}" >Excluir</button>
                 </div>
               </div>
             `;
@@ -3498,7 +3518,7 @@ if (window.location.pathname.includes("painel.html")) {
     inputNomeEscola.value = "";
     inputGestorEscola.value = "";
     inputCidadeEscola.value = "";
-    btnSalvarNovaEscola.textContent = "➕ Cadastrar Escola";
+    btnSalvarNovaEscola.textContent = "Cadastrar escola";
     btnCancelarEdicao.classList.add("hidden");
   });
 
@@ -3515,7 +3535,7 @@ if (window.location.pathname.includes("painel.html")) {
       animarBotaoSucesso(e.target);
       mostrarNotificacao(`✅ Escola "${nome}" salva!`);
       inputEscolaIdEditando.value = ""; inputNomeEscola.value = ""; inputGestorEscola.value = ""; inputCidadeEscola.value = "";
-      btnSalvarNovaEscola.textContent = "➕ Cadastrar Escola";
+      btnSalvarNovaEscola.textContent = "Cadastrar escola";
       btnCancelarEdicao.classList.add("hidden");
       await carregarListaEscolas();
     } catch (err) { mostrarNotificacao("Erro: " + err.message); }
