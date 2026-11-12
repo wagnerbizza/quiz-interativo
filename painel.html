@@ -2280,7 +2280,19 @@ body.light-mode #aba-banco-dados > p {
 const DEMO_PROFESSOR_ATIVA = true;
 /* A sequência é fixa e independe do rearranjo das abas. */
 const roteiroDemoProfessor = [
- {aba:"aba-escolas", titulo:"Confira a unidade", texto:"Em Cadastro de Escolas, abra Configurar Unidade e confira as turmas e matérias disponíveis para a avaliação."},
+ {aba:"aba-escolas", titulo:"Confira a unidade", texto:"Em Cadastro de Escolas, localize a unidade na lista. Use o botão Configurar Unidade ao lado da escola para abrir as opções.", exemplo:`
+  <details class="demo-prof-legenda">
+   <summary>Configurar Unidade · testar com escola fictícia</summary>
+   <p><strong>Escola Exemplo</strong></p>
+   <ul><li>Turmas disponíveis: 1º A e 1º B</li><li>Matéria disponível: Tecnologia e Robótica</li></ul>
+   <p>Na tela real, você pode escolher as turmas e matérias da unidade. Essas opções ficam disponíveis na preparação da avaliação.</p>
+  </details>`},
+ {aba:"aba-escolas", titulo:"Revise e salve as opções", texto:"Na tela Configurar Unidade, confira quais turmas e matérias estão marcadas. Use Salvar configurações para guardar os ajustes ou Home para voltar ao painel.", exemplo:`
+  <details class="demo-prof-legenda">
+   <summary>Salvar configurações · ver o efeito</summary>
+   <p>Exemplo fictício: se você selecionar 1º A e Tecnologia e Robótica, essas opções ficam disponíveis para preparar uma avaliação da Escola Exemplo.</p>
+   <p>Você escolhe o público e as questões ao preparar a avaliação em Ativação de Provas.</p>
+  </details>`},
  {aba:"aba-questoes", titulo:"Prepare as questões", texto:"Em Banco de Questões, confira enunciados, alternativas e gabaritos antes de montar a avaliação."},
  {aba:"aba-ativacao", titulo:"Prepare a aplicação", texto:"Em Ativação de Provas, escolha a escola, as turmas, as questões, o tempo e o código de acesso. Confira o resumo antes de usar Ativar em uma aplicação real."},
  {aba:"aba-monitoramento", titulo:"Acompanhe a aplicação", texto:"Em Monitoramento, confira quem iniciou, quem ainda está respondendo e quem entregou. Use as opções de entrada atrasada ou recuperação quando precisar atender um aluno."},
@@ -2316,7 +2328,7 @@ function renderDemoProfessor(){
   overlayDemoProfessor.classList.add("ativo");
   overlayDemoProfessor.setAttribute("aria-hidden","false");
   textoDemoProfessor.innerHTML="<strong>Etapa "+(passoDemoProfessor+1)+" de "+passosDemoProfessor.length+" — "+passo.titulo+":</strong> "+passo.texto+
-    '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>';
+    (passo.exemplo || '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>');
   document.getElementById("demo-prof-proximo").textContent =
     passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Avançar";
 
@@ -2326,8 +2338,9 @@ function renderDemoProfessor(){
   mostrarAbaSomenteDemoProfessor(passo.aba);
 
   const idPassoAtual=passo.aba;
+  const etapaAtual=passoDemoProfessor;
   setTimeout(()=>{
-    if(!overlayDemoProfessor.classList.contains("ativo") || passosDemoProfessor[passoDemoProfessor]?.aba!==idPassoAtual) return;
+    if(!overlayDemoProfessor.classList.contains("ativo") || passoDemoProfessor!==etapaAtual) return;
     const botao=localizarAbaDemo(idPassoAtual);
     if(botao){
       /* Role somente a faixa das abas, nunca a página inteira. */
@@ -2338,7 +2351,7 @@ function renderDemoProfessor(){
       }
       window.scrollTo({left:0,top:0,behavior:'instant'});
       setTimeout(()=>{
-        if(overlayDemoProfessor.classList.contains("ativo") && passosDemoProfessor[passoDemoProfessor]?.aba===idPassoAtual) posicionarDestaqueDemo(botao);
+        if(overlayDemoProfessor.classList.contains("ativo") && passoDemoProfessor===etapaAtual) posicionarDestaqueDemo(botao);
       },220);
     } else destaqueDemoProfessor.style.display="none";
   },120);
