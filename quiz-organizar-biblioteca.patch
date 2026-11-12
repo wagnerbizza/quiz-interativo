@@ -1,0 +1,95 @@
+diff --git a/painel.html b/painel.html
+index 5df170b..82d61db 100644
+--- a/painel.html
++++ b/painel.html
+@@ -1868,6 +1868,18 @@ body.light-mode #aba-banco-dados > p {
+   #aba-escolas .qi-escola-acoes > * { flex:1 1 9rem; }
+ }
+ </style>
++<style>
++#qi-assistente-questoes { margin: 1rem 0 1.5rem; }
++#qi-assistente-questoes > summary {
++  cursor: pointer; padding: .75rem 1rem; min-height: 44px;
++  border-radius: .65rem; background: var(--qi-accent, #19c7ed);
++  color: var(--qi-ink, #071219); font-size: 1rem;
++}
++#qi-assistente-questoes > summary:hover { filter: brightness(1.08); }
++#qi-assistente-questoes > summary:focus-visible { outline: 2px solid var(--qi-accent, #19c7ed); outline-offset: 3px; }
++#qi-assistente-questoes .qi-actions, #qi-outras-importacoes .qi-actions { display:flex; flex-wrap:wrap; gap:.5rem; }
++#qi-outras-importacoes { margin-top: 1rem; }
++</style>
+ </head>
+ <body>
+ 
+@@ -2117,24 +2129,7 @@ body.light-mode #aba-banco-dados > p {
+     <!-- ABA 3: BANCO DE QUESTÕES -->
+     <div id="aba-questoes" class="aba-conteudo hidden">
+       <h2>➕ Biblioteca de questões</h2>
+-      <form id="form-cadastrar-questao">
+-        <label>Matéria / Disciplina:</label>
+-        <select id="cad-materia" required></select>
+-        <label>Enunciado da Pergunta:</label>
+-        <textarea id="cad-pergunta" rows="2" required></textarea>
+-        <label>Alternativas A a E obrigatórias:</label>
+-        <input type="text" id="cad-op-a" placeholder="Opção A" required>
+-        <input type="text" id="cad-op-b" placeholder="Opção B" required>
+-        <input type="text" id="cad-op-c" placeholder="Opção C" required>
+-        <input type="text" id="cad-op-d" placeholder="Opção D" required>
+-        <input type="text" id="cad-op-e" placeholder="Opção E" required>
+-        <label>Alternativa Correta:</label>
+-        <select id="cad-correta" required>
+-          <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
+-        </select>
+-        <button type="submit" class="btn-acao" style="margin-top:15px;">➕ Salvar Questão no Banco</button>
+-      </form>
+-      <details class="qi-card" id="qi-assistente-questoes" style="margin-top:1rem">
++      <details class="qi-card" id="qi-assistente-questoes">
+         <summary><strong>Criar questões com IA</strong></summary>
+         <p>Prepare um pedido para sua IA, cole a resposta aqui e revise as questões antes de salvar na biblioteca.</p>
+         <form id="qi-assistente-pedido">
+@@ -2285,6 +2280,25 @@ body.light-mode #aba-banco-dados > p {
+         });
+       })();
+       </script>
++      <h3>Cadastrar uma questão</h3>
++      <form id="form-cadastrar-questao">
++        <label>Matéria / Disciplina:</label>
++        <select id="cad-materia" required></select>
++        <label>Enunciado da Pergunta:</label>
++        <textarea id="cad-pergunta" rows="2" required></textarea>
++        <label>Alternativas A a E obrigatórias:</label>
++        <input type="text" id="cad-op-a" placeholder="Opção A" required>
++        <input type="text" id="cad-op-b" placeholder="Opção B" required>
++        <input type="text" id="cad-op-c" placeholder="Opção C" required>
++        <input type="text" id="cad-op-d" placeholder="Opção D" required>
++        <input type="text" id="cad-op-e" placeholder="Opção E" required>
++        <label>Alternativa Correta:</label>
++        <select id="cad-correta" required>
++          <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
++        </select>
++        <button type="submit" class="btn-acao" style="margin-top:15px;">➕ Salvar Questão no Banco</button>
++      </form>
++
+ 
+ 
+       <div class="bloco-calculadora" style="margin-top: 25px;">
+@@ -2302,6 +2316,7 @@ body.light-mode #aba-banco-dados > p {
+           <button type="button" onclick="importarQuestoesEmMassa()" style="background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; align-self: flex-start;">Conferir questões antes de importar</button>
+         </div>
+       </div>
++      <div id="qi-outras-importacoes"></div>
+     </div>
+ 
+     <!-- ABA 4: BANCO DE DADOS (CATÁLOGO INTERATIVO DE QUESTÕES) -->
+diff --git a/quiz-interface.js b/quiz-interface.js
+index 5d2c960..d430886 100644
+--- a/quiz-interface.js
++++ b/quiz-interface.js
+@@ -280,6 +280,6 @@ function showAccount() {
+  section.scrollIntoView({block:'start'});
+ }
+ function init(){document.body.classList.add('qi-modern');if(location.pathname.endsWith('index.html')||location.pathname.endsWith('/')){document.body.classList.add('qi-student');const atraso=$('#codigo-entrada-atrasada-aluno'),recuperacao=$('#codigo-recuperacao-aluno');if(atraso)atraso.placeholder='Código de entrada atrasada';if(recuperacao)recuperacao.placeholder='Código de recuperação';}if(login)document.body.classList.add('qi-login');applyPreferences();const head=document.createElement('div');head.className='qi-header';head.innerHTML=`<a class="qi-brand" href="apresentacao.html"><span class="qi-logo"></span><span><b data-qi-title></b><small data-qi-subtitle></small></span></a><div class="qi-actions"><button type="button" class="qi-button" id="qi-preferences">◐ Preferências</button>${panel?'<a class="qi-button" href="index.html" target="_blank" rel="noopener">Área do aluno →</a>':login?'<a class="qi-button" href="apresentacao.html">Voltar à apresentação ↗</a>':'<a class="qi-button" href="login.html">Área do professor →</a>'}</div>`;document.body.prepend(head);if(panel){const session=$('.sessao-professor');if(session){session.classList.add('qi-session');head.querySelector('.qi-actions').prepend(session);const oldHeader=$('.container>header');if(oldHeader)oldHeader.hidden=true}const reload=$('#btn-recarregar-painel');if(reload){reload.textContent='↻ Recarregar';head.querySelector('.qi-actions').append(reload)}const bar=$('.barra-acoes-topo');if(bar)bar.hidden=true}const foot=document.createElement('footer');foot.className='qi-footer';foot.innerHTML='<span>Gestão de avaliações e aprendizagem</span><span class="qi-watermark" data-qi-mark></span>';document.body.append(foot);const pref=$('#qi-preferences');pref.innerHTML=accessibilityIcon+'<span>Preferências de leitura</span>';pref.classList.add('qi-preferences-entry');pref.onclick=preferences;const floating=document.createElement('button');floating.type='button';floating.className='qi-accessibility-float';floating.setAttribute('aria-label','Abrir opções de acessibilidade');floating.title='Acessibilidade';floating.innerHTML=accessibilityIcon;floating.onclick=preferences;document.body.append(floating);if(panel){accountTools(head);shell();enhanceQuestions()}document.addEventListener('click',e=>{const n=e.target.closest('[data-qi-page]');if(n)navigate(n.dataset.qiPage);if(e.target.closest('[data-qi-close]'))$('#qi-dialog').close()});document.querySelectorAll('label:not([for])').forEach((l,i)=>{if(l.querySelector('input,select,textarea'))return;const input=l.nextElementSibling;if(input&&/^(INPUT|SELECT|TEXTAREA)$/.test(input.tagName)){if(!input.id)input.id='qi-campo-'+i;l.htmlFor=input.id}});paintIdentity();fetch('identidade-quiz.json?_='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('identidade ausente');return r.json()}).then(x=>{if(Number(x.atualizadoEm)>=identity.atualizadoEm){identity=validIdentity(x);try{localStorage.setItem('quiz_identidade_v1',JSON.stringify(identity))}catch{}paintIdentity()}}).catch(()=>{});}
+-function enhanceQuestions(){const aba=$('#aba-questoes');if(!aba)return;aba.querySelector('h2').textContent='Biblioteca de questões';const form=$('#form-cadastrar-questao');if(form){const title=document.createElement('p');title.className='qi-note';title.textContent='Cadastre questões com cinco alternativas, de A a E. Confira o gabarito antes de salvar. Para várias questões, use a importação com revisão abaixo.';form.before(title)}const input=$('#input-arquivo-questoes');if(input)input.accept='.txt,.docx,.xlsx,.xls,.json';const tools=document.createElement('section');tools.className='qi-library-tools';tools.innerHTML=`<h3>Mais formas de adicionar questões</h3><p class="qi-muted">Importe um arquivo, cole conteúdo estruturado ou carregue uma fonte pública em JSON. Você revisa tudo antes de salvar.</p><div class="qi-actions"><button type="button" class="qi-button" id="qi-model">Baixar modelo JSON</button><button type="button" class="qi-button" id="qi-internet">Buscar conteúdo na internet</button><button type="button" class="qi-button" id="qi-url">Importar JSON por endereço</button></div><p class="qi-muted">Use conteúdos cuja utilização seja permitida e registre a fonte. Sites que não autorizam leitura pelo navegador precisam ser importados por arquivo.</p>`;form?.after(tools);$('#qi-model').onclick=()=>download('modelo-questoes-quiz.json',JSON.stringify({questoes:[{materia:'Programação Front-End',pergunta:'Qual linguagem estrutura uma página web?',opcoes:['HTML','CSS','SQL','Python'],correta:'A',fonte:'Material do professor'}]},null,2),'application/json');$('#qi-internet').onclick=()=>{const materia=$('#cad-materia')?.value||'Ensino Médio';window.open('https://www.google.com/search?q='+encodeURIComponent(materia+' questões gabarito material educacional licença aberta'),'_blank','noopener,noreferrer')};$('#qi-url').onclick=()=>{dialog('Importar questões por endereço',`<form id="qi-url-form"><label>Endereço HTTPS de um arquivo JSON público<input type="url" id="qi-source-url" placeholder="https://…/questoes.json" required></label><p class="qi-note">A fonte precisa permitir leitura pelo navegador e fornecer pergunta, alternativas e gabarito. Não informe links com senhas ou tokens.</p><button class="qi-button primary" type="submit">Carregar para revisão</button><p id="qi-url-status" role="status"></p></form>`);$('#qi-url-form').onsubmit=async e=>{e.preventDefault();const url=new URL($('#qi-source-url').value);if(url.protocol!=='https:'||url.username||url.password){$('#qi-url-status').textContent='Informe um endereço HTTPS público.';return}const btn=e.submitter;btn.disabled=true;$('#qi-url-status').textContent='Carregando…';try{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);let text;try{const r=await fetch(url.href,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!r.ok)throw Error('A fonte respondeu HTTP '+r.status);text=await r.text()}finally{clearTimeout(timer)}if(text.length>2000000)throw Error('O arquivo excede 2 MB.');window.QuizBiblioteca.revisarTexto(text,$('#cad-materia')?.value,url.href)}catch(err){$('#qi-url-status').textContent='Não foi possível ler esta fonte. Baixe o JSON e use a importação por arquivo. '+err.message}finally{btn.disabled=false}}};}
++function enhanceQuestions(){const aba=$('#aba-questoes');if(!aba)return;aba.querySelector('h2').textContent='Biblioteca de questões';const form=$('#form-cadastrar-questao');if(form){const title=document.createElement('p');title.className='qi-note';title.textContent='Cadastre questões com cinco alternativas, de A a E. Confira o gabarito antes de salvar. Para várias questões, use a importação com revisão abaixo.';form.before(title)}const input=$('#input-arquivo-questoes');if(input)input.accept='.txt,.docx,.xlsx,.xls,.json';const tools=document.createElement('section');tools.className='qi-library-tools';tools.innerHTML=`<h3>Mais formas de adicionar questões</h3><p class="qi-muted">Importe um arquivo, cole conteúdo estruturado ou carregue uma fonte pública em JSON. Você revisa tudo antes de salvar.</p><div class="qi-actions"><button type="button" class="qi-button" id="qi-model">Baixar modelo JSON</button><button type="button" class="qi-button" id="qi-internet">Buscar conteúdo na internet</button><button type="button" class="qi-button" id="qi-url">Importar JSON por endereço</button></div><p class="qi-muted">Use conteúdos cuja utilização seja permitida e registre a fonte. Sites que não autorizam leitura pelo navegador precisam ser importados por arquivo.</p>`;const outrasImportacoes=$('#qi-outras-importacoes');if(outrasImportacoes)outrasImportacoes.append(tools);else form?.after(tools);$('#qi-model').onclick=()=>download('modelo-questoes-quiz.json',JSON.stringify({questoes:[{materia:'Programação Front-End',pergunta:'Qual linguagem estrutura uma página web?',opcoes:['HTML','CSS','SQL','Python','Java'],correta:'A',fonte:'Material do professor'}]},null,2),'application/json');$('#qi-internet').onclick=()=>{const materia=$('#cad-materia')?.value||'Ensino Médio';window.open('https://www.google.com/search?q='+encodeURIComponent(materia+' questões gabarito material educacional licença aberta'),'_blank','noopener,noreferrer')};$('#qi-url').onclick=()=>{dialog('Importar questões por endereço',`<form id="qi-url-form"><label>Endereço HTTPS de um arquivo JSON público<input type="url" id="qi-source-url" placeholder="https://…/questoes.json" required></label><p class="qi-note">A fonte precisa permitir leitura pelo navegador e fornecer pergunta, alternativas e gabarito. Não informe links com senhas ou tokens.</p><button class="qi-button primary" type="submit">Carregar para revisão</button><p id="qi-url-status" role="status"></p></form>`);$('#qi-url-form').onsubmit=async e=>{e.preventDefault();const url=new URL($('#qi-source-url').value);if(url.protocol!=='https:'||url.username||url.password){$('#qi-url-status').textContent='Informe um endereço HTTPS público.';return}const btn=e.submitter;btn.disabled=true;$('#qi-url-status').textContent='Carregando…';try{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);let text;try{const r=await fetch(url.href,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!r.ok)throw Error('A fonte respondeu HTTP '+r.status);text=await r.text()}finally{clearTimeout(timer)}if(text.length>2000000)throw Error('O arquivo excede 2 MB.');window.QuizBiblioteca.revisarTexto(text,$('#cad-materia')?.value,url.href)}catch(err){$('#qi-url-status').textContent='Não foi possível ler esta fonte. Baixe o JSON e use a importação por arquivo. '+err.message}finally{btn.disabled=false}}};}
+ window.QuizInterface={get identidade(){return {...identity}},dialog,safe,feedback,download,navigate,refreshOverview};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+ })();
