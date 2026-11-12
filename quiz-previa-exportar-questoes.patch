@@ -1,0 +1,74 @@
+diff --git a/quiz-biblioteca.js b/quiz-biblioteca.js
+index 37dc062..77ad9ab 100644
+--- a/quiz-biblioteca.js
++++ b/quiz-biblioteca.js
+@@ -26,9 +26,67 @@ function ler(text,materiaPadrao='Geral',fonte=''){
+ }
+ function revisarTexto(text,materiaPadrao,fonte=''){
+  const ui=root.QuizInterface;if(!ui)throw Error('A interface ainda está carregando.');let rows;try{rows=ler(text,materiaPadrao,fonte)}catch(err){ui.feedback(err.message);return}const s=ui.safe;
+- const d=ui.dialog('Revisar questões antes de importar',`<p class="qi-note">Confira os enunciados e os gabaritos. Abra cada questão para editar, desmarque o que não deseja salvar e confirme ao final.</p><form id="qi-review-form"><div class="qi-actions"><button type="button" class="qi-button" id="qi-select-all">Marcar todas</button><button type="button" class="qi-button" id="qi-select-none">Desmarcar todas</button></div><div id="qi-review-list">${rows.map((q,i)=>`<details class="qi-review-item" data-row="${i}" ${q.erros.length?'open':''}><summary><input type="checkbox" data-select="${i}" checked aria-label="Importar questão ${i+1}"><span>Questão ${i+1} · ${s(q.pergunta.slice(0,75)||'Enunciado ausente')}</span></summary><label>Matéria<input name="materia-${i}" value="${s(q.materia)}" required></label><label>Enunciado<textarea name="pergunta-${i}" rows="3" required>${s(q.pergunta)}</textarea></label>${Array.from({length:5},(_,j)=>`<label>Alternativa ${'ABCDE'[j]}<input name="opcao-${i}-${j}" value="${s(q.opcoes[j]||'')}" ${j<4?'required':''}></label>`).join('')}<label>Gabarito<select name="correta-${i}">${'ABCDE'.split('').map(c=>`<option ${q.correta===c?'selected':''}>${c}</option>`).join('')}</select></label><label>Fonte<input name="fonte-${i}" value="${s(q.fonte)}" maxlength="2048"></label><p class="qi-review-error" id="qi-errors-${i}">${s(q.erros.join(' '))}</p><p id="qi-row-status-${i}" class="qi-muted" role="status"></p></details>`).join('')}</div><p id="qi-import-status" role="status" class="qi-muted"></p><button type="submit" class="qi-button primary" id="qi-confirm-import">Confirmar e salvar questões selecionadas</button></form>`);
++ const d=ui.dialog('Revisar questões antes de importar',`<p class="qi-note">Confira os enunciados e os gabaritos. Abra cada questão para editar, desmarque o que não deseja salvar e confirme ao final.</p><form id="qi-review-form"><div class="qi-actions"><button type="button" class="qi-button" id="qi-select-all">Marcar todas</button><button type="button" class="qi-button" id="qi-select-none">Desmarcar todas</button></div><div id="qi-review-list">${rows.map((q,i)=>`<details class="qi-review-item" data-row="${i}" ${q.erros.length?'open':''}><summary><input type="checkbox" data-select="${i}" checked aria-label="Importar questão ${i+1}"><span>Questão ${i+1} · ${s(q.pergunta.slice(0,75)||'Enunciado ausente')}</span></summary><label>Matéria<input name="materia-${i}" value="${s(q.materia)}" required></label><label>Enunciado<textarea name="pergunta-${i}" rows="3" required>${s(q.pergunta)}</textarea></label>${Array.from({length:5},(_,j)=>`<label>Alternativa ${'ABCDE'[j]}<input name="opcao-${i}-${j}" value="${s(q.opcoes[j]||'')}" required></label>`).join('')}<label>Gabarito<select name="correta-${i}"><option value="">Selecione a resposta correta</option>${'ABCDE'.split('').map(c=>`<option ${q.correta===c?'selected':''}>${c}</option>`).join('')}</select></label><label>Fonte<input name="fonte-${i}" value="${s(q.fonte)}" maxlength="2048"></label><p class="qi-review-error" id="qi-errors-${i}">${s(q.erros.join(' '))}</p><p id="qi-row-status-${i}" class="qi-muted" role="status"></p></details>`).join('')}</div><p id="qi-import-status" role="status" class="qi-muted"></p><div class="qi-actions">
++ <button type="button" class="qi-button" id="qi-preview-selection">Visualizar prova</button>
++ <button type="button" class="qi-button" id="qi-export-selection">Exportar selecionadas em JSON</button>
++ <button type="submit" class="qi-button primary" id="qi-confirm-import">Salvar selecionadas no banco</button>
++ </div></form>`);
+  const form=d.querySelector('#qi-review-form');form.noValidate=true;d.querySelectorAll('summary input').forEach(e=>e.addEventListener('click',ev=>ev.stopPropagation()));d.querySelector('#qi-select-all').onclick=()=>d.querySelectorAll('[data-select]:not(:disabled)').forEach(e=>e.checked=true);d.querySelector('#qi-select-none').onclick=()=>d.querySelectorAll('[data-select]:not(:disabled)').forEach(e=>e.checked=false);
+- form.onsubmit=async ev=>{ev.preventDefault();const chosen=[];let invalid=false;const f=new FormData(form);for(let i=0;i<rows.length;i++){if(!d.querySelector(`[data-select="${i}"]`).checked)continue;const opts=Array.from({length:5},(_,j)=>String(f.get(`opcao-${i}-${j}`)||'').trim());if(!opts[4])opts.pop();const q=validar({materia:f.get('materia-'+i),pergunta:f.get('pergunta-'+i),opcoes:opts,correta:f.get('correta-'+i),fonte:f.get('fonte-'+i)});d.querySelector('#qi-errors-'+i).textContent=q.erros.join(' ');if(q.erros.length){invalid=true;d.querySelector(`[data-row="${i}"]`).open=true}chosen.push({...q,indiceRevisao:i})}if(!chosen.length){d.querySelector('#qi-import-status').textContent='Marque pelo menos uma questão.';return}if(invalid){d.querySelector('#qi-import-status').textContent='Corrija os itens indicados antes de confirmar.';return}if(typeof root.quizSalvarQuestoesRevisadas!=='function'){d.querySelector('#qi-import-status').textContent='O painel ainda não está conectado. Aguarde a autenticação e tente novamente.';return}const button=d.querySelector('#qi-confirm-import');button.disabled=true;form.querySelectorAll('input,select,textarea,button').forEach(e=>e.disabled=true);d.querySelector('[data-qi-close]').disabled=true;d.addEventListener('cancel',bloquearEscape);function bloquearEscape(e){e.preventDefault()}try{const r=await root.quizSalvarQuestoesRevisadas(chosen);r.itens.forEach(x=>{d.querySelector('#qi-row-status-'+x.indice).textContent=x.mensagem;const box=d.querySelector(`[data-select="${x.indice}"]`);if(x.ok){box.checked=false;box.dataset.saved='1'}});d.querySelector('#qi-import-status').textContent=`${r.salvas} salva(s), ${r.duplicadas} já existente(s), ${r.falhas} pendente(s). Itens com falha podem ser reenviados.`;}catch(err){d.querySelector('#qi-import-status').textContent='Importação interrompida: '+err.message}finally{form.querySelectorAll('input,select,textarea,button').forEach(e=>e.disabled=false);d.querySelectorAll('[data-saved="1"]').forEach(e=>e.disabled=true);d.querySelector('[data-qi-close]').disabled=false;d.removeEventListener('cancel',bloquearEscape)}};
++ function selecionarQuestoes() {
++  const dados = new FormData(form);
++  const escolhidas = [];
++  for (let i = 0; i < rows.length; i++) {
++   if (!d.querySelector(`[data-select="${i}"]`).checked) continue;
++   const questao = validar({
++    materia: dados.get('materia-'+i),
++    pergunta: dados.get('pergunta-'+i),
++    opcoes: Array.from({length:5}, (_,j) => dados.get(`opcao-${i}-${j}`)),
++    correta: dados.get('correta-'+i),
++    fonte: dados.get('fonte-'+i)
++   });
++   d.querySelector('#qi-errors-'+i).textContent = questao.erros.join(' ');
++   if (questao.erros.length) d.querySelector(`[data-row="${i}"]`).open = true;
++   escolhidas.push({...questao, indiceRevisao:i});
++  }
++  const status = d.querySelector('#qi-import-status');
++  if (!escolhidas.length) status.textContent = 'Marque pelo menos uma questão.';
++  else if (escolhidas.some(questao => questao.erros.length)) status.textContent = 'Corrija os itens indicados para continuar.';
++  else {
++   status.textContent = '';
++   return escolhidas;
++  }
++  return null;
++ }
++ d.querySelector('#qi-export-selection').onclick = () => {
++  const escolhidas = selecionarQuestoes();
++  if (!escolhidas) return;
++  const questoes = escolhidas.map(({materia,pergunta,opcoes,correta,fonte}) => ({materia,pergunta,opcoes,correta,fonte}));
++  ui.download('questoes-selecionadas.json', JSON.stringify({questoes}, null, 2), 'application/json');
++  d.querySelector('#qi-import-status').textContent = 'JSON exportado com o gabarito.';
++ };
++ d.querySelector('#qi-preview-selection').onclick = () => {
++  const escolhidas = selecionarQuestoes();
++  if (!escolhidas) return;
++  const janela = window.open('', '_blank');
++  if (!janela) {
++   d.querySelector('#qi-import-status').textContent = 'Permita pop-ups para visualizar a prova.';
++   return;
++  }
++  janela.opener = null;
++  const questoes = escolhidas.map((q,i) => `<section><h2>${i+1}. ${s(q.pergunta)}</h2><ol type="A">${q.opcoes.map(opcao => `<li>${s(opcao)}</li>`).join('')}</ol></section>`).join('');
++  janela.document.write(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Prévia da avaliação</title>
++   <style>@page{margin:16mm}body{font:16px/1.45 system-ui;color:#111;margin:2rem auto;padding:0 1rem;max-width:52rem}h1{font-size:1.55rem}h2{font-size:1rem;white-space:pre-wrap}li{margin:.2rem 0;white-space:pre-wrap}section{break-inside:avoid;margin:1.4rem 0}@media print{button{display:none}body{margin:0;padding:0}}</style>
++   <button type="button" id="qi-print">Imprimir / Salvar PDF</button><h1>Avaliação</h1>
++   <p>Nome: ________________________________ &nbsp; Turma: __________</p>
++   <p>Data: ____/____/________</p>${questoes}</html>`);
++  janela.document.close();
++  janela.document.getElementById('qi-print').onclick = () => janela.print();
++ };
++ form.onsubmit=async ev=>{
++  ev.preventDefault();
++  const chosen=selecionarQuestoes();
++  if(!chosen)return;
++  if(typeof root.quizSalvarQuestoesRevisadas!=='function'){d.querySelector('#qi-import-status').textContent='O painel ainda não está conectado. Aguarde a autenticação e tente novamente.';return}const button=d.querySelector('#qi-confirm-import');button.disabled=true;form.querySelectorAll('input,select,textarea,button').forEach(e=>e.disabled=true);d.querySelector('[data-qi-close]').disabled=true;d.addEventListener('cancel',bloquearEscape);function bloquearEscape(e){e.preventDefault()}try{const r=await root.quizSalvarQuestoesRevisadas(chosen);r.itens.forEach(x=>{d.querySelector('#qi-row-status-'+x.indice).textContent=x.mensagem;const box=d.querySelector(`[data-select="${x.indice}"]`);if(x.ok){box.checked=false;box.dataset.saved='1'}});d.querySelector('#qi-import-status').textContent=`${r.salvas} salva(s), ${r.duplicadas} já existente(s), ${r.falhas} pendente(s). Itens com falha podem ser reenviados.`;}catch(err){d.querySelector('#qi-import-status').textContent='Importação interrompida: '+err.message}finally{form.querySelectorAll('input,select,textarea,button').forEach(e=>e.disabled=false);d.querySelectorAll('[data-saved="1"]').forEach(e=>e.disabled=true);d.querySelector('[data-qi-close]').disabled=false;d.removeEventListener('cancel',bloquearEscape)}};
+ }
+ root.QuizBiblioteca={validar,assinatura,ler,revisarTexto};
+ })(typeof window!=='undefined'?window:globalThis);
