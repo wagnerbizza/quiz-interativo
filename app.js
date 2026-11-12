@@ -2649,6 +2649,7 @@ if (window.location.pathname.includes("painel.html")) {
   }
 
   let requisicaoConfiguracaoAtivacao = 0;
+  let publicacaoEmAndamento = false;
   const rascunhosTokenAtivacao = new Map();
   function carregarConfiguracoesEscolaParaAtivacao(escolaNome) {
     const numeroRequisicao = ++requisicaoConfiguracaoAtivacao;
@@ -2878,6 +2879,10 @@ if (window.location.pathname.includes("painel.html")) {
       document.getElementById("btn-publicar-prova-escola-profissional")?.addEventListener("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (publicacaoEmAndamento) {
+          alert("Já há uma publicação em andamento neste painel.");
+          return;
+        }
         if (history.replaceState) history.replaceState(null, "", "#ativacao"); 
         const materiasSelecionadas = Array.from(painelDinamico.querySelectorAll(".chk-materia-ativacao:checked")).map(c => c.value);
         const disciplinasSelecionadas = Array.from(painelDinamico.querySelectorAll(".chk-disciplina-ativacao:checked")).map(c => c.value);
@@ -2937,9 +2942,33 @@ if (window.location.pathname.includes("painel.html")) {
           return;
         }
 
-        if (!confirm(`Deseja realmente confirmar e publicar a avaliação para a unidade "${escolaNome}"?`)) return;
+        const timestampAgendamento = agendamentoData ? new Date(agendamentoData).getTime() : 0;
+        if (!Number.isFinite(timestampAgendamento)) {
+          alert("Confira a data e a hora do início simultâneo.");
+          painelDinamico.querySelector("#input-agendamento-ativacao")?.focus();
+          return;
+        }
+        const resumo = [
+          "Confira a avaliação antes de publicar",
+          "",
+          "Escola: " + escolaNome,
+          "Turmas: " + turmasSelecionadas.join(", "),
+          "Matérias: " + materiasSelecionadas.join(", "),
+          "Disciplinas: " + (disciplinasSelecionadas.join(", ") || "Nenhuma selecionada"),
+          "Período: " + periodoEscolhido,
+          "Questões solicitadas: " + qtdQ,
+          "Tempo por aluno: mínimo de " + tempoMin + " min · " + (tempoLim ? "máximo de " + tempoLim + " min" : "sem limite máximo"),
+          "Duração da publicação: " + tempoAtivacao + " min",
+          "Início simultâneo: " + (timestampAgendamento ? new Date(timestampAgendamento).toLocaleString("pt-BR") : "sem agendamento"),
+          "Acesso: com código",
+          "",
+          "Confirma a publicação para essas turmas?"
+        ].join("\n");
+        if (!confirm(resumo)) return;
 
-        let timestampAgendamento = agendamentoData ? new Date(agendamentoData).getTime() : 0;
+        const botaoPublicar = e.currentTarget;
+        publicacaoEmAndamento = true;
+        botaoPublicar.disabled = true;
 
         try {
           // Identificador estável desta ATIVAÇÃO. Reembaralhar não cria uma nova tentativa.
@@ -2979,7 +3008,7 @@ if (window.location.pathname.includes("painel.html")) {
             console.warn("Firebase indisponível na ativação:",erroFirebase?.code||erroFirebase);
           }
 
-          animarBotaoSucesso(e.target);
+          animarBotaoSucesso(botaoPublicar);
           alert(
             `✅ Avaliação preparada para "${escolaNome}".\n\n`+
             `${firebasePublicado?"Firebase: publicado.":"Firebase: indisponível/sem cota."}\n`+
@@ -2993,6 +3022,9 @@ if (window.location.pathname.includes("painel.html")) {
             (err?.message || String(err)) +
             "\n\nNenhum dado existente foi apagado automaticamente."
           );
+        } finally {
+          publicacaoEmAndamento = false;
+          botaoPublicar.disabled = false;
         }
       });
     }).catch(erro => {
