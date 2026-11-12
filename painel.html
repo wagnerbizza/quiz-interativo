@@ -2332,6 +2332,9 @@ body.light-mode #aba-banco-dados > p {
           <label>Escola<select id="select-filtro-escola-relatorio" style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:110px; font-size: 12px;">
             <option value="TODAS">🏫 Escolas</option>
           </select></label>
+          <label>Turma<select id="select-filtro-turma-relatorio" onchange="renderizarTabelaResultadosFiltrada()"><option value="">Todas as turmas</option></select></label>
+          <label>De <input type="date" id="filtro-data-inicial-relatorio" onchange="renderizarTabelaResultadosFiltrada()"></label>
+          <label>Até <input type="date" id="filtro-data-final-relatorio" onchange="renderizarTabelaResultadosFiltrada()"></label>
           <div class="dropdown-win">
             <button type="button" id="btn-dropdown-resultados" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-resultados', 'btn-dropdown-resultados')">
               🔄 Classificar <span style="font-size: 10px;">▼</span>
@@ -2805,6 +2808,9 @@ window.addEventListener("resize",()=>{
     document.getElementById("limpar-filtros-resultados")?.addEventListener("click", () => {
       document.getElementById("input-busca-resultados").value = "";
       document.getElementById("select-filtro-escola-relatorio").value = "TODAS";
+      for (const id of ["select-filtro-turma-relatorio", "filtro-data-inicial-relatorio", "filtro-data-final-relatorio"]) {
+        document.getElementById(id).value = "";
+      }
       window.renderizarTabelaResultadosFiltrada();
     });
     atualizarSelecao();

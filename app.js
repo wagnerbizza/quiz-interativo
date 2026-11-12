@@ -4435,6 +4435,28 @@ if (window.location.pathname.includes("painel.html")) {
       dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.periodo) === normalizarTexto(periodoSelecionado));
     }
 
+    const filtroTurma = document.getElementById("select-filtro-turma-relatorio");
+    if (filtroTurma) {
+      const turmaAnterior = filtroTurma.value;
+      const turmas = [...new Set(dadosFiltrados.map(res => String(res.turma || "").trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR", { numeric:true }));
+      filtroTurma.replaceChildren(new Option("Todas as turmas", ""));
+      turmas.forEach(turma => filtroTurma.add(new Option(turma, turma)));
+      if (turmas.includes(turmaAnterior)) filtroTurma.value = turmaAnterior;
+      if (filtroTurma.value) dadosFiltrados = dadosFiltrados.filter(res => String(res.turma || "").trim() === filtroTurma.value);
+    }
+
+    const dataInicial = document.getElementById("filtro-data-inicial-relatorio")?.value;
+    const dataFinal = document.getElementById("filtro-data-final-relatorio")?.value;
+    if (dataInicial || dataFinal) {
+      const inicio = dataInicial ? new Date(dataInicial + "T00:00:00").getTime() : -Infinity;
+      const fim = dataFinal ? new Date(dataFinal + "T23:59:59.999").getTime() : Infinity;
+      dadosFiltrados = dadosFiltrados.filter(res => {
+        const envio = millisMonitoramento(res.dataEnvio) || millisMonitoramento(res.timestamp);
+        return envio > 0 && envio >= inicio && envio <= fim;
+      });
+    }
+
     if (termoBusca) {
       dadosFiltrados = dadosFiltrados.filter(res => {
         const textoConcatenado = normalizarTexto([
