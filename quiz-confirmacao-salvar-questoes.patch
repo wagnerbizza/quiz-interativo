@@ -1,0 +1,90 @@
+diff --git a/app.js b/app.js
+index c100ba3..c2d53dd 100644
+--- a/app.js
++++ b/app.js
+@@ -652,6 +652,52 @@ function mostrarNotificacao(mensagem) {
+   setTimeout(() => { toast.style.display = "none"; }, 3500);
+ }
+ 
++function mostrarConfirmacaoCentral({ titulo, mensagem, acao, tom = "sucesso" }) {
++  const aviso = document.createElement("dialog");
++  aviso.className = "qi-card";
++  aviso.setAttribute("aria-label", titulo);
++  const cor = tom === "atencao" ? "#fbbf24" : "#22c55e";
++  aviso.style.cssText = "width:min(32rem,calc(100% - 2rem));box-sizing:border-box;padding:1.25rem;border-top:4px solid " + cor;
++  const simbolo = document.createElement("span");
++  simbolo.setAttribute("aria-hidden", "true");
++  simbolo.textContent = tom === "atencao" ? "!" : "✓";
++  simbolo.style.cssText = "display:inline-grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:50%;font-size:1.25rem;font-weight:700;color:#111827;background:" + cor;
++  const cabecalho = document.createElement("h2");
++  cabecalho.textContent = titulo;
++  const texto = document.createElement("p");
++  texto.textContent = mensagem;
++  texto.style.whiteSpace = "pre-line";
++  const botoes = document.createElement("div");
++  botoes.className = "qi-actions";
++  const fechar = document.createElement("button");
++  fechar.type = "button";
++  fechar.className = "qi-button";
++  fechar.textContent = "Fechar";
++  fechar.autofocus = true;
++  fechar.onclick = () => aviso.close();
++  botoes.append(fechar);
++  if (acao) {
++    const abrir = document.createElement("button");
++    abrir.type = "button";
++    abrir.className = "qi-button primary";
++    abrir.textContent = acao.rotulo;
++    abrir.onclick = () => {
++      aviso.close();
++      acao.executar();
++    };
++    botoes.append(abrir);
++  }
++  aviso.append(simbolo, cabecalho, texto, botoes);
++  document.body.append(aviso);
++  aviso.addEventListener("close", () => aviso.remove(), { once: true });
++  aviso.showModal();
++  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
++      document.documentElement.dataset.qiMotion !== "true") {
++    aviso.animate?.([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }],
++      { duration: 180, easing: "ease-out" });
++  }
++}
++
+ function animarBotaoSucesso(btn) {
+   if (!btn) return;
+   const textoOriginal = btn.textContent;
+@@ -3722,6 +3768,24 @@ if (window.location.pathname.includes("painel.html")) {
+       }catch(err){resumo.falhas++;resumo.itens.push({indice:q.indiceRevisao,ok:false,mensagem:"Pendente: "+(err.code||err.message)});}
+     }
+     window.QuizInterface?.refreshOverview();
++    const destino = resumo.salvas || resumo.duplicadas
++      ? "\nOnde encontrar: Painel do Professor → Gestão escolar → Catálogo de questões."
++      : "";
++    const interfaceQuiz = window.QuizInterface;
++    mostrarConfirmacaoCentral({
++      titulo: resumo.falhas ? "Salvamento com pendências" : "Salvamento concluído",
++      tom: resumo.falhas ? "atencao" : "sucesso",
++      mensagem: "Destino: banco de questões do Quiz Interativo.\n" +
++        `${resumo.salvas} nova(s) · ${resumo.duplicadas} já cadastrada(s) · ${resumo.falhas} pendente(s).` +
++        destino + (resumo.falhas ? "\nFeche o aviso para conferir os detalhes e tentar novamente." : ""),
++      acao: !resumo.falhas && interfaceQuiz?.navigate ? {
++        rotulo: "Abrir Catálogo de questões",
++        executar: () => {
++          document.getElementById("qi-dialog")?.close();
++          interfaceQuiz.navigate("banco-dados");
++        }
++      } : null
++    });
+     return resumo;
+   };
+   document.getElementById("form-cadastrar-questao")?.addEventListener("submit", async e=>{
+@@ -3732,7 +3796,6 @@ if (window.location.pathname.includes("painel.html")) {
+     if(q.erros.length){mostrarNotificacao(q.erros.join(" "));return;}
+     const btn=e.submitter;if(btn)btn.disabled=true;
+     try{const r=await window.quizSalvarQuestoesRevisadas([{...q,indiceRevisao:0}]);if(r.falhas)throw new Error(r.itens[0].mensagem);
+-      mostrarNotificacao(r.duplicadas?"Questão já cadastrada; cópia pública conferida.":"Questão cadastrada com sucesso.");
+       document.getElementById("form-cadastrar-questao").reset();popularSelectMateriasQuestao();
+     }catch(err){mostrarNotificacao("Não foi possível concluir: "+err.message)}finally{if(btn)btn.disabled=false}
+   });
