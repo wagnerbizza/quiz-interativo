@@ -2122,12 +2122,12 @@ body.light-mode #aba-banco-dados > p {
         <select id="cad-materia" required></select>
         <label>Enunciado da Pergunta:</label>
         <textarea id="cad-pergunta" rows="2" required></textarea>
-        <label>Alternativas A a D obrigatórias; E opcional:</label>
+        <label>Alternativas A a E obrigatórias:</label>
         <input type="text" id="cad-op-a" placeholder="Opção A" required>
         <input type="text" id="cad-op-b" placeholder="Opção B" required>
         <input type="text" id="cad-op-c" placeholder="Opção C" required>
         <input type="text" id="cad-op-d" placeholder="Opção D" required>
-        <input type="text" id="cad-op-e" placeholder="Alternativa E (opcional)">
+        <input type="text" id="cad-op-e" placeholder="Opção E" required>
         <label>Alternativa Correta:</label>
         <select id="cad-correta" required>
           <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
@@ -2141,7 +2141,7 @@ body.light-mode #aba-banco-dados > p {
         </div>
         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
           Selecione um arquivo (<strong style="color: #60a5fa;">.txt, .docx, .xlsx</strong>) ou cole o conteúdo no formato: <br>
-          <code style="color: #facc15; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">Matéria | Pergunta | Opção A | Opção B | Opção C | Opção D | Opção E | Correta (A/B/C/D/E)</code><br>Para quatro alternativas, mantenha o campo E vazio entre os separadores. Arquivos JSON podem usar o modelo disponível acima.
+          <code style="color: #facc15; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">Matéria | Pergunta | Opção A | Opção B | Opção C | Opção D | Opção E | Correta (A/B/C/D/E)</code><br>Complete as cinco alternativas antes de importar. Arquivos JSON podem usar o modelo disponível acima.
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -2163,6 +2163,9 @@ body.light-mode #aba-banco-dados > p {
         <label class="qi-catalog-search">Pesquisar questões
           <input id="input-busca-banco-dados" type="search" placeholder="Enunciado, matéria ou alternativa" oninput="renderizarCatalogoBancoDados()">
         </label>
+        <label>Alternativas<select id="select-filtro-alternativas-db" onchange="renderizarCatalogoBancoDados()">
+          <option value="">Todas</option><option value="cinco">Cinco alternativas</option><option value="revisar">Revisar alternativas</option>
+        </select></label>
         <label>Matéria<select id="select-filtro-materia-db" onchange="renderizarCatalogoBancoDados()"><option value="TODAS">Todas as matérias</option></select></label>
         <label>Ordenar por<select onchange="aplicarClassificacaoDB(this.value)">
           <option value="nenhum">Ordem original</option><option value="materia">Matéria</option><option value="enunciado-az">Enunciado (A–Z)</option><option value="id-asc">ID crescente</option><option value="id-desc">ID decrescente</option>

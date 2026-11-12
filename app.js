@@ -5737,7 +5737,17 @@ window.renderizarCatalogoBancoDados = function() {
   const termosBusca = (inputBusca?.value || "").trim().split(/\s+/).map(normalizarTexto).filter(Boolean);
   const materiaSel = selectFiltroMateria ? selectFiltroMateria.value : "TODAS";
 
-  let filtradas = [...questoesBancoCache];
+  const temCincoAlternativas = q => {
+    const opcoes = q.opcoes || q.alternativas || q.respostas;
+    return Array.isArray(opcoes) && opcoes.length === 5 &&
+      opcoes.every(opcao => Boolean(limparPrefixoOpcao(opcao)));
+  };
+  const filtroAlternativas = document.getElementById("select-filtro-alternativas-db")?.value;
+  let filtradas = questoesBancoCache.filter(q => {
+    if (filtroAlternativas === "cinco") return temCincoAlternativas(q);
+    if (filtroAlternativas === "revisar") return !temCincoAlternativas(q);
+    return true;
+  });
 
   // Se for "Todas", exibe tudo sem filtrar
   if (materiaSel && materiaSel !== "TODAS" && !materiaSel.includes("Todas") && !materiaSel.includes("todas")) {
@@ -5839,6 +5849,7 @@ window.renderizarCatalogoBancoDados = function() {
         </div>
         <div style="margin-top:4px; padding:10px 11px; background:rgba(59,130,246,.08); border-left:3px solid #3b82f6; border-radius:6px;">
           <div style="font-size:10px; letter-spacing:.6px; color:#60a5fa; font-weight:800; margin-bottom:5px;">ENUNCIADO</div>
+          ${temCincoAlternativas(q) ? "" : '<p class="qi-note">Revisar alternativas: confira e complete de A a E.</p>'}
           <div style="font-size:13px; line-height:1.45; font-weight:700; color:#f8fafc;">${escaparTextoQuiz(pergunta)}</div>
         </div>
         <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
