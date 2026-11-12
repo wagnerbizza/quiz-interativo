@@ -1,0 +1,117 @@
+diff --git a/painel.html b/painel.html
+index 6c5ccf0..5b0cc6f 100644
+--- a/painel.html
++++ b/painel.html
+@@ -2134,6 +2134,104 @@ body.light-mode #aba-banco-dados > p {
+         </select>
+         <button type="submit" class="btn-acao" style="margin-top:15px;">➕ Salvar Questão no Banco</button>
+       </form>
++      <details class="qi-card" id="qi-assistente-questoes" style="margin-top:1rem">
++        <summary><strong>Criar questões com IA</strong></summary>
++        <p>Prepare um pedido para sua IA, cole a resposta aqui e revise as questões antes de salvar na biblioteca.</p>
++        <form id="qi-assistente-pedido">
++          <div class="qi-form-grid">
++            <label>Matéria ou disciplina
++              <input name="materia" required maxlength="120" placeholder="Ex.: Programação Front-End">
++            </label>
++            <label>Série ou público
++              <input name="publico" maxlength="120" placeholder="Ex.: 2º ano do Ensino Médio Técnico">
++            </label>
++            <label>Assunto
++              <input name="assunto" required maxlength="250" placeholder="Ex.: HTML semântico">
++            </label>
++            <label>Quantidade
++              <input name="quantidade" type="number" min="1" max="30" value="5" required>
++            </label>
++          </div>
++          <div class="qi-actions">
++            <button type="submit" class="qi-button primary">Preparar pedido</button>
++            <button type="button" class="qi-button" id="qi-assistente-copiar" disabled>Copiar pedido</button>
++            <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="qi-button">Abrir ChatGPT</a>
++          </div>
++          <label for="qi-assistente-texto">Pedido para enviar à IA</label>
++          <textarea id="qi-assistente-texto" rows="5" readonly></textarea>
++        </form>
++        <label for="qi-assistente-resposta">Resposta JSON da IA</label>
++        <textarea id="qi-assistente-resposta" rows="6" placeholder="Cole a resposta com as questões aqui"></textarea>
++        <div class="qi-actions">
++          <button type="button" class="qi-button primary" id="qi-assistente-revisar">Revisar questões para importar</button>
++        </div>
++        <p id="qi-assistente-status" role="status"></p>
++        <details>
++          <summary>Como usar</summary>
++          <ol>
++            <li>Prepare e copie o pedido. No ChatGPT você também pode fazer perguntas comuns e pedir explicações para a aula.</li>
++            <li>Envie o pedido no ChatGPT e cole o JSON gerado no Quiz.</li>
++            <li>Revise as cinco alternativas e o gabarito, marque as questões desejadas e confirme o salvamento.</li>
++          </ol>
++        </details>
++      </details>
++      <script>
++      (() => {
++        const form = document.getElementById("qi-assistente-pedido");
++        const pedido = document.getElementById("qi-assistente-texto");
++        const copiar = document.getElementById("qi-assistente-copiar");
++        const resposta = document.getElementById("qi-assistente-resposta");
++        const status = document.getElementById("qi-assistente-status");
++
++        form.addEventListener("submit", event => {
++          event.preventDefault();
++          const dados = new FormData(form);
++          const materia = dados.get("materia").trim();
++          const assunto = dados.get("assunto").trim();
++          const publico = dados.get("publico").trim();
++          if (!materia || !assunto) {
++            status.textContent = "Preencha a matéria e o assunto.";
++            return;
++          }
++          pedido.value = [
++            "Crie " + dados.get("quantidade") + " questões originais de múltipla escolha em português do Brasil.",
++            "Matéria: " + materia,
++            "Assunto: " + assunto,
++            "Público: " + (publico || "informe o nível adequado ao assunto"),
++            "Cada questão deve ter cinco alternativas distintas, de A a E, e exatamente uma correta.",
++            "Use a letra da resposta correta no campo correta. Inclua fonte somente se houver uma referência verificável.",
++            "Retorne somente JSON válido, sem Markdown, no formato:",
++            JSON.stringify({questoes:[{materia,pergunta:"Enunciado",opcoes:["Texto A","Texto B","Texto C","Texto D","Texto E"],correta:"B",fonte:""}]})
++          ].join("\n");
++          copiar.disabled = false;
++          status.textContent = "Pedido pronto. Copie e envie à IA.";
++        });
++        copiar.addEventListener("click", async () => {
++          try {
++            await navigator.clipboard.writeText(pedido.value);
++            status.textContent = "Pedido copiado.";
++          } catch {
++            pedido.focus();
++            pedido.select();
++            status.textContent = "Pressione Ctrl+C para copiar o pedido selecionado.";
++          }
++        });
++        document.getElementById("qi-assistente-revisar").addEventListener("click", () => {
++          const texto = resposta.value.trim().replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, "$1");
++          if (!texto) {
++            status.textContent = "Cole o JSON gerado pela IA antes de revisar.";
++            resposta.focus();
++            return;
++          }
++          if (typeof window.QuizBiblioteca?.revisarTexto !== "function") {
++            status.textContent = "A biblioteca ainda está carregando. Tente novamente.";
++            return;
++          }
++          window.QuizBiblioteca.revisarTexto(texto, form.elements.materia.value.trim() || "Geral");
++        });
++      })();
++      </script>
++
+ 
+       <div class="bloco-calculadora" style="margin-top: 25px;">
+         <div class="sub-titulo-linha">
+@@ -2338,6 +2436,7 @@ const roteiroDemoProfessor = [
+    <p>Você escolhe o público e as questões ao preparar a avaliação em Ativação de Provas.</p>
+   </details>`},
+  {aba:"aba-questoes", titulo:"Prepare as questões", texto:"Em Banco de Questões, confira enunciados, alternativas e gabaritos antes de montar a avaliação."},
++ {aba:"aba-questoes", titulo:"Prepare questões com ajuda da IA", texto:"Abra Criar questões com IA, informe matéria e assunto e copie o pedido. Envie ao ChatGPT, cole o JSON no Quiz e use Revisar questões para importar. Confira o gabarito e marque apenas as questões que quer salvar."},
+  {aba:"aba-ativacao", titulo:"Prepare a aplicação", texto:"Em Ativação de Provas, escolha a escola, as turmas, as questões, o tempo e o código de acesso. Confira o resumo antes de usar Ativar em uma aplicação real."},
+  {aba:"aba-monitoramento", titulo:"Acompanhe a aplicação", texto:"Em Monitoramento, confira quem iniciou, quem ainda está respondendo e quem entregou. Use as opções de entrada atrasada ou recuperação quando precisar atender um aluno."},
+  {aba:"aba-relatorios", titulo:"Consulte os resultados", texto:"Em Resultados e relatórios, filtre pela escola ou pesquise pelo nome do aluno. Confira os registros visíveis antes de exportar. Para guardar uma cópia dos relatórios, abra Backups e suporte."}
