@@ -2160,8 +2160,8 @@ body.light-mode #aba-banco-dados > p {
           <label for="qi-assistente-texto">Pedido para enviar à IA</label>
           <textarea id="qi-assistente-texto" rows="5" readonly></textarea>
         </form>
-        <label for="qi-assistente-resposta">Resposta JSON da IA</label>
-        <textarea id="qi-assistente-resposta" rows="6" placeholder="Cole a resposta com as questões aqui"></textarea>
+        <label for="qi-assistente-resposta">Questões copiadas do ChatGPT</label>
+        <textarea id="qi-assistente-resposta" rows="6" placeholder="Cole as questões numeradas, com A) a E) e Gabarito: B"></textarea>
         <div class="qi-actions">
           <button type="button" class="qi-button primary" id="qi-assistente-revisar">Revisar questões para importar</button>
         </div>
@@ -2170,7 +2170,7 @@ body.light-mode #aba-banco-dados > p {
           <summary>Como usar</summary>
           <ol>
             <li>Prepare e copie o pedido. No ChatGPT você também pode fazer perguntas comuns e pedir explicações para a aula.</li>
-            <li>Envie o pedido no ChatGPT e cole o JSON gerado no Quiz.</li>
+            <li>Envie o pedido no ChatGPT e cole as questões geradas no Quiz.</li>
             <li>Revise as cinco alternativas e o gabarito, marque as questões desejadas e confirme o salvamento.</li>
           </ol>
         </details>
@@ -2200,8 +2200,14 @@ body.light-mode #aba-banco-dados > p {
             "Público: " + (publico || "informe o nível adequado ao assunto"),
             "Cada questão deve ter cinco alternativas distintas, de A a E, e exatamente uma correta.",
             "Use a letra da resposta correta no campo correta. Inclua fonte somente se houver uma referência verificável.",
-            "Retorne somente JSON válido, sem Markdown, no formato:",
-            JSON.stringify({questoes:[{materia,pergunta:"Enunciado",opcoes:["Texto A","Texto B","Texto C","Texto D","Texto E"],correta:"B",fonte:""}]})
+            "Use texto simples, sem introdução, no formato abaixo. Repita o bloco para cada questão:",
+            "1. Enunciado da questão",
+            "A) Primeira alternativa",
+            "B) Segunda alternativa",
+            "C) Terceira alternativa",
+            "D) Quarta alternativa",
+            "E) Quinta alternativa",
+            "Gabarito: B"
           ].join("\n");
           copiar.disabled = false;
           status.textContent = "Pedido pronto. Copie e envie à IA.";
@@ -2216,10 +2222,45 @@ body.light-mode #aba-banco-dados > p {
             status.textContent = "Pressione Ctrl+C para copiar o pedido selecionado.";
           }
         });
+        function converterQuestoesColadas(texto, materia) {
+          // A revisão existente continua aceitando arquivos JSON e linhas com separadores.
+          if (/^[\[{]/.test(texto) || texto.includes("|")) return texto;
+          const questoes = [];
+          let atual;
+          let campo = -1;
+          for (const bruta of texto.split(/\r?\n/)) {
+            const linha = bruta.trim().replace(/\*\*/g, "");
+            if (!linha || /^-{3,}$/.test(linha)) continue;
+            const questao = linha.match(/^(?:quest[ãa]o\s+)?\d+(?:[.):–-]\s*|\s+)(.*)$/i);
+            const opcao = linha.match(/^([A-E])[).:\-]\s*(.*)$/i);
+            const gabarito = linha.match(/^(?:gabarito|resposta correta|alternativa correta)\s*:\s*([A-E])\b/i);
+            if (questao) {
+              atual = {materia, pergunta:questao[1], opcoes:Array(5).fill(""), correta:""};
+              questoes.push(atual);
+              campo = -1;
+            } else if (atual && opcao) {
+              campo = "ABCDE".indexOf(opcao[1].toUpperCase());
+              if (atual.opcoes[campo]) throw Error("Há uma letra repetida na questão " + questoes.length + ".");
+              atual.opcoes[campo] = opcao[2];
+            } else if (atual && gabarito) {
+              if (atual.correta) throw Error("Há mais de um gabarito na questão " + questoes.length + ".");
+              atual.correta = gabarito[1].toUpperCase();
+              campo = -2;
+            } else if (atual && campo === -1) {
+              atual.pergunta = (atual.pergunta + " " + linha).trim();
+            } else if (atual && campo >= 0) {
+              atual.opcoes[campo] = (atual.opcoes[campo] + " " + linha).trim();
+            } else {
+              throw Error("Cole somente as questões numeradas, com alternativas A) a E) e Gabarito: B em cada questão.");
+            }
+          }
+          if (!questoes.length) throw Error("Nenhuma questão numerada foi encontrada.");
+          return JSON.stringify({questoes});
+        }
         document.getElementById("qi-assistente-revisar").addEventListener("click", () => {
-          const texto = resposta.value.trim().replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, "$1");
+          const texto = resposta.value.trim().replace(/^```(?:json|text)?\s*([\s\S]*?)\s*```$/i, "$1");
           if (!texto) {
-            status.textContent = "Cole o JSON gerado pela IA antes de revisar.";
+            status.textContent = "Cole as questões do ChatGPT antes de revisar.";
             resposta.focus();
             return;
           }
@@ -2227,7 +2268,19 @@ body.light-mode #aba-banco-dados > p {
             status.textContent = "A biblioteca ainda está carregando. Tente novamente.";
             return;
           }
-          window.QuizBiblioteca.revisarTexto(texto, form.elements.materia.value.trim() || "Geral");
+          const materia = form.elements.materia.value.trim();
+          if (!materia) {
+            status.textContent = "Informe a matéria das questões antes de revisar.";
+            form.elements.materia.focus();
+            return;
+          }
+          try {
+            const entrada = converterQuestoesColadas(texto, materia);
+            status.textContent = "";
+            window.QuizBiblioteca.revisarTexto(entrada, materia);
+          } catch (erro) {
+            status.textContent = erro.message;
+          }
         });
       })();
       </script>
@@ -2439,7 +2492,7 @@ const roteiroDemoProfessor = [
    <p>Você escolhe o público e as questões ao preparar a avaliação em Ativação de Provas.</p>
   </details>`},
  {aba:"aba-questoes", titulo:"Prepare as questões", texto:"Em Banco de Questões, confira enunciados, alternativas e gabaritos antes de montar a avaliação."},
- {aba:"aba-questoes", titulo:"Prepare questões com ajuda da IA", texto:"Abra Criar questões com IA, informe matéria e assunto e copie o pedido. Envie ao ChatGPT, cole o JSON no Quiz e use Revisar questões para importar. Confira o gabarito e marque apenas as questões que quer salvar."},
+ {aba:"aba-questoes", titulo:"Prepare questões com ajuda da IA", texto:"Abra Criar questões com IA, informe matéria e assunto e copie o pedido. Envie ao ChatGPT, cole as questões no Quiz e use Revisar questões para importar. Confira o gabarito e marque apenas as questões que quer salvar."},
  {aba:"aba-ativacao", titulo:"Prepare a aplicação", texto:"Em Ativação de Provas, escolha a escola, as turmas, as questões, o tempo e o código de acesso. Confira o resumo antes de usar Ativar em uma aplicação real."},
  {aba:"aba-monitoramento", titulo:"Acompanhe a aplicação", texto:"Em Monitoramento, confira quem iniciou, quem ainda está respondendo e quem entregou. Use as opções de entrada atrasada ou recuperação quando precisar atender um aluno."},
  {aba:"aba-relatorios", titulo:"Consulte os resultados", texto:"Em Resultados e relatórios, filtre pela escola ou pesquise pelo nome do aluno. Confira os registros visíveis antes de exportar. Para guardar uma cópia dos relatórios, abra Backups e suporte."}
