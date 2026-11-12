@@ -1878,6 +1878,7 @@ body.light-mode #aba-banco-dados > p {
 #qi-assistente-questoes > summary:hover { filter: brightness(1.08); }
 #qi-assistente-questoes > summary:focus-visible { outline: 2px solid var(--qi-accent, #19c7ed); outline-offset: 3px; }
 #qi-assistente-questoes .qi-actions, #qi-outras-importacoes .qi-actions { display:flex; flex-wrap:wrap; gap:.5rem; }
+#qi-assistente-pedido .qi-actions { margin: .5rem 0 1rem; }
 #qi-outras-importacoes { margin-top: 1rem; }
 </style>
 </head>
@@ -2147,13 +2148,13 @@ body.light-mode #aba-banco-dados > p {
               <input name="quantidade" type="number" min="1" max="30" value="5" required>
             </label>
           </div>
+          <label for="qi-assistente-texto">Pedido para enviar à IA</label>
+          <textarea id="qi-assistente-texto" rows="5" placeholder="Ex.: Crie 10 questões sobre HTML semântico, com alternativas de A a E e gabarito."></textarea>
           <div class="qi-actions">
             <button type="submit" class="qi-button primary">Preparar pedido</button>
             <button type="button" class="qi-button" id="qi-assistente-copiar" disabled>Copiar pedido</button>
             <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="qi-button">Abrir ChatGPT</a>
           </div>
-          <label for="qi-assistente-texto">Pedido para enviar à IA</label>
-          <textarea id="qi-assistente-texto" rows="5" placeholder="Ex.: Crie 10 questões sobre HTML semântico, com alternativas de A a E e gabarito."></textarea>
         </form>
         <label for="qi-assistente-resposta">Questões copiadas do ChatGPT</label>
         <textarea id="qi-assistente-resposta" rows="6" placeholder="Cole as questões numeradas, com A) a E) e Gabarito: B"></textarea>
