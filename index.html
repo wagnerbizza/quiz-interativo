@@ -2225,7 +2225,11 @@ if (unsubscribePermissaoAluno) {
       { alvo: "#nome-aluno", texto: "<strong>3. Identificação:</strong> informe seu nome completo." },
       { alvo: "#turma-aluno", texto: "<strong>4. Turma:</strong> selecione uma das turmas liberadas." },
       { alvo: "#btn-iniciar-prova", texto: "<strong>5. Iniciar:</strong> confira os dados e comece a avaliação. A demonstração não registra respostas." },
-      { alvo: "#voltar-ao-token-aluno", texto: "<strong>6. Voltar ao token:</strong> retorna à primeira etapa para digitar outro código." }
+      { alvo: "#voltar-ao-token-aluno", texto: "<strong>6. Voltar ao token:</strong> retorna à primeira etapa para digitar outro código." },
+      { alvo: "#opcoes-container", texto: "<strong>Marque uma resposta:</strong> escolha uma das alternativas disponíveis. A opção escolhida fica destacada." },
+      { alvo: "#progresso-blocos-topo", texto: "<strong>Confira o progresso:</strong> use os blocos para identificar questões já respondidas e revisar as pendentes." },
+      { alvo: "#prox", texto: "<strong>Continue a avaliação:</strong> use Próxima para avançar. Quando Anterior estiver disponível, você pode voltar para revisar." },
+      { alvo: "#fin", texto: "<strong>Entregue a avaliação:</strong> confira suas respostas e use Finalizar Prova quando estiver pronto." }
     ];
     // Etapas ocultas (ex.: código quando não há token) não são exibidas.
     function elementoVisivelDemoAluno(el){
@@ -2303,7 +2307,7 @@ if (unsubscribePermissaoAluno) {
       if(!passo){fecharDemoAluno(false);return;}
       textoDemoAluno.innerHTML=passo.texto;
       document.getElementById("demo-proximo-aluno").textContent =
-        passoDemoAluno===passosAtuaisDemoAluno.length-1 ? "Concluir" : "Próximo";
+        passoDemoAluno===passosAtuaisDemoAluno.length-1 ? "Concluir" : "Avançar";
       alvoDemoAlunoAtual=document.querySelector(passo.alvo);
       if(alvoDemoAlunoAtual){
         alvoDemoAlunoAtual.classList.add("demo-aluno-destaque");

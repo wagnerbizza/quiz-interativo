@@ -2258,8 +2258,8 @@ body.light-mode #aba-banco-dados > p {
   <div class="demo-prof-acoes">
    <button type="button" id="demo-prof-pular">Pular demonstração</button>
    <button type="button" id="demo-prof-voltar">Voltar</button>
-   <button type="button" id="demo-prof-proximo">Próximo</button>
-   <button type="button" id="demo-prof-fechar">Fechar</button>
+   <button type="button" id="demo-prof-proximo">Avançar</button>
+   <button type="button" id="demo-prof-fechar">Sair da demonstração</button>
   </div>
  </div>
 </div>
@@ -2279,21 +2279,16 @@ body.light-mode #aba-banco-dados > p {
    ============================================================ */
 const DEMO_PROFESSOR_ATIVA = true;
 /* A sequência é fixa e independe do rearranjo das abas. */
-const descricoesDemoProfessor = {
- "aba-global":"Consulte as configurações gerais e os padrões do painel.",
- "aba-escolas":"Cadastre e revise as unidades escolares disponíveis nas avaliações.",
- "aba-ativacao":"Escolha escola, matérias, turmas, questões, tempos e código de acesso. Nada é publicado pela demonstração.",
- "aba-questoes":"Consulte e organize questões e alternativas sem modificar o gabarito.",
- "aba-banco-dados":"Consulte as estruturas e informações administrativas do banco de dados.",
- "aba-monitoramento":"Acompanhe o progresso dos alunos sem encerrar avaliações.",
- "aba-relatorios":"Consulte histórico, notas, tempos, filtros, backups e exportações."
-};
+const roteiroDemoProfessor = [
+ {aba:"aba-escolas", titulo:"Confira a unidade", texto:"Em Cadastro de Escolas, abra Configurar Unidade e confira as turmas e matérias disponíveis para a avaliação."},
+ {aba:"aba-questoes", titulo:"Prepare as questões", texto:"Em Banco de Questões, confira enunciados, alternativas e gabaritos antes de montar a avaliação."},
+ {aba:"aba-ativacao", titulo:"Prepare a aplicação", texto:"Em Ativação de Provas, escolha a escola, as turmas, as questões, o tempo e o código de acesso. Confira o resumo antes de usar Ativar em uma aplicação real."},
+ {aba:"aba-monitoramento", titulo:"Acompanhe a aplicação", texto:"Em Monitoramento, confira quem iniciou, quem ainda está respondendo e quem entregou. Use as opções de entrada atrasada ou recuperação quando precisar atender um aluno."},
+ {aba:"aba-relatorios", titulo:"Consulte os resultados", texto:"Em Resultados e relatórios, filtre pela escola ou pesquise pelo nome do aluno. Confira os registros visíveis antes de exportar. Para guardar uma cópia dos relatórios, abra Backups e suporte."}
+];
 let passosDemoProfessor=[];
 function atualizarPassosDemoProfessor(){
-  /* Roteiro imutável: não depende da ordem dos botões arrastáveis. */
-  const ordem=["aba-global","aba-escolas","aba-ativacao","aba-monitoramento","aba-relatorios","aba-questoes","aba-banco-dados"];
-  passosDemoProfessor=ordem.filter(id=>Boolean(descricoesDemoProfessor[id] && localizarAbaDemo(id)))
-    .map((id,i)=>({titulo:(i+1)+'. '+localizarAbaDemo(id).textContent.trim(),texto:descricoesDemoProfessor[id],aba:id}));
+  passosDemoProfessor=roteiroDemoProfessor.filter(passo=>Boolean(localizarAbaDemo(passo.aba)));
 }
 let passoDemoProfessor=0;
 const btnDemoProfessor=document.getElementById("btn-demo-prof");
@@ -2323,7 +2318,7 @@ function renderDemoProfessor(){
   textoDemoProfessor.innerHTML="<strong>Etapa "+(passoDemoProfessor+1)+" de "+passosDemoProfessor.length+" — "+passo.titulo+":</strong> "+passo.texto+
     '<div class="demo-prof-legenda">A aba indicada pelo contorno azul é a parte explicada neste passo.</div>';
   document.getElementById("demo-prof-proximo").textContent =
-    passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Próximo";
+    passoDemoProfessor===passosDemoProfessor.length-1 ? "Concluir" : "Avançar";
 
   /* AJUSTE MANUAL 14 — VISUALIZAÇÃO SEGURA DA DEMONSTRAÇÃO
      Não dispara os listeners operacionais do app.js: a aba Banco de Dados
