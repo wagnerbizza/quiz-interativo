@@ -1,0 +1,57 @@
+diff --git a/app.js b/app.js
+index e9de15e..c100ba3 100644
+--- a/app.js
++++ b/app.js
+@@ -4426,6 +4426,28 @@ if (window.location.pathname.includes("painel.html")) {
+       dadosFiltrados = dadosFiltrados.filter(res => normalizarTexto(res.periodo) === normalizarTexto(periodoSelecionado));
+     }
+ 
++    const filtroTurma = document.getElementById("select-filtro-turma-relatorio");
++    if (filtroTurma) {
++      const turmaAnterior = filtroTurma.value;
++      const turmas = [...new Set(dadosFiltrados.map(res => String(res.turma || "").trim()).filter(Boolean))]
++        .sort((a, b) => a.localeCompare(b, "pt-BR", { numeric:true }));
++      filtroTurma.replaceChildren(new Option("Todas as turmas", ""));
++      turmas.forEach(turma => filtroTurma.add(new Option(turma, turma)));
++      if (turmas.includes(turmaAnterior)) filtroTurma.value = turmaAnterior;
++      if (filtroTurma.value) dadosFiltrados = dadosFiltrados.filter(res => String(res.turma || "").trim() === filtroTurma.value);
++    }
++
++    const dataInicial = document.getElementById("filtro-data-inicial-relatorio")?.value;
++    const dataFinal = document.getElementById("filtro-data-final-relatorio")?.value;
++    if (dataInicial || dataFinal) {
++      const inicio = dataInicial ? new Date(dataInicial + "T00:00:00").getTime() : -Infinity;
++      const fim = dataFinal ? new Date(dataFinal + "T23:59:59.999").getTime() : Infinity;
++      dadosFiltrados = dadosFiltrados.filter(res => {
++        const envio = millisMonitoramento(res.dataEnvio) || millisMonitoramento(res.timestamp);
++        return envio > 0 && envio >= inicio && envio <= fim;
++      });
++    }
++
+     if (termoBusca) {
+       dadosFiltrados = dadosFiltrados.filter(res => {
+         const textoConcatenado = normalizarTexto([
+diff --git a/painel.html b/painel.html
+index 5b0cc6f..080eebf 100644
+--- a/painel.html
++++ b/painel.html
+@@ -2332,6 +2332,9 @@ body.light-mode #aba-banco-dados > p {
+           <label>Escola<select id="select-filtro-escola-relatorio" style="margin:0; padding:6px 10px; background:#1e293b; border:1px solid var(--border); color:white; border-radius:6px; font-weight:bold; min-width:110px; font-size: 12px;">
+             <option value="TODAS">🏫 Escolas</option>
+           </select></label>
++          <label>Turma<select id="select-filtro-turma-relatorio" onchange="renderizarTabelaResultadosFiltrada()"><option value="">Todas as turmas</option></select></label>
++          <label>De <input type="date" id="filtro-data-inicial-relatorio" onchange="renderizarTabelaResultadosFiltrada()"></label>
++          <label>Até <input type="date" id="filtro-data-final-relatorio" onchange="renderizarTabelaResultadosFiltrada()"></label>
+           <div class="dropdown-win">
+             <button type="button" id="btn-dropdown-resultados" class="btn-dropdown-win" onclick="toggleDropdown(event, 'dropdown-menu-resultados', 'btn-dropdown-resultados')">
+               🔄 Classificar <span style="font-size: 10px;">▼</span>
+@@ -2805,6 +2808,9 @@ window.addEventListener("resize",()=>{
+     document.getElementById("limpar-filtros-resultados")?.addEventListener("click", () => {
+       document.getElementById("input-busca-resultados").value = "";
+       document.getElementById("select-filtro-escola-relatorio").value = "TODAS";
++      for (const id of ["select-filtro-turma-relatorio", "filtro-data-inicial-relatorio", "filtro-data-final-relatorio"]) {
++        document.getElementById(id).value = "";
++      }
+       window.renderizarTabelaResultadosFiltrada();
+     });
+     atualizarSelecao();
