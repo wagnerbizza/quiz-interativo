@@ -2821,6 +2821,16 @@ if (window.location.pathname.includes("painel.html")) {
             </div>
           </div>
 
+          <div class="qi-form-grid">
+            <label>Tipo de atividade
+              <select id="tipo-atividade-ativacao">
+                <option>Prova</option><option>Atividade</option><option>Trabalho</option><option>Simulado</option>
+              </select>
+            </label>
+            <label>Peso para a média
+              <input id="peso-atividade-ativacao" type="number" min="0.01" max="100" step="0.01" value="1" required>
+            </label>
+          </div>
           <div style="background: rgba(15, 23, 42, 0.95); border: 1px dashed #38bdf8; padding: 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px;">
             <h5 style="margin: 0; color: #38bdf8; font-size: 14px;">🔍 Pré-visualização Geral e Confirmação</h5>
             <div id="bloco-preview-ativacao-geral" style="font-size: 13px; color: #e2e8f0; display: flex; flex-direction: column; gap: 4px;">
@@ -2948,6 +2958,10 @@ if (window.location.pathname.includes("painel.html")) {
           painelDinamico.querySelector("#input-agendamento-ativacao")?.focus();
           return;
         }
+        const tipoAtividade = painelDinamico.querySelector("#tipo-atividade-ativacao").value;
+        const campoPeso = painelDinamico.querySelector("#peso-atividade-ativacao");
+        const peso = campoPeso.valueAsNumber;
+        if (!campoPeso.reportValidity()) return;
         const resumo = [
           "Confira a avaliação antes de publicar",
           "",
@@ -2957,6 +2971,7 @@ if (window.location.pathname.includes("painel.html")) {
           "Disciplinas: " + (disciplinasSelecionadas.join(", ") || "Nenhuma selecionada"),
           "Período: " + periodoEscolhido,
           "Questões solicitadas: " + qtdQ,
+          "Tipo: " + tipoAtividade + " · Peso: " + peso.toLocaleString("pt-BR"),
           "Tempo por aluno: mínimo de " + tempoMin + " min · " + (tempoLim ? "máximo de " + tempoLim + " min" : "sem limite máximo"),
           "Duração da publicação: " + tempoAtivacao + " min",
           "Início simultâneo: " + (timestampAgendamento ? new Date(timestampAgendamento).toLocaleString("pt-BR") : "sem agendamento"),
@@ -2999,6 +3014,14 @@ if (window.location.pathname.includes("painel.html")) {
 
           // Valida a seleção e grava o pacote antes de alterar a ativação remota.
           const pacotePreparado=await prepararPacoteEstaticoAvaliacao(dadosPublicacao);
+          // O boletim lê o peso salvo pelo professor, nunca um peso enviado pelo aluno.
+          await setDoc(doc(db, "configuracoes", "avaliacao_" + idAvaliacao), {
+            idAvaliacao,
+            escola: escolaNome,
+            tipoAtividade,
+            peso,
+            criadoEm: serverTimestamp()
+          });
           const pubLocal=await gerarPacoteEstaticoAvaliacao(dadosPublicacao,pacotePreparado);
           let firebasePublicado=false;
           try {
@@ -4513,8 +4536,7 @@ if (window.location.pathname.includes("painel.html")) {
     const nota = total > 0 ? ((acertos / total) * 10).toFixed(1) : "0.0";
     return {total, acertos, erros, nota};
   }
-  function abrirDocumentoImpressao(titulo, corpo) {
-    const w = window.open("", "_blank");
+  function abrirDocumentoImpressao(titulo, corpo, w = window.open("", "_blank")) {
     if (!w) { alert("⚠️ Permita pop-ups para gerar o documento."); return; }
     const identidade=window.QuizInterface?.identidade || {titulo:"Quiz Interativo",marca:"WagnerBIZZA",logo:""};
     const escDoc=escaparDocumentoQuiz;
@@ -4533,9 +4555,30 @@ if (window.location.pathname.includes("painel.html")) {
     w.document.close(); setTimeout(()=>w.print(),180);
   }
 
-  window.gerarBoletimPorId = function(id) {
+  window.gerarBoletimPorId = async function(id) {
     const r=obterResultadoPorId(id); if(!r) return alert("Resultado não encontrado.");
     const m=metricasResultado(r);
+    const janela = window.open("", "_blank");
+    if (!janela) return alert("Permita pop-ups para abrir o boletim.");
+    janela.document.body.textContent = "Preparando boletim…";
+    let dadosPeso = "";
+    if (/^av_\d+$/.test(r.idAvaliacao || "")) {
+      try {
+        const snapshot = await getDoc(doc(db, "configuracoes", "avaliacao_" + r.idAvaliacao));
+        const atividade = snapshot.data();
+        if (atividade?.escola === r.escola && Number.isFinite(atividade.peso) && atividade.peso > 0) {
+          const formatar = valor => valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+          const produto = typeof m.acertos === "number" && m.total > 0
+            ? formatar(m.acertos / m.total * 10 * atividade.peso)
+            : "Pendente";
+          dadosPeso = `<div class="obs"><b>Tipo:</b> ${escaparDocumentoQuiz(atividade.tipoAtividade)} · <b>Peso:</b> ${formatar(atividade.peso)} · <b>Nota × peso:</b> ${produto}</div>`;
+        }
+      } catch (erro) {
+        console.warn("Peso indisponível no boletim:", erro);
+        dadosPeso = '<div class="obs">Peso indisponível nesta consulta.</div>';
+      }
+    }
+    if (janela.closed) return;
     abrirDocumentoImpressao(`Boletim - ${r.nome||"Aluno"}`, `
       <div class="cab"><h1>Boletim de Avaliação</h1><div class="sub">${r.escola||"Unidade escolar não informada"}</div></div>
       <div class="grid">
@@ -4544,8 +4587,9 @@ if (window.location.pathname.includes("painel.html")) {
         <div class="campo"><b>Data/Hora:</b> ${dataResultado(r)}</div><div class="campo"><b>Tempo:</b> ${r.tempoGastoFormatado||"Não informado"}</div>
       </div>
       <div class="metricas"><div class="metrica">Questões<strong>${m.total}</strong></div><div class="metrica">Acertos<strong>${m.acertos}</strong></div><div class="metrica">Erros<strong>${m.erros}</strong></div><div class="metrica">Nota<strong>${m.nota}/10</strong></div></div>
+      ${dadosPeso}
       ${motivoConclusaoRelatorio(r)?`<div class="obs"><b>Finalização:</b> ${motivoConclusaoRelatorio(r).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`:""}
-      <div class="assinaturas"><div>Professor(a) / Responsável</div><div>Coordenação</div></div>`);
+      <div class="assinaturas"><div>Professor(a) / Responsável</div><div>Coordenação</div></div>`, janela);
   };
 
   window.gerarCertificadoPorId = function(id) {
@@ -5347,6 +5391,7 @@ if (window.location.pathname.includes("painel.html")) {
         const idResultado = (9999999999999 - agora).toString();
         const dadosResultado = {
           idAluno: idAluno,
+          idAvaliacao: alunoObj?.idAvaliacao || "",
           nome: alunoObj?.nome || nomeAluno,
           turma: alunoObj?.turma || "N/D",
           escola: escolaDestino,
