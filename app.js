@@ -2827,6 +2827,9 @@ if (window.location.pathname.includes("painel.html")) {
                 <option>Prova</option><option>Atividade</option><option>Trabalho</option><option>Simulado</option>
               </select>
             </label>
+            <label>Valor total da atividade (pontos)
+              <input id="valor-total-atividade" type="number" min="0.01" max="1000" step="0.01" value="10" required>
+            </label>
             <label>Peso para a média
               <input id="peso-atividade-ativacao" type="number" min="0.01" max="100" step="0.01" value="1" required>
             </label>
@@ -2959,6 +2962,9 @@ if (window.location.pathname.includes("painel.html")) {
           return;
         }
         const tipoAtividade = painelDinamico.querySelector("#tipo-atividade-ativacao").value;
+        const campoValorTotal = painelDinamico.querySelector("#valor-total-atividade");
+        if (!campoValorTotal.reportValidity()) return;
+        const valorTotal = campoValorTotal.valueAsNumber;
         const campoPeso = painelDinamico.querySelector("#peso-atividade-ativacao");
         const peso = campoPeso.valueAsNumber;
         if (!campoPeso.reportValidity()) return;
@@ -2971,7 +2977,9 @@ if (window.location.pathname.includes("painel.html")) {
           "Disciplinas: " + (disciplinasSelecionadas.join(", ") || "Nenhuma selecionada"),
           "Período: " + periodoEscolhido,
           "Questões solicitadas: " + qtdQ,
-          "Tipo: " + tipoAtividade + " · Peso: " + peso.toLocaleString("pt-BR"),
+          "Tipo: " + tipoAtividade,
+          "Valor total: " + valorTotal.toLocaleString("pt-BR") + " pontos",
+          "Peso para a média: " + peso.toLocaleString("pt-BR"),
           "Tempo por aluno: mínimo de " + tempoMin + " min · " + (tempoLim ? "máximo de " + tempoLim + " min" : "sem limite máximo"),
           "Duração da publicação: " + tempoAtivacao + " min",
           "Início simultâneo: " + (timestampAgendamento ? new Date(timestampAgendamento).toLocaleString("pt-BR") : "sem agendamento"),
@@ -3019,6 +3027,7 @@ if (window.location.pathname.includes("painel.html")) {
             idAvaliacao,
             escola: escolaNome,
             tipoAtividade,
+            valorTotal,
             peso,
             criadoEm: serverTimestamp()
           });
@@ -4562,16 +4571,21 @@ if (window.location.pathname.includes("painel.html")) {
     if (!janela) return alert("Permita pop-ups para abrir o boletim.");
     janela.document.body.textContent = "Preparando boletim…";
     let dadosPeso = "";
+    let notaBoletim = m.nota === "Pendente" ? m.nota : m.nota + "/10";
     if (/^av_\d+$/.test(r.idAvaliacao || "")) {
       try {
         const snapshot = await getDoc(doc(db, "configuracoes", "avaliacao_" + r.idAvaliacao));
         const atividade = snapshot.data();
         if (atividade?.escola === r.escola && Number.isFinite(atividade.peso) && atividade.peso > 0) {
           const formatar = valor => valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+          const valorTotal = atividade.valorTotal;
+          if (Number.isFinite(valorTotal) && valorTotal > 0 && typeof m.acertos === "number" && m.total > 0) {
+            notaBoletim = formatar(m.acertos / m.total * valorTotal) + " de " + formatar(valorTotal);
+          }
           const produto = typeof m.acertos === "number" && m.total > 0
             ? formatar(m.acertos / m.total * 10 * atividade.peso)
             : "Pendente";
-          dadosPeso = `<div class="obs"><b>Tipo:</b> ${escaparDocumentoQuiz(atividade.tipoAtividade)} · <b>Peso:</b> ${formatar(atividade.peso)} · <b>Nota × peso:</b> ${produto}</div>`;
+          dadosPeso = `<div class="obs"><b>Tipo:</b> ${escaparDocumentoQuiz(atividade.tipoAtividade)} · <b>Peso:</b> ${formatar(atividade.peso)} · <b>Nota na escala de 0 a 10 × peso:</b> ${produto}</div>`;
         }
       } catch (erro) {
         console.warn("Peso indisponível no boletim:", erro);
@@ -4586,7 +4600,7 @@ if (window.location.pathname.includes("painel.html")) {
         <div class="campo"><b>Matéria(s):</b> ${r.materia||"Geral"}</div><div class="campo"><b>Período:</b> ${r.periodo||"Não informado"}</div>
         <div class="campo"><b>Data/Hora:</b> ${dataResultado(r)}</div><div class="campo"><b>Tempo:</b> ${r.tempoGastoFormatado||"Não informado"}</div>
       </div>
-      <div class="metricas"><div class="metrica">Questões<strong>${m.total}</strong></div><div class="metrica">Acertos<strong>${m.acertos}</strong></div><div class="metrica">Erros<strong>${m.erros}</strong></div><div class="metrica">Nota<strong>${m.nota}/10</strong></div></div>
+      <div class="metricas"><div class="metrica">Questões<strong>${m.total}</strong></div><div class="metrica">Acertos<strong>${m.acertos}</strong></div><div class="metrica">Erros<strong>${m.erros}</strong></div><div class="metrica">Nota<strong>${notaBoletim}</strong></div></div>
       ${dadosPeso}
       ${motivoConclusaoRelatorio(r)?`<div class="obs"><b>Finalização:</b> ${motivoConclusaoRelatorio(r).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`:""}
       <div class="assinaturas"><div>Professor(a) / Responsável</div><div>Coordenação</div></div>`, janela);
