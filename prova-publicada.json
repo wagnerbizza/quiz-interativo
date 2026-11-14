@@ -1,21 +1,158 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1794660798131",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 10,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1794414039121,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1794414039121",
-  "publicadoEm": "2026-11-11T16:20:39.121Z",
-  "encerradoEm": "2026-11-11T16:20:39.122Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoLimiteMinutos": 1,
+  "tempoMaximoMinutos": 1,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1794671598131,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1794660798131",
+  "publicadoEm": "2026-11-14T12:53:18.165Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "5BpKknQZjKE3y83KDc45",
+      "pergunta": "Como convertemos um objeto ou array JavaScript em uma string JSON para envio?",
+      "opcoes": [
+        "JSON.parse()",
+        "JSON.convert()",
+        "JSON.toString()",
+        "JSON.stringify()"
+      ],
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End"
+    },
+    {
+      "idQuestao": "AEvmMmaib6RdBYysloBE",
+      "pergunta": "[Técnico 12] O que significa o conceito de Deep Learning?",
+      "opcoes": [
+        "Compactação avançada de arquivos de vídeo",
+        "Criptografia de ponta a ponta em redes locais",
+        "Processamento de planilhas eletrônicas gigantescas",
+        "Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas"
+      ],
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial"
+    },
+    {
+      "idQuestao": "btu4r3ZLHlCQ3gM9pino",
+      "pergunta": "Qual é a principal característica da IA Narrow (Estreita)?",
+      "opcoes": [
+        "Funciona exclusivamente offline sem necessidade de dados",
+        "É um modelo obsoleto que não é mais utilizado",
+        "Pode ser executada sem nenhum tipo de processador",
+        "É focada e extremamente eficiente em realizar uma tarefa específica",
+        "Possui consciência própria e supera a inteligência humana em tudo"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "wWD5GoPCusYcVU5ZDIly",
+      "pergunta": "Qual a principal vantagem do protocolo IPv6 em relação ao IPv4?",
+      "opcoes": [
+        "Redução da velocidade de transmissão para economizar energia",
+        "Expansão drástica do espaço de endereçamento IP utilizando 128 bits",
+        "Eliminação total da necessidade de roteadores na rede",
+        "Compatibilidade exclusiva com computadores antigos",
+        "Criptografia nativa obrigatória em todas as páginas web"
+      ],
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem"
+    },
+    {
+      "idQuestao": "VvftPZpUEkf5CIeVfk7H",
+      "pergunta": "O que é um Sistema Multi-Agente?",
+      "opcoes": [
+        "Rede de computadores interligados por cabos de fibra óptica",
+        "Sistema computacional composto de múltiplos agentes inteligentes que interagem e cooperam",
+        "Ferramenta de edição de código-fonte colaborativo",
+        "Sistema operacional voltado para servidores web",
+        "Banco de dados relacional distribuído em servidores locais"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "VkezWYw56IaS9WwKxmLZ",
+      "pergunta": "O que é a otimização por enxame de partículas (PSO)?",
+      "opcoes": [
+        "Um protocolo de segurança de rede",
+        "Um método de otimização inspirado no movimento social de cardumes de peixes ou rebanhos de pássaros",
+        "Um antivírus corporativo avançado",
+        "Um jogo de simulação de trânsito"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "o5vlEwNHykJBH2r6Bwlf",
+      "pergunta": "O que é a detecção de objetos em imagens?",
+      "opcoes": [
+        "A compactação de arquivos de imagem",
+        "A alteração de cores de uma fotografia",
+        "A identificação e localização de instâncias de objetos de certas classes (como carros ou pessoas) em imagens",
+        "A contagem de pixels em uma tela"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "TfZUURM9PUWlebYGI98O",
+      "pergunta": "[Técnico 40] O que é uma rede neural convolucional (CNN)?",
+      "opcoes": [
+        "Rede neural especializada no processamento de dados com grade espacial, como imagens",
+        "Sistema de transmissão de energia",
+        "Protocolo de rede seguro",
+        "Rede de computadores cabeada"
+      ],
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial"
+    },
+    {
+      "idQuestao": "bamFMHsjilCcThtB8QqU",
+      "pergunta": "Qual a principal diferença entre Máquinas Virtuais (VMs) e Containers?",
+      "opcoes": [
+        "Containers exigem servidores físicos dedicados exclusivos",
+        "VMs são mais leves e iniciam mais rápido que containers",
+        "VMs não precisam de recursos de memória RAM",
+        "Containers não podem ser executados em ambientes de nuvem",
+        "Containers compartilham o kernel do sistema operacional host; VMs possuem sistemas operacionais completos independentes"
+      ],
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem"
+    },
+    {
+      "idQuestao": "Y2rkakqG4oOrVzCu4mSq",
+      "pergunta": "O que é a Mineração de Dados (Data Mining)?",
+      "opcoes": [
+        "Envio de e-mails em massa para campanhas de marketing",
+        "Exclusão definitiva de arquivos corrompidos do sistema",
+        "Processo de extrair padrões e conhecimentos úteis de grandes bases de dados",
+        "Formatação de discos rígidos em servidores de rede",
+        "Criação manual de tabelas em planilhas eletrônicas"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    }
+  ]
 }
