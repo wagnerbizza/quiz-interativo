@@ -1,0 +1,181 @@
+diff --git a/app.js b/app.js
+index 1b95821..efa6c01 100644
+--- a/app.js
++++ b/app.js
+@@ -4449,7 +4449,7 @@ if (window.location.pathname.includes("painel.html")) {
+     } else {
+       corpoTabelaResultados.innerHTML = `
+         <tr>
+-          <td colspan="12" style="text-align:center;padding:24px;color:#fbbf24;">
++          <td colspan="11" style="text-align:center;padding:24px;color:#fbbf24;">
+             💾 Ainda não há relatórios salvos neste navegador.<br>
+             <small style="color:#94a3b8;">
+               Seus dados do Firebase não foram apagados. Quando a cota diária voltar,
+@@ -4554,7 +4554,7 @@ if (window.location.pathname.includes("painel.html")) {
+     });
+ 
+     if (dadosFiltrados.length === 0) {
+-      corpoTabelaResultados.innerHTML = `<tr><td colspan="12" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno encontrado.</td></tr>`;
++      corpoTabelaResultados.innerHTML = `<tr><td colspan="11" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno encontrado.</td></tr>`;
+       return;
+     }
+ 
+@@ -4584,23 +4584,23 @@ if (window.location.pathname.includes("painel.html")) {
+           <td>${dataFormatada}</td>
+           <td><strong>${res.escola || 'N/D'}</strong></td>
+           <td>${res.periodo || 'N/D'}</td>
+-          <td>${res.nome || 'Aluno'}</td>
+-          <td>${res.turma || 'N/D'}</td>
+-          <td>${res.materia || 'Geral'}</td>
+-          <td><span style="color: #facc15;">⏱ ${tempoGastoStr}</span></td>
+-          <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
+-          <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
+-          <td style="text-align: center;">
+-            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${idAlunoAlvo}" data-escopo="relatorios" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
++          <td class="qi-aluno-detalhes">
++            <span class="qi-nome-resultado">${escaparTextoQuiz(res.nome || "Aluno")}</span>
++            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${escaparTextoQuiz(idAlunoAlvo)}" data-escopo="relatorios" data-resultado-id="${escaparTextoQuiz(res.idDoc)}" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Detalhes do aluno</button>
+             <div class="grupo-botoes-acoes" hidden style="display:none;">
+               <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
+               <button type="button" class="btn-acao" style="background:#0284c7;" onclick="gerarBoletimPorId('${res.idDoc}')">📜 <span>Boletim</span></button>
+-              <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova</span></button>
++              <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova e respostas</span></button>
+               <button type="button" class="btn-acao" style="background:#10b981;" onclick="gerarCertificadoPorId('${res.idDoc}')">🎓 <span>Certificado</span></button>
+               <button type="button" class="btn-acao btn-secondary" data-id-aluno="${idAlunoAlvo}" data-nome-aluno="${String(res.nome||'Aluno').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onclick="consultarAutorizacoesAluno(this.dataset.idAluno,this.dataset.nomeAluno)">🔐 Autorizações</button>
+-              <button type="button" class="btn-acao" style="background: #eab308;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome || 'Aluno'}')">🔄 Refazer</button>
++              <button type="button" class="btn-acao" style="background: #eab308;" data-id-aluno="${escaparTextoQuiz(idAlunoAlvo)}" data-nome-aluno="${escaparTextoQuiz(res.nome || 'Aluno')}" onclick="autorizarAlunoRefazer(this.dataset.idAluno, this.dataset.nomeAluno)">🔄 Refazer</button>
+             </div>
+           </td>
++          <td>${res.turma || 'N/D'}</td>
++          <td>${res.materia || 'Geral'}</td>
++          <td><span style="color: #facc15;">⏱ ${tempoGastoStr}</span></td>
++          <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
++          <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
+         </tr>
+       `;
+     });
+@@ -5173,7 +5173,7 @@ if (window.location.pathname.includes("painel.html")) {
+   // Menu individual compacto: preserva estado em atualizações em tempo real.
+   // Consultas de códigos são somente leitura; nunca interferem na sincronização Firebase.
+   const menusAbertosAluno = new Set();
+-  function chaveMenuAluno(botao) { return `${botao.dataset.escopo}:${botao.dataset.alunoId}`; }
++  function chaveMenuAluno(botao) { return `${botao.dataset.escopo}:${botao.dataset.resultadoId || botao.dataset.alunoId}`; }
+   function renderizarCodigosInline(itens) {
+     const vistos=new Set();
+     const autorizacoes=itens.filter(a=>a.codigo && /bilhetes_|registros_(entrada_atrasada|recuperacao)/.test(a.origem)).filter(a=>{
+@@ -5211,7 +5211,7 @@ if (window.location.pathname.includes("painel.html")) {
+     const abrir=!menusAbertosAluno.has(chave);
+     if(abrir) menusAbertosAluno.add(chave); else menusAbertosAluno.delete(chave);
+     botao.setAttribute('aria-expanded',String(abrir));
+-    botao.textContent=abrir?'▴ Fechar ações':'⋯ Ações';
++    botao.textContent=abrir?'▴ Fechar ações':(botao.dataset.escopo === 'relatorios' ? '▸ Detalhes do aluno' : '⋯ Ações');
+     grupo.hidden=!abrir;
+     grupo.style.display=abrir?'flex':'none';
+     if(abrir) carregarCodigosNoMenu(botao);
+@@ -5221,7 +5221,7 @@ if (window.location.pathname.includes("painel.html")) {
+     tabela?.querySelectorAll('.btn-expandir-acoes').forEach(botao=>{
+       const aberto=menusAbertosAluno.has(chaveMenuAluno(botao));
+       const grupo=botao.nextElementSibling;
+-      botao.textContent=aberto?'▴ Fechar ações':'⋯ Ações';
++      botao.textContent=aberto?'▴ Fechar ações':(botao.dataset.escopo === 'relatorios' ? '▸ Detalhes do aluno' : '⋯ Ações');
+       botao.setAttribute('aria-expanded',String(aberto));
+       grupo.hidden=!aberto;
+       grupo.style.display=aberto?'flex':'none';
+diff --git a/painel.html b/painel.html
+index 9b28625..bdad6c8 100644
+--- a/painel.html
++++ b/painel.html
+@@ -874,22 +874,22 @@ html,body{max-width:100%;overflow-x:hidden}
+ }
+ 
+ /* Ações: botões pequenos, em grade, sem determinar uma altura gigante. */
+-.tabela-resultados td:last-child{
++.tabela-resultados td.qi-aluno-detalhes{
+   min-width:220px !important;
+   width:220px !important;
+   padding:8px !important;
+ }
+-.tabela-resultados td:last-child .acoes,
+-.tabela-resultados td:last-child .acoes-relatorio,
+-.tabela-resultados td:last-child > div{
++.tabela-resultados td.qi-aluno-detalhes .acoes,
++.tabela-resultados td.qi-aluno-detalhes .acoes-relatorio,
++.tabela-resultados td.qi-aluno-detalhes > div{
+   display:grid !important;
+   grid-template-columns:repeat(2,minmax(92px,1fr)) !important;
+   gap:6px !important;
+   align-items:center !important;
+ }
+-.tabela-resultados td:last-child button,
+-.tabela-resultados td:last-child .btn-acao,
+-.tabela-resultados td:last-child a{
++.tabela-resultados td.qi-aluno-detalhes button,
++.tabela-resultados td.qi-aluno-detalhes .btn-acao,
++.tabela-resultados td.qi-aluno-detalhes a{
+   width:100% !important;
+   min-width:0 !important;
+   min-height:34px !important;
+@@ -906,6 +906,11 @@ html,body{max-width:100%;overflow-x:hidden}
+   gap:4px !important;
+ }
+ 
++#corpo-tabela .qi-aluno-detalhes > .grupo-botoes-acoes[hidden]{display:none!important}
++#corpo-tabela .qi-aluno-detalhes .grupo-botoes-acoes{grid-template-columns:minmax(0,1fr)!important;margin-top:6px}
++#corpo-tabela .qi-aluno-detalhes .grupo-botoes-acoes .btn-acao{white-space:normal!important;height:auto!important}
++#corpo-tabela .qi-nome-resultado{display:block;margin-bottom:6px}
++
+ /* Reduz a largura mínima criada na fase responsiva anterior. */
+ .tabela-responsiva .tabela-resultados{
+   min-width:980px !important;
+@@ -921,13 +926,13 @@ html,body{max-width:100%;overflow-x:hidden}
+ 
+ /* Em telas bem estreitas, ações continuam compactas. */
+ @media(max-width:720px){
+-  .tabela-resultados td:last-child{
++  .tabela-resultados td.qi-aluno-detalhes{
+     min-width:190px !important;
+     width:190px !important;
+   }
+-  .tabela-resultados td:last-child .acoes,
+-  .tabela-resultados td:last-child .acoes-relatorio,
+-  .tabela-resultados td:last-child > div{
++  .tabela-resultados td.qi-aluno-detalhes .acoes,
++  .tabela-resultados td.qi-aluno-detalhes .acoes-relatorio,
++  .tabela-resultados td.qi-aluno-detalhes > div{
+     grid-template-columns:1fr 1fr !important;
+   }
+ }
+@@ -951,7 +956,7 @@ html,body{max-width:100%;overflow-x:hidden}
+   display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+   white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+ }
+-.tabela-resultados td:last-child{width:205px!important;min-width:205px!important}
++.tabela-resultados td.qi-aluno-detalhes{width:205px!important;min-width:205px!important}
+ .dropdown-menu-win{max-height:min(420px,65vh);overflow-y:auto}
+ #dropdown-menu-resultados button,#dropdown-menu-monitoramento button{
+   min-height:34px!important;height:auto!important;padding:8px 10px!important;font-size:11px!important;
+@@ -2450,11 +2455,11 @@ body.light-mode #aba-banco-dados > p {
+         <thead>
+           <tr>
+             <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-resultados" aria-label="Selecionar todos os resultados visíveis" onclick="selecionarTodosResultados(this.checked)"></th>
+-            <th>Status</th><th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo</th><th>Acertos</th><th>Nota</th><th style="text-align: center;">Ações</th>
++            <th>Status</th><th>Data/Hora</th><th>Escola</th><th>Período</th><th>Aluno</th><th>Turma</th><th>Matéria(s)</th><th>Tempo</th><th>Acertos</th><th>Nota</th>
+           </tr>
+         </thead>
+         <tbody id="corpo-tabela">
+-          <tr><td colspan="12" style="text-align:center;">Carregando resultados...</td></tr>
++          <tr><td colspan="11" style="text-align:center;">Carregando resultados...</td></tr>
+         </tbody>
+       </table>
+       </div>
+@@ -2786,8 +2791,8 @@ window.addEventListener("resize",()=>{
+       .filter(linha => linha.cells.length > coluna);
+ 
+     linhas.sort((a, b) => {
+-      const valorA = a.cells[coluna]?.innerText || "";
+-      const valorB = b.cells[coluna]?.innerText || "";
++      const valorA = (a.cells[coluna]?.querySelector(".qi-nome-resultado") || a.cells[coluna])?.innerText || "";
++      const valorB = (b.cells[coluna]?.querySelector(".qi-nome-resultado") || b.cells[coluna])?.innerText || "";
+ 
+       const chaveData = valor => valor.trim().replace(
+         /^(\d{2})\/(\d{2})\/(\d{4})[,\s]+(\d{2}:\d{2}:\d{2})$/,
