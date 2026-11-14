@@ -1,0 +1,94 @@
+diff --git a/app.js b/app.js
+index 73de699..5658b56 100644
+--- a/app.js
++++ b/app.js
+@@ -5055,6 +5055,37 @@ if (window.location.pathname.includes("painel.html")) {
+     );
+   }
+ 
++  let entradasAtrasadasMonitoramento = null;
++
++  function renderizarEntradasAtrasadas() {
++    const lista = document.getElementById("qi-entradas-atrasadas-lista");
++    if (!lista || !entradasAtrasadasMonitoramento) return;
++    const linhas = entradasAtrasadasMonitoramento.map(bilhete => {
++      const mesmaTentativa = registro =>
++        String(registro.idAvaliacao || "") === String(bilhete.idAvaliacao) &&
++        (registro.idAluno || registro.idDoc) === bilhete.idAluno;
++      const finalizada = resultadosGlobaisCache.some(mesmaTentativa);
++      const iniciada = alunosOnlineCache.some(mesmaTentativa);
++      const aguardando = bilhete.status === "autorizada" && !finalizada && !iniciada;
++      const status = finalizada ? "Avaliação entregue ou encerrada" :
++        iniciada ? "Tentativa iniciada" :
++        bilhete.status === "usada" ? "Código utilizado" :
++        bilhete.status === "expirada" ? "Autorização expirada" :
++        aguardando ? "Aguardando aluno iniciar" : "Autorização indisponível";
++      const codigo = escaparHistorico(bilhete.codigo);
++      return `<li style="margin:.6rem 0;overflow-wrap:anywhere">
++        <strong>${escaparHistorico(bilhete.nome || "Aluno")}</strong> · ${escaparHistorico(bilhete.turma)} · ${escaparHistorico(bilhete.escola)}
++        <br><small>Avaliação: ${escaparHistorico(bilhete.idAvaliacao)} · ${status}</small>
++        ${aguardando && codigo ? `<br><code>${codigo}</code> <button type="button" class="quiz-copiar-inline qi-button" data-codigo="${codigo}">Copiar código</button>` : ""}
++      </li>`;
++    }).join("");
++    const conteudo = linhas || "<li>Nenhuma autorização registrada.</li>";
++    if (lista.dataset.conteudo !== conteudo) {
++      lista.innerHTML = conteudo;
++      lista.dataset.conteudo = conteudo;
++    }
++  }
++
+   function inicializarTabelaTempoReal() {
+     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
+     if (!corpoTabelaTempoReal) return;
+@@ -5062,7 +5093,28 @@ if (window.location.pathname.includes("painel.html")) {
+     // 💰 10C.7: apenas UM listener de monitoramento, somente enquanto
+     // a aba Monitoramento estiver aberta. Ao trocar de aba ele é cancelado.
+     if (unsubscribeMonitoramentoPainel) return;
+-    unsubscribeMonitoramentoPainel = onSnapshot(
++    let area = document.getElementById("qi-entradas-atrasadas");
++    if (!area) {
++      area = document.createElement("details");
++      area.id = "qi-entradas-atrasadas";
++      area.className = "qi-card no-print";
++      area.open = true;
++      area.innerHTML = '<summary><strong>Autorizações de entrada atrasada</strong></summary><ul id="qi-entradas-atrasadas-lista"></ul>';
++      document.querySelector("#aba-monitoramento h2").after(area);
++    }
++    const lista = area.querySelector("ul");
++    lista.innerHTML = "<li>Consultando autorizações…</li>";
++    delete lista.dataset.conteudo;
++    const pararEntradas = onSnapshot(collection(db, "bilhetes_entrada_atrasada"), snapshot => {
++      entradasAtrasadasMonitoramento = snapshot.docs.map(docSnap => docSnap.data())
++        .sort((a, b) => (b.autorizadoEm?.seconds || 0) - (a.autorizadoEm?.seconds || 0));
++      renderizarEntradasAtrasadas();
++    }, () => {
++      entradasAtrasadasMonitoramento = null;
++      lista.innerHTML = "<li>Não foi possível consultar as autorizações.</li>";
++      delete lista.dataset.conteudo;
++    });
++    const pararTentativas = onSnapshot(
+       collection(db, "alunos_online"),
+       (snapshot) => {
+         alunosOnlineCache = [];
+@@ -5083,6 +5135,13 @@ if (window.location.pathname.includes("painel.html")) {
+         }
+       }
+     );
++    unsubscribeMonitoramentoPainel = () => {
++      pararTentativas();
++      pararEntradas();
++      entradasAtrasadasMonitoramento = null;
++      lista.replaceChildren();
++      delete lista.dataset.conteudo;
++    };
+   }
+ 
+   window.aplicarOrdenacaoMonitoramento = function(criterio) {
+@@ -5098,6 +5157,7 @@ if (window.location.pathname.includes("painel.html")) {
+   }
+ 
+   window.renderizarTabelaTempoReal = function() {
++    renderizarEntradasAtrasadas();
+     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
+     const inputBusca = document.getElementById("input-busca-monitoramento");
+     if (!corpoTabelaTempoReal) return;
