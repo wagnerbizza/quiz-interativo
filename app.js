@@ -5089,6 +5089,11 @@ if (window.location.pathname.includes("painel.html")) {
     if (menuMon) menuMon.classList.remove('show');
   };
 
+  function contatoAtrasadoMonitoramento(aluno) {
+    const ultimoContato = aluno.atualizadoEm?.toMillis?.() || 0;
+    return ultimoContato > 0 && Date.now() - ultimoContato > 45000;
+  }
+
   window.renderizarTabelaTempoReal = function() {
     const corpoTabelaTempoReal = document.getElementById("corpo-tabela-tempo-real");
     const inputBusca = document.getElementById("input-busca-monitoramento");
@@ -5100,6 +5105,25 @@ if (window.location.pathname.includes("painel.html")) {
 
     const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
     let dadosFiltrados = alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a));
+
+    const total = dadosFiltrados.length;
+    for (const [id, campo, rotulo] of [
+      ["qi-monitor-turma", "turma", "Todas as turmas"],
+      ["qi-monitor-avaliacao", "idAvaliacao", "Todas as avaliações"]
+    ]) {
+      const filtro = document.getElementById(id);
+      if (!filtro) continue;
+      const anterior = filtro.value;
+      const valores = [...new Set(alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a))
+        .map(a => String(a[campo] || "")).filter(Boolean))].sort();
+      filtro.replaceChildren(new Option(rotulo, ""));
+      if (anterior && !valores.includes(anterior)) valores.push(anterior);
+      valores.forEach(valor => filtro.add(new Option(valor, valor)));
+      filtro.value = anterior;
+      if (anterior) dadosFiltrados = dadosFiltrados.filter(a => String(a[campo] || "") === anterior);
+    }
+    const situacao = document.getElementById("qi-monitor-situacao")?.value;
+    if (situacao) dadosFiltrados = dadosFiltrados.filter(a => contatoAtrasadoMonitoramento(a) === (situacao === "atrasado"));
 
     if (termoBusca) {
       dadosFiltrados = dadosFiltrados.filter(aluno => {
@@ -5122,8 +5146,11 @@ if (window.location.pathname.includes("painel.html")) {
       });
     }
 
+    const contador = document.getElementById("qi-monitor-contagem");
+    const resumo = `${dadosFiltrados.length} de ${total} tentativa(s) exibida(s).`;
+    if (contador && contador.textContent !== resumo) contador.textContent = resumo;
     if (dadosFiltrados.length === 0) {
-      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno online no momento.</td></tr>`;
+      corpoTabelaTempoReal.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhuma tentativa encontrada com os filtros atuais.</td></tr>`;
       return;
     }
 
@@ -5134,8 +5161,7 @@ if (window.location.pathname.includes("painel.html")) {
       let tempoStr = `${min}m ${seg}s`;
       let dataInicioStr = aluno.dataInicio?.toDate ? aluno.dataInicio.toDate().toLocaleString('pt-BR') : "Agora";
       let estaMarcado = selecionadosAntes.has(aluno.idDoc) ? "checked" : "";
-      const ultimoContato = aluno.atualizadoEm?.toMillis?.() || 0;
-      const contatoAtrasado = ultimoContato > 0 && (Date.now() - ultimoContato > 45000);
+      const contatoAtrasado = contatoAtrasadoMonitoramento(aluno);
       const situacaoContato = contatoAtrasado ? "🟠 Sem atualização recente" : "🟢 Em acompanhamento";
        
       let questaoAtualProgresso = aluno.questaoAtual || 1;
@@ -5158,7 +5184,7 @@ if (window.location.pathname.includes("painel.html")) {
             <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${aluno.idAluno || aluno.idDoc}" data-escopo="monitoramento" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
             <div class="grupo-botoes-acoes" hidden style="display:none;">
               <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
-            <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="prepararRecuperacaoAluno(this)" title="Gerar código privado e registrar autorização de retomada">🔑 Recuperação</button>
+            <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="prepararRecuperacaoAluno(this)" title="Gerar código privado e registrar autorização de retomada">🔑 Retomar prova</button>
             <button type="button" class="btn-acao btn-secondary" style="padding: 5px 8px; font-size: 11.5px; margin: 0 3px 3px 0;" data-id="${aluno.idDoc}" onclick="verHistoricoRecuperacaoAluno(this)" title="Consultar autorizações e registros de recuperação deste aluno">📋 Histórico</button>
             <button type="button" class="btn-acao btn-danger" style="padding: 5px 8px; font-size: 11.5px; margin: 0;" data-id="${aluno.idDoc}" data-nome="${aluno.nome || 'Aluno'}" onclick="finalizarAlunoElemento(this)">🏁 Finalizar</button>
             </div>
@@ -5387,7 +5413,7 @@ if (window.location.pathname.includes("painel.html")) {
       alert("Não foi possível identificar a avaliação deste aluno. A autorização não foi criada.");
       return;
     }
-    if (!confirm(`Gerar autorização de recuperação para ${aluno.nome || "Aluno"}?\n\nAvaliação: ${idAvaliacaoAtual}\n\nIsto NÃO reinicia a prova e NÃO libera uma segunda tentativa.`)) return;
+    if (!confirm(`Gerar autorização de recuperação para ${aluno.nome || "Aluno"}?\n\nEscola: ${aluno.escola || "Não informada"}\nTurma: ${aluno.turma || "Não informada"}\nAvaliação: ${idAvaliacaoAtual}\n\nIsto NÃO reinicia a prova e NÃO libera uma segunda tentativa.`)) return;
     botao.disabled = true;
     try {
       const referencia = doc(db, "recuperacoes_tentativas", idAluno);

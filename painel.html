@@ -2374,8 +2374,17 @@ body.light-mode #aba-banco-dados > p {
 
     <!-- ABA 5: MONITORAMENTO -->
     <div id="aba-monitoramento" class="aba-conteudo hidden">
-      <h2>🟢 Alunos Acessando em Tempo Real</h2>
-      <p style="font-size:12px;color:var(--text-muted,#94a3b8);margin:4px 0 12px">🔑 Ações individuais: clique em “⋯ Ações” para consultar códigos de entrada atrasada e recuperação, copiar um código ou gerenciar a tentativa. “Sem atualização recente” significa apenas falta de sincronização, não comprova que o aluno fechou a página.</p>
+      <h2>Acompanhar avaliações</h2>
+      <p>Para quem ainda não iniciou, abra as avaliações ativas e escolha <strong>Entrada atrasada</strong> na prova certa. Para retomar uma tentativa, use <strong>Ações → Retomar prova</strong> na linha do aluno.</p>
+      <button type="button" class="qi-button primary" onclick="document.querySelector('[data-aba=aba-ativacao]').click(); document.getElementById('bloco-prova-ativa-topo')?.scrollIntoView()">Abrir avaliações ativas para autorizar entrada</button>
+      <div class="qi-form-grid">
+        <label>Turma <select id="qi-monitor-turma" onchange="renderizarTabelaTempoReal()"></select></label>
+        <label>Avaliação <select id="qi-monitor-avaliacao" onchange="renderizarTabelaTempoReal()"></select></label>
+        <label>Situação <select id="qi-monitor-situacao" onchange="renderizarTabelaTempoReal()">
+          <option value="">Todas</option><option value="recente">Em acompanhamento</option><option value="atrasado">Sem atualização recente</option>
+        </select></label>
+      </div>
+      <p id="qi-monitor-contagem" role="status"></p>
       <div class="painel-controle-topo no-print">
         <div class="grupo-controles-esquerda">
           <button type="button" class="btn-acao" onclick="selecionarTodosOnline(true)">☑️ Marcar</button>
