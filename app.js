@@ -4449,7 +4449,7 @@ if (window.location.pathname.includes("painel.html")) {
     } else {
       corpoTabelaResultados.innerHTML = `
         <tr>
-          <td colspan="12" style="text-align:center;padding:24px;color:#fbbf24;">
+          <td colspan="11" style="text-align:center;padding:24px;color:#fbbf24;">
             💾 Ainda não há relatórios salvos neste navegador.<br>
             <small style="color:#94a3b8;">
               Seus dados do Firebase não foram apagados. Quando a cota diária voltar,
@@ -4554,7 +4554,7 @@ if (window.location.pathname.includes("painel.html")) {
     });
 
     if (dadosFiltrados.length === 0) {
-      corpoTabelaResultados.innerHTML = `<tr><td colspan="12" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno encontrado.</td></tr>`;
+      corpoTabelaResultados.innerHTML = `<tr><td colspan="11" style="text-align:center; color: #94a3b8; padding: 20px;">Nenhum aluno encontrado.</td></tr>`;
       return;
     }
 
@@ -4584,23 +4584,23 @@ if (window.location.pathname.includes("painel.html")) {
           <td>${dataFormatada}</td>
           <td><strong>${res.escola || 'N/D'}</strong></td>
           <td>${res.periodo || 'N/D'}</td>
-          <td>${res.nome || 'Aluno'}</td>
+          <td class="qi-aluno-detalhes">
+            <span class="qi-nome-resultado">${escaparTextoQuiz(res.nome || "Aluno")}</span>
+            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${escaparTextoQuiz(idAlunoAlvo)}" data-escopo="relatorios" data-resultado-id="${escaparTextoQuiz(res.idDoc)}" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Detalhes do aluno</button>
+            <div class="grupo-botoes-acoes" hidden style="display:none;">
+              <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
+              <button type="button" class="btn-acao" style="background:#0284c7;" onclick="gerarBoletimPorId('${res.idDoc}')">📜 <span>Boletim</span></button>
+              <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova e respostas</span></button>
+              <button type="button" class="btn-acao" style="background:#10b981;" onclick="gerarCertificadoPorId('${res.idDoc}')">🎓 <span>Certificado</span></button>
+              <button type="button" class="btn-acao btn-secondary" data-id-aluno="${idAlunoAlvo}" data-nome-aluno="${String(res.nome||'Aluno').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onclick="consultarAutorizacoesAluno(this.dataset.idAluno,this.dataset.nomeAluno)">🔐 Autorizações</button>
+              <button type="button" class="btn-acao" style="background: #eab308;" data-id-aluno="${escaparTextoQuiz(idAlunoAlvo)}" data-nome-aluno="${escaparTextoQuiz(res.nome || 'Aluno')}" onclick="autorizarAlunoRefazer(this.dataset.idAluno, this.dataset.nomeAluno)">🔄 Refazer</button>
+            </div>
+          </td>
           <td>${res.turma || 'N/D'}</td>
           <td>${res.materia || 'Geral'}</td>
           <td><span style="color: #facc15;">⏱ ${tempoGastoStr}</span></td>
           <td><span style="color: #4ade80;">✅ ${acertos}</span> / <span style="color: #ef4444;">❌ ${erros}</span></td>
           <td><strong style="color: #60a5fa; font-size: 14px;">${notaCalculada} / 10</strong></td>
-          <td style="text-align: center;">
-            <button type="button" class="btn-acao btn-secondary btn-expandir-acoes" data-aluno-id="${idAlunoAlvo}" data-escopo="relatorios" aria-expanded="false" onclick="alternarAcoesAluno(this)">▸ Expandir</button>
-            <div class="grupo-botoes-acoes" hidden style="display:none;">
-              <div class="quiz-codigos-aluno" aria-live="polite">🔐 Códigos: abra para consultar</div>
-              <button type="button" class="btn-acao" style="background:#0284c7;" onclick="gerarBoletimPorId('${res.idDoc}')">📜 <span>Boletim</span></button>
-              <button type="button" class="btn-acao" style="background:#0d9488;" onclick="gerarProvaPorId('${res.idDoc}')">📄 <span>Prova</span></button>
-              <button type="button" class="btn-acao" style="background:#10b981;" onclick="gerarCertificadoPorId('${res.idDoc}')">🎓 <span>Certificado</span></button>
-              <button type="button" class="btn-acao btn-secondary" data-id-aluno="${idAlunoAlvo}" data-nome-aluno="${String(res.nome||'Aluno').replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onclick="consultarAutorizacoesAluno(this.dataset.idAluno,this.dataset.nomeAluno)">🔐 Autorizações</button>
-              <button type="button" class="btn-acao" style="background: #eab308;" onclick="autorizarAlunoRefazer('${idAlunoAlvo}', '${res.nome || 'Aluno'}')">🔄 Refazer</button>
-            </div>
-          </td>
         </tr>
       `;
     });
@@ -5173,7 +5173,7 @@ if (window.location.pathname.includes("painel.html")) {
   // Menu individual compacto: preserva estado em atualizações em tempo real.
   // Consultas de códigos são somente leitura; nunca interferem na sincronização Firebase.
   const menusAbertosAluno = new Set();
-  function chaveMenuAluno(botao) { return `${botao.dataset.escopo}:${botao.dataset.alunoId}`; }
+  function chaveMenuAluno(botao) { return `${botao.dataset.escopo}:${botao.dataset.resultadoId || botao.dataset.alunoId}`; }
   function renderizarCodigosInline(itens) {
     const vistos=new Set();
     const autorizacoes=itens.filter(a=>a.codigo && /bilhetes_|registros_(entrada_atrasada|recuperacao)/.test(a.origem)).filter(a=>{
@@ -5211,7 +5211,7 @@ if (window.location.pathname.includes("painel.html")) {
     const abrir=!menusAbertosAluno.has(chave);
     if(abrir) menusAbertosAluno.add(chave); else menusAbertosAluno.delete(chave);
     botao.setAttribute('aria-expanded',String(abrir));
-    botao.textContent=abrir?'▴ Fechar ações':'⋯ Ações';
+    botao.textContent=abrir?'▴ Fechar ações':(botao.dataset.escopo === 'relatorios' ? '▸ Detalhes do aluno' : '⋯ Ações');
     grupo.hidden=!abrir;
     grupo.style.display=abrir?'flex':'none';
     if(abrir) carregarCodigosNoMenu(botao);
@@ -5221,7 +5221,7 @@ if (window.location.pathname.includes("painel.html")) {
     tabela?.querySelectorAll('.btn-expandir-acoes').forEach(botao=>{
       const aberto=menusAbertosAluno.has(chaveMenuAluno(botao));
       const grupo=botao.nextElementSibling;
-      botao.textContent=aberto?'▴ Fechar ações':'⋯ Ações';
+      botao.textContent=aberto?'▴ Fechar ações':(botao.dataset.escopo === 'relatorios' ? '▸ Detalhes do aluno' : '⋯ Ações');
       botao.setAttribute('aria-expanded',String(aberto));
       grupo.hidden=!aberto;
       grupo.style.display=aberto?'flex':'none';
