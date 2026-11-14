@@ -1,0 +1,50 @@
+diff --git a/app.js b/app.js
+index 81f4100..48c8079 100644
+--- a/app.js
++++ b/app.js
+@@ -5106,7 +5106,8 @@ if (window.location.pathname.includes("painel.html")) {
+     const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
+     let dadosFiltrados = alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a));
+ 
+-    const total = dadosFiltrados.length;
++    const tentativas = dadosFiltrados;
++    const total = tentativas.length;
+     for (const [id, campo, rotulo] of [
+       ["qi-monitor-turma", "turma", "Todas as turmas"],
+       ["qi-monitor-avaliacao", "idAvaliacao", "Todas as avaliações"]
+@@ -5114,12 +5115,15 @@ if (window.location.pathname.includes("painel.html")) {
+       const filtro = document.getElementById(id);
+       if (!filtro) continue;
+       const anterior = filtro.value;
+-      const valores = [...new Set(alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a))
++      const valores = [...new Set(tentativas
+         .map(a => String(a[campo] || "")).filter(Boolean))].sort();
+-      filtro.replaceChildren(new Option(rotulo, ""));
+       if (anterior && !valores.includes(anterior)) valores.push(anterior);
+-      valores.forEach(valor => filtro.add(new Option(valor, valor)));
+-      filtro.value = anterior;
++      const atuais = Array.from(filtro.options, opcao => opcao.value);
++      if (atuais.length !== valores.length + 1 || atuais[0] !== "" ||
++          valores.some((valor, indice) => atuais[indice + 1] !== valor)) {
++        filtro.replaceChildren(new Option(rotulo, ""), ...valores.map(valor => new Option(valor, valor)));
++        filtro.value = anterior;
++      }
+       if (anterior) dadosFiltrados = dadosFiltrados.filter(a => String(a[campo] || "") === anterior);
+     }
+     const situacao = document.getElementById("qi-monitor-situacao")?.value;
+diff --git a/painel.html b/painel.html
+index d860021..fceaad5 100644
+--- a/painel.html
++++ b/painel.html
+@@ -2379,7 +2379,10 @@ body.light-mode #aba-banco-dados > p {
+           <option value="">Todas</option><option value="recente">Em acompanhamento</option><option value="atrasado">Sem atualização recente</option>
+         </select></label>
+       </div>
+-      <p id="qi-monitor-contagem" role="status"></p>
++      <div class="qi-actions">
++        <button type="button" class="qi-button" onclick="for (const id of ['qi-monitor-turma','qi-monitor-avaliacao','qi-monitor-situacao','input-busca-monitoramento']) document.getElementById(id).value = ''; renderizarTabelaTempoReal(); document.getElementById('input-busca-monitoramento').focus()">Limpar busca e filtros</button>
++        <p id="qi-monitor-contagem" role="status"></p>
++      </div>
+       <div class="painel-controle-topo no-print">
+         <div class="grupo-controles-esquerda">
+           <button type="button" class="btn-acao" onclick="selecionarTodosOnline(true)">☑️ Marcar</button>
