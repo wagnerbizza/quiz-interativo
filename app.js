@@ -5106,7 +5106,8 @@ if (window.location.pathname.includes("painel.html")) {
     const termoBusca = inputBusca ? normalizarTexto(inputBusca.value) : "";
     let dadosFiltrados = alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a));
 
-    const total = dadosFiltrados.length;
+    const tentativas = dadosFiltrados;
+    const total = tentativas.length;
     for (const [id, campo, rotulo] of [
       ["qi-monitor-turma", "turma", "Todas as turmas"],
       ["qi-monitor-avaliacao", "idAvaliacao", "Todas as avaliações"]
@@ -5114,12 +5115,15 @@ if (window.location.pathname.includes("painel.html")) {
       const filtro = document.getElementById(id);
       if (!filtro) continue;
       const anterior = filtro.value;
-      const valores = [...new Set(alunosOnlineCache.filter(a => !alunoJaEncerradoNoMonitoramento(a))
+      const valores = [...new Set(tentativas
         .map(a => String(a[campo] || "")).filter(Boolean))].sort();
-      filtro.replaceChildren(new Option(rotulo, ""));
       if (anterior && !valores.includes(anterior)) valores.push(anterior);
-      valores.forEach(valor => filtro.add(new Option(valor, valor)));
-      filtro.value = anterior;
+      const atuais = Array.from(filtro.options, opcao => opcao.value);
+      if (atuais.length !== valores.length + 1 || atuais[0] !== "" ||
+          valores.some((valor, indice) => atuais[indice + 1] !== valor)) {
+        filtro.replaceChildren(new Option(rotulo, ""), ...valores.map(valor => new Option(valor, valor)));
+        filtro.value = anterior;
+      }
       if (anterior) dadosFiltrados = dadosFiltrados.filter(a => String(a[campo] || "") === anterior);
     }
     const situacao = document.getElementById("qi-monitor-situacao")?.value;

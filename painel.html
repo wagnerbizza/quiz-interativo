@@ -2384,7 +2384,10 @@ body.light-mode #aba-banco-dados > p {
           <option value="">Todas</option><option value="recente">Em acompanhamento</option><option value="atrasado">Sem atualização recente</option>
         </select></label>
       </div>
-      <p id="qi-monitor-contagem" role="status"></p>
+      <div class="qi-actions">
+        <button type="button" class="qi-button" onclick="for (const id of ['qi-monitor-turma','qi-monitor-avaliacao','qi-monitor-situacao','input-busca-monitoramento']) document.getElementById(id).value = ''; renderizarTabelaTempoReal(); document.getElementById('input-busca-monitoramento').focus()">Limpar busca e filtros</button>
+        <p id="qi-monitor-contagem" role="status"></p>
+      </div>
       <div class="painel-controle-topo no-print">
         <div class="grupo-controles-esquerda">
           <button type="button" class="btn-acao" onclick="selecionarTodosOnline(true)">☑️ Marcar</button>
