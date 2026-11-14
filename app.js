@@ -3177,7 +3177,10 @@ if (window.location.pathname.includes("painel.html")) {
                 </div>
                 <div class="metrica-prova">
                   <span class="metrica-icone">🔐</span>
-                  <div><small>ACESSO</small><strong>${dados.token ? "Com token" : "Livre"}</strong></div>
+                  <div>
+                    <small>ACESSO</small>
+                    ${dados.token ? `<details><summary>Mostrar token da avaliação</summary><strong style="overflow-wrap:anywhere;user-select:all">${escaparTextoQuiz(dados.token)}</strong></details>` : "<strong>Livre</strong>"}
+                  </div>
                 </div>
               </div>
               <div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.45);color:#fde68a;font-size:12px;">
