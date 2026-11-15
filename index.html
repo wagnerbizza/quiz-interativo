@@ -1669,7 +1669,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           await setDoc(doc(db, "registros_retomadas_alunos", `${codigoRetomadaAtivo}_${usuarioTentativa.uid}`), {
             uid: usuarioTentativa.uid, idAluno: alunoAtual.id, idAvaliacao: avaliacaoEmUso,
             escola: alunoAtual.escola, evento:"retomada", data:serverTimestamp(),
-            codigo: codigoRetomadaAtivo
+            codigo: codigoRetomadaAtivo,
+recuperacaoCodigo: codigoRetomadaAtivo
           });
         }
         if (!retomandoTentativa) await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
