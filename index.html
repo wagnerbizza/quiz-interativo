@@ -1670,7 +1670,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             uid: usuarioTentativa.uid, idAluno: alunoAtual.id, idAvaliacao: avaliacaoEmUso,
             escola: alunoAtual.escola, evento:"retomada", data:serverTimestamp(),
             codigo: codigoRetomadaAtivo,
-recuperacaoCodigo: codigoRetomadaAtivo
+            recuperacaoCodigo: codigoRetomadaAtivo
           });
         }
         if (!retomandoTentativa) await setDoc(doc(db, "permissoes_alunos", alunoAtual.id), {
