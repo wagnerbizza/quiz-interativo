@@ -26,20 +26,20 @@
     "3D"
   ],
   "token": "4321",
-  "seedReordenacao": "1794701697404",
-  "publicadoEm": "2026-11-15T00:14:57.448Z",
+  "seedReordenacao": "1794702638307",
+  "publicadoEm": "2026-11-15T00:30:38.307Z",
   "questoesPublicas": [
     {
-      "idQuestao": "nBP3WzrWoLdcTQ4WVfdQ",
-      "pergunta": "[Técnico 5] Qual a função do protocolo HTTPS?",
+      "idQuestao": "mvfBeEeDIwpDGys2sIbq",
+      "pergunta": "[Técnico 13 - 1790258350341]O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
       "opcoes": [
-        "Garantir navegação segura e criptografada entre navegador e servidor web",
-        "Bloquear vírus em mídias removíveis",
-        "Acelerar downloads de arquivos pesados",
-        "Gerenciar endereços IP dinâmicos"
+        "Dados sem rótulos descobertos automaticamente",
+        "Tentativa e erro autônoma sem histórico",
+        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
+        "Regras fixas de lógica booleana"
       ],
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem"
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial"
     },
     {
       "idQuestao": "uiDSoXEYnx7C3nxkKOVm",
@@ -54,6 +54,18 @@
       "categoria": "Inteligencia Artificial"
     },
     {
+      "idQuestao": "nBP3WzrWoLdcTQ4WVfdQ",
+      "pergunta": "[Técnico 5] Qual a função do protocolo HTTPS?",
+      "opcoes": [
+        "Garantir navegação segura e criptografada entre navegador e servidor web",
+        "Bloquear vírus em mídias removíveis",
+        "Acelerar downloads de arquivos pesados",
+        "Gerenciar endereços IP dinâmicos"
+      ],
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem"
+    },
+    {
       "idQuestao": "DYJBLcYlvPGVXbVDYXCC",
       "pergunta": "[Técnico 12] O que caracteriza o modelo IaaS na computação em nuvem?",
       "opcoes": [
@@ -64,18 +76,6 @@
       ],
       "materia": "Redes de computadores e seguranca da informação na nuvem",
       "categoria": "Redes de computadores e seguranca da informação na nuvem"
-    },
-    {
-      "idQuestao": "mvfBeEeDIwpDGys2sIbq",
-      "pergunta": "[Técnico 13 - 1790258350341]O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
-      "opcoes": [
-        "Dados sem rótulos descobertos automaticamente",
-        "Tentativa e erro autônoma sem histórico",
-        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
-        "Regras fixas de lógica booleana"
-      ],
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial"
     },
     {
       "idQuestao": "rpaeVHoljJpJHpDZ8YYt",
