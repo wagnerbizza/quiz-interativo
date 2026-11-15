@@ -1,0 +1,90 @@
+--- a/app.js
++++ b/app.js
+@@ -1014,6 +1014,19 @@
+   }
+   return {idQuestao:id,pergunta,opcoes,materia:String(q.materia || q.categoria || ""),categoria:String(q.categoria || q.materia || "")};
+ }
++function selecionarQuestoesUnicas(questoes) {
++  const enunciados = new Set();
++  const identificadores = new Set();
++  return questoes.filter(questao => {
++    const enunciado = String(questao.pergunta || "").normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
++    const id = questao.idQuestao || questao.idDoc || questao.id;
++    if (!enunciado || enunciados.has(enunciado) || (id && identificadores.has(id))) return false;
++    enunciados.add(enunciado);
++    if (id) identificadores.add(id);
++    return true;
++  });
++}
++
+ function reordenarPacotePublicado(pacote, escolaNome, idAvaliacao, novaSeed) {
+   if (!pacote?.ativa || normalizarTexto(pacote.escolaAtiva)!==normalizarTexto(escolaNome) ||
+       !idAvaliacao || String(pacote.idAvaliacao)!==String(idAvaliacao)) {
+@@ -1023,7 +1036,9 @@
+     throw new Error("Pacote incompleto. A quantidade de questões não corresponde à seleção publicada.");
+   }
+   const questoes=pacote.questoesPublicas.map(questaoPublicaValidada);
+-  if (new Set(questoes.map(q=>q.idQuestao)).size!==questoes.length) throw new Error("Há identificadores de questões repetidos no pacote.");
++  if (selecionarQuestoesUnicas(questoes).length !== questoes.length) {
++    throw new Error("A avaliação ativa contém questões repetidas. Para manter as tentativas existentes, prepare uma nova avaliação com questões únicas.");
++  }
+   // Mantém alternativas, tentativa, token e prazos para preservar a recuperação.
+   // As alternativas já foram embaralhadas na ativação; aqui só muda a ordem das questões.
+   const ordenadas=embaralharListaPublicada(questoes);
+@@ -1040,22 +1055,19 @@
+       throw new Error("As questões ainda não estão carregadas neste computador. Abra o Banco de Dados com conexão antes de preparar a prova offline.");
+     }
+   }
+-  const candidatas = fonte.filter(q => {
++  const candidatas = selecionarQuestoesUnicas(fonte.filter(q => {
+     // Modelos criados pela antiga rotina não são questões pedagógicas revisadas.
+     if (/^Questão oficial de nível avançado nº \d+ abordando conceitos teóricos e práticos aplicados em /iu.test(String(q.pergunta || ""))) return false;
+     const cat = q.materia || q.categoria || "";
+     return !materias.length || materias.some(m => normalizarTexto(cat).includes(normalizarTexto(m)));
+-  }).map(questaoPublicaValidada);
+-  if (new Set(candidatas.map(q=>q.idQuestao)).size!==candidatas.length) {
+-    throw new Error("Há identificadores repetidos no banco selecionado. Revise antes de publicar.");
+-  }
++  }).map(questaoPublicaValidada));
+   for (let i=candidatas.length-1;i>0;i--) {
+     const n=crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;
+     const j=Math.floor(n*(i+1)); [candidatas[i],candidatas[j]]=[candidatas[j],candidatas[i]];
+   }
+   const qtd=Number(dadosPublicacao.quantidadeQuestoes);
+   if (!Number.isInteger(qtd) || qtd<1) throw new Error("Informe uma quantidade inteira de questões, maior que zero.");
+-  if (candidatas.length<qtd) throw new Error(`Foram solicitadas ${qtd} questões, mas há somente ${candidatas.length} disponíveis para as matérias selecionadas após excluir os modelos genéricos automáticos. Reduza a quantidade ou complete o banco. A publicação foi interrompida.`);
++  if (candidatas.length<qtd) throw new Error(`Foram solicitadas ${qtd} questões, mas há somente ${candidatas.length} questões únicas disponíveis para as matérias selecionadas. Reduza a quantidade ou complete o banco. A publicação foi interrompida.`);
+   const selecionadas=candidatas.slice(0,qtd).map(q=>({...q,opcoes:embaralharListaPublicada(q.opcoes)}));
+   const pacote={
+     versaoPacote:1, ativa:true, idAvaliacao:dadosPublicacao.idAvaliacao || "",
+@@ -1157,25 +1169,11 @@
+     }
+ 
+     let qtdDesejada = configProva.quantidadeQuestoes || 10;
+-    let listaQuestoesFinal = [];
+-
+-    if (questoesFiltradas.length >= qtdDesejada) {
+-      listaQuestoesFinal = questoesFiltradas.slice(0, qtdDesejada);
+-    } else if (questoesFiltradas.length > 0) {
+-      while (listaQuestoesFinal.length < qtdDesejada && questoesFiltradas.length > 0) {
+-        listaQuestoesFinal.push(...questoesFiltradas);
+-      }
+-      listaQuestoesFinal = listaQuestoesFinal.slice(0, qtdDesejada);
+-    } else {
+-      for (let i = 1; i <= qtdDesejada; i++) {
+-        listaQuestoesFinal.push({
+-          pergunta: `Questão dinâmica de reforço ${i}: Qual parâmetro se aplica a esta avaliação?`,
+-          opcoes: ["Parâmetro padrão correto", "Opção incorreta A", "Opção incorreta B", "Opção incorreta C"],
+-          correta: "A",
+-          categoria: "Geral"
+-        });
+-      }
+-    }
++    const questoesUnicas = selecionarQuestoesUnicas(questoesFiltradas);
++    if (questoesUnicas.length < qtdDesejada) {
++      throw new Error(`Foram solicitadas ${qtdDesejada} questões, mas há apenas ${questoesUnicas.length} questões únicas disponíveis.`);
++    }
++    const listaQuestoesFinal = questoesUnicas.slice(0, qtdDesejada);
+ 
+     window.listaQuestoesQuizAtivo = listaQuestoesFinal;
+     window.indiceQuizAtual = 0;
