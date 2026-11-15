@@ -1,0 +1,29 @@
+--- a/index.html
++++ b/index.html
+@@ -1855,7 +1855,7 @@
+             ...(codigoRetomadaAtivo ? {recuperacaoCodigo:codigoRetomadaAtivo} : {}),
+             respostasTexto: listaQuestoes.map((q,i) => {
+               const letra=String(respostasUsuario[i] || "").toUpperCase();
+-              const pos="ABCDE".indexOf(letra); return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
++              const pos=/^[A-E]$/.test(letra) ? "ABCDE".indexOf(letra) : -1; return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
+             }),
+             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
+             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
+@@ -1883,7 +1883,7 @@
+             respostas: respostasUsuario,
+             respostasTexto: listaQuestoes.map((q,i) => {
+               const letra=String(respostasUsuario[i] || "").toUpperCase();
+-              const pos="ABCDE".indexOf(letra);
++              const pos=/^[A-E]$/.test(letra) ? "ABCDE".indexOf(letra) : -1;
+               return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
+             }),
+             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
+@@ -2137,7 +2137,7 @@
+           respostas: respostasUsuario,
+           respostasTexto: listaQuestoes.map((q,i) => {
+             const letra=String(respostasUsuario[i] || "").toUpperCase();
+-            const pos="ABCDE".indexOf(letra);
++            const pos=/^[A-E]$/.test(letra) ? "ABCDE".indexOf(letra) : -1;
+             return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
+           }),
+           questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
