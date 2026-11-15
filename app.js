@@ -5097,9 +5097,21 @@ if (window.location.pathname.includes("painel.html")) {
       area = document.createElement("details");
       area.id = "qi-entradas-atrasadas";
       area.className = "qi-card no-print";
-      area.open = true;
       area.innerHTML = '<summary><strong>Autorizações de entrada atrasada</strong></summary><ul id="qi-entradas-atrasadas-lista"></ul>';
-      document.querySelector("#aba-monitoramento h2").after(area);
+      const tabela = corpoTabelaTempoReal.closest(".tabela-responsiva") || corpoTabelaTempoReal.closest("table");
+      tabela.after(area);
+
+      const atalho = document.createElement("button");
+      atalho.type = "button";
+      atalho.className = "qi-button btn-secondary no-print";
+      atalho.textContent = "Ver autorizações de entrada atrasada";
+      atalho.setAttribute("aria-controls", area.id);
+      atalho.addEventListener("click", () => {
+        area.open = true;
+        area.querySelector("summary").focus();
+        area.scrollIntoView({block:"start"});
+      });
+      document.querySelector("#aba-monitoramento h2").after(atalho);
     }
     const lista = area.querySelector("ul");
     lista.innerHTML = "<li>Consultando autorizações…</li>";
