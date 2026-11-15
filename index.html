@@ -1856,7 +1856,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             ...(codigoRetomadaAtivo ? {recuperacaoCodigo:codigoRetomadaAtivo} : {}),
             respostasTexto: listaQuestoes.map((q,i) => {
               const letra=String(respostasUsuario[i] || "").toUpperCase();
-              const pos="ABCDE".indexOf(letra); return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
+              const pos=/^[A-E]$/.test(letra) ? "ABCDE".indexOf(letra) : -1; return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
             }),
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
@@ -1884,7 +1884,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             respostas: respostasUsuario,
             respostasTexto: listaQuestoes.map((q,i) => {
               const letra=String(respostasUsuario[i] || "").toUpperCase();
-              const pos="ABCDE".indexOf(letra);
+              const pos=/^[A-E]$/.test(letra) ? "ABCDE".indexOf(letra) : -1;
               return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
             }),
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
@@ -2138,7 +2138,7 @@ if (unsubscribePermissaoAluno) {
           respostas: respostasUsuario,
           respostasTexto: listaQuestoes.map((q,i) => {
             const letra=String(respostasUsuario[i] || "").toUpperCase();
-            const pos="ABCDE".indexOf(letra);
+            const pos=/^[A-E]$/.test(letra) ? "ABCDE".indexOf(letra) : -1;
             return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
           }),
           questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
