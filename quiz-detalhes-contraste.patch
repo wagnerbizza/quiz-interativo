@@ -1,0 +1,23 @@
+--- a/app.js
++++ b/app.js
+@@ -5301,8 +5301,9 @@
+     acoes.hidden = false;
+     acoes.style.cssText = "display:flex;flex-direction:column;gap:.75rem";
+     const painel = document.createElement("dialog");
++    painel.id = "qi-detalhes-resultado";
+     painel.setAttribute("aria-labelledby", "qi-detalhes-resultado-titulo");
+-    painel.style.cssText = "box-sizing:border-box;position:fixed;inset:0 0 0 auto;margin:0;width:min(100vw,28rem);max-width:100vw;height:100dvh;max-height:100dvh;padding:1.5rem;border:1px solid currentColor;border-radius:0;background:var(--surface,Canvas);color:var(--text,CanvasText);overflow:auto";
++    painel.style.cssText = "box-sizing:border-box;position:fixed;inset:0 0 0 auto;margin:0;width:min(100vw,28rem);max-width:100vw;height:100dvh;max-height:100dvh;padding:1.5rem;border:1px solid currentColor;border-radius:0;background:var(--panel,#151c23);color:var(--text,#eef3f6);overflow:auto";
+     painel.innerHTML = '<button type="button" class="btn-acao btn-secondary">Fechar</button><h2 id="qi-detalhes-resultado-titulo">Detalhes do aluno</h2><p></p>';
+     const fechar = painel.querySelector("button");
+     painel.querySelector("p").textContent = botao.previousElementSibling.textContent;
+@@ -5402,7 +5403,8 @@
+       }).join('')||'<p>Nenhuma autorização registrada para este aluno.</p>';
+       fundo.innerHTML=`<section role="dialog" aria-modal="true" style="background:#111c30;color:#e2e8f0;border:1px solid #405576;border-radius:14px;padding:20px;max-width:690px;width:100%;max-height:85vh;overflow:auto"><h2>Histórico de autorizações — ${escaparHistorico(nome)}</h2><p style="font-size:12px">Histórico privado do professor. Situações são exibidas conforme registradas no banco, sem presumir utilização ou expiração.</p>${linhas}<button type="button" class="btn-acao btn-secondary" data-hist-fechar="1">Fechar</button><p data-hist-status></p></section>`;
+       fundo.addEventListener('click',async ev=>{if(ev.target===fundo||ev.target.dataset.histFechar){fundo.remove();return;}if(ev.target.dataset.histCodigo){try{await navigator.clipboard.writeText(ev.target.dataset.histCodigo);fundo.querySelector('[data-hist-status]').textContent='Código copiado.';}catch{fundo.querySelector('[data-hist-status]').textContent='Selecione e copie o código manualmente.';}}});
+-      document.body.appendChild(fundo);
++      const painelDetalhes = document.getElementById("qi-detalhes-resultado");
++      (painelDetalhes?.open ? painelDetalhes : document.body).appendChild(fundo);
+     } catch(e){alert('Não foi possível consultar o histórico: '+(e.message||e));}
+   };
+ 
