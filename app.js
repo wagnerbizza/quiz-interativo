@@ -5957,7 +5957,7 @@ window.alterarModoVisualizacaoDB = function(modo) {
 // ==========================================
 window.ordemAtualBancoCatalogo = "nenhum";
 
-const QUESTOES_POR_PAGINA = 36;
+const QUESTOES_POR_PAGINA = 18;
 let paginaCatalogo = 0;
 let criterioCatalogo = "";
 
@@ -5966,6 +5966,10 @@ window.abrirAcervoCompleto = function() {
   const materia = document.getElementById("select-filtro-materia-db");
   if (busca) busca.value = "";
   if (materia) materia.value = "TODAS";
+  const alternativas = document.getElementById("select-filtro-alternativas-db");
+  if (alternativas) alternativas.selectedIndex = 0;
+  const buscaDinamica = document.getElementById("input-busca-banco-dados-dinamico");
+  if (buscaDinamica) buscaDinamica.value = "";
   paginaCatalogo = 0;
   window.renderizarCatalogoBancoDados();
   busca?.focus({ preventScroll: true });
@@ -5980,7 +5984,7 @@ window.renderizarCatalogoBancoDados = function() {
   // Atualizar o contador total de questões na tela imediatamente
   const elContador = document.getElementById("db-total-questoes");
   if (elContador) {
-    elContador.textContent = questoesBancoCache.length;
+    elContador.textContent = bancoQuestoesCarregadoNestaSessao ? questoesBancoCache.length.toLocaleString("pt-BR") : "—";
   } else {
     document.querySelectorAll('div, section').forEach(card => {
       if (card.textContent && card.textContent.includes("TOTAL DE QUESTÕES")) {
@@ -6053,7 +6057,7 @@ window.renderizarCatalogoBancoDados = function() {
     }
   }
 
-  const criterio = JSON.stringify([termosBusca, materiaSel, window.ordemAtualBancoCatalogo]);
+  const criterio = JSON.stringify([termosBusca, materiaSel, filtroAlternativas, window.ordemAtualBancoCatalogo]);
   if (criterio !== criterioCatalogo) {
     paginaCatalogo = 0;
     criterioCatalogo = criterio;
@@ -6073,6 +6077,10 @@ window.renderizarCatalogoBancoDados = function() {
     gridCatalogo.before(controles);
   }
   const [anterior, resumo, proxima] = controles.children;
+  anterior.hidden = true;
+  proxima.hidden = true;
+  anterior.style.display = "none";
+  proxima.style.display = "none";
   anterior.disabled = paginaCatalogo === 0;
   proxima.disabled = paginaCatalogo + 1 >= totalPaginas;
   anterior.onclick = () => {
@@ -6086,6 +6094,49 @@ window.renderizarCatalogoBancoDados = function() {
   resumo.textContent = pagina.length
     ? `Exibindo ${inicio + 1}–${inicio + pagina.length} · ${filtradas.length.toLocaleString("pt-BR")} encontradas · Página ${paginaCatalogo + 1} de ${totalPaginas}`
     : "Nenhuma questão encontrada";
+
+  let rodape = document.getElementById("paginacao-catalogo-rodape");
+  if (!rodape) {
+    rodape = document.createElement("nav");
+    rodape.id = "paginacao-catalogo-rodape";
+    rodape.setAttribute("aria-label", "Navegação do catálogo");
+    rodape.style.cssText = "display:flex;flex-wrap:wrap;justify-content:center;align-items:end;gap:12px;margin:16px 0";
+    rodape.innerHTML = '<button type="button" class="qi-button" data-anterior>Anterior</button><label>Página <input type="number" min="1" step="1" inputmode="numeric" style="width:5rem"></label><button type="button" class="qi-button" data-ir>Ir</button><button type="button" class="qi-button primary" data-proxima>Próxima →</button><button type="button" class="qi-button" data-topo aria-label="Voltar ao topo do catálogo" title="Voltar ao topo do catálogo">↑</button>';
+    gridCatalogo.after(rodape);
+  }
+  const campoPagina = rodape.querySelector("input");
+  campoPagina.max = String(totalPaginas);
+  campoPagina.value = String(paginaCatalogo + 1);
+  const voltarAoTopo = () => {
+    const lista = gridCatalogo.closest(".tabela-responsiva") || gridCatalogo;
+    lista.scrollTop = 0;
+    controles.scrollIntoView({block:"start"});
+  };
+  const irParaPagina = numero => {
+    if (!Number.isInteger(numero) || numero < 1 || numero > totalPaginas) {
+      campoPagina.reportValidity();
+      return;
+    }
+    paginaCatalogo = numero - 1;
+    window.renderizarCatalogoBancoDados();
+    voltarAoTopo();
+  };
+  campoPagina.required = true;
+  rodape.querySelector("[data-ir]").onclick = () => irParaPagina(campoPagina.valueAsNumber);
+  campoPagina.onkeydown = evento => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      irParaPagina(campoPagina.valueAsNumber);
+    }
+  };
+  const anteriorRodape = rodape.querySelector("[data-anterior]");
+  anteriorRodape.disabled = anterior.disabled;
+  anteriorRodape.onclick = () => irParaPagina(paginaCatalogo);
+  const proximaRodape = rodape.querySelector("[data-proxima]");
+  proximaRodape.disabled = proxima.disabled;
+  proximaRodape.onclick = () => irParaPagina(paginaCatalogo + 2);
+  rodape.querySelector("[data-topo]").onclick = voltarAoTopo;
+  resumo.textContent += ` · ${questoesBancoCache.length.toLocaleString("pt-BR")} no acervo`;
 
   if (!pagina.length) {
     gridCatalogo.textContent = "Nenhuma questão encontrada com os filtros atuais.";
