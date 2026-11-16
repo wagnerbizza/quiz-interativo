@@ -2152,6 +2152,7 @@ if (unsubscribePermissaoAluno) {
           }),
           questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
           questoesPerguntas: listaQuestoes.map(q => q.pergunta || ""),
+          alternativasExibidas: listaQuestoes.map(q => ({opcoes: q.opcoes.map(String)})),
           tempoGastoSegundos: segundosPassados,
           tempoGastoFormatado,
           // serverTimestamp não pode ser serializado no localStorage; o painel também usa timestamp.
