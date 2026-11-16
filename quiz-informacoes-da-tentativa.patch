@@ -1,0 +1,88 @@
+--- a/index.html
++++ b/index.html
+@@ -695,4 +695,8 @@
+       </div>
+ 
++      <section id="resumo-tentativa-aluno" aria-label="Informações da avaliação" style="margin:0 0 12px;padding:12px;border:1px solid var(--border,#334155);border-radius:10px;overflow-wrap:anywhere">
++        <strong id="resumo-aluno-nome"></strong>
++        <p id="resumo-aluno-avaliacao" style="margin:6px 0 0"></p>
++      </section>
+       <!-- 🔵 FASE 8B — INFORMAÇÕES VISÍVEIS DURANTE A PROVA -->
+       <div id="painel-tempo-aluno" class="painel-tempo-aluno">
+@@ -1547,4 +1551,6 @@
+         escola: escolaVal,
+         periodo: dadosProvaAtiva.periodoAtivo || "Geral",
++        tipoAtividade: String(dadosProvaAtiva.tipoAtividade || ""),
++        valorTotal: Number(dadosProvaAtiva.valorTotal) > 0 ? Number(dadosProvaAtiva.valorTotal) : null,
+         materia: (dadosProvaAtiva.materiasAtivas || ["Geral"]).join(" / "),
+         turma: turmaVal,
+@@ -1757,4 +1763,11 @@
+       }
+ 
++      document.getElementById("resumo-aluno-nome").textContent = `Aluno: ${alunoAtual.nome}`;
++      document.getElementById("resumo-aluno-avaliacao").textContent = [
++        alunoAtual.tipoAtividade || "Avaliação",
++        alunoAtual.periodo,
++        alunoAtual.materia,
++        alunoAtual.valorTotal ? `Valor total: ${alunoAtual.valorTotal.toLocaleString("pt-BR")} pontos` : ""
++      ].filter(Boolean).join(" · ");
+       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
+       document.getElementById("tela-login").classList.add("hidden");
+@@ -1943,4 +1956,6 @@
+             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
+             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
++            tipoAtividade: alunoAtual.tipoAtividade,
++            valorTotal: alunoAtual.valorTotal,
+             dataInicio: inicioTentativaMillis,
+             paginaOcultaDesde,
+@@ -1974,4 +1989,6 @@
+             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
+             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
++            tipoAtividade: alunoAtual.tipoAtividade,
++            valorTotal: alunoAtual.valorTotal,
+             dataInicio: inicioTentativaMillis,
+             paginaOcultaDesde,
+@@ -2242,4 +2259,7 @@
+           periodo: alunoAtual.periodo,
+           materia: alunoAtual.materia,
++          tipoAtividade: alunoAtual.tipoAtividade,
++          valorTotal: alunoAtual.valorTotal,
++          dataInicio: inicioTentativaMillis,
+           pontuacao: null,
+           totalQuestoes: listaQuestoes.length,
+--- a/app.js
++++ b/app.js
+@@ -1064,4 +1064,6 @@
+     disciplinasAtivas:dadosPublicacao.disciplinasAtivas||[],
+     periodoAtivo:dadosPublicacao.periodoAtivo||"", quantidadeQuestoes:selecionadas.length,
++    tipoAtividade:dadosPublicacao.tipoAtividade || "",
++    valorTotal:dadosPublicacao.valorTotal ?? null,
+     // TEMPOS: números explícitos + compatibilidade com nomes antigos.
+     tempoMinimoMinutos:Number(dadosPublicacao.tempoMinimoMinutos ?? dadosPublicacao.tempoMinimo ?? 0) || 0,
+@@ -3049,4 +3049,6 @@
+             disciplinasAtivas: disciplinasSelecionadas,
+             periodoAtivo: periodoEscolhido,
++            tipoAtividade,
++            valorTotal,
+             quantidadeQuestoes: qtdQ,
+             tempoMinimoMinutos: tempoMin,
+@@ -3414,5 +3416,9 @@
+       const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prova registrada - ${e(nomeAluno)}</title>
+         <style>@page{size:A4;margin:15mm}body{font:14px/1.6 Arial;color:#111;margin:0}h1{font-size:22px}.cab{border-bottom:2px solid #222;padding-bottom:15px}.aviso{background:#f1f5f9;padding:12px;margin:20px 0;border-left:3px solid #64748b}.questao{break-inside:avoid;border-bottom:1px solid #ddd;padding:15px 0}.resposta{padding:9px;border:1px solid #ddd}small{color:#555}button{padding:10px 18px;margin:15px 0}@media print{button{display:none}}</style></head><body>
+-        <div class="cab"><h1>REGISTRO DA PROVA INDIVIDUAL</h1><p><b>Escola:</b> ${e(escolaAluno)}<br><b>Aluno(a):</b> ${e(nomeAluno)} | <b>Turma:</b> ${e(turmaAluno)}<br><b>Matéria(s):</b> ${e(materiaAluno)}<br><b>Período:</b> ${e(periodoAluno)} | <b>Data:</b> ${e(dataEnvioAluno || "Não informada")}<br><b>Tentativa:</b> ${e(resultado.idAvaliacao || resultado.idDoc || "Não identificada")}</p></div>
++        <div class="cab"><h1>REGISTRO DA PROVA INDIVIDUAL</h1><p><b>Escola:</b> ${e(escolaAluno)}<br><b>Aluno(a):</b> ${e(nomeAluno)} | <b>Turma:</b> ${e(turmaAluno)}<br><b>Matéria(s):</b> ${e(materiaAluno)}<br><b>Período:</b> ${e(periodoAluno)} | <b>Entrega:</b> ${e(dataEnvioAluno || "Não informada")}<br>
++        ${resultado.dataInicio ? `<b>Início da tentativa:</b> ${e(new Date(millisMonitoramento(resultado.dataInicio)).toLocaleString("pt-BR"))}<br>` : ""}
++        ${resultado.tipoAtividade ? `<b>Tipo:</b> ${e(resultado.tipoAtividade)}<br>` : ""}
++        ${Number(resultado.valorTotal) > 0 ? `<b>Valor total:</b> ${e(Number(resultado.valorTotal).toLocaleString("pt-BR"))} pontos<br>` : ""}
++        <b>Avaliação:</b> ${e(resultado.idAvaliacao || resultado.idDoc || "Não identificada")}</p></div>
+         <div class="aviso">Questões e respostas na ordem registrada. Quando disponíveis, as alternativas exibidas e a correção registrada pelo painel aparecem em cada questão.</div>
+         <button onclick="window.print()">Imprimir / Salvar PDF</button>
+@@ -5287,5 +5293,7 @@
+           <td>${aluno.nome || 'Aluno'}</td>
+           <td>${aluno.turma || 'N/D'}</td>
+-          <td>${aluno.materia || 'Geral'}</td>
++          <td>${escaparDocumentoQuiz(aluno.materia || "Geral")}
++            ${[aluno.periodo, aluno.tipoAtividade, Number(aluno.valorTotal) > 0 ? `${Number(aluno.valorTotal).toLocaleString("pt-BR")} pontos` : ""].filter(Boolean).map(texto => `<br><small>${escaparDocumentoQuiz(texto)}</small>`).join("")}
++          </td>
+           <td><span class="quiz-questao-texto">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
+           <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
