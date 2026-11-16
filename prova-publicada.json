@@ -1,67 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1794792019559",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 3,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 10,
-  "tempoMaximoMinutos": 10,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1794802819559,
-  "turmasAtivas": [
-    "2A"
-  ],
-  "token": "4321",
-  "seedReordenacao": "1794792019559",
-  "publicadoEm": "2026-11-16T01:20:19.599Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "FVvyIvrNDjH1rFOgTRDg",
-      "pergunta": "O que é Reconhecimento de Padrões?",
-      "opcoes": [
-        "Envio de relatórios automáticos por e-mail",
-        "Processo de formatação de discos rígidos corrompidos",
-        "Criação de interfaces gráficas para aplicativos web",
-        "Área da IA focada na identificação de regularidades e estruturas em dados",
-        "Compactação de arquivos de áudio em formato MP3"
-      ],
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial"
-    },
-    {
-      "idQuestao": "fYDLCwi6U8ZOfzgbCgP5",
-      "pergunta": "[Técnico 10 - 1790243769720]Qual a principal responsabilidade do CSS em páginas web?",
-      "opcoes": [
-        "Armazenar dados em banco NoSQL",
-        "Controlar a aparência visual, layout, cores e responsividade",
-        "Estruturar os textos semânticos",
-        "Processar regras de negócio no servidor"
-      ],
-      "materia": "Programacao Front-End",
-      "categoria": "Programacao Front-End"
-    },
-    {
-      "idQuestao": "xWUnAbY2DQKP5sLmsBt7",
-      "pergunta": "Qual a diferença principal entre as unidades `em` e `rem` no CSS?",
-      "opcoes": [
-        "`em` é fixo e `rem` é dinâmico",
-        "`rem` só funciona em tabelas",
-        "Não há diferença prática",
-        "`rem` é relativo à fonte raiz do documento (html), enquanto `em` é relativo ao elemento pai atual"
-      ],
-      "materia": "Programação Front-End",
-      "categoria": "Programação Front-End"
-    }
-  ]
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1794798767252,
+  "turmasAtivas": [],
+  "token": "",
+  "seedReordenacao": "1794798767252",
+  "publicadoEm": "2026-11-16T03:12:47.252Z",
+  "encerradoEm": "2026-11-16T03:12:47.252Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
