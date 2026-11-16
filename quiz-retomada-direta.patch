@@ -1,0 +1,102 @@
+--- a/index.html
++++ b/index.html
+@@ -913,7 +913,8 @@
+       btnValidarTokenAluno.textContent = modo === "retomada" ? "Retomar avaliação →" : "Continuar →";
+       if (!btnValidarTokenAluno.disabled && avisoTokenAluno) avisoTokenAluno.textContent = "";
+     });
+-    btnValidarTokenAluno?.addEventListener("click", () => {
++    btnValidarTokenAluno?.addEventListener("click", async () => {
++      if (retomadaDiretaEmAndamento) return;
+       const codigoAtraso = document.getElementById("codigo-entrada-atrasada-aluno")?.value.trim();
+       const codigoRecuperacao = document.getElementById("codigo-recuperacao-aluno")?.value.trim();
+       const modo = modoAcessoAluno.value;
+@@ -947,6 +948,21 @@
+       // A validação não é persistida: F5 exige token novamente.
+       limparEtapaAluno();
+       if (avisoTokenAluno) avisoTokenAluno.textContent = "";
++      if (codigoRecuperacao) {
++        retomadaDiretaEmAndamento = true;
++        btnValidarTokenAluno.disabled = true;
++        try {
++          await acessarAvaliacao(codigoRecuperacao.toUpperCase());
++        } finally {
++          retomadaDiretaEmAndamento = false;
++          if (document.getElementById("tela-quiz").classList.contains("hidden") && !finalizacaoAlunoEmAndamento) {
++            tokenLiberadoParaProva = "";
++            limparEtapaAluno();
++            atualizarEtapaTokenAluno();
++          }
++        }
++        return;
++      }
+       atualizarEtapaTokenAluno();
+       document.getElementById("nome-aluno")?.focus();
+     });
+@@ -1372,11 +1388,33 @@
+     let recuperacaoAutorizadaAluno = null;
+     let codigoRetomadaAtivo = "";
+     let entradaAtrasadaAutorizadaAluno = null;
++    let retomadaDiretaEmAndamento = false;
+     document.getElementById("form-login")?.addEventListener("submit", async (e) => {
+       e.preventDefault();
+-      const escolaVal = selectEscola.value;
+-      const nomeVal = inputNomeAluno.value.trim().toUpperCase();
+-      const turmaVal = selectTurma.value;
++      await acessarAvaliacao();
++    });
++
++    async function acessarAvaliacao(codigoDireto = "") {
++      const provaOriginal = dadosProvaAtiva;
++      let bilheteDireto;
++      if (codigoDireto) {
++        try {
++          await garantirAuthAnonimaAtual();
++          const bilhete = await getDoc(doc(db, "bilhetes_recuperacao", codigoDireto));
++          if (!bilhete.exists()) throw new Error("Código não encontrado ou ainda não autorizado.");
++          bilheteDireto = bilhete.data();
++          if (dadosProvaAtiva !== provaOriginal &&
++              chaveTokenProva(dadosProvaAtiva) !== chaveTokenProva(provaOriginal)) {
++            throw new Error("A avaliação mudou. Confira o token com o professor.");
++          }
++        } catch (erro) {
++          alert("Código de recuperação não autorizado: " + (erro.message || erro.code || erro));
++          return;
++        }
++      }
++      const escolaVal = codigoDireto ? provaOriginal.escolaAtiva : selectEscola.value;
++      const nomeVal = codigoDireto ? String(bilheteDireto.nome || "").trim() : inputNomeAluno.value.trim().toUpperCase();
++      const turmaVal = codigoDireto ? String(bilheteDireto.turma || "").trim() : selectTurma.value;
+ 
+       if (!escolaVal || !nomeVal || !turmaVal) { alert("⚠️ Selecione sua escola e preencha nome e turma."); return; }
+       if (!dadosProvaAtiva.escolaAtiva) { alert("⚠️ Não há avaliação ativa para esta escola."); return; }
+@@ -1387,7 +1425,7 @@
+       codigoRetomadaAtivo = "";
+       entradaAtrasadaAutorizadaAluno = null;
+       const codigoAtrasado = String(document.getElementById("codigo-entrada-atrasada-aluno")?.value || "").trim().toUpperCase();
+-      const codigoInformado = String(document.getElementById("codigo-recuperacao-aluno")?.value || "").trim().toUpperCase();
++      const codigoInformado = codigoDireto || String(document.getElementById("codigo-recuperacao-aluno")?.value || "").trim().toUpperCase();
+       if (codigoAtrasado && codigoInformado) {
+         alert("⚠️ Informe apenas um código especial: entrada atrasada OU recuperação.");
+         return;
+@@ -1418,9 +1456,9 @@
+       if (codigoInformado) {
+         try {
+           await garantirAuthAnonimaAtual();
+-          const bilhete = await getDoc(doc(db, "bilhetes_recuperacao", codigoInformado));
+-          if (!bilhete.exists()) throw new Error("Código não encontrado ou ainda não autorizado.");
+-          const dados = bilhete.data();
++          const bilhete = bilheteDireto ? null : await getDoc(doc(db, "bilhetes_recuperacao", codigoInformado));
++          const dados = bilheteDireto || (bilhete?.exists() ? bilhete.data() : null);
++          if (!dados?.idAluno) throw new Error("Código não encontrado ou ainda não autorizado.");
+           const avaliacaoEsperada = String(dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "");
+           if (dados.status !== "autorizada" || String(dados.idAvaliacao) !== avaliacaoEsperada ||
+               normalizarId(dados.escola || "") !== normalizarId(escolaVal) ||
+@@ -1512,7 +1550,7 @@
+       btnIniciarProva.disabled = true;
+       btnIniciarProva.textContent = "Carregando...";
+       await iniciarCarregamentoProva();
+-    });
++    }
+ 
+     function ordenarQuestoesPublicadasPorAluno(questoes, idAluno) {
+       const hashPosicao = indice => {
