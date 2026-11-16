@@ -1,158 +1,21 @@
 {
   "versaoPacote": 1,
-  "ativa": true,
-  "idAvaliacao": "av_1794799522097",
+  "ativa": false,
+  "idAvaliacao": "",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [
-    "Inteligência Artificial",
-    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-    "Redes de Computadores e Segurança da Informação na Nuvem",
-    "Programação Front-End"
-  ],
-  "disciplinasAtivas": [
-    "Ensino Médio Técnico"
-  ],
-  "periodoAtivo": "Manhã",
-  "quantidadeQuestoes": 10,
-  "tipoAtividade": "Prova",
-  "valorTotal": 10,
+  "materiasAtivas": [],
+  "disciplinasAtivas": [],
+  "periodoAtivo": "",
+  "quantidadeQuestoes": 0,
   "tempoMinimoMinutos": 0,
-  "tempoLimiteMinutos": 10,
-  "tempoMaximoMinutos": 10,
-  "tempoAtivacaoMinutos": 180,
-  "expiraEmMillis": 1794810322097,
-  "turmasAtivas": [
-    "2A",
-    "3B",
-    "2I",
-    "3D"
-  ],
-  "token": "4321",
-  "seedReordenacao": "1794799522097",
-  "publicadoEm": "2026-11-16T03:25:22.130Z",
-  "questoesPublicas": [
-    {
-      "idQuestao": "Ish4WAnuy6yDkqNYmXVA",
-      "pergunta": "[Técnico 4] Qual a finalidade do Processamento de Linguagem Natural (PLN)?",
-      "opcoes": [
-        "Permitir que computadores compreendan, interpretem e gerem linguagem humana",
-        "Traduzir scripts de banco de dados SQL",
-        "Desenhar interfaces gráficas de usuário",
-        "Validar sintaxe de arquivos HTML"
-      ],
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial"
-    },
-    {
-      "idQuestao": "z5y5zZdxrNyDR6ZBDEh0",
-      "pergunta": "[Técnico 32] O que caracteriza o modelo IaaS na computação em nuvem?",
-      "opcoes": [
-        "Armazenamento local em HDs físicos",
-        "Locação de infraestrutura básica como servidores virtuais, armazenamento e redes",
-        "Entrega de softwares prontos via navegador",
-        "Ambiente exclusivo para programar sem gerenciar servidores"
-      ],
-      "materia": "Redes de computadores e seguranca da informação na nuvem",
-      "categoria": "Redes de computadores e seguranca da informação na nuvem"
-    },
-    {
-      "idQuestao": "tQdoyO5hnuEqaTRRHkio",
-      "pergunta": "O que é a Visão Artificial em Tempo Real?",
-      "opcoes": [
-        "Processamento instantâneo de fluxos de vídeo para detecção e rastreamento de objetos",
-        "Edição manual de fotogramas em softwares de animação",
-        "Transmissão de rádio em frequência modulada via web",
-        "Conversão lenta de fotografias antigas para o formato digital",
-        "Armazenamento de vídeos longos em servidores de backup"
-      ],
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial"
-    },
-    {
-      "idQuestao": "5xEK36hrWqObHT8wSkyz",
-      "pergunta": "[Técnico 42] O que significa o conceito de Deep Learning?",
-      "opcoes": [
-        "Criptografia de ponta a ponta em redes locais",
-        "Redes neurais com múltiplas camadas profundas capazes de extrair feições complexas",
-        "Processamento de planilhas eletrônicas gigantescas",
-        "Compactação avançada de arquivos de vídeo"
-      ],
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial"
-    },
-    {
-      "idQuestao": "yTObbfIiyarnt0kSyP4a",
-      "pergunta": "[Técnico 7] O que caracteriza o aprendizado supervisionado em Inteligência Artificial?",
-      "opcoes": [
-        "Dados sem rótulos descobertos automaticamente",
-        "Uso de dados de entrada juntamente com las respostas corretas desejadas",
-        "Regras fixas de lógica booleana",
-        "Tentativa e erro autônoma sem histórico"
-      ],
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial"
-    },
-    {
-      "idQuestao": "Bvl0QY4isb5vvCeljeS6",
-      "pergunta": "O que é o armazenamento em nuvem baseado em Arquivos (File Storage)?",
-      "opcoes": [
-        "Memória cache temporária de servidores web",
-        "Armazenamento estruturado em hierarquia de pastas e arquivos tradicionais (como NAS)",
-        "Armazenamento de dados brutos divididos em blocos sem diretórios",
-        "Banco de dados relacional distribuído globalmente",
-        "Sistema de criptografia de mensagens instantâneas"
-      ],
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem"
-    },
-    {
-      "idQuestao": "EQXED7jzC0ZvtlUrpWbO",
-      "pergunta": "[Técnico 16] Qual o papel do conjunto de dados de teste (Test Dataset)?",
-      "opcoes": [
-        "Acelerar o carregamento da aplicação web",
-        "Treinar os parâmetros iniciais da rede",
-        "Servir de backup para o banco de produção",
-        "Avaliar o desempenho final e a generalização do modelo treinado de forma imparcial"
-      ],
-      "materia": "Inteligencia Artificial",
-      "categoria": "Inteligencia Artificial"
-    },
-    {
-      "idQuestao": "z9L30SmORnWxBiUQYz0W",
-      "pergunta": "O que é um Certificado Digital SSL/TLS?",
-      "opcoes": [
-        "Chave física USB utilizada para autenticação de administradores",
-        "Protocolo de criptografia de discos rígidos locais",
-        "Arquivo digital que vincula uma chave criptográfica à identidade de um site web",
-        "Senha mestra utilizada para acessar servidores de nuvem",
-        "Endereço IP fixo atribuído a servidores de alta performance"
-      ],
-      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
-      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem"
-    },
-    {
-      "idQuestao": "EwxtbRj6EaSgRLp1os62",
-      "pergunta": "[Técnico 8 - 1790258362884]O que é uma Sprint no framework Scrum?",
-      "opcoes": [
-        "Um período de tempo curto (time-box) para desenvolver um incremento de produto utilizável",
-        "Reunião final de homologação do cliente",
-        "Cargo de gestão tradicional de projetos",
-        "Um documento com requisitos estáticos"
-      ],
-      "materia": "Processos de Desenvolvimentos de Software e metodologias Ágeis",
-      "categoria": "Processos de Desenvolvimentos de Software e metodologias Ágeis"
-    },
-    {
-      "idQuestao": "UD5q33FG37dfYqRl1TFc",
-      "pergunta": "O que é a técnica de \"Fine-Tuning\" (Ajuste Fino)?",
-      "opcoes": [
-        "A limpeza física de um computador",
-        "A formatação do disco rígido",
-        "O processo de adaptar um modelo de IA pré-treinado para uma tarefa ou domínio específico",
-        "O conserto de uma tela quebrada"
-      ],
-      "materia": "Inteligência Artificial",
-      "categoria": "Inteligência Artificial"
-    }
-  ]
+  "tempoLimiteMinutos": 0,
+  "tempoAtivacaoMinutos": 0,
+  "expiraEmMillis": 1794801172036,
+  "turmasAtivas": [],
+  "token": "",
+  "seedReordenacao": "1794801172036",
+  "publicadoEm": "2026-11-16T03:52:52.036Z",
+  "encerradoEm": "2026-11-16T03:52:52.036Z",
+  "motivoEncerramento": "Avaliação encerrada pelo professor.",
+  "questoesPublicas": []
 }
