@@ -1,21 +1,71 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1794798815588",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 3,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1794798767252,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1794798767252",
-  "publicadoEm": "2026-11-16T03:12:47.252Z",
-  "encerradoEm": "2026-11-16T03:12:47.252Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoMaximoMinutos": 0,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1794809615588,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1794798815588",
+  "publicadoEm": "2026-11-16T03:13:35.639Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "tgy5FB60B2kBe9aQD9LB",
+      "pergunta": "Qual propriedade CSS define a largura máxima que um elemento pode atingir?",
+      "opcoes": [
+        "upper-width",
+        "limit-width",
+        "max-width",
+        "width-max",
+        "size-max"
+      ],
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End"
+    },
+    {
+      "idQuestao": "giiva9RIWqS5VxRK1xDO",
+      "pergunta": "Qual protocolo da camada de transporte garante a entrega confiável e ordenada de pacotes?",
+      "opcoes": [
+        "IP",
+        "UDP",
+        "TCP",
+        "ICMP",
+        "ARP"
+      ],
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem"
+    },
+    {
+      "idQuestao": "Q1sZcGYx5crPhLDkjkER",
+      "pergunta": "[Técnico 10 - 1790243766186]Qual é a principal função de uma rede neural artificial?",
+      "opcoes": [
+        "Imprimir relatórios em formato PDF",
+        "Gerenciar partições físicas de disco rígido",
+        "Compilar códigos de baixo nível",
+        "Processar dados através de camadas de nós para reconhecimento de padrões"
+      ],
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial"
+    }
+  ]
 }
