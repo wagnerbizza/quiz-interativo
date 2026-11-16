@@ -3414,6 +3414,17 @@ if (window.location.pathname.includes("painel.html")) {
         <div class="cab"><h1>REGISTRO DA PROVA INDIVIDUAL</h1><p><b>Escola:</b> ${e(escolaAluno)}<br><b>Aluno(a):</b> ${e(nomeAluno)} | <b>Turma:</b> ${e(turmaAluno)}<br><b>Matéria(s):</b> ${e(materiaAluno)}<br><b>Período:</b> ${e(periodoAluno)} | <b>Data:</b> ${e(dataEnvioAluno || "Não informada")}<br><b>Tentativa:</b> ${e(resultado.idAvaliacao || resultado.idDoc || "Não identificada")}</p></div>
         <div class="aviso">Questões e respostas na ordem registrada. Quando disponíveis, as alternativas exibidas e a correção registrada pelo painel aparecem em cada questão.</div>
         <button onclick="window.print()">Imprimir / Salvar PDF</button>
+        <section><h2>Ocorrências da tentativa</h2>
+        ${Array.isArray(resultado.ocorrenciasVisibilidade) && resultado.ocorrenciasVisibilidade.length
+          ? `<ul>${resultado.ocorrenciasVisibilidade.slice(-100).map(evento => {
+            const horario = Number(evento?.horario);
+            if (!Number.isFinite(horario) || horario <= 0) return "";
+            if (evento.tipo === "oculta") return `<li>${e(new Date(horario).toLocaleString("pt-BR"))} — Página ficou oculta</li>`;
+            if (evento.tipo !== "visivel") return "";
+            const duracao = Math.max(0, Math.floor(Number(evento.duracaoMs) / 1000));
+            const texto = Number.isFinite(duracao) ? ` (${duracao} s fora da tela)` : "";
+            return `<li>${e(new Date(horario).toLocaleString("pt-BR"))} — Página voltou a ficar visível${texto}</li>`;
+          }).join("")}</ul>` : "<p>Nenhuma ocorrência de visibilidade registrada.</p>"}</section>
         ${questoes.map((q,i)=>`<section class="questao"><h3>Questão ${i+1}: ${e(q.pergunta)}</h3><p class="resposta"><b>Alternativa marcada:</b> ${q.letra && !q.resposta.startsWith("Alternativa ") ? e(q.letra) + " — " : ""}${e(q.resposta)}</p>
           ${Array.isArray(q.opcoes) ? `<ol type="A">${q.opcoes.map(opcao => `<li>${e(opcao)}</li>`).join("")}</ol>` : ""}
           <p><b>Correção:</b> ${e(q.correcao?.situacao || "Correção por questão não registrada")}</p><small>ID da questão: ${e(q.id || "Não registrado")}</small></section>`).join('')}
@@ -5255,7 +5266,9 @@ if (window.location.pathname.includes("painel.html")) {
       const dataInicioStr = inicio ? new Date(inicio).toLocaleString("pt-BR") : "—";
       let estaMarcado = selecionadosAntes.has(aluno.idDoc) ? "checked" : "";
       const contatoAtrasado = contatoAtrasadoMonitoramento(aluno);
-      const situacaoContato = contatoAtrasado ? "🟠 Sem atualização recente" : "🟢 Em acompanhamento";
+      const paginaOculta = Number(aluno.paginaOcultaDesde) > 0;
+      const situacaoContato = contatoAtrasado ? "🟠 Sem atualização recente" :
+        paginaOculta ? "🟠 Página oculta" : "🟢 Em acompanhamento";
        
       let questaoAtualProgresso = aluno.questaoAtual || 1;
       let totalQProgresso = aluno.totalQuestoes || 10;
@@ -5265,7 +5278,7 @@ if (window.location.pathname.includes("painel.html")) {
           <td class="chk-col" style="text-align: center;">
             <input type="checkbox" class="chk-item-online" value="${aluno.idDoc}" ${estaMarcado}>
           </td>
-          <td><span class="quiz-status-texto" style="color:${contatoAtrasado ? '#fbbf24' : '#4ade80'}">${situacaoContato}</span></td>
+          <td><span class="quiz-status-texto" style="color:${contatoAtrasado || paginaOculta ? '#fbbf24' : '#4ade80'}">${situacaoContato}</span></td>
           <td><span style="color: #cbd5e1; font-size: 12px;">📅 ${dataInicioStr}</span></td>
           <td><strong>${aluno.escola || 'N/D'}</strong></td>
           <td>${aluno.nome || 'Aluno'}</td>

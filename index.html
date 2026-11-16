@@ -1710,6 +1710,9 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         indiceAtual = 0;
         inicioTentativaMillis = Date.now();
       }
+      ocorrenciasVisibilidade = Array.isArray(rascunhoRetomada?.ocorrenciasVisibilidade)
+        ? rascunhoRetomada.ocorrenciasVisibilidade.slice(-100) : [];
+      paginaOcultaDesde = 0;
       atualizarTempoAbsoluto();
       // Salva antes de qualquer chamada remota para resistir ao F5 imediato.
       salvarRascunhoAluno();
@@ -1902,6 +1905,22 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       }, 1000);
     }
 
+    let ocorrenciasVisibilidade = [];
+    let paginaOcultaDesde = 0;
+    document.addEventListener("visibilitychange", () => {
+      if (finalizacaoAlunoEmAndamento || document.getElementById("tela-quiz").classList.contains("hidden")) return;
+      const agora = Date.now();
+      if (document.hidden) {
+        paginaOcultaDesde = agora;
+        ocorrenciasVisibilidade.push({tipo:"oculta", horario:agora});
+      } else if (paginaOcultaDesde) {
+        ocorrenciasVisibilidade.push({tipo:"visivel", horario:agora, duracaoMs:Math.max(0, agora - paginaOcultaDesde)});
+        paginaOcultaDesde = 0;
+      }
+      ocorrenciasVisibilidade = ocorrenciasVisibilidade.slice(-100);
+      salvarRascunhoAluno();
+    });
+
     function iniciarSincronizacaoTempoReal() {
       if (syncOnlineInterval) clearInterval(syncOnlineInterval);
 
@@ -1921,6 +1940,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
             dataInicio: inicioTentativaMillis,
+            paginaOcultaDesde,
             atualizadoEm: serverTimestamp()
           }, { merge: true });
         } catch(e) { console.warn("10E — progresso não sincronizado neste ciclo:", e?.code || e?.message || e); }
@@ -1951,6 +1971,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
             dataInicio: inicioTentativaMillis,
+            paginaOcultaDesde,
             atualizadoEm: serverTimestamp()
           }, { merge: true });
         } catch(e) {
@@ -2070,6 +2091,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           estado: "andamento", idAluno: alunoAtual.id, idAvaliacao: avaliacao,
           inicio: inicioTentativaMillis, indice: indiceAtual, respostas: {...respostasUsuario},
           questoes: listaQuestoes.map(q => ({idQuestao:q.idQuestao, pergunta:q.pergunta, opcoes:q.opcoes, categoria:q.categoria})),
+          ocorrenciasVisibilidade,
           salvoEm: Date.now()
         };
         localStorage.setItem(CHAVE_RASCUNHOS_ALUNO, JSON.stringify(todos));
@@ -2225,6 +2247,7 @@ if (unsubscribePermissaoAluno) {
             const pos=/^[A-E]$/.test(letra) ? "ABCDE".indexOf(letra) : -1;
             return pos >= 0 ? String(q.opcoes?.[pos] || "") : "";
           }),
+          ocorrenciasVisibilidade,
           questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
           questoesPerguntas: listaQuestoes.map(q => q.pergunta || ""),
           alternativasExibidas: listaQuestoes.map(q => ({opcoes: q.opcoes.map(String)})),
