@@ -5226,8 +5226,8 @@ if (window.location.pathname.includes("painel.html")) {
 
     if (ordemAtualMonitoramento !== "nenhum") {
       dadosFiltrados.sort((a, b) => {
-        let tA = a.dataInicio?.seconds || a.dataInicio || 0;
-        let tB = b.dataInicio?.seconds || b.dataInicio || 0;
+        let tA = millisMonitoramento(a.dataInicio);
+        let tB = millisMonitoramento(b.dataInicio);
         switch (ordemAtualMonitoramento) {
           case "inicio-asc": return tA - tB;
           case "nome-asc": return (a.nome || "").localeCompare(b.nome || "");
@@ -5251,7 +5251,8 @@ if (window.location.pathname.includes("painel.html")) {
       let min = Math.floor((aluno.segundosPassados || 0) / 60);
       let seg = (aluno.segundosPassados || 0) % 60;
       let tempoStr = `${min}m ${seg}s`;
-      let dataInicioStr = aluno.dataInicio?.toDate ? aluno.dataInicio.toDate().toLocaleString('pt-BR') : "—";
+      const inicio = millisMonitoramento(aluno.dataInicio);
+      const dataInicioStr = inicio ? new Date(inicio).toLocaleString("pt-BR") : "—";
       let estaMarcado = selecionadosAntes.has(aluno.idDoc) ? "checked" : "";
       const contatoAtrasado = contatoAtrasadoMonitoramento(aluno);
       const situacaoContato = contatoAtrasado ? "🟠 Sem atualização recente" : "🟢 Em acompanhamento";

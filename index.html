@@ -1920,6 +1920,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             }),
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
+            dataInicio: inicioTentativaMillis,
             atualizadoEm: serverTimestamp()
           }, { merge: true });
         } catch(e) { console.warn("10E — progresso não sincronizado neste ciclo:", e?.code || e?.message || e); }
@@ -1949,6 +1950,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             }),
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
+            dataInicio: inicioTentativaMillis,
             atualizadoEm: serverTimestamp()
           }, { merge: true });
         } catch(e) {

@@ -1886,6 +1886,21 @@ body.light-mode #aba-banco-dados > p {
 #qi-assistente-pedido .qi-actions { margin: .5rem 0 1rem; }
 #qi-outras-importacoes { margin-top: 1rem; }
 </style>
+<style id="quiz-divisorias-tabelas">
+  body.qi-modern table :is(th, td):not(:last-child) {
+    border-inline-end: 1px solid var(--line, var(--border, #475569));
+  }
+  body.qi-modern table :is(th, td) {
+    word-break: normal !important;
+  }
+  #aba-monitoramento .tabela-monitoramento :is(th, td):nth-child(2) {
+    min-width: 135px;
+    overflow-wrap: normal !important;
+  }
+  #aba-monitoramento .tabela-monitoramento :is(th, td):nth-child(3) {
+    min-width: 142px;
+  }
+</style>
 </head>
 <body>
 
@@ -2409,7 +2424,7 @@ body.light-mode #aba-banco-dados > p {
         <thead>
           <tr>
             <th class="chk-col" style="width: 35px; text-align: center;"><input type="checkbox" id="chk-marcar-todos-online" onclick="selecionarTodosOnline(this.checked)"></th>
-            <th>Status</th><th>Início</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria</th><th>Questão</th><th>Tempo</th><th style="text-align: center;">Ações</th>
+            <th>Status</th><th>Início da tentativa</th><th>Escola</th><th>Aluno</th><th>Turma</th><th>Matéria</th><th>Questão</th><th>Tempo</th><th style="text-align: center;">Ações</th>
           </tr>
         </thead>
         <tbody id="corpo-tabela-tempo-real">
