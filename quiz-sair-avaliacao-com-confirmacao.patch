@@ -1,0 +1,49 @@
+--- a/index.html
++++ b/index.html
+@@ -688,6 +688,7 @@
+     </div>
+ 
+     <div id="tela-quiz" class="hidden">
++      <button type="button" id="btn-sair-avaliacao" class="btn" style="background:#475569;margin-bottom:12px;">Sair da avaliação</button>
+       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+         <span id="badge-escola-ativa" style="font-size: 13px; color: var(--text-muted); font-weight: bold;">🏫 Escola</span>
+         <span id="progresso-txt" style="font-size: 14px; font-weight: bold; color: #38bdf8;">Questão 1 de 10</span>
+@@ -715,7 +716,7 @@
+       <div id="opcoes-container"></div>
+ 
+       <div id="nav-quiz" style="display: flex; justify-content: space-between; margin-top: 20px; gap: 10px;">
+-        <button id="ant" class="btn" style="background: #475569; display: none;">⬅ Anterior</button>
++        <button id="ant" class="btn" style="background: #475569; display: none;">⬅ Questão anterior</button>
+         <button id="prox" class="btn">Próxima ➡</button>
+         <button id="fin" class="btn" style="background: var(--success); display: none;">🏁 Finalizar Prova</button>
+       </div>
+@@ -1986,6 +1987,16 @@
+ 
+     window.irQuestao = function(index) { indiceAtual = index; salvarRascunhoAluno(); exibirQuestao(); };
+ 
++    document.getElementById("btn-sair-avaliacao")?.addEventListener("click", () => {
++      if (finalizacaoAlunoEmAndamento) return;
++      const sair = window.confirm("Sair da avaliação? O tempo continuará correndo. Para retomar, você poderá precisar de um código de recuperação fornecido pelo professor.");
++      if (!sair || finalizacaoAlunoEmAndamento) return;
++      if (!salvarRascunhoAluno()) {
++        window.alert("O navegador não conseguiu salvar o rascunho. Peça ajuda ao professor antes de sair.");
++        return;
++      }
++      window.location.reload();
++    });
+     document.getElementById("ant")?.addEventListener("click", () => { if (indiceAtual > 0) { indiceAtual--; salvarRascunhoAluno(); exibirQuestao(); } });
+     document.getElementById("prox")?.addEventListener("click", () => { if (indiceAtual < listaQuestoes.length - 1) { indiceAtual++; salvarRascunhoAluno(); exibirQuestao(); } });
+     document.getElementById("fin")?.addEventListener("click", () => finalizarProva());
+@@ -2021,7 +2032,11 @@
+           salvoEm: Date.now()
+         };
+         localStorage.setItem(CHAVE_RASCUNHOS_ALUNO, JSON.stringify(todos));
+-      } catch (e) { console.warn("Rascunho local indisponível:", e); }
++        return true;
++      } catch (e) {
++        console.warn("Rascunho local indisponível:", e);
++        return false;
++      }
+     }
+     function apagarRascunhoAluno(id, avaliacao) {
+       try {
