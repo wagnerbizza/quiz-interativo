@@ -694,6 +694,10 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         <button type="button" id="btn-sair-avaliacao" class="qi-button" style="width:auto !important;min-height:44px;margin:0;flex:0 0 auto;">Sair da avaliação</button>
       </div>
 
+      <section id="resumo-tentativa-aluno" aria-label="Informações da avaliação" style="margin:0 0 12px;padding:12px;border:1px solid var(--border,#334155);border-radius:10px;overflow-wrap:anywhere">
+        <strong id="resumo-aluno-nome"></strong>
+        <p id="resumo-aluno-avaliacao" style="margin:6px 0 0"></p>
+      </section>
       <!-- 🔵 FASE 8B — INFORMAÇÕES VISÍVEIS DURANTE A PROVA -->
       <div id="painel-tempo-aluno" class="painel-tempo-aluno">
         <div class="info-prova-aluno"><span>⏱️</span><div><small>DECORRIDO</small><strong id="tempo-decorrido-aluno">00:00</strong></div></div>
@@ -1547,6 +1551,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         nome: recuperacaoAutorizadaAluno?.nome || nomeVal,
         escola: escolaVal,
         periodo: dadosProvaAtiva.periodoAtivo || "Geral",
+        tipoAtividade: String(dadosProvaAtiva.tipoAtividade || ""),
+        valorTotal: Number(dadosProvaAtiva.valorTotal) > 0 ? Number(dadosProvaAtiva.valorTotal) : null,
         materia: (dadosProvaAtiva.materiasAtivas || ["Geral"]).join(" / "),
         turma: turmaVal,
         id: idAlunoGerado
@@ -1758,6 +1764,13 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
         }
       }
 
+      document.getElementById("resumo-aluno-nome").textContent = `Aluno: ${alunoAtual.nome}`;
+      document.getElementById("resumo-aluno-avaliacao").textContent = [
+        alunoAtual.tipoAtividade || "Avaliação",
+        alunoAtual.periodo,
+        alunoAtual.materia,
+        alunoAtual.valorTotal ? `Valor total: ${alunoAtual.valorTotal.toLocaleString("pt-BR")} pontos` : ""
+      ].filter(Boolean).join(" · ");
       document.getElementById("badge-escola-ativa").textContent = `🏫 ${alunoAtual.escola} | Turma: ${alunoAtual.turma}`;
       document.getElementById("tela-login").classList.add("hidden");
       document.getElementById("tela-quiz").classList.remove("hidden");
@@ -1944,6 +1957,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             }),
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
+            tipoAtividade: alunoAtual.tipoAtividade,
+            valorTotal: alunoAtual.valorTotal,
             dataInicio: inicioTentativaMillis,
             paginaOcultaDesde,
             atualizadoEm: serverTimestamp()
@@ -1975,6 +1990,8 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             }),
             questoesIds: listaQuestoes.map(q => q.idQuestao || ""),
             idAvaliacao: dadosProvaAtiva.idAvaliacao || dadosProvaAtiva.publicadoEm || "",
+            tipoAtividade: alunoAtual.tipoAtividade,
+            valorTotal: alunoAtual.valorTotal,
             dataInicio: inicioTentativaMillis,
             paginaOcultaDesde,
             atualizadoEm: serverTimestamp()
@@ -2243,6 +2260,9 @@ if (unsubscribePermissaoAluno) {
           escola: alunoAtual.escola,
           periodo: alunoAtual.periodo,
           materia: alunoAtual.materia,
+          tipoAtividade: alunoAtual.tipoAtividade,
+          valorTotal: alunoAtual.valorTotal,
+          dataInicio: inicioTentativaMillis,
           pontuacao: null,
           totalQuestoes: listaQuestoes.length,
           uid: uidAlunoFirebase,

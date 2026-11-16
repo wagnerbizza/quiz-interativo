@@ -1075,6 +1075,8 @@ async function prepararPacoteEstaticoAvaliacao(dadosPublicacao) {
     materiasAtivas:dadosPublicacao.materiasAtivas||[],
     disciplinasAtivas:dadosPublicacao.disciplinasAtivas||[],
     periodoAtivo:dadosPublicacao.periodoAtivo||"", quantidadeQuestoes:selecionadas.length,
+    tipoAtividade:dadosPublicacao.tipoAtividade || "",
+    valorTotal:dadosPublicacao.valorTotal ?? null,
     // TEMPOS: números explícitos + compatibilidade com nomes antigos.
     tempoMinimoMinutos:Number(dadosPublicacao.tempoMinimoMinutos ?? dadosPublicacao.tempoMinimo ?? 0) || 0,
     tempoLimiteMinutos:Number(dadosPublicacao.tempoLimiteMinutos ?? dadosPublicacao.tempoMaximoMinutos ?? dadosPublicacao.tempoMaximo ?? 0) || 0,
@@ -3046,6 +3048,8 @@ if (window.location.pathname.includes("painel.html")) {
             materiasAtivas: materiasSelecionadas,
             disciplinasAtivas: disciplinasSelecionadas,
             periodoAtivo: periodoEscolhido,
+            tipoAtividade,
+            valorTotal,
             quantidadeQuestoes: qtdQ,
             tempoMinimoMinutos: tempoMin,
             tempoLimiteMinutos: tempoLim,
@@ -3411,7 +3415,11 @@ if (window.location.pathname.includes("painel.html")) {
       if (!win) throw new Error("Permita a abertura de janelas para visualizar a prova.");
       const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prova registrada - ${e(nomeAluno)}</title>
         <style>@page{size:A4;margin:15mm}body{font:14px/1.6 Arial;color:#111;margin:0}h1{font-size:22px}.cab{border-bottom:2px solid #222;padding-bottom:15px}.aviso{background:#f1f5f9;padding:12px;margin:20px 0;border-left:3px solid #64748b}.questao{break-inside:avoid;border-bottom:1px solid #ddd;padding:15px 0}.resposta{padding:9px;border:1px solid #ddd}small{color:#555}button{padding:10px 18px;margin:15px 0}@media print{button{display:none}}</style></head><body>
-        <div class="cab"><h1>REGISTRO DA PROVA INDIVIDUAL</h1><p><b>Escola:</b> ${e(escolaAluno)}<br><b>Aluno(a):</b> ${e(nomeAluno)} | <b>Turma:</b> ${e(turmaAluno)}<br><b>Matéria(s):</b> ${e(materiaAluno)}<br><b>Período:</b> ${e(periodoAluno)} | <b>Data:</b> ${e(dataEnvioAluno || "Não informada")}<br><b>Tentativa:</b> ${e(resultado.idAvaliacao || resultado.idDoc || "Não identificada")}</p></div>
+        <div class="cab"><h1>REGISTRO DA PROVA INDIVIDUAL</h1><p><b>Escola:</b> ${e(escolaAluno)}<br><b>Aluno(a):</b> ${e(nomeAluno)} | <b>Turma:</b> ${e(turmaAluno)}<br><b>Matéria(s):</b> ${e(materiaAluno)}<br><b>Período:</b> ${e(periodoAluno)} | <b>Entrega:</b> ${e(dataEnvioAluno || "Não informada")}<br>
+        ${resultado.dataInicio ? `<b>Início da tentativa:</b> ${e(new Date(millisMonitoramento(resultado.dataInicio)).toLocaleString("pt-BR"))}<br>` : ""}
+        ${resultado.tipoAtividade ? `<b>Tipo:</b> ${e(resultado.tipoAtividade)}<br>` : ""}
+        ${Number(resultado.valorTotal) > 0 ? `<b>Valor total:</b> ${e(Number(resultado.valorTotal).toLocaleString("pt-BR"))} pontos<br>` : ""}
+        <b>Avaliação:</b> ${e(resultado.idAvaliacao || resultado.idDoc || "Não identificada")}</p></div>
         <div class="aviso">Questões e respostas na ordem registrada. Quando disponíveis, as alternativas exibidas e a correção registrada pelo painel aparecem em cada questão.</div>
         <button onclick="window.print()">Imprimir / Salvar PDF</button>
         <section><h2>Ocorrências da tentativa</h2>
@@ -5283,7 +5291,9 @@ if (window.location.pathname.includes("painel.html")) {
           <td><strong>${aluno.escola || 'N/D'}</strong></td>
           <td>${aluno.nome || 'Aluno'}</td>
           <td>${aluno.turma || 'N/D'}</td>
-          <td>${aluno.materia || 'Geral'}</td>
+          <td>${escaparDocumentoQuiz(aluno.materia || "Geral")}
+            ${[aluno.periodo, aluno.tipoAtividade, Number(aluno.valorTotal) > 0 ? `${Number(aluno.valorTotal).toLocaleString("pt-BR")} pontos` : ""].filter(Boolean).map(texto => `<br><small>${escaparDocumentoQuiz(texto)}</small>`).join("")}
+          </td>
           <td><span class="quiz-questao-texto">📝 Q. ${questaoAtualProgresso} / ${totalQProgresso}</span></td>
           <td><span style="color: #facc15;">⏱ ${tempoStr}</span></td>
           <td style="text-align: center;">
