@@ -1,0 +1,92 @@
+diff --git a/app.js b/app.js
+index cd50792..d64f173 100644
+--- a/app.js
++++ b/app.js
+@@ -1625,23 +1625,41 @@ function inicializarPaginaEscola() {
+     if (!chk) return;
+     const turma = Boolean(label.closest('#card-turmas-individual-custom'));
+     const valorAntigo = chk.value;
+-    const novoValor = prompt(turma ? "Editar nome da turma:" : "Editar nome do item:", valorAntigo);
+-    if (novoValor === null || !novoValor.trim()) return;
+-    const valor = turma ? novoValor.trim().toUpperCase() : novoValor.trim();
+-    const repetido = Array.from(label.parentElement.querySelectorAll('input[type="checkbox"]'))
+-      .some(item => item !== chk && item.value.trim().toLocaleLowerCase('pt-BR') === valor.toLocaleLowerCase('pt-BR'));
+-    if (repetido) { alert("Já existe um item com esse nome nesta lista."); return; }
+-    if (turma) {
+-      const index = turmasCadastradasDiretas.indexOf(valorAntigo);
+-      if (index >= 0) turmasCadastradasDiretas[index] = valor;
+-      chk.classList.remove('chk-item-box-val');
+-      chk.classList.add('chk-turma-direta-val');
+-    }
+-    chk.value = valor;
+-    // Reutiliza o checkbox: mantém sua marcação, tipo e evento de atualização.
+-    span.replaceChildren(chk, document.createTextNode(' ' + valor));
+-    atualizarPainelResumoConsolidado();
+-    mostrarNotificacao("Nome alterado. Clique em Salvar configurações para gravar.");
++    const aplicarNome = (novoValor) => {
++      if (novoValor === null || !novoValor.trim()) return false;
++      const valor = turma ? novoValor.trim().toUpperCase() : novoValor.trim();
++      const repetido = Array.from(label.parentElement.querySelectorAll('input[type="checkbox"]'))
++        .some(item => item !== chk && item.value.trim().toLocaleLowerCase('pt-BR') === valor.toLocaleLowerCase('pt-BR'));
++      if (repetido) { alert("Já existe um item com esse nome nesta lista."); return false; }
++      if (turma) {
++        const index = turmasCadastradasDiretas.indexOf(valorAntigo);
++        if (index >= 0) turmasCadastradasDiretas[index] = valor;
++        chk.classList.remove('chk-item-box-val');
++        chk.classList.add('chk-turma-direta-val');
++        // Substituir uma turma também a seleciona para a próxima ativação.
++        if (valor !== valorAntigo) chk.checked = true;
++      }
++      chk.value = valor;
++      span.replaceChildren(chk, document.createTextNode(' ' + valor));
++      atualizarPainelResumoConsolidado();
++      mostrarNotificacao("Nome alterado. Clique em Salvar configurações para gravar.");
++      return true;
++    };
++    if (!turma) { aplicarNome(prompt("Editar nome do item:", valorAntigo)); return; }
++    const aberto=label.nextElementSibling;
++    if(aberto?.classList.contains('quiz-editor-turma')){aberto.querySelector('input').focus();return;}
++    const editor=document.createElement('div');editor.className='quiz-editor-turma';
++    editor.setAttribute('role','group');editor.setAttribute('aria-label','Renomear turma');
++    editor.style.cssText='display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1px solid #19c7ed;border-radius:8px';
++    const campo=document.createElement('input');campo.type='text';campo.value=valorAntigo;campo.maxLength=100;
++    campo.setAttribute('aria-label','Novo nome da turma');campo.style.cssText='flex:1 1 180px;min-width:0';
++    const salvar=document.createElement('button');salvar.type='button';salvar.textContent='Salvar nome';salvar.className='btn-acao-mini';
++    const cancelar=document.createElement('button');cancelar.type='button';cancelar.textContent='Cancelar';cancelar.className='btn-acao-mini';
++    const fechar=()=>{editor.remove();btn.focus();};
++    salvar.addEventListener('click',()=>{if(!campo.value.trim()){campo.focus();return;}if(aplicarNome(campo.value))fechar();});
++    cancelar.addEventListener('click',fechar);
++    campo.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();salvar.click();}else if(event.key==='Escape'){event.preventDefault();fechar();}});
++    editor.append(campo,salvar,cancelar);label.after(editor);campo.focus();campo.select();
+   };
+ 
+   window.removerItemBoxEscolaCard = function(btn) {
+@@ -1747,7 +1765,11 @@ function inicializarPaginaEscola() {
+         animarBotaoSucesso(e.target);
+         mostrarNotificacao(`✅ Configurações completas da unidade "${nomeEscola}" salvas com sincronização instantânea!`);
+         setTimeout(() => {
+-          window.history.back();
++          // Uma navegação nova evita voltar à configuração antiga mantida no histórico.
++          const destino = new URL("painel.html", window.location.href);
++          destino.hash = urlParams.get("retorno") === "escolas" ? "escolas" : "ativacao";
++          destino.searchParams.set("escola_configurada", nomeEscola);
++          window.location.assign(destino.href);
+         }, 1200);
+       } catch (err) {
+         alert("Erro ao salvar: " + err.message);
+@@ -2134,6 +2156,15 @@ if (window.location.pathname.includes("painel.html")) {
+     } else {
+       window.QuizInterface?.navigate("inicio");
+     }
++    const escolaConfigurada = new URLSearchParams(window.location.search).get("escola_configurada");
++    if (escolaConfigurada && window.location.hash === "#ativacao") {
++      const escola = listaEscolasCache.find(item => normalizarTexto(item.nome) === normalizarTexto(escolaConfigurada));
++      if (escola) {
++        escolaAtivaSelecionadaIndependente = escola.nome;
++        renderizarSeletorEscolasAtivacaoIndependente();
++        carregarConfiguracoesEscolaParaAtivacao(escola.nome);
++      }
++    }
+   }
+ 
+   // ==========================================
