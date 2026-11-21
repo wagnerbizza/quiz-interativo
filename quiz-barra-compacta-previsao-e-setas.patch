@@ -1,0 +1,164 @@
+diff --git a/painel.html b/painel.html
+index 5ff018d..a3114fe 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3406,6 +3406,32 @@ function filtrarLixeira() {
+     body.qi-menu-lateral .qi-stats .qi-stat { border-block-start: 3px solid var(--qi-accent); }
+     #qi-rolagem button { border: 1px solid var(--qi-accent); border-radius: 12px; }
+   }
++  #qi-home-clima .quiz-home-weather {
++    background: color-mix(in srgb, var(--qi-panel), var(--qi-accent) 4%);
++    border-color: color-mix(in srgb, var(--qi-line), var(--qi-accent) 14%);
++  }
++  #qi-home-clima .quiz-home-weather > summary strong { color: var(--qi-accent); font-size: 1rem; }
++  #qi-rolagem button.qi-button {
++    display: grid; place-items: center; width: 52px; min-height: 52px; padding: 0 !important;
++    background: color-mix(in srgb, var(--qi-panel), var(--qi-accent) 8%);
++    border: 1px solid var(--qi-accent) !important; border-radius: 13px;
++  }
++  #qi-rolagem button:disabled { opacity: .38; cursor: default; }
++  .qi-icone-menu, .qi-busca-compacta { display: none !important; }
++  @media screen and (min-width: 1100px) {
++    #qi-barra-professor .qi-icone-menu { display: inline-flex !important; flex: 0 0 auto; }
++    #qi-barra-professor .qi-button { display: flex; align-items: center; gap: 9px; }
++    #qi-barra-professor summary { gap: 8px; }
++    #qi-barra-professor .qi-brand { display: flex; }
++    #qi-barra-professor.qi-barra-compacta { width: 80px; padding-inline: 10px; }
++    #qi-barra-professor.qi-barra-compacta :is(.qi-brand > span:not(.qi-logo), [data-grupo-menu], label, input, [data-resultado-menu], .qi-disclosure-action, .qi-options, summary > span:not(.qi-icone-menu), .qi-button > span) { display: none !important; }
++    #qi-barra-professor.qi-barra-compacta :is(.qi-button, summary, .qi-brand) { justify-content: center; }
++    #qi-barra-professor.qi-barra-compacta .qi-busca-compacta { display: flex !important; }
++    body.qi-modern.qi-menu-lateral.qi-menu-compacto:not(.qi-demo-open) .container:has(> .qi-shell),
++    body.qi-modern.qi-menu-lateral.qi-menu-compacto:not(.qi-demo-open) > :is(.qi-header,.qi-footer) {
++      padding-inline-start: 112px !important;
++    }
++  }
+   @media print { #qi-barra-professor, #qi-rolagem, #qi-favoritos, #qi-config-professor { display: none !important; } }
+ </style>
+ <script>
+@@ -3486,13 +3512,39 @@ function filtrarLixeira() {
+     fixar.className = "qi-button";
+     fixar.textContent = "▣  Barra fixada";
+     fixar.title = "Recolher menu lateral";
+-    const abrir = document.createElement("button");
+-    abrir.type = "button";
+-    abrir.className = "qi-button";
+-    abrir.textContent = "☰ Menu lateral";
+-    abrir.hidden = true;
+-    abrir.setAttribute("aria-controls", barra.id);
+-    document.querySelector(".qi-header > .qi-actions")?.prepend(abrir);
++    const icone = desenho => '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + desenho + '</svg>';
++    const seta = icone('<path d="m9 6 6 6-6 6"/>');
++    home.innerHTML = icone('<path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/>') + '<span>Visão geral</span>';
++    home.setAttribute("aria-label","Visão geral");
++    home.title = "Visão geral";
++    const desenhos = [
++      '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/>',
++      '<path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/>',
++      '<path d="M5 5h14v16H5zM9 5V3h6v2M9 13l2 2 4-5"/>',
++      '<path d="M3 12h4l3-6 4 12 3-6h4"/>',
++      '<path d="M4 20h16M7 16v-5m5 5V5m5 11V8"/>',
++      '<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>'
++    ];
++    const resumos = [...(menu?.querySelectorAll("summary") || [])];
++    resumos.forEach((item, i) => {
++      const rotulo = item.querySelector("b").textContent;
++      item.title = rotulo;
++      item.setAttribute("aria-label", rotulo);
++      const simbolo = document.createElement("span");
++      simbolo.className = "qi-icone-menu";
++      simbolo.innerHTML = icone(desenhos[i] || desenhos[1]);
++      item.prepend(simbolo);
++      item.addEventListener("click", () => {
++        if (barra.classList.contains("qi-barra-compacta")) definirBarra(true);
++      });
++    });
++    const buscar = document.createElement("button");
++    buscar.type = "button";
++    buscar.className = "qi-button qi-busca-compacta";
++    buscar.title = "Pesquisar no menu";
++    buscar.setAttribute("aria-label", buscar.title);
++    buscar.innerHTML = icone('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>');
++    buscar.onclick = () => { definirBarra(true); campo.focus(); };
+     const controles = document.createElement("div");
+     controles.innerHTML = '<label for="qi-busca-lateral">Pesquisar no menu</label><input id="qi-busca-lateral" type="search" placeholder="Buscar função…"><div data-resultado-menu hidden></div>';
+     const campo = controles.querySelector("input");
+@@ -3500,7 +3552,7 @@ function filtrarLixeira() {
+     const grupo = document.createElement("span");
+     grupo.dataset.grupoMenu = "";
+     grupo.textContent = "ESPAÇO DE TRABALHO";
+-    barra.append(fixar, controles, grupo, home);
++    barra.append(fixar, buscar, controles, grupo, home);
+     const normalizarBusca = texto => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+     campo.oninput = () => {
+       const termos = normalizarBusca(campo.value).trim().split(/\s+/).filter(Boolean);
+@@ -3525,9 +3577,14 @@ function filtrarLixeira() {
+     document.body.prepend(barra);
+     const telaLarga = matchMedia("(min-width: 1100px)");
+     const posicionarBarra = () => {
+-      const fixa = Boolean(marca && menu && telaLarga.matches && pref.lateral !== false &&
+-        !document.body.classList.contains("qi-demo-open"));
+-      abrir.hidden = fixa || !telaLarga.matches || document.body.classList.contains("qi-demo-open");
++      const fixa = Boolean(marca && menu && telaLarga.matches && !document.body.classList.contains("qi-demo-open"));
++      const compacta = pref.lateral === false;
++      barra.classList.toggle("qi-barra-compacta", compacta);
++      document.body.classList.toggle("qi-menu-compacto", fixa && compacta);
++      fixar.setAttribute("aria-expanded", String(!compacta));
++      fixar.title = compacta ? "Expandir menu lateral" : "Recolher menu lateral";
++      fixar.setAttribute("aria-label", fixar.title);
++      fixar.innerHTML = seta + (compacta ? "" : "<span>Barra fixada</span>");
+       home.setAttribute("aria-current", document.getElementById("qi-inicio")?.hidden === false ? "page" : "false");
+       if (fixa === !barra.hidden) return;
+       const foco = document.activeElement;
+@@ -3563,8 +3620,7 @@ function filtrarLixeira() {
+       persistir();
+     };
+     lateral.onchange = () => definirBarra(lateral.checked);
+-    fixar.onclick = () => { definirBarra(false); abrir.focus(); };
+-    abrir.onclick = () => { definirBarra(true); fixar.focus(); };
++    fixar.onclick = () => definirBarra(pref.lateral === false);
+     for (const [tipo, nome] of [["relatorio","Relatórios e boletins"],["certificado","Certificados"],["prova","Cópias de prova"]]) {
+       const linha = document.createElement("div");
+       linha.innerHTML = '<label><input type="file" accept="image/png,image/jpeg,image/webp"></label><img alt="" hidden><button type="button" class="qi-button">Usar logo do sistema</button>';
+@@ -3612,7 +3668,8 @@ function filtrarLixeira() {
+     rolagem.setAttribute("aria-label","Rolagem da página");
+     for (const [icone, nome, destino] of [["↑","Ir ao topo",0],["↓","Ir ao final",1]]) {
+       const b = document.createElement("button");
+-      b.type = "button"; b.className = "qi-button"; b.textContent = icone;
++      b.type = "button"; b.className = "qi-button"; b.innerHTML = '<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' +
++        (destino ? 'M12 4v16m-7-7 7 7 7-7' : 'M12 20V4m-7 7 7-7 7 7') + '"/></svg>';
+       b.title = nome; b.setAttribute("aria-label",nome);
+       b.onclick = () => window.scrollTo({
+         top: destino ? document.scrollingElement.scrollHeight : 0,
+@@ -3621,6 +3678,14 @@ function filtrarLixeira() {
+       rolagem.append(b);
+     }
+     document.body.append(rolagem);
++    const atualizarSetas = () => {
++      const pagina = document.scrollingElement;
++      rolagem.firstElementChild.disabled = pagina.scrollTop <= 1;
++      rolagem.lastElementChild.disabled = pagina.scrollTop + pagina.clientHeight >= pagina.scrollHeight - 1;
++    };
++    window.addEventListener("scroll", atualizarSetas, {passive:true});
++    new ResizeObserver(atualizarSetas).observe(document.body);
++    atualizarSetas();
+   }
+   if (document.readyState === "complete") montar();
+   else window.addEventListener("load", montar, {once:true});
+@@ -3651,6 +3716,9 @@ function montarResumoHome() {
+   resumo.hidden = home.hidden;
+   resumo.append(document.getElementById("qi-home-resumo-template").content.cloneNode(true));
+   atalhos.before(resumo);
++  const clima = resumo.querySelector("#qi-home-clima");
++  clima.hidden = home.hidden;
++  atalhos.parentElement.prepend(clima);
+   const painel = document.getElementById("qi-home-resumo");
+   const status = painel.querySelector("[data-provas-status]");
+   const lista = painel.querySelector("[data-provas-lista]");
+@@ -3751,6 +3819,7 @@ function montarResumoHome() {
+   atualizar.addEventListener("click", carregar);
+   new MutationObserver(() => {
+     resumo.hidden = home.hidden;
++    clima.hidden = home.hidden;
+     if (!home.hidden) carregar();
+   }).observe(home, {attributes:true, attributeFilter:["hidden"]});
+   carregar();
