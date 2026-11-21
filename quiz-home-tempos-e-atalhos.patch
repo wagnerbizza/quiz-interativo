@@ -1,0 +1,120 @@
+diff --git a/painel.html b/painel.html
+index fdb1e96..44bba3a 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3379,28 +3379,48 @@ function filtrarLixeira() {
+ @media print{.quiz-home-weather{display:none!important}}
+ </style>
+ <template id="qi-home-resumo-template">
++  <div id="qi-home-clima" class="no-print"></div>
+   <section id="qi-home-resumo" class="qi-card no-print" aria-labelledby="qi-home-provas-titulo">
+     <h2 id="qi-home-provas-titulo">Avaliações ativas</h2>
+     <p role="status" data-provas-status>Aguardando consulta…</p>
+     <ul data-provas-lista></ul>
+     <div class="qi-actions">
+       <button type="button" class="qi-button" data-provas-atualizar>Atualizar lista</button>
+-      <button type="button" class="qi-button" data-qi-page="ativacao">Abrir ativação de provas</button>
++      <button type="button" class="qi-button" data-qi-page="ativacao">Gerenciar provas e tokens</button>
++      <button type="button" class="qi-button" data-qi-page="monitoramento">Monitoramento e autorizações</button>
++      <button type="button" class="qi-button" data-qi-page="escolas">Cadastrar escolas e gerenciar turmas</button>
++      <button type="button" class="qi-button" data-qi-page="questoes">Cadastrar e importar questões</button>
++      <button type="button" class="qi-button" data-qi-page="banco-dados">Editar questões no catálogo</button>
+     </div>
+   </section>
+-  <div id="qi-home-clima" class="no-print"></div>
+ </template>
+ <script type="module">
+ function montarResumoHome() {
+   const home = document.getElementById("qi-inicio");
+-  if (!home || document.getElementById("qi-home-resumo")) return false;
+-  home.prepend(document.getElementById("qi-home-resumo-template").content.cloneNode(true));
++  const atalhos = document.querySelector(".qi-shell > .qi-quick-links");
++  if (!home || !atalhos || document.getElementById("qi-home-resumo")) return false;
++  const resumo = document.createElement("div");
++  resumo.hidden = home.hidden;
++  resumo.append(document.getElementById("qi-home-resumo-template").content.cloneNode(true));
++  atalhos.before(resumo);
+   const painel = document.getElementById("qi-home-resumo");
+   const status = painel.querySelector("[data-provas-status]");
+   const lista = painel.querySelector("[data-provas-lista]");
+   const atualizar = painel.querySelector("[data-provas-atualizar]");
+   let carregando = false;
+ 
++  const horario = new Intl.DateTimeFormat("pt-BR", {
++    dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo"
++  });
++  const dataValida = valor => {
++    const numero = Number(valor);
++    return numero > 0 && Number.isFinite(new Date(numero).getTime()) ? numero : 0;
++  };
++  const formatoDuracao = minutos => minutos >= 60
++    ? Math.floor(minutos / 60) + " h " + (minutos % 60) + " min"
++    : minutos + " min";
++  let atualizarHorarios = [];
++
+   async function consultarFirebase() {
+     const sdk = "https://www.gstatic.com/firebasejs/10.8.0/";
+     const [{getApp}, {getFirestore, collection, getDocsFromServer, query, where}] = await Promise.all([
+@@ -3432,7 +3452,7 @@ function montarResumoHome() {
+       if (firebase.status === "fulfilled") firebase.value.forEach(adicionar);
+       if (arquivo.status === "fulfilled") adicionar(arquivo.value);
+       lista.replaceChildren();
+-      const agora = Date.now();
++      atualizarHorarios = [];
+       for (const prova of [...provas.values()].sort((a,b) => a.escolaAtiva.localeCompare(b.escolaAtiva,"pt-BR"))) {
+         const item = document.createElement("li");
+         item.className = "qi-home-prova";
+@@ -3440,12 +3460,31 @@ function montarResumoHome() {
+         escola.textContent = prova.escolaAtiva;
+         const detalhes = document.createElement("p");
+         const turmas = Array.isArray(prova.turmasAtivas) ? prova.turmasAtivas.join(", ") : "";
+-        const prazo = Number(prova.expiraEmMillis);
+-        const inicio = Number(prova.agendamento);
+-        const situacao = prazo > 0 && agora >= prazo ? "Prazo de entrada encerrado" :
+-          inicio > agora ? "Início agendado" : "Entradas liberadas";
+-        detalhes.textContent = [prova.tipoAtividade, turmas && "Turmas: " + turmas, situacao].filter(Boolean).join(" · ");
+-        item.append(escola, detalhes);
++        const prazo = dataValida(prova.expiraEmMillis);
++        const inicio = dataValida(prova.agendamento);
++        const minimo = Number(prova.tempoMinimoMinutos);
++        const maximo = Number(prova.tempoLimiteMinutos ?? prova.tempoMaximoMinutos ?? prova.tempoMaximo);
++        detalhes.textContent = [prova.tipoAtividade, turmas && "Turmas: " + turmas].filter(Boolean).join(" · ");
++        const janela = document.createElement("p");
++        const duracao = document.createElement("p");
++        duracao.textContent = [
++          Number.isFinite(minimo) && minimo >= 0 && ("Entrega: " + (minimo ? "após " + minimo + " min" : "sem tempo mínimo")),
++          Number.isFinite(maximo) && maximo >= 0 && ("Por aluno: " + (maximo ? maximo + " min" : "sem limite"))
++        ].filter(Boolean).join(" · ");
++        const atualizarHorario = () => {
++          const agora = Date.now();
++          const situacao = prazo && agora >= prazo ? "Prazo de entrada encerrado" :
++            inicio > agora ? "Início agendado" : "Ativa — entradas liberadas";
++          janela.textContent = [
++            situacao,
++            inicio && "Início programado: " + horario.format(inicio),
++            prazo && "Entrada até: " + horario.format(prazo),
++            prazo > agora && inicio <= agora && "Restam " + formatoDuracao(Math.ceil((prazo - agora) / 60000))
++          ].filter(Boolean).join(" · ");
++        };
++        atualizarHorario();
++        atualizarHorarios.push(atualizarHorario);
++        item.append(escola, detalhes, janela, duracao);
+         lista.append(item);
+       }
+       const parcial = firebase.status !== "fulfilled" || arquivo.status !== "fulfilled";
+@@ -3457,8 +3496,14 @@ function montarResumoHome() {
+       atualizar.disabled = false;
+     }
+   }
++  setInterval(() => {
++    if (!home.hidden && !document.hidden) atualizarHorarios.forEach(atualizar => atualizar());
++  }, 15000);
+   atualizar.addEventListener("click", carregar);
+-  new MutationObserver(() => { if (!home.hidden) carregar(); }).observe(home, {attributes:true, attributeFilter:["hidden"]});
++  new MutationObserver(() => {
++    resumo.hidden = home.hidden;
++    if (!home.hidden) carregar();
++  }).observe(home, {attributes:true, attributeFilter:["hidden"]});
+   carregar();
+ /* Previsão Open-Meteo. Cache local; independente do Firebase e dos placares. */
+ (function(){
