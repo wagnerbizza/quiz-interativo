@@ -765,7 +765,8 @@ function identificarDocumentoQuiz(html) {
   const visual=window.QuizInterface?.identidade;
   if(!visual)return html;
   const e=escaparTextoQuiz;
-  const topo=`<div style="display:flex;gap:12px;align-items:center;padding-bottom:12px;margin-bottom:20px;border-bottom:1px solid #d1d5db">${visual.logo?`<img src="${e(visual.logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<b>${e(visual.titulo)}</b></div>`;
+  const logo = window.logoDocumentoProfessorQuiz?.("prova") || visual.logo;
+  const topo=`<div style="display:flex;gap:12px;align-items:center;padding-bottom:12px;margin-bottom:20px;border-bottom:1px solid #d1d5db">${logo?`<img src="${e(logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<b>${e(visual.titulo)}</b></div>`;
   const rodape=`<footer style="margin-top:25px;padding-top:10px;border-top:1px solid #e5e7eb;color:#64748b;font-size:10px;text-align:right">${e(visual.marca)}</footer>`;
   return html.replace(/<body([^>]*)>/i,`<body$1>${topo}`).replace(/<\/body>/i,`${rodape}</body>`);
 }
@@ -2143,19 +2144,17 @@ if (window.location.pathname.includes("painel.html")) {
       // 10C.7: prova ativa em tempo real só é observada dentro da aba Ativação.
     }, 400);
 
+    const hashInicial = window.location.hash;
     const btnEscolasAba = document.querySelector('.btn-aba[data-aba="aba-escolas"]');
     if (btnEscolasAba) {
       btnEscolasAba.click();
     }
 
-    if (window.location.hash) {
-      const abaHash = window.location.hash.replace("#", "aba-");
-      const btnAlvo = document.querySelector(`.btn-aba[data-aba="${abaHash}"]`);
-      if (btnAlvo) btnAlvo.click();
-      else if(window.location.hash==="#inicio") window.QuizInterface?.navigate("inicio");
-    } else {
-      window.QuizInterface?.navigate("inicio");
-    }
+    const destinoInicial = hashInicial.slice(1);
+    const abaInicial = [...document.querySelectorAll(".btn-aba[data-aba]")]
+      .find(botao => botao.dataset.aba === "aba-" + destinoInicial);
+    if (abaInicial) abaInicial.click();
+    else window.QuizInterface?.navigate("inicio");
     const escolaConfigurada = new URLSearchParams(window.location.search).get("escola_configurada");
     if (escolaConfigurada && window.location.hash === "#ativacao") {
       const escola = listaEscolasCache.find(item => normalizarTexto(item.nome) === normalizarTexto(escolaConfigurada));
@@ -4739,7 +4738,9 @@ if (window.location.pathname.includes("painel.html")) {
     if (!w) { alert("⚠️ Permita pop-ups para gerar o documento."); return; }
     const identidade=window.QuizInterface?.identidade || {titulo:"Quiz Interativo",marca:"WagnerBIZZA",logo:""};
     const escDoc=escaparDocumentoQuiz;
-    const cabecalhoIdentidade=`<div style="display:flex;gap:12px;align-items:center;border-bottom:1px solid #d1d5db;padding:0 0 12px;margin:0 0 18px">${identidade.logo?`<img src="${escDoc(identidade.logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<strong>${escDoc(identidade.titulo)}</strong></div>`;
+    const tipo = titulo.startsWith("Certificado") ? "certificado" : "relatorio";
+    const logo = window.logoDocumentoProfessorQuiz?.(tipo) || identidade.logo;
+    const cabecalhoIdentidade=`<div style="display:flex;gap:12px;align-items:center;border-bottom:1px solid #d1d5db;padding:0 0 12px;margin:0 0 18px">${logo?`<img src="${escDoc(logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<strong>${escDoc(identidade.titulo)}</strong></div>`;
     const marca=`<footer style="margin-top:25px;padding-top:10px;border-top:1px solid #e5e7eb;color:#64748b;font-size:10px;text-align:right">${escDoc(identidade.marca)}</footer>`;
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escDoc(titulo)}</title>
     <style>
