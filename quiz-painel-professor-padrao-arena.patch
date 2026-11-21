@@ -1,0 +1,234 @@
+diff --git a/app.js b/app.js
+index d64f173..e22fe64 100644
+--- a/app.js
++++ b/app.js
+@@ -765,7 +765,8 @@ function identificarDocumentoQuiz(html) {
+   const visual=window.QuizInterface?.identidade;
+   if(!visual)return html;
+   const e=escaparTextoQuiz;
+-  const topo=`<div style="display:flex;gap:12px;align-items:center;padding-bottom:12px;margin-bottom:20px;border-bottom:1px solid #d1d5db">${visual.logo?`<img src="${e(visual.logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<b>${e(visual.titulo)}</b></div>`;
++  const logo = window.logoDocumentoProfessorQuiz?.("prova") || visual.logo;
++  const topo=`<div style="display:flex;gap:12px;align-items:center;padding-bottom:12px;margin-bottom:20px;border-bottom:1px solid #d1d5db">${logo?`<img src="${e(logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<b>${e(visual.titulo)}</b></div>`;
+   const rodape=`<footer style="margin-top:25px;padding-top:10px;border-top:1px solid #e5e7eb;color:#64748b;font-size:10px;text-align:right">${e(visual.marca)}</footer>`;
+   return html.replace(/<body([^>]*)>/i,`<body$1>${topo}`).replace(/<\/body>/i,`${rodape}</body>`);
+ }
+@@ -2143,19 +2144,17 @@ if (window.location.pathname.includes("painel.html")) {
+       // 10C.7: prova ativa em tempo real só é observada dentro da aba Ativação.
+     }, 400);
+ 
++    const hashInicial = window.location.hash;
+     const btnEscolasAba = document.querySelector('.btn-aba[data-aba="aba-escolas"]');
+     if (btnEscolasAba) {
+       btnEscolasAba.click();
+     }
+ 
+-    if (window.location.hash) {
+-      const abaHash = window.location.hash.replace("#", "aba-");
+-      const btnAlvo = document.querySelector(`.btn-aba[data-aba="${abaHash}"]`);
+-      if (btnAlvo) btnAlvo.click();
+-      else if(window.location.hash==="#inicio") window.QuizInterface?.navigate("inicio");
+-    } else {
+-      window.QuizInterface?.navigate("inicio");
+-    }
++    const destinoInicial = hashInicial.slice(1);
++    const abaInicial = [...document.querySelectorAll(".btn-aba[data-aba]")]
++      .find(botao => botao.dataset.aba === "aba-" + destinoInicial);
++    if (abaInicial) abaInicial.click();
++    else window.QuizInterface?.navigate("inicio");
+     const escolaConfigurada = new URLSearchParams(window.location.search).get("escola_configurada");
+     if (escolaConfigurada && window.location.hash === "#ativacao") {
+       const escola = listaEscolasCache.find(item => normalizarTexto(item.nome) === normalizarTexto(escolaConfigurada));
+@@ -4739,7 +4738,9 @@ if (window.location.pathname.includes("painel.html")) {
+     if (!w) { alert("⚠️ Permita pop-ups para gerar o documento."); return; }
+     const identidade=window.QuizInterface?.identidade || {titulo:"Quiz Interativo",marca:"WagnerBIZZA",logo:""};
+     const escDoc=escaparDocumentoQuiz;
+-    const cabecalhoIdentidade=`<div style="display:flex;gap:12px;align-items:center;border-bottom:1px solid #d1d5db;padding:0 0 12px;margin:0 0 18px">${identidade.logo?`<img src="${escDoc(identidade.logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<strong>${escDoc(identidade.titulo)}</strong></div>`;
++    const tipo = titulo.startsWith("Certificado") ? "certificado" : "relatorio";
++    const logo = window.logoDocumentoProfessorQuiz?.(tipo) || identidade.logo;
++    const cabecalhoIdentidade=`<div style="display:flex;gap:12px;align-items:center;border-bottom:1px solid #d1d5db;padding:0 0 12px;margin:0 0 18px">${logo?`<img src="${escDoc(logo)}" alt="Logo" style="width:45px;height:45px;object-fit:contain">`:""}<strong>${escDoc(identidade.titulo)}</strong></div>`;
+     const marca=`<footer style="margin-top:25px;padding-top:10px;border-top:1px solid #e5e7eb;color:#64748b;font-size:10px;text-align:right">${escDoc(identidade.marca)}</footer>`;
+     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escDoc(titulo)}</title>
+     <style>
+diff --git a/painel.html b/painel.html
+index ae65644..ff4d1a8 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3347,6 +3347,170 @@ function filtrarLixeira() {
+ @media(max-width:480px){.quiz-home-weather-days{grid-template-columns:1fr}.quiz-home-weather-days article{grid-template-columns:1fr 1fr}.quiz-home-weather-days article strong{grid-column:1/-1}}
+ @media print{.quiz-home-weather{display:none!important}}
+ </style>
++<style>
++  #qi-home-resumo, #bloco-prova-ativa-topo {
++    border-inline-start: 5px solid var(--qi-prova-cor, #22c55e);
++    background: color-mix(in srgb, var(--qi-panel) 94%, var(--qi-prova-cor, #22c55e));
++    border-radius: 12px;
++  }
++  #bloco-prova-ativa-topo { padding: 12px; }
++  #bloco-prova-ativa-topo > div:not(:first-child) {
++    border-color: var(--qi-prova-cor, #22c55e) !important;
++  }
++  #qi-config-professor img[hidden] { display: none; }
++  #qi-home-resumo .qi-home-prova { list-style: none; }
++  #qi-home-resumo .qi-home-prova strong { font-size: 1.15em; }
++  #qi-home-resumo [data-janela] { font-weight: 700; border-inline-start: 3px solid var(--qi-prova-cor, #22c55e); padding-inline-start: 8px; }
++  #qi-favoritos { margin-bottom: 14px; }
++  #qi-favoritos fieldset { display: flex; flex-wrap: wrap; gap: 12px; }
++  #qi-favoritos input[type=checkbox] { width: auto; margin-inline-end: 5px; }
++  #qi-rolagem { position: fixed; right: 16px; bottom: 92px; z-index: 700; display: grid; gap: 8px; }
++  #qi-config-professor img { display: block; max-width: 130px; max-height: 72px; margin-block: 8px; object-fit: contain; }
++  @media screen and (min-width: 1100px) {
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) > .container { padding-inline-start: 238px; }
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) .qi-shell .qi-menus {
++      position: fixed; inset: 120px auto 16px 12px; width: 210px; margin: 0; z-index: 600;
++      display: flex; flex-direction: column; gap: 6px; overflow: auto; padding: 8px;
++      border: 1px solid var(--qi-line); border-radius: 12px; background: var(--qi-panel);
++    }
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) .qi-shell .qi-menus > details { flex: 0 0 auto; }
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) .qi-shell .qi-menus summary { min-height: 48px; padding: 8px; }
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) .qi-shell .qi-menus summary small { display: none; }
++  }
++  @media print { #qi-rolagem, #qi-favoritos, #qi-config-professor { display: none !important; } }
++</style>
++<script>
++(() => {
++  const chave = "quiz-professor-painel-v1";
++  let pref = {};
++  try { pref = JSON.parse(localStorage.getItem(chave)) || {}; } catch {}
++  const salvar = () => {
++    try { localStorage.setItem(chave, JSON.stringify(pref)); return true; } catch { return false; }
++  };
++  const logoValido = logo => typeof logo === "string" &&
++    /^data:image\/(?:png|jpeg|webp);base64,[a-z\d+/=]+$/i.test(logo);
++  window.logoDocumentoProfessorQuiz = tipo => {
++    const logo = pref.logos?.[tipo];
++    return logoValido(logo) ? logo : "";
++  };
++  function montar() {
++    const nav = document.querySelector(".qi-shell > .qi-quick-links");
++    if (!nav || document.getElementById("qi-favoritos")) return;
++    const paginas = new Map();
++    document.querySelectorAll(".qi-shell .qi-menus [data-qi-page], .qi-shell .qi-quick-links [data-qi-page]").forEach(botao => {
++      if (!paginas.has(botao.dataset.qiPage)) paginas.set(botao.dataset.qiPage, botao.textContent.trim());
++    });
++    const favoritas = new Set(Array.isArray(pref.favoritas) ? pref.favoritas : ["ativacao", "monitoramento", "relatorios"]);
++    const favoritos = document.createElement("section");
++    favoritos.id = "qi-favoritos";
++    favoritos.className = "qi-card";
++    favoritos.innerHTML = '<h2>Meus atalhos</h2><div class="qi-actions" data-favoritos></div><details><summary>Escolher atalhos e favoritos</summary><fieldset><legend>Mostrar em Meus atalhos</legend></fieldset></details><p role="status"></p>';
++    nav.after(favoritos);
++    function renderizar() {
++      const botoes = favoritos.querySelector("[data-favoritos]");
++      botoes.replaceChildren();
++      for (const [id, nome] of paginas) {
++        if (!favoritas.has(id)) continue;
++        const b = document.createElement("button");
++        b.type = "button"; b.className = "qi-button"; b.dataset.qiPage = id; b.textContent = nome;
++        botoes.append(b);
++      }
++    }
++    for (const [id, nome] of paginas) {
++      if (id === "inicio") continue;
++      const label = document.createElement("label");
++      const caixa = document.createElement("input");
++      caixa.type = "checkbox"; caixa.checked = favoritas.has(id);
++      caixa.onchange = () => {
++        if (caixa.checked) favoritas.add(id); else favoritas.delete(id);
++        pref.favoritas = [...favoritas];
++        favoritos.querySelector("[role=status]").textContent = salvar() ? "" : "O navegador não conseguiu salvar os atalhos.";
++        renderizar();
++      };
++      label.append(caixa, nome);
++      favoritos.querySelector("fieldset").append(label);
++    }
++    renderizar();
++    const busca = document.querySelector('label[for="qi-function-search"]');
++    if (busca) busca.textContent = "Encontrar uma função";
++    const config = document.createElement("section");
++    config.id = "qi-config-professor";
++    config.className = "qi-card";
++    config.innerHTML = '<h2>Aparência do painel e dos documentos</h2><label>Cor do destaque das avaliações <input type="color"></label><label><input type="checkbox" data-menu-lateral> Menu lateral em telas largas</label><p>As preferências ficam neste navegador. Sem um logotipo específico, o documento usa o logotipo do sistema.</p><div data-logos></div><p role="status"></p>';
++    const aplicar = () => {
++      const cor = /^#[0-9a-f]{6}$/i.test(pref.cor) ? pref.cor : "#22c55e";
++      document.documentElement.style.setProperty("--qi-prova-cor", cor);
++      config.querySelector('input[type=color]').value = cor;
++      document.body.classList.toggle("qi-menu-lateral", pref.lateral !== false);
++    };
++    const persistir = () => {
++      config.querySelector('[role=status]').textContent = salvar() ? "Preferências salvas." : "O navegador não conseguiu salvar as preferências.";
++    };
++    config.querySelector('input[type=color]').oninput = e => { pref.cor = e.target.value; aplicar(); persistir(); };
++    const lateral = config.querySelector("[data-menu-lateral]");
++    lateral.checked = pref.lateral !== false;
++    lateral.onchange = () => { pref.lateral = lateral.checked; aplicar(); persistir(); };
++    for (const [tipo, nome] of [["relatorio","Relatórios e boletins"],["certificado","Certificados"],["prova","Cópias de prova"]]) {
++      const linha = document.createElement("div");
++      linha.innerHTML = '<label><input type="file" accept="image/png,image/jpeg,image/webp"></label><img alt="" hidden><button type="button" class="qi-button">Usar logo do sistema</button>';
++      linha.querySelector("label").prepend(nome + " ");
++      const img = linha.querySelector("img");
++      const arquivo = linha.querySelector("input");
++      function mostrar() {
++        const logo = window.logoDocumentoProfessorQuiz(tipo);
++        if (logo) img.src = logo; else img.removeAttribute("src");
++        img.hidden = !logo;
++        img.alt = "Prévia do logotipo — " + nome;
++      }
++      arquivo.onchange = () => {
++        const file = arquivo.files[0];
++        if (!file) return;
++        if (!["image/png","image/jpeg","image/webp"].includes(file.type) || file.size > 500000) {
++          config.querySelector('[role=status]').textContent = "Selecione PNG, JPG ou WebP de até 500 KB.";
++          arquivo.value = "";
++          return;
++        }
++        const leitor = new FileReader();
++        leitor.onload = () => {
++          if (!logoValido(leitor.result)) return;
++          pref.logos = {...pref.logos, [tipo]: leitor.result};
++          mostrar(); persistir();
++        };
++        leitor.onerror = () => { config.querySelector('[role=status]').textContent = "Não foi possível ler o logotipo."; };
++        leitor.readAsDataURL(file);
++      };
++      linha.querySelector("button").onclick = () => {
++        pref.logos = {...pref.logos, [tipo]: ""}; arquivo.value = ""; mostrar(); persistir();
++      };
++      mostrar();
++      config.querySelector("[data-logos]").append(linha);
++    }
++    const anexarConfig = () => {
++      const identidade = document.getElementById("qi-identidade");
++      if (identidade && !identidade.contains(config)) identidade.append(config);
++    };
++    new MutationObserver(anexarConfig).observe(document.querySelector(".container"), {childList:true, subtree:true});
++    anexarConfig();
++    aplicar();
++    const rolagem = document.createElement("nav");
++    rolagem.id = "qi-rolagem";
++    rolagem.setAttribute("aria-label","Rolagem da página");
++    for (const [icone, nome, destino] of [["↑","Ir ao topo",0],["↓","Ir ao final",1]]) {
++      const b = document.createElement("button");
++      b.type = "button"; b.className = "qi-button"; b.textContent = icone;
++      b.title = nome; b.setAttribute("aria-label",nome);
++      b.onclick = () => window.scrollTo({
++        top: destino ? document.scrollingElement.scrollHeight : 0,
++        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
++      });
++      rolagem.append(b);
++    }
++    document.body.append(rolagem);
++  }
++  if (document.readyState === "complete") montar();
++  else window.addEventListener("load", montar, {once:true});
++})();
++</script>
+ <template id="qi-home-resumo-template">
+   <div id="qi-home-clima" class="no-print"></div>
+   <section id="qi-home-resumo" class="qi-card no-print" aria-labelledby="qi-home-provas-titulo">
+@@ -3435,6 +3599,7 @@ function montarResumoHome() {
+         const maximo = Number(prova.tempoLimiteMinutos ?? prova.tempoMaximoMinutos ?? prova.tempoMaximo);
+         detalhes.textContent = [prova.tipoAtividade, turmas && "Turmas: " + turmas].filter(Boolean).join(" · ");
+         const janela = document.createElement("p");
++        janela.dataset.janela = "";
+         const duracao = document.createElement("p");
+         duracao.textContent = [
+           Number.isFinite(minimo) && minimo >= 0 && ("Entrega: " + (minimo ? "após " + minimo + " min" : "sem tempo mínimo")),
