@@ -1,21 +1,160 @@
 {
   "versaoPacote": 1,
-  "ativa": false,
-  "idAvaliacao": "",
+  "ativa": true,
+  "idAvaliacao": "av_1795300707409",
   "escolaAtiva": "EE José Lins do Rego",
-  "materiasAtivas": [],
-  "disciplinasAtivas": [],
-  "periodoAtivo": "",
-  "quantidadeQuestoes": 0,
+  "materiasAtivas": [
+    "Inteligência Artificial",
+    "Processos de Desenvolvimentos de Software e metodologias Ágeis",
+    "Redes de Computadores e Segurança da Informação na Nuvem",
+    "Programação Front-End"
+  ],
+  "disciplinasAtivas": [
+    "Ensino Médio Técnico"
+  ],
+  "periodoAtivo": "Manhã",
+  "quantidadeQuestoes": 10,
+  "tipoAtividade": "Prova",
+  "valorTotal": 10,
   "tempoMinimoMinutos": 0,
   "tempoLimiteMinutos": 0,
-  "tempoAtivacaoMinutos": 0,
-  "expiraEmMillis": 1794801172036,
-  "turmasAtivas": [],
-  "token": "",
-  "seedReordenacao": "1794801172036",
-  "publicadoEm": "2026-11-16T03:52:52.036Z",
-  "encerradoEm": "2026-11-16T03:52:52.036Z",
-  "motivoEncerramento": "Avaliação encerrada pelo professor.",
-  "questoesPublicas": []
+  "tempoMaximoMinutos": 0,
+  "tempoAtivacaoMinutos": 180,
+  "expiraEmMillis": 1795311507409,
+  "turmasAtivas": [
+    "2A",
+    "3B",
+    "2I",
+    "3D"
+  ],
+  "token": "4321",
+  "seedReordenacao": "1795300707409",
+  "publicadoEm": "2026-11-21T22:38:27.456Z",
+  "questoesPublicas": [
+    {
+      "idQuestao": "kmd1oSQc0wmowVmR76r1",
+      "pergunta": "Qual método JavaScript junta todos os elementos de um array em uma string?",
+      "opcoes": [
+        "combine()",
+        "merge()",
+        "toString()",
+        "concat()",
+        "join()"
+      ],
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End"
+    },
+    {
+      "idQuestao": "9sMioQDWBcH0QzuPIIEW",
+      "pergunta": "O que é o aprendizado por imitação (Imitation Learning)?",
+      "opcoes": [
+        "A duplicação de arquivos em um servidor",
+        "Uma técnica onde o agente de IA aprende a realizar tarefas observando demonstrações de especialistas humanos",
+        "A cópia ilegal de softwares protegidos",
+        "A reinstalação de sistemas operacionais"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "n1NZq7aBEiw1pJA5M82J",
+      "pergunta": "O que é uma CDN (Content Delivery Network)?",
+      "opcoes": [
+        "Ferramenta de desenvolvimento de interfaces de usuário",
+        "Protocolo de roteamento de pacotes na camada de rede",
+        "Servidor centralizado único que armazena todas as páginas web",
+        "Rede de servidores distribuídos geograficamente para entregar conteúdo web rapidamente aos usuários",
+        "Sistema de criptografia de ponta a ponta para mensagens confidenciais"
+      ],
+      "materia": "Redes de Computadores e Segurança da Informação na Nuvem",
+      "categoria": "Redes de Computadores e Segurança da Informação na Nuvem"
+    },
+    {
+      "idQuestao": "5bV6H971eYtrI5IOzxem",
+      "pergunta": "O que é uma Árvore de Decisão?",
+      "opcoes": [
+        "Um sistema de arquivos otimizado para leitura rápida",
+        "Um protocolo de comunicação entre microserviços",
+        "Um banco de dados relacional distribuído na nuvem",
+        "Uma ferramenta de design de interfaces web",
+        "Estrutura de fluxo que toma decisões baseadas em regras condicionais extraídas dos dados"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "t1YpGN6J3ib6QBmW2kzw",
+      "pergunta": "Qual seletor CSS é utilizado para selecionar um elemento pelo seu ID?",
+      "opcoes": [
+        "* (asterisco)",
+        "& (e comercial)",
+        "@ (arroba)",
+        ". (ponto)",
+        "# (cerquilha)"
+      ],
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End"
+    },
+    {
+      "idQuestao": "V8opRgrXesSrZBY6PZvF",
+      "pergunta": "O que é a interpretabilidade de modelos de IA?",
+      "opcoes": [
+        "O design visual de uma interface",
+        "A tradução de idiomas estrangeiros",
+        "A velocidade de execução de um programa",
+        "O grau em que um ser humano pode entender a causa de uma decisão tomada pelo modelo"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "crRhcBy8Ej2ObFWWjNEo",
+      "pergunta": "[Técnico 45] O que é criptografia simétrica?",
+      "opcoes": [
+        "Uso de duas chaves diferentes",
+        "Criptografia sem uso de senhas",
+        "Dados abertos sem proteção",
+        "Uso da mesma chave secreta tanto para criptografar quanto para descriptografar os dados"
+      ],
+      "materia": "Redes de computadores e seguranca da informação na nuvem",
+      "categoria": "Redes de computadores e seguranca da informação na nuvem"
+    },
+    {
+      "idQuestao": "UNYDWDHPzrbUpEyvCGvP",
+      "pergunta": "[Técnico 15] O que é o algoritmo K-Means?",
+      "opcoes": [
+        "Um algoritmo de agrupamento (clustering) não supervisionado",
+        "Um framework mobile",
+        "Um compilador de inteligência artificial",
+        "Uma ferramenta de segurança em nuvem"
+      ],
+      "materia": "Inteligencia Artificial",
+      "categoria": "Inteligencia Artificial"
+    },
+    {
+      "idQuestao": "AUwEohRubJTXkUeeAILj",
+      "pergunta": "O que é o algoritmo k-Nearest Neighbors (KNN)?",
+      "opcoes": [
+        "Um protocolo de rede de internet",
+        "Um compactador de arquivos",
+        "Um antivírus para redes locais",
+        "Um algoritmo de classificação simples baseado na proximidade dos dados no espaço vetorial"
+      ],
+      "materia": "Inteligência Artificial",
+      "categoria": "Inteligência Artificial"
+    },
+    {
+      "idQuestao": "EJuxRXcD3XnByc6aQmV0",
+      "pergunta": "Qual método JavaScript cria um novo array com os resultados de uma função aplicada a todos os elementos?",
+      "opcoes": [
+        "reduce()",
+        "forEach()",
+        "find()",
+        "filter()",
+        "map()"
+      ],
+      "materia": "Programação Front-End",
+      "categoria": "Programação Front-End"
+    }
+  ]
 }
