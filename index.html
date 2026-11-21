@@ -603,6 +603,18 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     #opcoes-container .opcao-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 </style>
+<style>
+  #painel-tempo-aluno { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  #painel-tempo-aluno .info-prova-aluno strong {
+    font-size:1rem; font-variant-numeric:tabular-nums;
+  }
+  #painel-tempo-aluno .tempo-principal { border-color:#38bdf8; }
+  #painel-tempo-aluno .tempo-principal strong { font-size:1.2rem; }
+  @media screen and (max-width:720px) {
+    #painel-tempo-aluno { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #painel-tempo-aluno .info-prova-aluno { min-width:0; overflow-wrap:anywhere; }
+  }
+</style>
 </head>
 <body>
 
@@ -700,9 +712,9 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       </section>
       <!-- 🔵 FASE 8B — INFORMAÇÕES VISÍVEIS DURANTE A PROVA -->
       <div id="painel-tempo-aluno" class="painel-tempo-aluno">
+        <div class="info-prova-aluno tempo-principal"><span>⌛</span><div><small>TEMPO RESTANTE</small><strong id="tempo-restante-aluno">Sem limite</strong></div></div>
         <div class="info-prova-aluno"><span>⏱️</span><div><small>DECORRIDO</small><strong id="tempo-decorrido-aluno">00:00</strong></div></div>
         <div class="info-prova-aluno"><span>🔒</span><div><small>TEMPO MÍNIMO</small><strong id="tempo-minimo-aluno">Livre</strong></div></div>
-        <div class="info-prova-aluno"><span>⌛</span><div><small>TEMPO RESTANTE</small><strong id="tempo-restante-aluno">Sem limite</strong></div></div>
         <div class="info-prova-aluno"><span>📊</span><div><small>RESPONDIDAS</small><strong id="progresso-aluno">0 / 0</strong></div></div>
       </div>
       <div id="aviso-tempo-aluno" class="aviso-tempo-aluno">ℹ️ A avaliação é salva durante o andamento.</div>
