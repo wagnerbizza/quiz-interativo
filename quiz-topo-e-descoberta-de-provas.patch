@@ -1,0 +1,206 @@
+diff --git a/app.js b/app.js
+index 34e91d4..0910344 100644
+--- a/app.js
++++ b/app.js
+@@ -6411,7 +6411,7 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
+     salvar(dados) {
+       const usuario = auth.currentUser;
+       if (!usuario || usuario.isAnonymous || !navigator.onLine) return Promise.reject(new Error("Sem conexão com a conta."));
+-      return setDoc(doc(db, "preferencias_professores", usuario.uid), dados);
++      return setDoc(doc(db, "preferencias_professores", usuario.uid), dados, {mergeFields: Object.keys(dados)});
+     }
+   };
+ 
+diff --git a/index.html b/index.html
+index acad8c5..9c191b4 100644
+--- a/index.html
++++ b/index.html
+@@ -1151,7 +1151,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+ 
+       const escolaPacote = String(pacote.escolaAtiva || "").trim();
+       const escolaSelecionada = selectEscola?.value;
+-      if (escolaSelecionada && escolaSelecionada !== escolaPacote && dadosProvaAtiva.gerenciadaNaNuvem) return;
++      if (escolaSelecionada && normalizarId(escolaSelecionada) !== normalizarId(escolaPacote)) return;
+       if (escolaPacote) {
+         try {
+           const remoto = await consultarEstadoDaProva(escolaPacote);
+@@ -1277,6 +1277,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+       // 1) tenta primeiro o pacote prova-publicada.json do site/GitHub;
+       // 2) Firebase fica como fallback quando o pacote não existe, expirou ou está inativo.
+       // O Firebase continua sendo usado normalmente para autenticação e resultados.
++      ++sequenciaConsultaPacote;
+       if (unsubscribeProvaEscola) {
+         unsubscribeProvaEscola();
+         unsubscribeProvaEscola = null;
+@@ -1288,10 +1289,12 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+       detalhesProvaAtiva.innerHTML = `⏳ Verificando avaliação publicada para <strong>${escolaNome}</strong>...`;
+ 
+       {
++        let versaoDaConsulta = 0;
+         const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
+         unsubscribeProvaEscola = onSnapshot(
+           provaRef,
+           async (docSnap) => {
++            const versao = ++versaoDaConsulta;
+             const remoto = docSnap.data();
+             if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
+             if (remoto?.gerenciadaNaNuvem) {
+@@ -1299,6 +1302,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+               return;
+             }
+             const pacote = await carregarProvaEstatica(escolaNome);
++            if (versao !== versaoDaConsulta) return;
+             if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
+             if (pacote) {
+               if (!await aplicarProvaRecebida(escolaNome, pacote, "github")) mostrarProvaInativaAluno(escolaNome);
+@@ -1329,11 +1333,30 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+     }
+ 
+     selectEscola?.addEventListener("change", () => acompanharProvaDaEscola(selectEscola.value));
++    let pararBuscaProvasNaNuvem;
++    function descobrirProvasNaNuvem() {
++      pararBuscaProvasNaNuvem?.();
++      pararBuscaProvasNaNuvem = onSnapshot(query(collection(db, "provas_ativas"), where("ativa", "==", true)), snap => {
++        if (selectEscola.value || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
++        const agora = Date.now();
++        const provas = snap.docs.map(item => item.data()).filter(prova =>
++          prova.gerenciadaNaNuvem && (!prova.expiraEmMillis || Number(prova.expiraEmMillis) > agora));
++        const escolas = Array.from(selectEscola.options).filter(opcao => opcao.value && provas.some(prova =>
++          normalizarId(prova.escolaAtiva) === normalizarId(opcao.value)));
++        if (escolas.length === 1) {
++          selectEscola.value = escolas[0].value;
++          acompanharProvaDaEscola(escolas[0].value);
++        } else if (escolas.length > 1) {
++          detalhesProvaAtiva.textContent = "Há avaliações ativas. Selecione sua escola.";
++        }
++      }, erro => console.warn("Não foi possível listar as avaliações ativas:", erro.code));
++    }
+     // 🔐 FASE 10C — só acessa o Firestore depois que o Firebase entregar um UID ao aluno.
+     onAuthStateChanged(auth, async (usuario) => {
+       if (!usuario) return;
+       uidAlunoFirebase = usuario.uid;
+       await carregarEscolasAluno();
++      descobrirProvasNaNuvem();
+       await conferirPacotePublicoNaEntrada();
+     });
+     // Verifica o encerramento independentemente do login anônimo do Firebase.
+diff --git a/painel.html b/painel.html
+index 645a1d0..1fe928f 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3719,7 +3719,7 @@ function filtrarLixeira() {
+       sincronizarInicio();
+     }
+     window.quizPreferenciasRemotas?.ouvir(remoto => {
+-      if (!remoto) return;
++      if (!Array.isArray(remoto?.atalhos) || !Array.isArray(remoto?.marcadas)) return;
+       atalhos.clear();
+       favoritas.clear();
+       for (const id of remoto.atalhos || []) if (paginas.has(id)) atalhos.add(id);
+@@ -3992,6 +3992,24 @@ function filtrarLixeira() {
+   else window.addEventListener("load", montar, {once:true});
+ })();
+ </script>
++<style>
++  #qi-informacoes-topo { margin-bottom: 16px; color: var(--qi-text); }
++  #qi-informacoes-topo.qi-topo-fixado {
++    position: sticky; top: 0; z-index: 20;
++    background: var(--qi-bg); padding-block: 6px;
++  }
++  #qi-informacoes-topo .qi-topo-provas,
++  #qi-informacoes-topo .qi-topo-controles {
++    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
++  }
++  #qi-informacoes-topo .qi-topo-controles { justify-content: flex-end; margin-block: 6px; }
++  #qi-informacoes-topo .qi-topo-provas {
++    padding: 10px 12px; border: 1px solid var(--qi-line); border-radius: 10px; background: var(--qi-panel);
++  }
++  #qi-informacoes-topo #quizHomeWeather { margin-block-end: 0; }
++  #qi-informacoes-topo #quizHomeWeather[open] { max-height: 38dvh; overflow: auto; }
++  @media print { #qi-informacoes-topo { display: none !important; } }
++</style>
+ <template id="qi-home-resumo-template">
+   <div id="qi-home-clima" class="no-print"></div>
+   <section id="qi-home-resumo" class="qi-card no-print" aria-labelledby="qi-home-provas-titulo">
+@@ -4018,9 +4036,45 @@ function montarResumoHome() {
+   resumo.append(document.getElementById("qi-home-resumo-template").content.cloneNode(true));
+   atalhos.before(resumo);
+   const clima = resumo.querySelector("#qi-home-clima");
+-  clima.hidden = home.hidden;
+-  atalhos.parentElement.prepend(clima);
+   const painel = document.getElementById("qi-home-resumo");
++  const topo = document.createElement("section");
++  topo.id = "qi-informacoes-topo";
++  topo.className = "no-print";
++  topo.setAttribute("aria-label", "Previsão e avisos de avaliações");
++  topo.innerHTML = '<div class="qi-topo-controles"><button type="button" class="qi-button" data-fixar-topo></button></div><div class="qi-topo-provas"><span role="status" data-aviso-provas>Aguardando consulta…</span><button type="button" class="qi-button" data-ver-provas>Ver provas ativas</button></div>';
++  topo.prepend(clima);
++  atalhos.closest(".qi-shell").before(topo);
++  const aviso = topo.querySelector("[data-aviso-provas]");
++  const fixar = topo.querySelector("[data-fixar-topo]");
++  const cacheTopo = "quiz-topo-fixado";
++  let fixado = true;
++  try { fixado = localStorage.getItem(cacheTopo) !== "false"; } catch (_) {}
++  function aplicarFixacao() {
++    topo.classList.toggle("qi-topo-fixado", fixado);
++    fixar.setAttribute("aria-pressed", String(fixado));
++    fixar.textContent = fixado ? "Desafixar informações" : "Fixar informações";
++    try { localStorage.setItem(cacheTopo, String(fixado)); } catch (_) {}
++  }
++  aplicarFixacao();
++  window.quizPreferenciasRemotas?.ouvir(remoto => {
++    if (typeof remoto?.topoFixado !== "boolean") return;
++    fixado = remoto.topoFixado;
++    aplicarFixacao();
++  }, () => {});
++  fixar.addEventListener("click", () => {
++    fixado = !fixado;
++    aplicarFixacao();
++    window.quizPreferenciasRemotas?.salvar({topoFixado: fixado}).catch(() => {
++      fixar.title = "Preferência salva neste aparelho. A sincronização com a conta falhou.";
++    });
++  });
++  topo.querySelector("[data-ver-provas]").addEventListener("click", () => {
++    if (home.hidden) window.QuizInterface?.navigate("inicio");
++    requestAnimationFrame(() => {
++      painel.style.scrollMarginTop = (topo.classList.contains("qi-topo-fixado") ? topo.offsetHeight + 12 : 12) + "px";
++      painel.scrollIntoView({block:"start"});
++    });
++  });
+   const status = painel.querySelector("[data-provas-status]");
+   const lista = painel.querySelector("[data-provas-lista]");
+   const atualizar = painel.querySelector("[data-provas-atualizar]");
+@@ -4055,7 +4109,7 @@ function montarResumoHome() {
+   }
+ 
+   async function carregar() {
+-    if (carregando || home.hidden) return;
++    if (carregando) return;
+     carregando = true;
+     atualizar.disabled = true;
+     status.textContent = "Consultando avaliações…";
+@@ -4110,18 +4164,22 @@ function montarResumoHome() {
+       status.textContent = provas.size ? provas.size + (provas.size === 1 ? " escola com avaliação ativa." : " escolas com avaliações ativas.") :
+         parcial ? "Não foi possível confirmar se há avaliações ativas." : "Nenhuma avaliação ativa.";
+       if (parcial && provas.size) status.textContent += " Uma das fontes está indisponível.";
++      aviso.textContent = status.textContent;
+     } finally {
+       carregando = false;
+       atualizar.disabled = false;
+     }
+   }
+   setInterval(() => {
+-    if (!home.hidden && !document.hidden) atualizarHorarios.forEach(atualizar => atualizar());
++    if (!document.hidden) {
++      atualizarHorarios.forEach(atualizar => atualizar());
++      carregar();
++    }
+   }, 15000);
+   atualizar.addEventListener("click", carregar);
+   new MutationObserver(() => {
+     resumo.hidden = home.hidden;
+-    clima.hidden = home.hidden;
++
+     if (!home.hidden) carregar();
+   }).observe(home, {attributes:true, attributeFilter:["hidden"]});
+   carregar();
