@@ -3475,7 +3475,10 @@ function filtrarLixeira() {
     background: #206844 !important; color: white !important; border-color: var(--qi-accent) !important;
   }
   #qi-barra-professor.qi-barra-compacta .qi-button { justify-content: center; }
-  [data-cor-atalho] { box-shadow: inset 0 -4px var(--qi-cor-atalho); }
+  body.qi-modern :is(.qi-shell,#qi-barra-professor) button[data-qi-page][data-cor-atalho] {
+    background: var(--qi-cor-atalho) !important;
+    color: var(--qi-texto-atalho) !important;
+  }
   #qi-opcoes-atalho {
     position: fixed !important;
     inset: 0 !important;
@@ -3603,8 +3606,13 @@ function filtrarLixeira() {
       const id = botao.dataset.qiPage;
       const cor = cores.get(pref.cores?.[id]);
       botao.toggleAttribute("data-cor-atalho", Boolean(cor));
-      if (cor) botao.style.setProperty("--qi-cor-atalho",cor);
-      else botao.style.removeProperty("--qi-cor-atalho");
+      if (cor) {
+        botao.style.setProperty("--qi-cor-atalho", cor);
+        botao.style.setProperty("--qi-texto-atalho", ["Amarelo","Laranja"].includes(pref.cores[id]) ? "#101820" : "#fff");
+      } else {
+        botao.style.removeProperty("--qi-cor-atalho");
+        botao.style.removeProperty("--qi-texto-atalho");
+      }
     }
     function renderizar() {
       const botoes = favoritos.querySelector("[data-favoritos]");
