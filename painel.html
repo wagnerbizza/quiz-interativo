@@ -1949,6 +1949,37 @@ body.light-mode #aba-banco-dados > p {
     visibility: hidden;
   }
 </style>
+<style id="qi-previsao-mobile-divisoria">
+  #qi-informacoes-topo > #qi-home-clima {
+    position: relative;
+    min-width: 0;
+    padding-block-end: 8px;
+    border-block-end: 1px solid var(--qi-muted, #8295a6);
+    border-block-end-color: color-mix(in srgb, var(--qi-line), var(--qi-muted) 35%);
+  }
+  #qi-informacoes-topo > #qi-home-clima > [data-fixar-topo] {
+    position: absolute !important;
+    inset-block-start: 4px !important;
+    inset-inline-end: 4px !important;
+    z-index: 1;
+    width: 44px;
+    min-height: 44px;
+  }
+  #qi-informacoes-topo > #qi-home-clima > #quizHomeWeather > summary {
+    min-height: 52px;
+    padding-inline-end: 56px;
+    overflow-wrap: anywhere;
+  }
+  @media screen and (max-width: 600px) {
+    #qi-informacoes-topo > #qi-home-clima > #quizHomeWeather > summary {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    #qi-informacoes-topo .qi-faixa-acoes { max-width: 100%; }
+  }
+</style>
 </head>
 <body>
 
