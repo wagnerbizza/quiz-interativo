@@ -3638,7 +3638,7 @@ function filtrarLixeira() {
       renderizar();
       window.quizPreferenciasRemotas?.salvar({
         atalhos: pref.atalhos, marcadas: pref.marcadas, cores: pref.cores || {}
-      }).catch(() => {
+      }, ["atalhos", "marcadas", ...Object.keys(pref.cores || {}).filter(id => paginas.has(id) && /^[a-z-]+$/.test(id)).map(id => "cores." + id)]).catch(() => {
         favoritos.querySelector("[role=status]").textContent = "Preferências salvas neste aparelho. A sincronização com a conta falhou.";
       });
     }
@@ -3998,15 +3998,34 @@ function filtrarLixeira() {
     position: sticky; top: 0; z-index: 20;
     background: var(--qi-bg); padding-block: 6px;
   }
-  #qi-informacoes-topo .qi-topo-provas,
-  #qi-informacoes-topo .qi-topo-controles {
+  #qi-informacoes-topo .qi-topo-provas {
     display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
   }
-  #qi-informacoes-topo .qi-topo-controles { justify-content: flex-end; margin-block: 6px; }
+
   #qi-informacoes-topo .qi-topo-provas {
     padding: 10px 12px; border: 1px solid var(--qi-line); border-radius: 10px; background: var(--qi-panel);
   }
+  #qi-informacoes-topo .qi-topo-provas {
+    margin-top: 8px; border-inline-start: 4px solid var(--qi-cor-faixa, #22c55e);
+    background: color-mix(in srgb, var(--qi-panel), var(--qi-cor-faixa, #22c55e) 20%);
+  }
+  #qi-informacoes-topo [data-aviso-provas] { font-weight: 750; flex: 1 1 12rem; }
+  #qi-informacoes-topo .qi-faixa-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  #qi-informacoes-topo .qi-faixa-acoes select { width: auto; min-height: 44px; }
+  #qi-informacoes-topo [data-ver-provas] {
+    background: var(--qi-cor-faixa, #22c55e) !important; color: #101820 !important;
+    min-height: 44px;
+  }
+  #qi-informacoes-topo #qi-home-clima { position: relative; }
   #qi-informacoes-topo #quizHomeWeather { margin-block-end: 0; }
+  #qi-informacoes-topo #quizHomeWeather > summary { padding-inline-end: 48px; min-height: 44px; }
+  #qi-informacoes-topo [data-fixar-topo] {
+    position: absolute; inset: 8px 8px auto auto; display: grid; place-items: center;
+    width: 44px; min-height: 44px; padding: 0 !important;
+  }
+  #qi-informacoes-topo [data-fixar-topo][aria-pressed="true"] {
+    color: var(--qi-accent) !important; border-color: var(--qi-accent) !important;
+  }
   #qi-informacoes-topo #quizHomeWeather[open] { max-height: 38dvh; overflow: auto; }
   @media print { #qi-informacoes-topo { display: none !important; } }
 </style>
@@ -4041,22 +4060,48 @@ function montarResumoHome() {
   topo.id = "qi-informacoes-topo";
   topo.className = "no-print";
   topo.setAttribute("aria-label", "Previsão e avisos de avaliações");
-  topo.innerHTML = '<div class="qi-topo-controles"><button type="button" class="qi-button" data-fixar-topo></button></div><div class="qi-topo-provas"><span role="status" data-aviso-provas>Aguardando consulta…</span><button type="button" class="qi-button" data-ver-provas>Ver provas ativas</button></div>';
+  topo.innerHTML = '<div class="qi-topo-provas"><span role="status" data-aviso-provas>Aguardando consulta…</span><div class="qi-faixa-acoes"><label>Cor da faixa <select data-cor-faixa><option value="verde">Verde</option><option value="ciano">Ciano</option><option value="roxo">Roxo</option><option value="laranja">Laranja</option><option value="rosa">Rosa</option></select></label><button type="button" class="qi-button" data-ver-provas>Ver provas ativas</button></div></div>';
+  const fixar = document.createElement("button");
+  fixar.type = "button";
+  fixar.className = "qi-button";
+  fixar.dataset.fixarTopo = "";
+  fixar.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8M9 3v6l-4 4v2h14v-2l-4-4V3M12 15v7"/></svg>';
+  clima.append(fixar);
   topo.prepend(clima);
   atalhos.closest(".qi-shell").before(topo);
   const aviso = topo.querySelector("[data-aviso-provas]");
-  const fixar = topo.querySelector("[data-fixar-topo]");
+  const seletorCor = topo.querySelector("[data-cor-faixa]");
+  const coresFaixa = new Map([["verde","#22c55e"],["ciano","#22d3ee"],["roxo","#c084fc"],["laranja","#fb923c"],["rosa","#f472b6"]]);
+  const chaveFaixa = "faixa_provas";
+  const cacheFaixa = "quiz-cor-faixa-provas";
+  function aplicarCor(cor) {
+    seletorCor.value = coresFaixa.has(cor) ? cor : "verde";
+    topo.style.setProperty("--qi-cor-faixa", coresFaixa.get(seletorCor.value));
+    try { localStorage.setItem(cacheFaixa, seletorCor.value); } catch (_) {}
+  }
+  let corLocal;
+  try { corLocal = localStorage.getItem(cacheFaixa); } catch (_) {}
+  aplicarCor(corLocal);
+  seletorCor.addEventListener("change", () => {
+    const cor = seletorCor.value;
+    aplicarCor(cor);
+    window.quizPreferenciasRemotas?.salvar({cores: {[chaveFaixa]: cor}}, ["cores." + chaveFaixa]).catch(() => {
+      seletorCor.title = "Cor salva neste aparelho. A sincronização com a conta falhou.";
+    });
+  });
   const cacheTopo = "quiz-topo-fixado";
   let fixado = true;
   try { fixado = localStorage.getItem(cacheTopo) !== "false"; } catch (_) {}
   function aplicarFixacao() {
     topo.classList.toggle("qi-topo-fixado", fixado);
     fixar.setAttribute("aria-pressed", String(fixado));
-    fixar.textContent = fixado ? "Desafixar informações" : "Fixar informações";
+    fixar.title = fixado ? "Desafixar informações" : "Fixar informações";
+    fixar.setAttribute("aria-label", fixar.title);
     try { localStorage.setItem(cacheTopo, String(fixado)); } catch (_) {}
   }
   aplicarFixacao();
   window.quizPreferenciasRemotas?.ouvir(remoto => {
+    if (remoto?.cores?.[chaveFaixa]) aplicarCor(remoto.cores[chaveFaixa]);
     if (typeof remoto?.topoFixado !== "boolean") return;
     fixado = remoto.topoFixado;
     aplicarFixacao();
