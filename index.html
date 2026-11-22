@@ -745,7 +745,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, onSnapshot, serverTimestamp, deleteDoc, query, where
+      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, getDocFromServer, onSnapshot, serverTimestamp, deleteDoc, query, where
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     // 🔐 FASE 10C — o aluno recebe uma identidade anônima do Firebase.
     // Ele não precisa criar conta nem digitar senha.
@@ -1081,6 +1081,11 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     // Isso reduz consumo do Firebase e evita ficar preso a um listener
     // quando a cota/rede estiver indisponível.
     // ==========================================================
+    async function consultarEstadoDaProva(escolaNome) {
+      const snap = await getDocFromServer(doc(db, "provas_ativas", normalizarId(escolaNome)));
+      return snap.data();
+    }
+
     async function carregarProvaEstatica(escolaNome) {
       try {
         const r=await fetch(`prova-publicada.json?v=${Date.now()}`,{cache:"no-store"});
@@ -1144,6 +1149,15 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       const pacoteAnterior = ultimoPacotePublicoConfirmado;
       ultimoPacotePublicoConfirmado = pacote;
 
+      const escolaPacote = String(pacote.escolaAtiva || "").trim();
+      const escolaSelecionada = selectEscola?.value;
+      if (escolaSelecionada && escolaSelecionada !== escolaPacote && dadosProvaAtiva.gerenciadaNaNuvem) return;
+      if (escolaPacote) {
+        try {
+          const remoto = await consultarEstadoDaProva(escolaPacote);
+          if (remoto?.gerenciadaNaNuvem || sequenciaAtual !== sequenciaConsultaPacote) return;
+        } catch (_) { return; }
+      } else if (escolaSelecionada) return;
       const expirada =
         Number(pacote.expiraEmMillis || 0) > 0 &&
         Date.now() >= Number(pacote.expiraEmMillis || 0);
@@ -1273,52 +1287,21 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       selectTurma.innerHTML = `<option value="" disabled selected>Aguardando prova ativa...</option>`;
       detalhesProvaAtiva.innerHTML = `⏳ Verificando avaliação publicada para <strong>${escolaNome}</strong>...`;
 
-      (async () => {
-        // GitHub/pacote publicado sempre tem prioridade para a entrega da prova.
-        const pacote = await carregarProvaEstatica(escolaNome);
-        if (pacote) {
-          if (await aplicarProvaRecebida(escolaNome, pacote, "github")) return;
-
-          // O pacote existe para esta escola, porém está inativo ou expirado.
-          // GitHub continua sendo a fonte oficial: NÃO ressuscitar pelo Firebase.
-          dadosProvaAtiva = {};
-          detalhesProvaAtiva.innerHTML =
-            `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
-          selectTurma.innerHTML =
-            `<option value="" disabled selected>Nenhuma turma liberada</option>`;
-          btnIniciarProva.disabled = true;
-          return;
-        }
-
-        // Somente se o pacote da escola NÃO puder ser obtido usamos Firebase como fallback.
+      {
         const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
         unsubscribeProvaEscola = onSnapshot(
           provaRef,
           async (docSnap) => {
-            // Antes de aceitar Firebase, conferimos novamente o pacote publicado.
-            // Isso permite que uma publicação recém-chegada assuma a prioridade.
-            const pacoteAtual = await carregarProvaEstatica(escolaNome);
-            if (pacoteAtual) {
-              if (await aplicarProvaRecebida(escolaNome, pacoteAtual, "github")) {
-                if (unsubscribeProvaEscola) {
-                  unsubscribeProvaEscola();
-                  unsubscribeProvaEscola = null;
-                }
-                return;
-              }
-
-              // Pacote oficial encontrado, mas inativo/expirado: não aceitar
-              // um estado antigo do Firebase como se a avaliação ainda estivesse ativa.
-              dadosProvaAtiva = {};
-              detalhesProvaAtiva.innerHTML =
-                `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
-              selectTurma.innerHTML =
-                `<option value="" disabled selected>Nenhuma turma liberada</option>`;
-              btnIniciarProva.disabled = true;
-              if (unsubscribeProvaEscola) {
-                unsubscribeProvaEscola();
-                unsubscribeProvaEscola = null;
-              }
+            const remoto = docSnap.data();
+            if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
+            if (remoto?.gerenciadaNaNuvem) {
+              if (!await aplicarProvaRecebida(escolaNome, remoto, "github")) mostrarProvaInativaAluno(escolaNome);
+              return;
+            }
+            const pacote = await carregarProvaEstatica(escolaNome);
+            if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
+            if (pacote) {
+              if (!await aplicarProvaRecebida(escolaNome, pacote, "github")) mostrarProvaInativaAluno(escolaNome);
               return;
             }
 
@@ -1334,7 +1317,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
           },
           async (erro) => {
             console.warn("Firebase indisponível; conferindo pacote publicado:", erro?.code || erro);
-            const pacoteFallback = await carregarProvaEstatica(escolaNome);
+            const pacoteFallback = dadosProvaAtiva.gerenciadaNaNuvem ? null : await carregarProvaEstatica(escolaNome);
             if (pacoteFallback &&
                 await aplicarProvaRecebida(escolaNome, pacoteFallback, "github")) return;
             detalhesProvaAtiva.innerHTML =
@@ -1342,7 +1325,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
             btnIniciarProva.disabled = true;
           }
         );
-      })();
+      }
     }
 
     selectEscola?.addEventListener("change", () => acompanharProvaDaEscola(selectEscola.value));
@@ -1421,6 +1404,17 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       const turmaVal = codigoDireto ? String(bilheteDireto.turma || "").trim() : selectTurma.value;
 
       if (!escolaVal || !nomeVal || !turmaVal) { alert("⚠️ Selecione sua escola e preencha nome e turma."); return; }
+      try {
+        const remoto = await consultarEstadoDaProva(escolaVal);
+        if (remoto?.gerenciadaNaNuvem && (!remoto.ativa || remoto.idAvaliacao !== provaOriginal.idAvaliacao)) {
+          alert("A avaliação mudou ou foi encerrada. Atualize a página e confira com o professor.");
+          return;
+        }
+      } catch (_) {
+        alert("Não foi possível verificar a avaliação. Confira sua conexão e tente novamente.");
+        return;
+      }
+
       if (!dadosProvaAtiva.escolaAtiva) { alert("⚠️ Não há avaliação ativa para esta escola."); return; }
 
       // 🟢 Agora o ID inclui ESCOLA + NOME + TURMA, evitando conflito entre escolas.
@@ -1812,19 +1806,25 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       // Não consome leituras do Firestore e também funciona quando a prova foi
       // entregue originalmente pelo pacote publicado.
       if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
+      const avaliacaoEmCurso = dadosProvaAtiva.idAvaliacao;
+      const escolaEmCurso = alunoAtual.escola;
+      const provaNaNuvem = dadosProvaAtiva.gerenciadaNaNuvem;
       verificacaoPacotePublicoInterval = setInterval(async () => {
         try {
-          const pacote = await carregarProvaEstatica(alunoAtual.escola);
-          if (!pacote) return;
-          const expirou = Number(pacote.expiraEmMillis || 0) > 0 &&
-            Date.now() >= Number(pacote.expiraEmMillis);
-          // O prazo expiraEmMillis restringe apenas NOVOS inícios.
-          // Uma tentativa em andamento termina por tempo individual ou encerramento explícito.
-          if (pacote.ativa === false) {
+          const remoto = await consultarEstadoDaProva(escolaEmCurso);
+          if (dadosProvaAtiva.idAvaliacao !== avaliacaoEmCurso || document.getElementById("tela-quiz").classList.contains("hidden")) return;
+          if (remoto?.gerenciadaNaNuvem || provaNaNuvem) {
+            if (remoto?.idAvaliacao === avaliacaoEmCurso && remoto.ativa === false) {
+              await encerrarSessaoAluno(remoto.motivoEncerramento || "Avaliação encerrada pelo professor.");
+            }
+            return;
+          }
+          const pacote = await carregarProvaEstatica(escolaEmCurso);
+          if (pacote?.ativa === false && (!pacote.idAvaliacao || pacote.idAvaliacao === avaliacaoEmCurso)) {
             await encerrarSessaoAluno(pacote.motivoEncerramento || "Avaliação encerrada pelo professor.");
           }
-        } catch (_) {}
-      }, 5000);
+        } catch (_) { /* Nova consulta no próximo intervalo. */ }
+      }, 15000);
 
       exibirQuestao();
     }

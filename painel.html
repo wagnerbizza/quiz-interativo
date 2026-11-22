@@ -3596,7 +3596,7 @@ function filtrarLixeira() {
     const favoritos = document.createElement("section");
     favoritos.id = "qi-favoritos";
     favoritos.className = "qi-card";
-    favoritos.innerHTML = '<h2>Meus atalhos</h2><div class="qi-actions" data-favoritos></div><details><summary>Escolher atalhos e favoritos</summary><fieldset><legend>Mostrar em Meus atalhos</legend></fieldset></details><p class="qi-instrucao-atalhos">Suas preferências ficam neste navegador. Clique com o botão direito em um atalho ou use Escolher atalhos e favoritos.</p><p role="status"></p>';
+    favoritos.innerHTML = '<h2>Meus atalhos</h2><div class="qi-actions" data-favoritos></div><details><summary>Escolher atalhos e favoritos</summary><fieldset><legend>Mostrar em Meus atalhos</legend></fieldset></details><p class="qi-instrucao-atalhos">Atalhos, favoritos e cores são sincronizados pela conta do professor. Clique com o botão direito em um atalho ou use Escolher atalhos e favoritos.</p><p role="status"></p>';
     nav.after(favoritos);
     const dialogo = document.createElement("dialog");
     dialogo.id = "qi-opcoes-atalho";
@@ -3636,6 +3636,11 @@ function filtrarLixeira() {
       pref.marcadas = [...favoritas];
       favoritos.querySelector("[role=status]").textContent = salvar() ? "" : "O navegador não conseguiu salvar as preferências.";
       renderizar();
+      window.quizPreferenciasRemotas?.salvar({
+        atalhos: pref.atalhos, marcadas: pref.marcadas, cores: pref.cores || {}
+      }).catch(() => {
+        favoritos.querySelector("[role=status]").textContent = "Preferências salvas neste aparelho. A sincronização com a conta falhou.";
+      });
     }
     for (const [id, nome] of paginas) {
       const linha = document.createElement("div");
@@ -3713,6 +3718,20 @@ function filtrarLixeira() {
       new MutationObserver(sincronizarInicio).observe(inicio,{attributes:true,attributeFilter:["hidden"]});
       sincronizarInicio();
     }
+    window.quizPreferenciasRemotas?.ouvir(remoto => {
+      if (!remoto) return;
+      atalhos.clear();
+      favoritas.clear();
+      for (const id of remoto.atalhos || []) if (paginas.has(id)) atalhos.add(id);
+      for (const id of remoto.marcadas || []) if (paginas.has(id)) favoritas.add(id);
+      pref.atalhos = [...atalhos];
+      pref.marcadas = [...favoritas];
+      pref.cores = remoto.cores || {};
+      salvar();
+      renderizar();
+    }, () => {
+      favoritos.querySelector("[role=status]").textContent = "Preferências da conta indisponíveis neste momento.";
+    });
     renderizar();
     const busca = document.querySelector('label[for="qi-function-search"]');
     if (busca) busca.textContent = "Encontrar uma função";
@@ -4021,11 +4040,11 @@ function montarResumoHome() {
 
   async function consultarFirebase() {
     const sdk = "https://www.gstatic.com/firebasejs/10.8.0/";
-    const [{getApp}, {getFirestore, collection, getDocsFromServer, query, where}] = await Promise.all([
+    const [{getApp}, {getFirestore, collection, getDocsFromServer}] = await Promise.all([
       import(sdk + "firebase-app.js"), import(sdk + "firebase-firestore.js")
     ]);
     const db = getFirestore(getApp());
-    const snapshot = await getDocsFromServer(query(collection(db, "provas_ativas"), where("ativa", "==", true)));
+    const snapshot = await getDocsFromServer(collection(db, "provas_ativas"));
     return snapshot.docs.map(doc => doc.data());
   }
 
@@ -4048,7 +4067,8 @@ function montarResumoHome() {
         if (prova?.ativa === true && chave(prova.escolaAtiva)) provas.set(chave(prova.escolaAtiva), prova);
       };
       if (firebase.status === "fulfilled") firebase.value.forEach(adicionar);
-      if (arquivo.status === "fulfilled") adicionar(arquivo.value);
+      if (arquivo.status === "fulfilled" && !firebase.value?.some(prova =>
+        prova.gerenciadaNaNuvem && chave(prova.escolaAtiva) === chave(arquivo.value?.escolaAtiva))) adicionar(arquivo.value);
       lista.replaceChildren();
       atualizarHorarios = [];
       for (const prova of [...provas.values()].sort((a,b) => a.escolaAtiva.localeCompare(b.escolaAtiva,"pt-BR"))) {
