@@ -4187,12 +4187,24 @@ function montarResumoHome() {
       fixar.title = "Preferência salva neste aparelho. A sincronização com a conta falhou.";
     });
   });
-  topo.querySelector("[data-ver-provas]").addEventListener("click", () => {
-    if (home.hidden) window.QuizInterface?.navigate("inicio");
+  function abrirProvasAtivas() {
+    window.QuizInterface?.navigate("ativacao");
     requestAnimationFrame(() => {
-      painel.style.scrollMarginTop = (topo.classList.contains("qi-topo-fixado") ? topo.offsetHeight + 12 : 12) + "px";
-      painel.scrollIntoView({block:"start"});
+      const aba = document.getElementById("aba-ativacao");
+      if (!aba || !aba.getClientRects().length) return;
+      const listaAtiva = document.getElementById("bloco-prova-ativa-topo");
+      const destino = listaAtiva?.getClientRects().length ? listaAtiva : aba;
+      const margem = topo.classList.contains("qi-topo-fixado") ? topo.offsetHeight + 12 : 12;
+      destino.style.scrollMarginTop = margem + "px";
+      destino.scrollIntoView({block:"start", behavior:"instant"});
+      if (!destino.hasAttribute("tabindex")) destino.tabIndex = -1;
+      destino.focus({preventScroll:true});
     });
+  }
+  topo.querySelector("[data-ver-provas]").addEventListener("click", abrirProvasAtivas);
+  painel.querySelector("[data-operar-provas]").addEventListener("click", evento => {
+    evento.stopPropagation();
+    abrirProvasAtivas();
   });
   const status = painel.querySelector("[data-provas-status]");
   const lista = painel.querySelector("[data-provas-lista]");
