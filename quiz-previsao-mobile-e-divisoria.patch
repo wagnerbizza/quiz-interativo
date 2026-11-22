@@ -1,0 +1,36 @@
+diff --git a/painel.html b/painel.html
+--- a/painel.html
++++ b/painel.html
+@@ -4028,13 +4028,16 @@
+     background: var(--qi-cor-faixa, #22c55e) !important; color: #101820 !important;
+     min-height: 44px;
+   }
+-  #qi-informacoes-topo #qi-home-clima { position: relative; }
++  #qi-informacoes-topo #qi-home-clima {
++    position: relative; min-width: 0; padding-block-end: 8px;
++    border-block-end: 1px solid color-mix(in srgb, var(--qi-line), var(--qi-muted) 35%);
++  }
+   #qi-informacoes-topo #quizHomeWeather { margin: 0; border: 0; background: transparent; }
+   #qi-informacoes-topo #quizHomeWeather > summary {
+     min-height: 52px; padding-inline-end: 52px; flex-wrap: wrap; overflow-wrap: anywhere;
+   }
+   #qi-informacoes-topo [data-fixar-topo] {
+-    position: absolute; inset-block-start: 2px; inset-inline-end: 2px;
++    position: absolute !important; inset-block-start: 2px; inset-inline-end: 2px; z-index: 1;
+     display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0 !important;
+     border: 0 !important;
+     border-radius: 8px; background: transparent !important; color: var(--qi-text) !important;
+@@ -4042,6 +4045,13 @@
+   }
+   #qi-informacoes-topo [data-fixar-topo]:hover { text-decoration: underline; }
+   #qi-informacoes-topo #quizHomeWeather[open] { max-height: 38dvh; overflow: auto; }
++  @media screen and (max-width: 600px) {
++    #qi-informacoes-topo #quizHomeWeather > summary {
++      display: flex; flex-direction: column; align-items: flex-start;
++      gap: 4px; padding-inline-end: 52px;
++    }
++    #qi-informacoes-topo .qi-faixa-acoes { max-width: 100%; }
++  }
+   @media print { #qi-informacoes-topo { display: none !important; } }
+ </style>
+ <template id="qi-home-resumo-template">
