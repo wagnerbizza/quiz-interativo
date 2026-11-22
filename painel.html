@@ -4038,14 +4038,14 @@ function filtrarLixeira() {
   }
   #qi-informacoes-topo #qi-home-clima { position: relative; }
   #qi-informacoes-topo #quizHomeWeather { margin-block-end: 0; }
-  #qi-informacoes-topo #quizHomeWeather > summary { padding-inline-end: 48px; min-height: 44px; }
+  #qi-informacoes-topo #quizHomeWeather > summary { min-height: 44px; }
   #qi-informacoes-topo [data-fixar-topo] {
-    position: absolute; inset: 8px 8px auto auto; display: grid; place-items: center;
-    width: 44px; min-height: 44px; padding: 0 !important;
+    display: block; width: 100%; min-height: 44px; padding: 6px 12px !important;
+    border: 0 !important; border-top: 1px solid var(--qi-line, #344757) !important;
+    border-radius: 0; background: transparent !important; color: var(--qi-text) !important;
+    font-size: .85rem; text-align: end;
   }
-  #qi-informacoes-topo [data-fixar-topo][aria-pressed="true"] {
-    color: var(--qi-accent) !important; border-color: var(--qi-accent) !important;
-  }
+  #qi-informacoes-topo [data-fixar-topo]:hover { text-decoration: underline; }
   #qi-informacoes-topo #quizHomeWeather[open] { max-height: 38dvh; overflow: auto; }
   @media print { #qi-informacoes-topo { display: none !important; } }
 </style>
@@ -4088,7 +4088,6 @@ function montarResumoHome() {
   fixar.type = "button";
   fixar.className = "qi-button";
   fixar.dataset.fixarTopo = "";
-  fixar.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8M9 3v6l-4 4v2h14v-2l-4-4V3M12 15v7"/></svg>';
   clima.append(fixar);
   topo.prepend(clima);
   atalhos.closest(".qi-shell").before(topo);
@@ -4169,6 +4168,7 @@ function montarResumoHome() {
   function aplicarFixacao() {
     topo.classList.toggle("qi-topo-fixado", fixado);
     fixar.setAttribute("aria-pressed", String(fixado));
+    fixar.textContent = fixado ? "Desafixar" : "Fixar";
     fixar.title = fixado ? "Desafixar informações" : "Fixar informações";
     fixar.setAttribute("aria-label", fixar.title);
     try { localStorage.setItem(cacheTopo, String(fixado)); } catch (_) {}
