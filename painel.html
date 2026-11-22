@@ -1950,6 +1950,32 @@ body.light-mode #aba-banco-dados > p {
   }
 </style>
 <style id="qi-previsao-mobile-divisoria">
+@keyframes forecast-cloud-drift {
+  from { transform: translateX(-2px); }
+  to { transform: translateX(3px); }
+}
+@keyframes forecast-detail-in {
+  from { opacity: .55; }
+  to { opacity: 1; }
+}
+#quizHomeWeather[data-weather-clouds] [data-weather-summary]::before {
+  content: "☁";
+  display: inline-block;
+  margin-inline-end: .45em;
+  color: var(--qi-accent);
+  animation: forecast-cloud-drift 2.8s ease-in-out infinite alternate;
+}
+#quizHomeWeather[open] .quiz-home-weather-body {
+  animation: forecast-detail-in .2s ease-out;
+}
+#qi-informacoes-topo > #qi-home-clima > [data-fixar-topo] { transition: color .18s ease, background-color .18s ease; }
+#qi-informacoes-topo > #qi-home-clima > [data-fixar-topo][aria-pressed="true"] { background-color: color-mix(in srgb, var(--qi-accent) 12%, transparent) !important; }
+@media (prefers-reduced-motion: reduce) {
+  #quizHomeWeather[data-weather-clouds] [data-weather-summary]::before,
+  #quizHomeWeather[open] .quiz-home-weather-body { animation: none; }
+  #qi-informacoes-topo > #qi-home-clima > [data-fixar-topo] { transition: none; }
+}
+
   #qi-informacoes-topo > #qi-home-clima {
     position: relative;
     min-width: 0;
@@ -4134,6 +4160,7 @@ function montarResumoHome() {
   topo.prepend(clima);
   atalhos.closest(".qi-shell").before(topo);
   const aviso = topo.querySelector("[data-aviso-provas]");
+  let provasAnteriores;
   const faixa = topo.querySelector(".qi-topo-provas");
   const coresFaixa = new Map([["verde","#22c55e"],["ciano","#22d3ee"],["roxo","#c084fc"],["laranja","#fb923c"],["rosa","#f472b6"]]);
   const chaveFaixa = "faixa_provas";
@@ -4338,6 +4365,15 @@ function montarResumoHome() {
         parcial ? "Não foi possível confirmar se há avaliações ativas." : "Nenhuma avaliação ativa.";
       if (parcial && provas.size) status.textContent += " Uma das fontes está indisponível.";
       aviso.textContent = status.textContent;
+      if (firebase.status === "fulfilled") {
+        const identificadores = new Set([...provas].map(([escola, prova]) =>
+          JSON.stringify([escola, prova.idAvaliacao ?? prova.token ?? prova.agendamento ?? ""])));
+        const novaProva = provasAnteriores && [...identificadores].some(id => !provasAnteriores.has(id));
+        provasAnteriores = identificadores;
+        if (novaProva && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          faixa.animate?.([{opacity: .55}, {opacity: 1}], {duration: 450, easing: "ease-out"});
+        }
+      }
     } finally {
       carregando = false;
       atualizar.disabled = false;
@@ -4374,6 +4410,7 @@ function montarResumoHome() {
  function usable(data){return data&&data.current&&finite(data.current.temperature_2m)&&typeof data.current.time==='string'&&data.daily&&Array.isArray(data.daily.time)&&data.daily.time.length>0&&Array.isArray(data.daily.temperature_2m_min)&&Array.isArray(data.daily.temperature_2m_max)&&Array.isArray(data.daily.precipitation_probability_max);}
  function paint(data,at,stale){
   if(!usable(data))return false;
+  panel.toggleAttribute('data-weather-clouds', data.current.weather_code > 0);
   find('[data-weather-title]').textContent=place.name+' · '+number(data.current.temperature_2m)+' °C';
   find('[data-weather-summary]').textContent=label(data.current.weather_code)+' · '+(stale?'dados salvos':'previsão de 3 dias');
   const days=find('[data-weather-days]');days.replaceChildren();
