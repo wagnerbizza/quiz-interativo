@@ -1,0 +1,16 @@
+diff --git a/painel.html b/painel.html
+index 39980cb..dd77eb5 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3537,6 +3537,11 @@ function filtrarLixeira() {
+   }
+   #qi-barra-professor.qi-barra-compacta :is(.qi-button,summary) { padding-inline: 4px !important; }
+   #qi-barra-professor.qi-barra-compacta svg { flex: 0 0 19px; }
++  #qi-barra-professor .qi-button[aria-current="page"],
++  #qi-barra-professor .qi-menus > details.qi-current > summary {
++    box-shadow: inset 4px 0 0 var(--qi-accent) !important;
++    border-radius: 11px !important;
++  }
+   #qi-barra-professor .qi-cabecalho-barra {
+     display: flex; align-items: center; gap: 8px; padding-bottom: 12px;
+     border-bottom: 1px solid var(--qi-line);
