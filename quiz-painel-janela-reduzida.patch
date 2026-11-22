@@ -1,0 +1,74 @@
+diff --git a/painel.html b/painel.html
+index 44f679d..c7e3977 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3368,7 +3368,7 @@ function filtrarLixeira() {
+   #qi-rolagem button { width: 44px; min-height: 44px; font-size: 20px; }
+   #qi-config-professor img { display: block; max-width: 130px; max-height: 72px; margin-block: 8px; object-fit: contain; }
+   #qi-barra-professor[hidden], .qi-header button[aria-controls="qi-barra-professor"][hidden] { display: none !important; }
+-  @media screen and (min-width: 1100px) {
++  @media screen and (min-width: 768px) {
+     body.qi-modern.qi-menu-lateral:not(.qi-demo-open) .container:has(> .qi-shell),
+     body.qi-modern.qi-menu-lateral:not(.qi-demo-open) > .qi-header,
+     body.qi-modern.qi-menu-lateral:not(.qi-demo-open) > .qi-footer {
+@@ -3418,7 +3418,7 @@ function filtrarLixeira() {
+   }
+   #qi-rolagem button:disabled { opacity: .38; cursor: default; }
+   .qi-icone-menu, .qi-busca-compacta { display: none !important; }
+-  @media screen and (min-width: 1100px) {
++  @media screen and (min-width: 768px) {
+     #qi-barra-professor .qi-icone-menu { display: inline-flex !important; flex: 0 0 auto; }
+     #qi-barra-professor .qi-button { display: flex; align-items: center; gap: 9px; }
+     #qi-barra-professor summary { gap: 8px; }
+@@ -3432,6 +3432,42 @@ function filtrarLixeira() {
+       padding-inline-start: 112px !important;
+     }
+   }
++  @media screen and (min-width: 768px) and (max-width: 1099px) {
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) {
++      --qi-largura-menu: clamp(210px, 27vw, 254px);
++    }
++    body.qi-modern.qi-menu-lateral.qi-menu-compacto:not(.qi-demo-open) {
++      --qi-largura-menu: 80px;
++    }
++    #qi-barra-professor { width: var(--qi-largura-menu); padding-inline: 8px; }
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) .container:has(> .qi-shell),
++    body.qi-modern.qi-menu-lateral:not(.qi-demo-open) > :is(.qi-header,.qi-footer) {
++      width: calc(100% - var(--qi-largura-menu)) !important;
++      margin-inline: var(--qi-largura-menu) 0 !important;
++      padding-inline: clamp(16px, 3.8vw, 36px) !important;
++      min-width: 0;
++    }
++    body.qi-menu-lateral > .qi-header > .qi-actions { flex-wrap: wrap; min-width: 0; }
++    body.qi-menu-lateral .qi-heading { flex-wrap: wrap; gap: 8px; }
++    body.qi-menu-lateral .qi-shell .qi-search input { flex: 1 1 200px; min-width: 0; }
++    body.qi-menu-lateral :is(.qi-stats,.qi-grid) {
++      grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
++    }
++    body.qi-menu-lateral #qi-home-clima summary { align-items: flex-start; flex-direction: column; }
++    body.qi-menu-lateral #qi-home-clima .quiz-home-weather-days {
++      grid-template-columns: repeat(auto-fit, minmax(min(100%, 135px), 1fr));
++    }
++  }
++  @media screen and (min-width: 768px) {
++    #qi-barra-professor .qi-menus details[open] > summary {
++      border-radius: 9px; background: color-mix(in srgb, var(--qi-panel), var(--qi-accent) 10%);
++    }
++    #qi-barra-professor .qi-menus .qi-options {
++      display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px;
++      margin: 3px 0 7px 18px; padding: 2px 0 2px 8px;
++      border-inline-start: 1px solid var(--qi-line);
++    }
++  }
+   .qi-modern button.qi-accessibility-float { border-radius: 13px !important; }
+   #qi-barra-professor .qi-button { justify-content: flex-start; }
+   #qi-barra-professor .qi-menus summary > .qi-icone-menu + span { flex: 1; text-align: start; }
+@@ -3697,7 +3733,7 @@ function filtrarLixeira() {
+       setTimeout(() => campo.oninput(), 0);
+     });
+     document.body.prepend(barra);
+-    const telaLarga = matchMedia("(min-width: 1100px)");
++    const telaLarga = matchMedia("screen and (min-width: 768px)");
+     const posicionarBarra = () => {
+       const fixa = Boolean(marca && menu && telaLarga.matches && !document.body.classList.contains("qi-demo-open"));
+       const compacta = pref.lateral === false;
