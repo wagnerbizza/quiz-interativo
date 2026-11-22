@@ -3719,7 +3719,7 @@ function filtrarLixeira() {
       sincronizarInicio();
     }
     window.quizPreferenciasRemotas?.ouvir(remoto => {
-      if (!remoto) return;
+      if (!Array.isArray(remoto?.atalhos) || !Array.isArray(remoto?.marcadas)) return;
       atalhos.clear();
       favoritas.clear();
       for (const id of remoto.atalhos || []) if (paginas.has(id)) atalhos.add(id);
@@ -3992,6 +3992,24 @@ function filtrarLixeira() {
   else window.addEventListener("load", montar, {once:true});
 })();
 </script>
+<style>
+  #qi-informacoes-topo { margin-bottom: 16px; color: var(--qi-text); }
+  #qi-informacoes-topo.qi-topo-fixado {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--qi-bg); padding-block: 6px;
+  }
+  #qi-informacoes-topo .qi-topo-provas,
+  #qi-informacoes-topo .qi-topo-controles {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+  }
+  #qi-informacoes-topo .qi-topo-controles { justify-content: flex-end; margin-block: 6px; }
+  #qi-informacoes-topo .qi-topo-provas {
+    padding: 10px 12px; border: 1px solid var(--qi-line); border-radius: 10px; background: var(--qi-panel);
+  }
+  #qi-informacoes-topo #quizHomeWeather { margin-block-end: 0; }
+  #qi-informacoes-topo #quizHomeWeather[open] { max-height: 38dvh; overflow: auto; }
+  @media print { #qi-informacoes-topo { display: none !important; } }
+</style>
 <template id="qi-home-resumo-template">
   <div id="qi-home-clima" class="no-print"></div>
   <section id="qi-home-resumo" class="qi-card no-print" aria-labelledby="qi-home-provas-titulo">
@@ -4018,9 +4036,45 @@ function montarResumoHome() {
   resumo.append(document.getElementById("qi-home-resumo-template").content.cloneNode(true));
   atalhos.before(resumo);
   const clima = resumo.querySelector("#qi-home-clima");
-  clima.hidden = home.hidden;
-  atalhos.parentElement.prepend(clima);
   const painel = document.getElementById("qi-home-resumo");
+  const topo = document.createElement("section");
+  topo.id = "qi-informacoes-topo";
+  topo.className = "no-print";
+  topo.setAttribute("aria-label", "Previsão e avisos de avaliações");
+  topo.innerHTML = '<div class="qi-topo-controles"><button type="button" class="qi-button" data-fixar-topo></button></div><div class="qi-topo-provas"><span role="status" data-aviso-provas>Aguardando consulta…</span><button type="button" class="qi-button" data-ver-provas>Ver provas ativas</button></div>';
+  topo.prepend(clima);
+  atalhos.closest(".qi-shell").before(topo);
+  const aviso = topo.querySelector("[data-aviso-provas]");
+  const fixar = topo.querySelector("[data-fixar-topo]");
+  const cacheTopo = "quiz-topo-fixado";
+  let fixado = true;
+  try { fixado = localStorage.getItem(cacheTopo) !== "false"; } catch (_) {}
+  function aplicarFixacao() {
+    topo.classList.toggle("qi-topo-fixado", fixado);
+    fixar.setAttribute("aria-pressed", String(fixado));
+    fixar.textContent = fixado ? "Desafixar informações" : "Fixar informações";
+    try { localStorage.setItem(cacheTopo, String(fixado)); } catch (_) {}
+  }
+  aplicarFixacao();
+  window.quizPreferenciasRemotas?.ouvir(remoto => {
+    if (typeof remoto?.topoFixado !== "boolean") return;
+    fixado = remoto.topoFixado;
+    aplicarFixacao();
+  }, () => {});
+  fixar.addEventListener("click", () => {
+    fixado = !fixado;
+    aplicarFixacao();
+    window.quizPreferenciasRemotas?.salvar({topoFixado: fixado}).catch(() => {
+      fixar.title = "Preferência salva neste aparelho. A sincronização com a conta falhou.";
+    });
+  });
+  topo.querySelector("[data-ver-provas]").addEventListener("click", () => {
+    if (home.hidden) window.QuizInterface?.navigate("inicio");
+    requestAnimationFrame(() => {
+      painel.style.scrollMarginTop = (topo.classList.contains("qi-topo-fixado") ? topo.offsetHeight + 12 : 12) + "px";
+      painel.scrollIntoView({block:"start"});
+    });
+  });
   const status = painel.querySelector("[data-provas-status]");
   const lista = painel.querySelector("[data-provas-lista]");
   const atualizar = painel.querySelector("[data-provas-atualizar]");
@@ -4055,7 +4109,7 @@ function montarResumoHome() {
   }
 
   async function carregar() {
-    if (carregando || home.hidden) return;
+    if (carregando) return;
     carregando = true;
     atualizar.disabled = true;
     status.textContent = "Consultando avaliações…";
@@ -4110,18 +4164,22 @@ function montarResumoHome() {
       status.textContent = provas.size ? provas.size + (provas.size === 1 ? " escola com avaliação ativa." : " escolas com avaliações ativas.") :
         parcial ? "Não foi possível confirmar se há avaliações ativas." : "Nenhuma avaliação ativa.";
       if (parcial && provas.size) status.textContent += " Uma das fontes está indisponível.";
+      aviso.textContent = status.textContent;
     } finally {
       carregando = false;
       atualizar.disabled = false;
     }
   }
   setInterval(() => {
-    if (!home.hidden && !document.hidden) atualizarHorarios.forEach(atualizar => atualizar());
+    if (!document.hidden) {
+      atualizarHorarios.forEach(atualizar => atualizar());
+      carregar();
+    }
   }, 15000);
   atualizar.addEventListener("click", carregar);
   new MutationObserver(() => {
     resumo.hidden = home.hidden;
-    clima.hidden = home.hidden;
+
     if (!home.hidden) carregar();
   }).observe(home, {attributes:true, attributeFilter:["hidden"]});
   carregar();

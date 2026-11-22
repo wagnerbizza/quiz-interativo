@@ -1151,7 +1151,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
 
       const escolaPacote = String(pacote.escolaAtiva || "").trim();
       const escolaSelecionada = selectEscola?.value;
-      if (escolaSelecionada && escolaSelecionada !== escolaPacote && dadosProvaAtiva.gerenciadaNaNuvem) return;
+      if (escolaSelecionada && normalizarId(escolaSelecionada) !== normalizarId(escolaPacote)) return;
       if (escolaPacote) {
         try {
           const remoto = await consultarEstadoDaProva(escolaPacote);
@@ -1277,6 +1277,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       // 1) tenta primeiro o pacote prova-publicada.json do site/GitHub;
       // 2) Firebase fica como fallback quando o pacote não existe, expirou ou está inativo.
       // O Firebase continua sendo usado normalmente para autenticação e resultados.
+      ++sequenciaConsultaPacote;
       if (unsubscribeProvaEscola) {
         unsubscribeProvaEscola();
         unsubscribeProvaEscola = null;
@@ -1288,10 +1289,12 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
       detalhesProvaAtiva.innerHTML = `⏳ Verificando avaliação publicada para <strong>${escolaNome}</strong>...`;
 
       {
+        let versaoDaConsulta = 0;
         const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
         unsubscribeProvaEscola = onSnapshot(
           provaRef,
           async (docSnap) => {
+            const versao = ++versaoDaConsulta;
             const remoto = docSnap.data();
             if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
             if (remoto?.gerenciadaNaNuvem) {
@@ -1299,6 +1302,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
               return;
             }
             const pacote = await carregarProvaEstatica(escolaNome);
+            if (versao !== versaoDaConsulta) return;
             if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
             if (pacote) {
               if (!await aplicarProvaRecebida(escolaNome, pacote, "github")) mostrarProvaInativaAluno(escolaNome);
@@ -1329,11 +1333,30 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
     }
 
     selectEscola?.addEventListener("change", () => acompanharProvaDaEscola(selectEscola.value));
+    let pararBuscaProvasNaNuvem;
+    function descobrirProvasNaNuvem() {
+      pararBuscaProvasNaNuvem?.();
+      pararBuscaProvasNaNuvem = onSnapshot(query(collection(db, "provas_ativas"), where("ativa", "==", true)), snap => {
+        if (selectEscola.value || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
+        const agora = Date.now();
+        const provas = snap.docs.map(item => item.data()).filter(prova =>
+          prova.gerenciadaNaNuvem && (!prova.expiraEmMillis || Number(prova.expiraEmMillis) > agora));
+        const escolas = Array.from(selectEscola.options).filter(opcao => opcao.value && provas.some(prova =>
+          normalizarId(prova.escolaAtiva) === normalizarId(opcao.value)));
+        if (escolas.length === 1) {
+          selectEscola.value = escolas[0].value;
+          acompanharProvaDaEscola(escolas[0].value);
+        } else if (escolas.length > 1) {
+          detalhesProvaAtiva.textContent = "Há avaliações ativas. Selecione sua escola.";
+        }
+      }, erro => console.warn("Não foi possível listar as avaliações ativas:", erro.code));
+    }
     // 🔐 FASE 10C — só acessa o Firestore depois que o Firebase entregar um UID ao aluno.
     onAuthStateChanged(auth, async (usuario) => {
       if (!usuario) return;
       uidAlunoFirebase = usuario.uid;
       await carregarEscolasAluno();
+      descobrirProvasNaNuvem();
       await conferirPacotePublicoNaEntrada();
     });
     // Verifica o encerramento independentemente do login anônimo do Firebase.

@@ -6411,7 +6411,7 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
     salvar(dados) {
       const usuario = auth.currentUser;
       if (!usuario || usuario.isAnonymous || !navigator.onLine) return Promise.reject(new Error("Sem conexão com a conta."));
-      return setDoc(doc(db, "preferencias_professores", usuario.uid), dados);
+      return setDoc(doc(db, "preferencias_professores", usuario.uid), dados, {mergeFields: Object.keys(dados)});
     }
   };
 
