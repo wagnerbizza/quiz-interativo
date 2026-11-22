@@ -1,0 +1,441 @@
+diff --git a/app.js b/app.js
+index 5243a65..34e91d4 100644
+--- a/app.js
++++ b/app.js
+@@ -25,7 +25,7 @@
+ // ==========================================
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+ import { 
+-  getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where, orderBy, limit 
++  getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, getDoc, onSnapshot, serverTimestamp, collectionGroup, query, where, orderBy, limit, writeBatch, runTransaction
+ } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+ import { getAuth, onAuthStateChanged, signOut, getIdTokenResult, sendPasswordResetEmail, GoogleAuthProvider, linkWithPopup }
+   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+@@ -3116,39 +3116,19 @@ if (window.location.pathname.includes("painel.html")) {
+             publicadoEm: serverTimestamp()
+           };
+ 
+-          // VERSÃO ESTÁVEL FINAL — ativação realmente rápida.
+-          // A publicação não varre mais questoes_publicas e não relê o documento.
+-          // O próprio setDoc só retorna após o Firebase aceitar a gravação.
+-          const idProvaAtiva = normalizarTexto(escolaNome);
+-          const refProvaAtiva = doc(db, "provas_ativas", idProvaAtiva);
+-
+-          // Valida a seleção e grava o pacote antes de alterar a ativação remota.
+-          const pacotePreparado=await prepararPacoteEstaticoAvaliacao(dadosPublicacao);
+-          // O boletim lê o peso salvo pelo professor, nunca um peso enviado pelo aluno.
+-          await setDoc(doc(db, "configuracoes", "avaliacao_" + idAvaliacao), {
+-            idAvaliacao,
+-            escola: escolaNome,
+-            tipoAtividade,
+-            valorTotal,
+-            peso,
++          const pacote = await prepararPacoteEstaticoAvaliacao(dadosPublicacao);
++          const publicacao = writeBatch(db);
++          publicacao.set(doc(db, "configuracoes", "avaliacao_" + idAvaliacao), {
++            idAvaliacao, escola: escolaNome, tipoAtividade, valorTotal, peso,
+             criadoEm: serverTimestamp()
+           });
+-          const pubLocal=await gerarPacoteEstaticoAvaliacao(dadosPublicacao,pacotePreparado);
+-          let firebasePublicado=false;
+-          try {
+-            await setDoc(refProvaAtiva,{...dadosPublicacao,ativa:true});
+-            firebasePublicado=true;
+-          } catch(erroFirebase) {
+-            console.warn("Firebase indisponível na ativação:",erroFirebase?.code||erroFirebase);
+-          }
+-
++          publicacao.set(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
++            ...dadosPublicacao, ativa: true, gerenciadaNaNuvem: true,
++            questoesPublicas: pacote.questoesPublicas
++          });
++          await publicacao.commit();
+           animarBotaoSucesso(botaoPublicar);
+-          alert(
+-            `✅ Avaliação preparada para "${escolaNome}".\n\n`+
+-            `${firebasePublicado?"Firebase: publicado.":"Firebase: indisponível/sem cota."}\n`+
+-            `Pacote: ${pubLocal.total} questões.\n`+
+-            `${pubLocal.modo==="vinculado" ? "Publicação local: arquivo do projeto atualizado automaticamente." : "Publicação local: arquivo baixado como alternativa."}`
+-          );
++          alert(`✅ Avaliação publicada para "${escolaNome}" com ${pacote.questoesPublicas.length} questões.`);
+         } catch (err) {
+           console.error("10D.3 — publicação interrompida:", err);
+           alert(
+@@ -3311,8 +3291,6 @@ if (window.location.pathname.includes("painel.html")) {
+       if (history.replaceState) history.replaceState(null, "", "#ativacao");
+       // IMPORTANTE: vínculo/permissão antes de qualquer operação assíncrona.
+       // Isso mantém o "user gesture" exigido pelo Chrome/Edge.
+-      const vinculoOk = await garantirVinculoPublicacaoNoClique();
+-      if (!vinculoOk) return;
+       const escolaNome = btnEmbaralhar.dataset.escola;
+       if (confirm(`🔀 Reordenar as mesmas questões da prova de "${escolaNome}"?\n\nAs alternativas, o token e os prazos serão mantidos para preservar a recuperação. Tentativas já iniciadas mantêm a prova em uso; a nova ordem vale para novas entradas após a publicação.`)) {
+         try {
+@@ -3329,6 +3307,17 @@ if (window.location.pathname.includes("painel.html")) {
+             return;
+           }
+ 
++          if (dadosAtivos.gerenciadaNaNuvem) {
++            const ref = doc(db, "provas_ativas", normalizarTexto(escolaNome));
++            await runTransaction(db, async tx => {
++              const atual = (await tx.get(ref)).data();
++              const pacote = reordenarPacotePublicado(atual, escolaNome, dadosAtivos.idAvaliacao, Date.now());
++              tx.update(ref, {questoesPublicas: pacote.questoesPublicas, seedReordenacao: pacote.seedReordenacao});
++            });
++            mostrarNotificacao("✅ Questões reordenadas para novas entradas.");
++            return;
++          }
++          if (!await garantirVinculoPublicacaoNoClique()) return;
+           const pacoteAnterior = await (async()=>{ try {
+             const h=await obterHandlePublicacao(); if(!h) return null;
+             return JSON.parse(await (await h.getFile()).text());
+@@ -3369,9 +3358,9 @@ if (window.location.pathname.includes("painel.html")) {
+        
+       // A cópia oficial deve usar a seleção exata do pacote publicado.
+       // Nunca sortear questões novamente ao imprimir.
+-      const handlePublicado = await obterHandlePublicacao();
+-      if (!handlePublicado) throw new Error('Vincule prova-publicada.json antes de gerar a Cópia Geral.');
+-      const pacotePublicado = JSON.parse(await (await handlePublicado.getFile()).text());
++      const handlePublicado = pData.gerenciadaNaNuvem ? null : await obterHandlePublicacao();
++      if (!pData.gerenciadaNaNuvem && !handlePublicado) throw new Error('Vincule prova-publicada.json antes de gerar a Cópia Geral.');
++      const pacotePublicado = pData.gerenciadaNaNuvem ? pData : JSON.parse(await (await handlePublicado.getFile()).text());
+       if (!pacotePublicado.ativa || !Array.isArray(pacotePublicado.questoesPublicas) || !pacotePublicado.questoesPublicas.length) {
+         throw new Error('O arquivo vinculado não contém uma avaliação ativa com questões.');
+       }
+@@ -3760,50 +3749,22 @@ if (window.location.pathname.includes("painel.html")) {
+     if (!escolaNome) { alert("⚠ Escola não informada."); return; }
+     if (!confirm(`⚠️ Deseja encerrar a prova ativa de "${escolaNome}"?`)) return;
+ 
+-    // IMPORTANTE: a permissão do arquivo precisa ser confirmada ainda no clique do usuário.
+-    // Fazemos isso ANTES de prompt/Firebase para impedir que o navegador bloqueie a gravação
+-    // e deixe uma avaliação antiga publicada no GitHub.
+-    const vinculoOk = await garantirVinculoPublicacaoNoClique();
+-    if (!vinculoOk) {
+-      alert('⚠️ Encerramento cancelado. Vincule o arquivo "prova-publicada.json" do projeto para garantir que a prova seja retirada do GitHub.');
+-      return;
+-    }
+-
+-    const motivoEncerramento = (prompt(
+-      "Informe o motivo do encerramento da avaliação:",
+-      "Avaliação encerrada pelo professor."
+-    ) || "Avaliação encerrada pelo professor.").trim();
+-
+-    // PRIMEIRO encerra o pacote público. Assim GitHub é a referência de entrada/saída
+-    // e a prova não permanece disponível caso o Firebase esteja lento ou sem cota.
+-    let modoPublicacaoEncerramento = "";
++    const motivoEncerramento = prompt("Informe o motivo do encerramento:", "Avaliação encerrada pelo professor.");
++    if (motivoEncerramento === null) return;
+     try {
+-      modoPublicacaoEncerramento = await gerarPacoteEstaticoEncerrado(escolaNome, motivoEncerramento);
+-    } catch (err) {
+-      console.error("Falha ao tornar prova-publicada.json inativo:", err);
+-      alert("⚠️ Não foi possível atualizar prova-publicada.json como INATIVO. A prova NÃO será encerrada no Firebase para evitar estados diferentes. Tente Encerrar novamente.");
+-      return;
+-    }
+-
+-    let firebaseEncerrado = false;
+-    try {
+-      await setDoc(doc(db, "provas_ativas", normalizarTexto(escolaNome)), {
+-        ativa: false,
+-        encerradoEm: serverTimestamp(),
+-        motivoEncerramento
+-      }, { merge: true });
+-      firebaseEncerrado = true;
+-    } catch(err) {
+-      console.warn("Firebase indisponível no encerramento:", err?.code || err);
++      const ref = doc(db, "provas_ativas", normalizarTexto(escolaNome));
++      await runTransaction(db, async tx => {
++        const prova = (await tx.get(ref)).data();
++        if (!prova?.ativa) throw new Error("Nenhuma avaliação ativa encontrada.");
++        tx.update(ref, {
++          ativa: false, gerenciadaNaNuvem: true, encerradoEm: serverTimestamp(),
++          motivoEncerramento: motivoEncerramento.trim() || "Avaliação encerrada pelo professor."
++        });
++      });
++      mostrarNotificacao(`🛑 Avaliação de "${escolaNome}" encerrada.`);
++    } catch (erro) {
++      alert("Não foi possível confirmar o encerramento: " + (erro.message || erro.code));
+     }
+-
+-    mostrarNotificacao(`🛑 Encerramento de "${escolaNome}" preparado.`);
+-    alert(
+-      `🛑 Encerramento preparado.\n\n` +
+-      `GitHub: arquivo do projeto marcado como INATIVO.\n` +
+-      `${firebaseEncerrado ? "Firebase: encerrado.\n" : "Firebase: indisponível/sem cota.\n"}` +
+-      `A sincronização automática do VS Code publicará a alteração.`
+-    );
+   };
+ 
+   function popularSelectMateriasQuestao() {
+@@ -6434,6 +6395,26 @@ window.alternarTodosModalLixeiraQuestao = function(marcar) {
+   // 🔐 FASE 10A — só abre o painel depois da autenticação.
+   document.body.style.visibility = "hidden";
+ 
++  window.quizPreferenciasRemotas = {
++    ouvir(receber, falhar) {
++      let parar;
++      const sair = onAuthStateChanged(auth, usuario => {
++        parar?.();
++        if (usuario && !usuario.isAnonymous && !new URLSearchParams(location.search).has("modo")) {
++          parar = onSnapshot(doc(db, "preferencias_professores", usuario.uid), {includeMetadataChanges:true}, snap => {
++            if (!snap.metadata.fromCache && !snap.metadata.hasPendingWrites) receber(snap.data() || null);
++          }, falhar);
++        }
++      });
++      return () => { sair(); parar?.(); };
++    },
++    salvar(dados) {
++      const usuario = auth.currentUser;
++      if (!usuario || usuario.isAnonymous || !navigator.onLine) return Promise.reject(new Error("Sem conexão com a conta."));
++      return setDoc(doc(db, "preferencias_professores", usuario.uid), dados);
++    }
++  };
++
+   onAuthStateChanged(auth, async (usuario) => {
+     // 10C.9.1: se o professor escolheu explicitamente o modo offline,
+     // abre os relatórios locais sem tentar validar o token no Firebase.
+diff --git a/index.html b/index.html
+index 8c3dbd6..acad8c5 100644
+--- a/index.html
++++ b/index.html
+@@ -745,7 +745,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+   <script type="module">
+     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+     import {
+-      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, onSnapshot, serverTimestamp, deleteDoc, query, where
++      getFirestore, collection, addDoc, getDocs, setDoc, doc, getDoc, getDocFromServer, onSnapshot, serverTimestamp, deleteDoc, query, where
+     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+     // 🔐 FASE 10C — o aluno recebe uma identidade anônima do Firebase.
+     // Ele não precisa criar conta nem digitar senha.
+@@ -1081,6 +1081,11 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+     // Isso reduz consumo do Firebase e evita ficar preso a um listener
+     // quando a cota/rede estiver indisponível.
+     // ==========================================================
++    async function consultarEstadoDaProva(escolaNome) {
++      const snap = await getDocFromServer(doc(db, "provas_ativas", normalizarId(escolaNome)));
++      return snap.data();
++    }
++
+     async function carregarProvaEstatica(escolaNome) {
+       try {
+         const r=await fetch(`prova-publicada.json?v=${Date.now()}`,{cache:"no-store"});
+@@ -1144,6 +1149,15 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+       const pacoteAnterior = ultimoPacotePublicoConfirmado;
+       ultimoPacotePublicoConfirmado = pacote;
+ 
++      const escolaPacote = String(pacote.escolaAtiva || "").trim();
++      const escolaSelecionada = selectEscola?.value;
++      if (escolaSelecionada && escolaSelecionada !== escolaPacote && dadosProvaAtiva.gerenciadaNaNuvem) return;
++      if (escolaPacote) {
++        try {
++          const remoto = await consultarEstadoDaProva(escolaPacote);
++          if (remoto?.gerenciadaNaNuvem || sequenciaAtual !== sequenciaConsultaPacote) return;
++        } catch (_) { return; }
++      } else if (escolaSelecionada) return;
+       const expirada =
+         Number(pacote.expiraEmMillis || 0) > 0 &&
+         Date.now() >= Number(pacote.expiraEmMillis || 0);
+@@ -1273,52 +1287,21 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+       selectTurma.innerHTML = `<option value="" disabled selected>Aguardando prova ativa...</option>`;
+       detalhesProvaAtiva.innerHTML = `⏳ Verificando avaliação publicada para <strong>${escolaNome}</strong>...`;
+ 
+-      (async () => {
+-        // GitHub/pacote publicado sempre tem prioridade para a entrega da prova.
+-        const pacote = await carregarProvaEstatica(escolaNome);
+-        if (pacote) {
+-          if (await aplicarProvaRecebida(escolaNome, pacote, "github")) return;
+-
+-          // O pacote existe para esta escola, porém está inativo ou expirado.
+-          // GitHub continua sendo a fonte oficial: NÃO ressuscitar pelo Firebase.
+-          dadosProvaAtiva = {};
+-          detalhesProvaAtiva.innerHTML =
+-            `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
+-          selectTurma.innerHTML =
+-            `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+-          btnIniciarProva.disabled = true;
+-          return;
+-        }
+-
+-        // Somente se o pacote da escola NÃO puder ser obtido usamos Firebase como fallback.
++      {
+         const provaRef = doc(db, "provas_ativas", normalizarId(escolaNome));
+         unsubscribeProvaEscola = onSnapshot(
+           provaRef,
+           async (docSnap) => {
+-            // Antes de aceitar Firebase, conferimos novamente o pacote publicado.
+-            // Isso permite que uma publicação recém-chegada assuma a prioridade.
+-            const pacoteAtual = await carregarProvaEstatica(escolaNome);
+-            if (pacoteAtual) {
+-              if (await aplicarProvaRecebida(escolaNome, pacoteAtual, "github")) {
+-                if (unsubscribeProvaEscola) {
+-                  unsubscribeProvaEscola();
+-                  unsubscribeProvaEscola = null;
+-                }
+-                return;
+-              }
+-
+-              // Pacote oficial encontrado, mas inativo/expirado: não aceitar
+-              // um estado antigo do Firebase como se a avaliação ainda estivesse ativa.
+-              dadosProvaAtiva = {};
+-              detalhesProvaAtiva.innerHTML =
+-                `⚠️ Não há avaliação ativa para <strong>${escolaNome}</strong> neste momento.`;
+-              selectTurma.innerHTML =
+-                `<option value="" disabled selected>Nenhuma turma liberada</option>`;
+-              btnIniciarProva.disabled = true;
+-              if (unsubscribeProvaEscola) {
+-                unsubscribeProvaEscola();
+-                unsubscribeProvaEscola = null;
+-              }
++            const remoto = docSnap.data();
++            if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
++            if (remoto?.gerenciadaNaNuvem) {
++              if (!await aplicarProvaRecebida(escolaNome, remoto, "github")) mostrarProvaInativaAluno(escolaNome);
++              return;
++            }
++            const pacote = await carregarProvaEstatica(escolaNome);
++            if (normalizarId(selectEscola.value) !== normalizarId(escolaNome) || !document.getElementById("tela-quiz").classList.contains("hidden")) return;
++            if (pacote) {
++              if (!await aplicarProvaRecebida(escolaNome, pacote, "github")) mostrarProvaInativaAluno(escolaNome);
+               return;
+             }
+ 
+@@ -1334,7 +1317,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+           },
+           async (erro) => {
+             console.warn("Firebase indisponível; conferindo pacote publicado:", erro?.code || erro);
+-            const pacoteFallback = await carregarProvaEstatica(escolaNome);
++            const pacoteFallback = dadosProvaAtiva.gerenciadaNaNuvem ? null : await carregarProvaEstatica(escolaNome);
+             if (pacoteFallback &&
+                 await aplicarProvaRecebida(escolaNome, pacoteFallback, "github")) return;
+             detalhesProvaAtiva.innerHTML =
+@@ -1342,7 +1325,7 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+             btnIniciarProva.disabled = true;
+           }
+         );
+-      })();
++      }
+     }
+ 
+     selectEscola?.addEventListener("change", () => acompanharProvaDaEscola(selectEscola.value));
+@@ -1421,6 +1404,17 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+       const turmaVal = codigoDireto ? String(bilheteDireto.turma || "").trim() : selectTurma.value;
+ 
+       if (!escolaVal || !nomeVal || !turmaVal) { alert("⚠️ Selecione sua escola e preencha nome e turma."); return; }
++      try {
++        const remoto = await consultarEstadoDaProva(escolaVal);
++        if (remoto?.gerenciadaNaNuvem && (!remoto.ativa || remoto.idAvaliacao !== provaOriginal.idAvaliacao)) {
++          alert("A avaliação mudou ou foi encerrada. Atualize a página e confira com o professor.");
++          return;
++        }
++      } catch (_) {
++        alert("Não foi possível verificar a avaliação. Confira sua conexão e tente novamente.");
++        return;
++      }
++
+       if (!dadosProvaAtiva.escolaAtiva) { alert("⚠️ Não há avaliação ativa para esta escola."); return; }
+ 
+       // 🟢 Agora o ID inclui ESCOLA + NOME + TURMA, evitando conflito entre escolas.
+@@ -1812,19 +1806,25 @@ html.acesso-aluno-autorizado #navegacao-acesso-aluno #voltar-apresentacao-token{
+       // Não consome leituras do Firestore e também funciona quando a prova foi
+       // entregue originalmente pelo pacote publicado.
+       if (verificacaoPacotePublicoInterval) clearInterval(verificacaoPacotePublicoInterval);
++      const avaliacaoEmCurso = dadosProvaAtiva.idAvaliacao;
++      const escolaEmCurso = alunoAtual.escola;
++      const provaNaNuvem = dadosProvaAtiva.gerenciadaNaNuvem;
+       verificacaoPacotePublicoInterval = setInterval(async () => {
+         try {
+-          const pacote = await carregarProvaEstatica(alunoAtual.escola);
+-          if (!pacote) return;
+-          const expirou = Number(pacote.expiraEmMillis || 0) > 0 &&
+-            Date.now() >= Number(pacote.expiraEmMillis);
+-          // O prazo expiraEmMillis restringe apenas NOVOS inícios.
+-          // Uma tentativa em andamento termina por tempo individual ou encerramento explícito.
+-          if (pacote.ativa === false) {
++          const remoto = await consultarEstadoDaProva(escolaEmCurso);
++          if (dadosProvaAtiva.idAvaliacao !== avaliacaoEmCurso || document.getElementById("tela-quiz").classList.contains("hidden")) return;
++          if (remoto?.gerenciadaNaNuvem || provaNaNuvem) {
++            if (remoto?.idAvaliacao === avaliacaoEmCurso && remoto.ativa === false) {
++              await encerrarSessaoAluno(remoto.motivoEncerramento || "Avaliação encerrada pelo professor.");
++            }
++            return;
++          }
++          const pacote = await carregarProvaEstatica(escolaEmCurso);
++          if (pacote?.ativa === false && (!pacote.idAvaliacao || pacote.idAvaliacao === avaliacaoEmCurso)) {
+             await encerrarSessaoAluno(pacote.motivoEncerramento || "Avaliação encerrada pelo professor.");
+           }
+-        } catch (_) {}
+-      }, 5000);
++        } catch (_) { /* Nova consulta no próximo intervalo. */ }
++      }, 15000);
+ 
+       exibirQuestao();
+     }
+diff --git a/painel.html b/painel.html
+index 4d23e8f..645a1d0 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3596,7 +3596,7 @@ function filtrarLixeira() {
+     const favoritos = document.createElement("section");
+     favoritos.id = "qi-favoritos";
+     favoritos.className = "qi-card";
+-    favoritos.innerHTML = '<h2>Meus atalhos</h2><div class="qi-actions" data-favoritos></div><details><summary>Escolher atalhos e favoritos</summary><fieldset><legend>Mostrar em Meus atalhos</legend></fieldset></details><p class="qi-instrucao-atalhos">Suas preferências ficam neste navegador. Clique com o botão direito em um atalho ou use Escolher atalhos e favoritos.</p><p role="status"></p>';
++    favoritos.innerHTML = '<h2>Meus atalhos</h2><div class="qi-actions" data-favoritos></div><details><summary>Escolher atalhos e favoritos</summary><fieldset><legend>Mostrar em Meus atalhos</legend></fieldset></details><p class="qi-instrucao-atalhos">Atalhos, favoritos e cores são sincronizados pela conta do professor. Clique com o botão direito em um atalho ou use Escolher atalhos e favoritos.</p><p role="status"></p>';
+     nav.after(favoritos);
+     const dialogo = document.createElement("dialog");
+     dialogo.id = "qi-opcoes-atalho";
+@@ -3636,6 +3636,11 @@ function filtrarLixeira() {
+       pref.marcadas = [...favoritas];
+       favoritos.querySelector("[role=status]").textContent = salvar() ? "" : "O navegador não conseguiu salvar as preferências.";
+       renderizar();
++      window.quizPreferenciasRemotas?.salvar({
++        atalhos: pref.atalhos, marcadas: pref.marcadas, cores: pref.cores || {}
++      }).catch(() => {
++        favoritos.querySelector("[role=status]").textContent = "Preferências salvas neste aparelho. A sincronização com a conta falhou.";
++      });
+     }
+     for (const [id, nome] of paginas) {
+       const linha = document.createElement("div");
+@@ -3713,6 +3718,20 @@ function filtrarLixeira() {
+       new MutationObserver(sincronizarInicio).observe(inicio,{attributes:true,attributeFilter:["hidden"]});
+       sincronizarInicio();
+     }
++    window.quizPreferenciasRemotas?.ouvir(remoto => {
++      if (!remoto) return;
++      atalhos.clear();
++      favoritas.clear();
++      for (const id of remoto.atalhos || []) if (paginas.has(id)) atalhos.add(id);
++      for (const id of remoto.marcadas || []) if (paginas.has(id)) favoritas.add(id);
++      pref.atalhos = [...atalhos];
++      pref.marcadas = [...favoritas];
++      pref.cores = remoto.cores || {};
++      salvar();
++      renderizar();
++    }, () => {
++      favoritos.querySelector("[role=status]").textContent = "Preferências da conta indisponíveis neste momento.";
++    });
+     renderizar();
+     const busca = document.querySelector('label[for="qi-function-search"]');
+     if (busca) busca.textContent = "Encontrar uma função";
+@@ -4021,11 +4040,11 @@ function montarResumoHome() {
+ 
+   async function consultarFirebase() {
+     const sdk = "https://www.gstatic.com/firebasejs/10.8.0/";
+-    const [{getApp}, {getFirestore, collection, getDocsFromServer, query, where}] = await Promise.all([
++    const [{getApp}, {getFirestore, collection, getDocsFromServer}] = await Promise.all([
+       import(sdk + "firebase-app.js"), import(sdk + "firebase-firestore.js")
+     ]);
+     const db = getFirestore(getApp());
+-    const snapshot = await getDocsFromServer(query(collection(db, "provas_ativas"), where("ativa", "==", true)));
++    const snapshot = await getDocsFromServer(collection(db, "provas_ativas"));
+     return snapshot.docs.map(doc => doc.data());
+   }
+ 
+@@ -4048,7 +4067,8 @@ function montarResumoHome() {
+         if (prova?.ativa === true && chave(prova.escolaAtiva)) provas.set(chave(prova.escolaAtiva), prova);
+       };
+       if (firebase.status === "fulfilled") firebase.value.forEach(adicionar);
+-      if (arquivo.status === "fulfilled") adicionar(arquivo.value);
++      if (arquivo.status === "fulfilled" && !firebase.value?.some(prova =>
++        prova.gerenciadaNaNuvem && chave(prova.escolaAtiva) === chave(arquivo.value?.escolaAtiva))) adicionar(arquivo.value);
+       lista.replaceChildren();
+       atualizarHorarios = [];
+       for (const prova of [...provas.values()].sort((a,b) => a.escolaAtiva.localeCompare(b.escolaAtiva,"pt-BR"))) {
