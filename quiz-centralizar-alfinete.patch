@@ -1,0 +1,14 @@
+diff --git a/painel.html b/painel.html
+--- a/painel.html
++++ b/painel.html
+@@ -1965,4 +1965,10 @@
+     width: 44px;
+     min-height: 44px;
++  }
++  #qi-informacoes-topo > #qi-home-clima:has(> #quizHomeWeather:not([open])) {
++    padding-block-end: 0;
++  }
++  #qi-informacoes-topo > #qi-home-clima:has(> #quizHomeWeather:not([open])) > [data-fixar-topo] {
++    inset-block-start: 50% !important; transform: translateY(-50%);
+   }
+   #qi-informacoes-topo > #qi-home-clima > #quizHomeWeather > summary {
