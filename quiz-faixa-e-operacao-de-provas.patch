@@ -1,0 +1,158 @@
+diff --git a/painel.html b/painel.html
+index 762e37a..fa722ac 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3699,6 +3699,11 @@ function filtrarLixeira() {
+       acao("[data-rodape]","Fechar",() => dialogo.close());
+       dialogo.showModal();
+     }
++    document.addEventListener("click", e => {
++      const controle = e.target.closest("[data-configurar-atalho]");
++      if (!controle || dialogo.open || !paginas.has(controle.dataset.configurarAtalho)) return;
++      opcoesDaAba(controle.dataset.configurarAtalho);
++    });
+     document.addEventListener("contextmenu", e => {
+       const destino = e.target.closest("[data-qi-page]");
+       if (!destino || !paginas.has(destino.dataset.qiPage) || dialogo.open) return;
+@@ -3993,6 +3998,10 @@ function filtrarLixeira() {
+ })();
+ </script>
+ <style>
++  html:has(#qi-informacoes-topo.qi-topo-fixado),
++  body:has(#qi-informacoes-topo.qi-topo-fixado) {
++    overflow-x: clip !important;
++  }
+   #qi-informacoes-topo { margin-bottom: 16px; color: var(--qi-text); }
+   #qi-informacoes-topo.qi-topo-fixado {
+     position: sticky; top: 0; z-index: 20;
+@@ -4011,7 +4020,18 @@ function filtrarLixeira() {
+   }
+   #qi-informacoes-topo [data-aviso-provas] { font-weight: 750; flex: 1 1 12rem; }
+   #qi-informacoes-topo .qi-faixa-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+-  #qi-informacoes-topo .qi-faixa-acoes select { width: auto; min-height: 44px; }
++  #qi-home-resumo .qi-operacao-provas { gap: 8px; margin-block: 12px; }
++  #qi-home-resumo .qi-operacao-provas button { min-height: 44px !important; }
++  #qi-home-resumo button[data-operar-provas] {
++    background: var(--qi-accent) !important; color: #101820 !important;
++    padding: 12px 18px !important; font-size: 1rem !important; font-weight: 750 !important;
++  }
++  #qi-cor-faixa-dialogo {
++    position: fixed !important; inset: 0 !important; margin: auto !important;
++    width: min(340px, calc(100vw - 24px)); padding: 18px; border-radius: 12px;
++    color: var(--qi-text); background: var(--qi-panel); border: 1px solid var(--qi-accent);
++  }
++  #qi-cor-faixa-dialogo::backdrop { background: #0009; }
+   #qi-informacoes-topo [data-ver-provas] {
+     background: var(--qi-cor-faixa, #22c55e) !important; color: #101820 !important;
+     min-height: 44px;
+@@ -4034,10 +4054,13 @@ function filtrarLixeira() {
+   <section id="qi-home-resumo" class="qi-card no-print" aria-labelledby="qi-home-provas-titulo">
+     <h2 id="qi-home-provas-titulo">Avaliações ativas</h2>
+     <p role="status" data-provas-status>Aguardando consulta…</p>
++    <div class="qi-actions qi-operacao-provas">
++      <button type="button" class="qi-button" data-qi-page="ativacao" data-operar-provas>Abrir ativação de provas</button>
++      <button type="button" class="qi-button" data-configurar-atalho="ativacao">Atalhos e favoritos</button>
++    </div>
+     <ul data-provas-lista></ul>
+     <div class="qi-actions">
+       <button type="button" class="qi-button" data-provas-atualizar>Atualizar lista</button>
+-      <button type="button" class="qi-button" data-qi-page="ativacao">Gerenciar provas e tokens</button>
+       <button type="button" class="qi-button" data-qi-page="monitoramento">Monitoramento e autorizações</button>
+       <button type="button" class="qi-button" data-qi-page="escolas">Cadastrar escolas e gerenciar turmas</button>
+       <button type="button" class="qi-button" data-qi-page="questoes">Cadastrar e importar questões</button>
+@@ -4060,7 +4083,7 @@ function montarResumoHome() {
+   topo.id = "qi-informacoes-topo";
+   topo.className = "no-print";
+   topo.setAttribute("aria-label", "Previsão e avisos de avaliações");
+-  topo.innerHTML = '<div class="qi-topo-provas"><span role="status" data-aviso-provas>Aguardando consulta…</span><div class="qi-faixa-acoes"><label>Cor da faixa <select data-cor-faixa><option value="verde">Verde</option><option value="ciano">Ciano</option><option value="roxo">Roxo</option><option value="laranja">Laranja</option><option value="rosa">Rosa</option></select></label><button type="button" class="qi-button" data-ver-provas>Ver provas ativas</button></div></div>';
++  topo.innerHTML = '<div class="qi-topo-provas"><span role="status" data-aviso-provas>Aguardando consulta…</span><div class="qi-faixa-acoes"><button type="button" class="qi-button" data-ver-provas>Ver provas ativas</button></div></div>';
+   const fixar = document.createElement("button");
+   fixar.type = "button";
+   fixar.className = "qi-button";
+@@ -4070,25 +4093,76 @@ function montarResumoHome() {
+   topo.prepend(clima);
+   atalhos.closest(".qi-shell").before(topo);
+   const aviso = topo.querySelector("[data-aviso-provas]");
+-  const seletorCor = topo.querySelector("[data-cor-faixa]");
++  const faixa = topo.querySelector(".qi-topo-provas");
+   const coresFaixa = new Map([["verde","#22c55e"],["ciano","#22d3ee"],["roxo","#c084fc"],["laranja","#fb923c"],["rosa","#f472b6"]]);
+   const chaveFaixa = "faixa_provas";
+   const cacheFaixa = "quiz-cor-faixa-provas";
+   function aplicarCor(cor) {
+-    seletorCor.value = coresFaixa.has(cor) ? cor : "verde";
+-    topo.style.setProperty("--qi-cor-faixa", coresFaixa.get(seletorCor.value));
+-    try { localStorage.setItem(cacheFaixa, seletorCor.value); } catch (_) {}
++    corAtual = coresFaixa.has(cor) ? cor : "verde";
++    topo.style.setProperty("--qi-cor-faixa", coresFaixa.get(corAtual));
++    try { localStorage.setItem(cacheFaixa, corAtual); } catch (_) {}
+   }
++  let corAtual;
+   let corLocal;
+   try { corLocal = localStorage.getItem(cacheFaixa); } catch (_) {}
+   aplicarCor(corLocal);
+-  seletorCor.addEventListener("change", () => {
+-    const cor = seletorCor.value;
+-    aplicarCor(cor);
+-    window.quizPreferenciasRemotas?.salvar({cores: {[chaveFaixa]: cor}}, ["cores." + chaveFaixa]).catch(() => {
+-      seletorCor.title = "Cor salva neste aparelho. A sincronização com a conta falhou.";
+-    });
++  const dialogoCor = document.createElement("dialog");
++  dialogoCor.id = "qi-cor-faixa-dialogo";
++  dialogoCor.setAttribute("aria-labelledby", "qi-cor-faixa-titulo");
++  dialogoCor.innerHTML = '<h2 id="qi-cor-faixa-titulo">Cor da faixa</h2><form method="dialog" class="qi-actions"></form>';
++  const opcoesCor = dialogoCor.querySelector("form");
++  for (const [id, cor] of coresFaixa) {
++    const botao = document.createElement("button");
++    botao.type = "button";
++    botao.className = "qi-button";
++    botao.dataset.cor = id;
++    botao.textContent = id[0].toUpperCase() + id.slice(1);
++    botao.style.setProperty("border-inline-start", "4px solid " + cor, "important");
++    botao.onclick = () => {
++      aplicarCor(id);
++      dialogoCor.close();
++      window.quizPreferenciasRemotas?.salvar({cores: {[chaveFaixa]: id}}, ["cores." + chaveFaixa]).catch(() => {
++        aviso.title = "Cor salva neste aparelho. A sincronização com a conta falhou.";
++      });
++    };
++    opcoesCor.append(botao);
++  }
++  opcoesCor.insertAdjacentHTML("beforeend", '<button type="submit" class="qi-button">Fechar</button>');
++  document.body.append(dialogoCor);
++  function abrirCores() {
++    if (dialogoCor.open) return;
++    for (const botao of opcoesCor.querySelectorAll("[data-cor]")) {
++      botao.setAttribute("aria-pressed", String(botao.dataset.cor === corAtual));
++    }
++    dialogoCor.showModal();
++  }
++  faixa.addEventListener("contextmenu", evento => {
++    evento.preventDefault();
++    abrirCores();
+   });
++  let toque;
++  let timer;
++  let ignorarCliqueAte = 0;
++  const cancelarToque = () => { clearTimeout(timer); toque = null; };
++  faixa.addEventListener("pointerdown", evento => {
++    if (evento.pointerType !== "touch" || !evento.isPrimary) return;
++    toque = {x: evento.clientX, y: evento.clientY};
++    timer = setTimeout(() => {
++      ignorarCliqueAte = Date.now() + 800;
++      abrirCores();
++    }, 600);
++  });
++  faixa.addEventListener("pointermove", evento => {
++    if (toque && Math.hypot(evento.clientX - toque.x, evento.clientY - toque.y) > 10) cancelarToque();
++  });
++  for (const evento of ["pointerup", "pointercancel", "pointerleave"]) {
++    faixa.addEventListener(evento, cancelarToque);
++  }
++  faixa.addEventListener("click", evento => {
++    if (Date.now() >= ignorarCliqueAte) return;
++    evento.preventDefault();
++    evento.stopImmediatePropagation();
++  }, true);
+   const cacheTopo = "quiz-topo-fixado";
+   let fixado = true;
+   try { fixado = localStorage.getItem(cacheTopo) !== "false"; } catch (_) {}
