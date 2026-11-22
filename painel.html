@@ -1965,6 +1965,12 @@ body.light-mode #aba-banco-dados > p {
     width: 44px;
     min-height: 44px;
   }
+  #qi-informacoes-topo > #qi-home-clima:has(> #quizHomeWeather:not([open])) {
+    padding-block-end: 0;
+  }
+  #qi-informacoes-topo > #qi-home-clima:has(> #quizHomeWeather:not([open])) > [data-fixar-topo] {
+    inset-block-start: 50% !important; transform: translateY(-50%);
+  }
   #qi-informacoes-topo > #qi-home-clima > #quizHomeWeather > summary {
     min-height: 52px;
     padding-inline-end: 56px;
