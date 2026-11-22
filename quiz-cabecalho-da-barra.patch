@@ -1,0 +1,64 @@
+diff --git a/painel.html b/painel.html
+index 1f9c223..39980cb 100644
+--- a/painel.html
++++ b/painel.html
+@@ -3537,6 +3537,25 @@ function filtrarLixeira() {
+   }
+   #qi-barra-professor.qi-barra-compacta :is(.qi-button,summary) { padding-inline: 4px !important; }
+   #qi-barra-professor.qi-barra-compacta svg { flex: 0 0 19px; }
++  #qi-barra-professor .qi-cabecalho-barra {
++    display: flex; align-items: center; gap: 8px; padding-bottom: 12px;
++    border-bottom: 1px solid var(--qi-line);
++  }
++  #qi-barra-professor .qi-cabecalho-barra .qi-brand { flex: 1; border: 0; padding: 0; gap: 8px; }
++  #qi-barra-professor .qi-cabecalho-barra .qi-brand b { font-weight: 700; line-height: 1.2; font-family: inherit; font-size: 15px; }
++  #qi-barra-professor .qi-cabecalho-barra .qi-brand small { font-size: 9px; letter-spacing: .06em; }
++  #qi-barra-professor .qi-cabecalho-barra .qi-menu-recolher { flex: 0 0 34px; }
++  #qi-barra-professor.qi-barra-compacta .qi-cabecalho-barra { flex-direction: column; }
++  #qi-barra-professor.qi-barra-compacta .qi-cabecalho-barra .qi-brand { flex: none; }
++  #qi-barra-professor .qi-controles-busca { position: relative; }
++  #qi-barra-professor #qi-busca-lateral { padding-inline-end: 38px !important; }
++  #qi-barra-professor #qi-busca-lateral::-webkit-search-cancel-button { display: none; }
++  #qi-barra-professor .qi-limpar-menu {
++    position: absolute; inset: 32px 4px auto auto; width: 34px; min-width: 0;
++    min-height: 32px; justify-content: center; padding: 0 !important;
++    background: transparent !important; border: 0 !important; font-size: 20px !important;
++  }
++  #qi-barra-professor.qi-barra-compacta .qi-controles-busca { display: none; }
+   @media print { #qi-barra-professor, #qi-rolagem, #qi-favoritos, #qi-config-professor, #qi-opcoes-atalho { display: none !important; } }
+ </style>
+ <script>
+@@ -3747,13 +3766,22 @@ function filtrarLixeira() {
+     buscar.innerHTML = icone('<path d="M21 21l-6-6 M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0"/>');
+     buscar.onclick = () => { definirBarra(true); campo.focus(); };
+     const controles = document.createElement("div");
+-    controles.innerHTML = '<label for="qi-busca-lateral">Pesquisar no menu</label><input id="qi-busca-lateral" type="search" placeholder="Buscar função…"><div data-resultado-menu hidden></div>';
++    controles.innerHTML = '<label for="qi-busca-lateral">Pesquisar no menu</label><input id="qi-busca-lateral" type="search" placeholder="Buscar função…"><button type="button" class="qi-button qi-limpar-menu" aria-label="Limpar busca do menu">×</button><div data-resultado-menu hidden></div>';
+     const campo = controles.querySelector("input");
++    controles.className = "qi-controles-busca";
++    controles.querySelector(".qi-limpar-menu").onclick = () => {
++      campo.value = "";
++      campo.dispatchEvent(new Event("input"));
++      campo.focus();
++    };
+     const resultados = controles.querySelector("[data-resultado-menu]");
+     const grupo = document.createElement("span");
+     grupo.dataset.grupoMenu = "";
+     grupo.textContent = "ESPAÇO DE TRABALHO";
+-    barra.append(recolher, fixar, buscar, controles, grupo, home);
++    const cabecalhoBarra = document.createElement("div");
++    cabecalhoBarra.className = "qi-cabecalho-barra";
++    cabecalhoBarra.append(recolher);
++    barra.append(cabecalhoBarra, fixar, buscar, controles, grupo, home);
+     const normalizarBusca = texto => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+     campo.oninput = () => {
+       const termos = normalizarBusca(campo.value).trim().split(/\s+/).filter(Boolean);
+@@ -3827,7 +3855,7 @@ function filtrarLixeira() {
+       if (fixa === !barra.hidden) return;
+       const foco = document.activeElement;
+       if (fixa) {
+-        barra.prepend(marca);
++        cabecalhoBarra.prepend(marca);
+         rodapeMenu.before(menu);
+       } else {
+         marcaOrigem.after(marca);
