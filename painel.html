@@ -3432,6 +3432,21 @@ function filtrarLixeira() {
       padding-inline-start: 112px !important;
     }
   }
+  .qi-modern button.qi-accessibility-float { border-radius: 13px !important; }
+  #qi-barra-professor .qi-button { justify-content: flex-start; }
+  #qi-barra-professor .qi-menus summary > .qi-icone-menu + span { flex: 1; text-align: start; }
+  #qi-barra-professor .qi-button[aria-current="page"] {
+    background: #206844 !important; color: white !important; border-color: var(--qi-accent) !important;
+  }
+  #qi-barra-professor.qi-barra-compacta .qi-button { justify-content: center; }
+  [data-cor-atalho] { box-shadow: inset 0 -4px var(--qi-cor-atalho); }
+  #qi-opcoes-atalho {
+    width: min(92vw, 900px); max-height: 85vh; padding: 24px;
+    border: 2px solid var(--qi-accent); border-radius: 16px;
+    background: var(--qi-panel); color: var(--qi-text);
+  }
+  #qi-opcoes-atalho::backdrop { background: #000b; }
+  #qi-opcoes-atalho .qi-actions { margin-block: 12px; }
   @media print { #qi-barra-professor, #qi-rolagem, #qi-favoritos, #qi-config-professor { display: none !important; } }
 </style>
 <script>
@@ -3455,35 +3470,126 @@ function filtrarLixeira() {
     document.querySelectorAll(".qi-shell .qi-menus [data-qi-page], .qi-shell .qi-quick-links [data-qi-page]").forEach(botao => {
       if (!paginas.has(botao.dataset.qiPage)) paginas.set(botao.dataset.qiPage, botao.textContent.trim());
     });
-    const favoritas = new Set(Array.isArray(pref.favoritas) ? pref.favoritas : ["ativacao", "monitoramento", "relatorios"]);
+    const atalhos = new Set(Array.isArray(pref.atalhos) ? pref.atalhos :
+      Array.isArray(pref.favoritas) ? pref.favoritas : ["inicio", "ativacao", "monitoramento", "relatorios"]);
+    const favoritas = new Set(Array.isArray(pref.marcadas) ? pref.marcadas : []);
+    const cores = new Map([["Azul","#168cce"],["Verde","#28975c"],["Roxo","#9a5bd0"],
+      ["Vermelho","#d65a60"],["Amarelo","#eaba39"],["Laranja","#e37b37"]]);
+    const inicio = document.getElementById("qi-inicio");
     const favoritos = document.createElement("section");
     favoritos.id = "qi-favoritos";
     favoritos.className = "qi-card";
     favoritos.innerHTML = '<h2>Meus atalhos</h2><div class="qi-actions" data-favoritos></div><details><summary>Escolher atalhos e favoritos</summary><fieldset><legend>Mostrar em Meus atalhos</legend></fieldset></details><p role="status"></p>';
     nav.after(favoritos);
+    const dialogo = document.createElement("dialog");
+    dialogo.id = "qi-opcoes-atalho";
+    dialogo.setAttribute("aria-labelledby","qi-opcoes-atalho-titulo");
+    document.body.append(dialogo);
+    function pintarBotao(botao) {
+      const id = botao.dataset.qiPage;
+      const cor = cores.get(pref.cores?.[id]);
+      botao.toggleAttribute("data-cor-atalho", Boolean(cor));
+      if (cor) botao.style.setProperty("--qi-cor-atalho",cor);
+      else botao.style.removeProperty("--qi-cor-atalho");
+    }
     function renderizar() {
       const botoes = favoritos.querySelector("[data-favoritos]");
       botoes.replaceChildren();
       for (const [id, nome] of paginas) {
-        if (!favoritas.has(id)) continue;
+        if (!atalhos.has(id) && !favoritas.has(id)) continue;
         const b = document.createElement("button");
-        b.type = "button"; b.className = "qi-button"; b.dataset.qiPage = id; b.textContent = nome;
+        b.type = "button";
+        b.className = "qi-button";
+        b.dataset.qiPage = id;
+        b.textContent = (favoritas.has(id) ? "★ " : "") + nome;
         botoes.append(b);
       }
+      document.querySelectorAll("[data-qi-page]").forEach(pintarBotao);
+      favoritos.querySelectorAll("input[data-opcao]").forEach(caixa => {
+        caixa.checked = (caixa.dataset.opcao === "atalho" ? atalhos : favoritas).has(caixa.value);
+      });
+    }
+    function atualizarPreferencias() {
+      pref.atalhos = [...atalhos];
+      pref.marcadas = [...favoritas];
+      favoritos.querySelector("[role=status]").textContent = salvar() ? "" : "O navegador não conseguiu salvar as preferências.";
+      renderizar();
     }
     for (const [id, nome] of paginas) {
-      if (id === "inicio") continue;
-      const label = document.createElement("label");
-      const caixa = document.createElement("input");
-      caixa.type = "checkbox"; caixa.checked = favoritas.has(id);
-      caixa.onchange = () => {
-        if (caixa.checked) favoritas.add(id); else favoritas.delete(id);
-        pref.favoritas = [...favoritas];
-        favoritos.querySelector("[role=status]").textContent = salvar() ? "" : "O navegador não conseguiu salvar os atalhos.";
-        renderizar();
+      const linha = document.createElement("div");
+      linha.append(nome + " ");
+      for (const [modo, grupo, texto] of [["atalho",atalhos,"Atalho"],["favorito",favoritas,"Favorito"]]) {
+        const label = document.createElement("label");
+        const caixa = document.createElement("input");
+        caixa.type = "checkbox";
+        caixa.dataset.opcao = modo;
+        caixa.value = id;
+        caixa.onchange = () => {
+          if (caixa.checked) grupo.add(id); else grupo.delete(id);
+          atualizarPreferencias();
+        };
+        label.append(caixa, texto);
+        linha.append(label);
+      }
+      favoritos.querySelector("fieldset").append(linha);
+    }
+    function opcoesDaAba(id) {
+      dialogo.innerHTML = '<h2 id="qi-opcoes-atalho-titulo"></h2><div class="qi-actions" data-acoes></div><h3>Cor desta aba</h3><div class="qi-actions" data-cores></div><div class="qi-actions" data-rodape></div>';
+      dialogo.querySelector("h2").textContent = paginas.get(id);
+      function acao(destino, texto, executar) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "qi-button";
+        b.textContent = texto;
+        b.onclick = executar;
+        dialogo.querySelector(destino).append(b);
+        return b;
+      }
+      for (const [grupo, adicionar, retirar] of [[atalhos,"Adicionar aos atalhos","Retirar dos atalhos"],[favoritas,"Adicionar aos favoritos","Retirar dos favoritos"]]) {
+        const b = acao("[data-acoes]", grupo.has(id) ? retirar : adicionar, () => {
+          if (grupo.has(id)) grupo.delete(id); else grupo.add(id);
+          b.textContent = grupo.has(id) ? retirar : adicionar;
+          atualizarPreferencias();
+        });
+      }
+      for (const [nome, cor] of [...cores, ["Cor padrão",""]]) {
+        const b = acao("[data-cores]",nome,() => {
+          pref.cores = {...pref.cores,[id]: cor ? nome : ""};
+          atualizarPreferencias();
+          dialogo.querySelectorAll("[data-cores] button").forEach(item => item.setAttribute("aria-pressed",String(item === b)));
+        });
+        b.setAttribute("aria-pressed", String((pref.cores?.[id] || "Cor padrão") === nome));
+        if (cor) {
+          b.dataset.corAtalho = "";
+          b.style.setProperty("--qi-cor-atalho",cor);
+        }
+      }
+      acao("[data-rodape]","Todos os atalhos",() => {
+        dialogo.close();
+        favoritos.querySelector("details").open = true;
+        favoritos.querySelector("summary").focus();
+      });
+      acao("[data-rodape]","Fechar",() => dialogo.close());
+      dialogo.showModal();
+    }
+    document.addEventListener("contextmenu", e => {
+      const destino = e.target.closest("[data-qi-page]");
+      if (!destino || !paginas.has(destino.dataset.qiPage) || dialogo.open) return;
+      e.preventDefault();
+      opcoesDaAba(destino.dataset.qiPage);
+    });
+    document.addEventListener("click", e => {
+      if (e.target.closest('[data-qi-page="inicio"]')) {
+        requestAnimationFrame(() => window.scrollTo({top:0, behavior:"instant"}));
+      }
+    });
+    if (inicio) {
+      const sincronizarInicio = () => {
+        document.querySelectorAll('[data-qi-page="inicio"]').forEach(botao =>
+          botao.setAttribute("aria-current", inicio.hidden ? "false" : "page"));
       };
-      label.append(caixa, nome);
-      favoritos.querySelector("fieldset").append(label);
+      new MutationObserver(sincronizarInicio).observe(inicio,{attributes:true,attributeFilter:["hidden"]});
+      sincronizarInicio();
     }
     renderizar();
     const busca = document.querySelector('label[for="qi-function-search"]');
@@ -3663,6 +3769,9 @@ function filtrarLixeira() {
     new MutationObserver(anexarConfig).observe(document.querySelector(".container"), {childList:true, subtree:true});
     anexarConfig();
     aplicar();
+    if (inicio && !location.hash && document.documentElement.dataset.modoOfflineProfessor !== "1") {
+      window.QuizInterface?.navigate("inicio");
+    }
     const rolagem = document.createElement("nav");
     rolagem.id = "qi-rolagem";
     rolagem.setAttribute("aria-label","Rolagem da página");
