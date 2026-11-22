@@ -1,0 +1,36 @@
+diff --git a/painel.html b/painel.html
+--- a/painel.html
++++ b/painel.html
+@@ -3997,10 +3997,13 @@
+   body:has(#qi-informacoes-topo.qi-topo-fixado) {
+     overflow-x: clip !important;
+   }
+-  #qi-informacoes-topo { margin-bottom: 16px; color: var(--qi-text); }
++  #qi-informacoes-topo {
++    position: relative; margin-bottom: 16px; min-width: 0; padding: 8px;
++    color: var(--qi-text); background: var(--qi-panel);
++    border: 1px solid var(--qi-line); border-radius: 12px;
++  }
+   #qi-informacoes-topo.qi-topo-fixado {
+     position: sticky; top: 0; z-index: 20;
+-    background: var(--qi-bg); padding-block: 6px;
+   }
+   #qi-informacoes-topo .qi-topo-provas {
+     display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+@@ -4026,10 +4029,13 @@
+     min-height: 44px;
+   }
+   #qi-informacoes-topo #qi-home-clima { position: relative; }
+-  #qi-informacoes-topo #quizHomeWeather { margin-block-end: 0; }
+-  #qi-informacoes-topo #quizHomeWeather > summary { min-height: 44px; }
++  #qi-informacoes-topo #quizHomeWeather { margin: 0; border: 0; background: transparent; }
++  #qi-informacoes-topo #quizHomeWeather > summary {
++    min-height: 52px; padding-inline-end: 52px; flex-wrap: wrap; overflow-wrap: anywhere;
++  }
+   #qi-informacoes-topo [data-fixar-topo] {
+-    display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0 !important; margin-inline-start: auto;
++    position: absolute; inset-block-start: 2px; inset-inline-end: 2px;
++    display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0 !important;
+     border: 0 !important;
+     border-radius: 8px; background: transparent !important; color: var(--qi-text) !important;
+     font-size: .85rem; text-align: end; line-height: 1;
