@@ -1953,9 +1953,17 @@ body.light-mode #aba-banco-dados > p {
   #qi-informacoes-topo > #qi-home-clima {
     position: relative;
     min-width: 0;
-    padding-block-end: 8px;
+    padding-block-end: 0;
+    margin-block-end: 20px;
+  }
+  #qi-informacoes-topo > #qi-home-clima::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: -10px;
     border-block-end: 1px solid var(--qi-muted, #8295a6);
     border-block-end-color: color-mix(in srgb, var(--qi-line), var(--qi-muted) 35%);
+    pointer-events: none;
   }
   #qi-informacoes-topo > #qi-home-clima > [data-fixar-topo] {
     position: absolute !important;
@@ -1964,9 +1972,6 @@ body.light-mode #aba-banco-dados > p {
     z-index: 1;
     width: 44px;
     min-height: 44px;
-  }
-  #qi-informacoes-topo > #qi-home-clima:has(> #quizHomeWeather:not([open])) {
-    padding-block-end: 0;
   }
   #qi-informacoes-topo > #qi-home-clima:has(> #quizHomeWeather:not([open])) > [data-fixar-topo] {
     inset-block-start: 50% !important; transform: translateY(-50%);
