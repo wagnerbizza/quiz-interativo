@@ -1,0 +1,23 @@
+diff --git a/painel.html b/painel.html
+--- a/painel.html
++++ b/painel.html
+@@ -4030,8 +4030,8 @@
+   #qi-informacoes-topo #quizHomeWeather > summary { min-height: 44px; }
+   #qi-informacoes-topo [data-fixar-topo] {
+-    display: block; width: 100%; min-height: 44px; padding: 6px 12px !important;
+-    border: 0 !important; border-top: 1px solid var(--qi-line, #344757) !important;
+-    border-radius: 0; background: transparent !important; color: var(--qi-text) !important;
+-    font-size: .85rem; text-align: end;
++    display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0 !important; margin-inline-start: auto;
++    border: 0 !important;
++    border-radius: 8px; background: transparent !important; color: var(--qi-text) !important;
++    font-size: .85rem; text-align: end; line-height: 1;
+   }
+   #qi-informacoes-topo [data-fixar-topo]:hover { text-decoration: underline; }
+@@ -4155,5 +4155,5 @@
+     topo.classList.toggle("qi-topo-fixado", fixado);
+     fixar.setAttribute("aria-pressed", String(fixado));
+-    fixar.textContent = fixado ? "Desafixar" : "Fixar";
++    fixar.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6l4 4v2H5v-2l4-4V3Zm3 12v6"/>' + (fixado ? '' : '<path d="M3 3l18 18"/>') + '</svg>';
+     fixar.title = fixado ? "Desafixar informações" : "Fixar informações";
+     fixar.setAttribute("aria-label", fixar.title);
